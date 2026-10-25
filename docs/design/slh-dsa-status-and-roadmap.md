@@ -362,17 +362,12 @@ These are maintainer-owned lanes; the security lane does not depend on them.
 
 ## Disposition of PR #585
 
-#585 stays open as a draft on the merged base `repair/multitarget-collection-20260828` with the
-pre-G3 depth-one scheme. Nothing in the live security lane reuses its branch. Its
-`Security/ReductionBound.lean`, `Concrete/Security.lean`, and witness lemmas in `Security.lean`
-are idea sources for slices 7 and 8, which are separate pull requests. The plan's statement that
-#585 "retains its number" should be read as: the rewritten theorem replaces it, and #585 is closed
-with a cross-reference to the replacements.
-
-All four replacements — #708, #715, #718 and #723 — are on `main`. Closing #585 is a separate
-maintainer action and is outstanding. Its closing cross-reference should name the four
-replacements and record that the new bounds are conditional interfaces with unconstructed
-reductions and potentially vacuous certificate instantiations.
+#585 was closed unmerged on 2026-09-16, and nothing in the live security lane reuses its branch.
+Its `Security/ReductionBound.lean`, `Concrete/Security.lean`, and witness lemmas in `Security.lean`
+are idea sources for slices 7 and 8, which are separate pull requests. The rewritten theorem
+replaces it: all four replacements — #708, #715, #718 and #723 — are on `main`, and their bounds
+are conditional interfaces with unconstructed reductions and potentially vacuous certificate
+instantiations.
 
 ## Corrections to the plan document
 
