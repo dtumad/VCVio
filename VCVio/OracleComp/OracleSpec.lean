@@ -64,7 +64,18 @@ section add
 /-- `spec₁ + spec₂` is `PFunctor` addition, re-typed at `OracleSpec` so that dot notation on
 the sum resolves in the `OracleSpec` namespace. -/
 instance : HAdd OracleSpec.{u, v} OracleSpec.{u', v} OracleSpec.{max u u', v} where
-  hAdd spec spec' := PFunctor.add spec spec'
+  hAdd spec spec' := ⟨spec.A ⊕ spec'.A, Sum.elim spec.B spec'.B⟩
+
+/-! Index-type instances for sums. Instance search does not reduce `(spec + spec').Domain` to
+`spec.Domain ⊕ spec'.Domain`, so each class needs a forwarding instance. -/
+
+instance (spec : OracleSpec.{u, v}) (spec' : OracleSpec.{u', v}) [DecidableEq spec.Domain]
+    [DecidableEq spec'.Domain] : DecidableEq (spec + spec').Domain :=
+  inferInstanceAs (DecidableEq (spec.Domain ⊕ spec'.Domain))
+
+/-- The sum is `PFunctor` addition. -/
+lemma add_eq_pfunctor_add (spec : OracleSpec.{u, v}) (spec' : OracleSpec.{u', v}) :
+    spec + spec' = PFunctor.add spec spec' := rfl
 
 @[simp] lemma add_B_inl (spec : OracleSpec.{u, v}) (spec' : OracleSpec.{u', v})
     (t : spec.Domain) : (spec + spec').Range (.inl t) = spec.Range t := rfl
