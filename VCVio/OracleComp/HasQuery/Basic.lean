@@ -26,7 +26,7 @@ downstream modules with explicit imports.
 universe u v w
 
 /-- Capability to issue queries to the oracle family `spec` inside the ambient monad `m`. -/
-class HasQuery {ι : Type u} (spec : OracleSpec.{u, v} ι) (m : Type v → Type w) where
+class HasQuery (spec : OracleSpec.{u, v}) (m : Type v → Type w) where
   /-- Issue a single oracle query. -/
   query : (t : spec.Domain) → m (spec.Range t)
 
@@ -38,7 +38,7 @@ export HasQuery (query)
 
 namespace HasQuery
 
-variable {ι : Type u} {spec : OracleSpec.{u, v} ι} {m : Type v → Type w}
+variable {spec : OracleSpec.{u, v}} {m : Type v → Type w}
 
 /-- The primitive single-query syntax `OracleQuery spec` has the obvious query capability. -/
 instance instOracleQuery : HasQuery spec (OracleQuery spec) where
