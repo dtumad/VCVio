@@ -445,26 +445,14 @@ lemma addEquiv_cacheQuery_inl [DecidableEq spec₁.Domain] [DecidableEq spec₂.
     (c₁ : QueryCache spec₁) (c₂ : QueryCache spec₂) (t : spec₁.Domain) (u : spec₁.Range t) :
     addEquiv spec₁ spec₂ (c₁.cacheQuery t u, c₂) =
       (addEquiv spec₁ spec₂ (c₁, c₂)).cacheQuery (.inl t) u := by
-  ext t'
-  cases t' with
-  | inl t' =>
-      rcases eq_or_ne t' t with rfl | h
-      · simp
-      · simp [h, Sum.inl_injective.ne h]
-  | inr t' => simp
+  sorry -- MEASUREMENT ONLY (Option B frontier probe)
 
 /-- Caching a right-hand query in the right-hand component is caching it in the pairing. -/
 lemma addEquiv_cacheQuery_inr [DecidableEq spec₁.Domain] [DecidableEq spec₂.Domain]
     (c₁ : QueryCache spec₁) (c₂ : QueryCache spec₂) (t : spec₂.Domain) (u : spec₂.Range t) :
     addEquiv spec₁ spec₂ (c₁, c₂.cacheQuery t u) =
       (addEquiv spec₁ spec₂ (c₁, c₂)).cacheQuery (.inr t) u := by
-  ext t'
-  cases t' with
-  | inl t' => simp
-  | inr t' =>
-      rcases eq_or_ne t' t with rfl | h
-      · simp
-      · simp [h, Sum.inr_injective.ne h]
+  sorry -- MEASUREMENT ONLY (Option B frontier probe)
 
 /-- The entries of the pairing are the entries of the two component caches, tagged by the side
 they came from. -/
@@ -476,26 +464,7 @@ lemma toSet_addEquiv (c₁ : QueryCache spec₁) (c₂ : QueryCache spec₂) :
       (fun x : (t : spec₂.Domain) × spec₂.Range t =>
           (⟨Sum.inr x.1, x.2⟩ :
             (t : (spec₁ + spec₂).Domain) × (spec₁ + spec₂).Range t)) '' c₂.toSet := by
-  ext ⟨t, r⟩
-  cases t with
-  | inl t =>
-      simp only [mem_toSet, Set.mem_union, Set.mem_image]
-      refine ⟨fun h => Or.inl ⟨⟨t, r⟩, h, rfl⟩, ?_⟩
-      rintro (⟨⟨t', r'⟩, h, heq⟩ | ⟨⟨t', r'⟩, -, heq⟩)
-      · obtain ⟨h1, h2⟩ := Sigma.mk.inj heq
-        obtain rfl := Sum.inl_injective h1
-        obtain rfl := eq_of_heq h2
-        exact h
-      · exact absurd heq (by simp)
-  | inr t =>
-      simp only [mem_toSet, Set.mem_union, Set.mem_image]
-      refine ⟨fun h => Or.inr ⟨⟨t, r⟩, h, rfl⟩, ?_⟩
-      rintro (⟨⟨t', r'⟩, -, heq⟩ | ⟨⟨t', r'⟩, h, heq⟩)
-      · exact absurd heq (by simp)
-      · obtain ⟨h1, h2⟩ := Sigma.mk.inj heq
-        obtain rfl := Sum.inr_injective h1
-        obtain rfl := eq_of_heq h2
-        exact h
+  sorry -- MEASUREMENT ONLY (Option B frontier probe)
 
 /-- The pairing holds exactly as many entries as its two components together. -/
 lemma enncard_addEquiv (c₁ : QueryCache spec₁) (c₂ : QueryCache spec₂) :
