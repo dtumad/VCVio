@@ -24,11 +24,11 @@ open OracleSpec
 where the final return value has type `α`, represented as a free monad over the `PFunctor`
 corresponding to `spec.` -/
 @[reducible]
-def OracleComp {ι : Type u} (spec : OracleSpec.{u, v} ι) :
+def OracleComp (spec : OracleSpec.{u, v}) :
     Type w → Type (max u v w) :=
   PFunctor.FreeM spec.toPFunctor
 
-variable {α β γ : Type v} {ι} {spec : OracleSpec.{u, v} ι}
+variable {α β γ : Type v} {spec : OracleSpec.{u, v}}
 
 namespace OracleComp
 
@@ -78,7 +78,7 @@ theorem ofFreeM_map {α β : Type v}
 
 /-- Manually lift an `OracleQuery` to an `OracleComp`. -/
 @[reducible]
-protected def lift {ι} {spec : OracleSpec ι} {α} (q : OracleQuery spec α) :
+protected def lift {spec : OracleSpec} {α} (q : OracleQuery spec α) :
     OracleComp spec α := liftM q
 
 protected lemma liftM_def (q : OracleQuery spec α) :
@@ -163,7 +163,7 @@ protected lemma bind_congr' {oa oa' : OracleComp spec α} {ob ob' : α → Oracl
     (h : oa = oa') (h' : ∀ x, ob x = ob' x) : oa >>= ob = oa' >>= ob' := h ▸ bind_congr h'
 
 @[simp] -- NOTE: debatable if this should be simp
-lemma guard_eq {spec : OracleSpec ι} (p : Prop) [Decidable p] :
+lemma guard_eq {spec : OracleSpec} (p : Prop) [Decidable p] :
     (guard p : OptionT (OracleComp spec) Unit) = if p then pure () else failure := rfl
 
 -- NOTE: This should maybe be a `@[simp]` lemma? `apply_ite` can't be a simp lemma in general.
