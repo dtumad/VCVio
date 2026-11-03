@@ -192,7 +192,7 @@ theorem Intertwines.evalDist_simulateQ_run {fill : σ₁ → ProbComp σ₂}
 
 end QueryImpl
 
-section simulateQ
+section simulateQSec
 
 open OracleComp
 
@@ -212,4 +212,4 @@ theorem OptionT.prEvent_mk_simulateQ_run'_eq_one_of_support
   rw [OracleComp.OptionT.prEvent_mk_eq_one_iff]
   exact fun o ho ↦ h o (support_simulateQ_run'_subset impl oa s ho)
 
-end simulateQ
+end simulateQSec

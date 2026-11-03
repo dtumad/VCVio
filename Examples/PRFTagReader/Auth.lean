@@ -265,7 +265,7 @@ private lemma simulateQ_prfReal_authToPRFTagImpl_run [SampleableType Nonce]
   unfold authToPRFTagImpl authTagQueryImpl authPRFQuery
   simp only [StateT.run_bind, StateT.run_get, StateT.run_monadLift,
     bind_pure_comp, pure_bind]
-  change @simulateQ _ (unifSpec + ((TagId × Nonce) →ₒ Digest)) ProbComp _ impl _ _ = _
+  change PFunctor.FreeM.liftM (P := (unifSpec + ((TagId × Nonce) →ₒ Digest)).toPFunctor) (m := ProbComp) impl _ = _
   simp only [simulateQ_bind, simulateQ_map, monadLift_eq_self,
     hleft]
   rfl
@@ -294,7 +294,7 @@ private lemma simulateQ_prfReal_authToPRFReaderImpl_run [Fintype TagId]
           OracleComp (unifSpec + ((TagId × Nonce) →ₒ Digest)) (TagId × Digest)) =
         pure (tag, prfs.evalMultiple k tag transcript.nonce) := by
     intro tag
-    change @simulateQ _ (unifSpec + ((TagId × Nonce) →ₒ Digest)) ProbComp _ impl _ _ = _
+    change PFunctor.FreeM.liftM (P := (unifSpec + ((TagId × Nonce) →ₒ Digest)).toPFunctor) (m := ProbComp) impl _ = _
     rw [simulateQ_map, show @simulateQ _ (unifSpec + ((TagId × Nonce) →ₒ Digest)) ProbComp _
       impl _ (authPRFQuery (TagId := TagId) tag transcript.nonce) =
       pure (prfs.evalMultiple k tag transcript.nonce) from hquery (tag, transcript.nonce)]
@@ -306,7 +306,7 @@ private lemma simulateQ_prfReal_authToPRFReaderImpl_run [Fintype TagId]
           (fun tag => Prod.mk tag <$> authPRFQuery (TagId := TagId) tag transcript.nonce)) =
       pure ((Finset.univ : Finset TagId).toList.map
         fun tag => (tag, prfs.evalMultiple k tag transcript.nonce)) := by
-    change @simulateQ _ (unifSpec + ((TagId × Nonce) →ₒ Digest)) ProbComp _ impl _ _ = _
+    change PFunctor.FreeM.liftM (P := (unifSpec + ((TagId × Nonce) →ₒ Digest)).toPFunctor) (m := ProbComp) impl _ = _
     rw [simulateQ_list_mapM]
     induction (Finset.univ : Finset TagId).toList with
     | nil => rfl
@@ -336,7 +336,7 @@ private lemma simulateQ_prfReal_authToPRFReaderImpl_run [Fintype TagId]
   unfold authToPRFReaderImpl authReaderQueryImpl
   simp only [StateT.run_bind, StateT.run_get, StateT.run_monadLift,
     bind_pure_comp, pure_bind]
-  change @simulateQ _ (unifSpec + ((TagId × Nonce) →ₒ Digest)) ProbComp _ impl _ _ = _
+  change PFunctor.FreeM.liftM (P := (unifSpec + ((TagId × Nonce) →ₒ Digest)).toPFunctor) (m := ProbComp) impl _ = _
   simp only [simulateQ_bind, simulateQ_map, monadLift_eq_self,
     hmapM, pure_bind, map_pure]
   rw [hForged, hAccept]
