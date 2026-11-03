@@ -19,24 +19,24 @@ universe u v w z
 
 open OracleSpec
 
-/-- Functor to represent queries to oracles specified by an `OracleSpec ι`,
+/-- Functor to represent queries to oracles specified by an `OracleSpec`,
 defined to be the object type of the corresponding `PFunctor`.
 In particular an element of `OracleQuery spec α` consists of an input value `t : spec.Domain`,
 and a continuation `f : spec.Range t → α` specifying what to do with the result.
 See `OracleSpec.query` for the case when the continuation `f` just returns the query result. -/
 @[reducible]
-def OracleQuery {ι : Type u} (spec : OracleSpec.{u, v} ι) :
+def OracleQuery (spec : OracleSpec.{u, v}) :
     Type w → Type (max u v w) :=
   PFunctor.Obj spec.toPFunctor
 
 /-- The query with oracle input `t : spec.Domain` whose continuation `f` turns the oracle's
 response `u : spec.Range t` into the value `f u`. -/
-@[reducible, match_pattern] protected def OracleQuery.mk {ι α} {spec : OracleSpec ι}
+@[reducible, match_pattern] protected def OracleQuery.mk {α} {spec : OracleSpec}
     (t : spec.Domain) (f : spec.Range t → α) : OracleQuery spec α := PFunctor.Obj.mk t f
 
 namespace OracleSpec
 
-variable {ι : Type u} {spec : OracleSpec.{u, v} ι}
+variable {spec : OracleSpec.{u, v}}
 
 /-- Query an oracle on in input `t` to get a result in the corresponding `range t`.
 
@@ -78,7 +78,7 @@ end OracleSpec.PrimitiveQuery
 
 namespace OracleQuery
 
-variable {ι : Type u} {spec : OracleSpec.{u, v} ι}
+variable {spec : OracleSpec.{u, v}}
 
 /-- The oracle input used in an oracle query. -/
 @[inline, reducible]
@@ -128,15 +128,15 @@ lemma ext' {α} (t : spec.Domain) {cont cont' : spec.Range t → α}
   exact congrArg (OracleQuery.mk t) h
 
 /-- If an oracle exists and the output type is non-empty then the type of queries is non-empty. -/
-instance {α} [Inhabited ι] [Inhabited α] : Inhabited (OracleQuery spec α) :=
+instance {α} [Inhabited spec.Domain] [Inhabited α] : Inhabited (OracleQuery spec α) :=
   ⟨OracleQuery.mk default (fun _ ↦ default)⟩
 
 /-- If there are no oracles available then the type of queries is empty. -/
-instance {α} [h : IsEmpty ι] : IsEmpty (OracleQuery spec α) :=
+instance {α} [h : IsEmpty spec.Domain] : IsEmpty (OracleQuery spec α) :=
   ⟨fun q ↦ PFunctor.Obj.rec (fun t _ ↦ h.false t) q⟩
 
 /-- If there is at most one oracle and output, then there is at most one query. -/
-instance {α} [h : Subsingleton ι] [h' : Subsingleton α] : Subsingleton (OracleQuery spec α) where
+instance {α} [h : Subsingleton spec.Domain] [h' : Subsingleton α] : Subsingleton (OracleQuery spec α) where
   allEq q q' := by
     cases q using PFunctor.Obj.rec with
     | mk t cont =>
