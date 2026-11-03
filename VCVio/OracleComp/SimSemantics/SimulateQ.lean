@@ -27,11 +27,11 @@ section simulateQ
 
 /-- Given an implementation of `spec` in the monad `r`, convert an `OracleComp spec α` to a
 implementation in `r α` by substituting `impl t` for `query t` throughout. -/
-def simulateQ {ι} {spec : OracleSpec ι} {r : Type u → Type _} [Monad r]
+def simulateQ {spec : OracleSpec} {r : Type u → Type _} [Monad r]
     (impl : QueryImpl spec r) {α : Type u} (mx : OracleComp spec α) : r α :=
   PFunctor.FreeM.liftM impl mx
 
-variable {ι} {spec : OracleSpec ι} {r m n : Type u → Type*}
+variable {spec : OracleSpec} {r m n : Type u → Type*}
     [Monad r] (impl : QueryImpl spec r)
 
 @[simp, grind =, game_rule]
@@ -114,7 +114,7 @@ Not `@[simp]`: for the common sum-spec layouts the specialized routing lemmas
 (`QueryImpl.simulateQ_add_add_liftM_query_left` and friends in `SimSemantics/Append.lean`)
 resolve the routed query in one step; this general form would preempt them and strand the
 goal at an un-normalized `mapQuery (liftM q)`. Use it manually for bespoke lift chains. -/
-lemma simulateQ_liftM_query [LawfulMonad r] {ι' : Type*} {spec' : OracleSpec ι'}
+lemma simulateQ_liftM_query [LawfulMonad r] {spec' : OracleSpec}
     [MonadLiftT (OracleQuery spec') (OracleQuery spec)] (q : OracleQuery spec' α) :
     simulateQ impl (liftM q : OracleComp spec α) =
       impl.mapQuery (liftM q : OracleQuery spec α) :=
@@ -124,34 +124,34 @@ lemma simulateQ_liftM_query [LawfulMonad r] {ι' : Type*} {spec' : OracleSpec ι
 
 This is the `Id`-valued specialization of `simulateQ`: each query in `mx` is replaced by the
 corresponding value returned by `f`. -/
-def evalWithAnswerFn {ι} {spec : OracleSpec ι} (f : QueryImpl spec Id)
+def evalWithAnswerFn {spec : OracleSpec} (f : QueryImpl spec Id)
     {α : Type u} (mx : OracleComp spec α) : α :=
   simulateQ f mx
 
 @[simp]
-theorem evalWithAnswerFn_pure {ι} {spec : OracleSpec ι} (f : QueryImpl spec Id) (a : α) :
+theorem evalWithAnswerFn_pure {spec : OracleSpec} (f : QueryImpl spec Id) (a : α) :
     evalWithAnswerFn f (pure a : OracleComp spec α) = a := rfl
 
 @[simp]
-theorem evalWithAnswerFn_bind {ι} {spec : OracleSpec ι} (f : QueryImpl spec Id)
+theorem evalWithAnswerFn_bind {spec : OracleSpec} (f : QueryImpl spec Id)
     (mx : OracleComp spec α) (my : α → OracleComp spec β) :
     evalWithAnswerFn f (mx >>= my) = evalWithAnswerFn f (my (evalWithAnswerFn f mx)) := by
   change simulateQ f (mx >>= my) = simulateQ f (my (simulateQ f mx))
   rw [simulateQ_bind]; rfl
 
-theorem evalWithAnswerFn_query {ι} {spec : OracleSpec ι} (f : QueryImpl spec Id)
+theorem evalWithAnswerFn_query {spec : OracleSpec} (f : QueryImpl spec Id)
     (t : spec.Domain) :
     evalWithAnswerFn f (query t : OracleComp spec _) = f t := by
   simp [evalWithAnswerFn]
 
 /-- A primitive query lifted into the free computation receives the given table answer. -/
 @[simp]
-theorem evalWithAnswerFn_liftM_query {ι} {spec : OracleSpec ι}
+theorem evalWithAnswerFn_liftM_query {spec : OracleSpec}
     (f : QueryImpl spec Id) (t : spec.Domain) :
     evalWithAnswerFn f (liftM (spec.query t) : OracleComp spec (spec.Range t)) = f t := rfl
 
 /-- Deterministic evaluation after simulation uses the same table for each query implementation. -/
-theorem evalWithAnswerFn_simulateQ {ι' : Type u} {spec' : OracleSpec ι'}
+theorem evalWithAnswerFn_simulateQ {spec' : OracleSpec}
     (f : QueryImpl spec' Id) (impl : QueryImpl spec (OracleComp spec'))
     (oa : OracleComp spec α) :
     evalWithAnswerFn f (simulateQ impl oa) =
@@ -172,7 +172,7 @@ lemma simulateQ_map [LawfulMonad r] (mx : OracleComp spec α) (f : α → β) :
   simp [monad_norm]
 
 @[simp]
-theorem evalWithAnswerFn_map {ι} {spec : OracleSpec ι} (f : QueryImpl spec Id)
+theorem evalWithAnswerFn_map {spec : OracleSpec} (f : QueryImpl spec Id)
     (g : α → β) (mx : OracleComp spec α) :
     evalWithAnswerFn f (g <$> mx) = g (evalWithAnswerFn f mx) := by
   change simulateQ f (g <$> mx) = g (simulateQ f mx)
@@ -232,7 +232,7 @@ lemma simulateQ_liftTarget {m : Type u → Type v} {n : Type u → Type w}
 
 end simulateQ
 
-variable {ι} {spec : OracleSpec ι} {n : Type u → Type v}
+variable {spec : OracleSpec} {n : Type u → Type v}
   [Monad n] [LawfulMonad n] (impl : QueryImpl spec n)
 
 lemma simulateQ_def (impl : QueryImpl spec n) (mx : OracleComp spec α) :
@@ -252,9 +252,8 @@ lemma simulateQ_ofLift_eq_self {α} (mx : OracleComp spec α) :
 
 section tests
 
-variable {ι₁ ι₂ ι₃ ι₄}
-  {spec₁ : OracleSpec ι₁} {spec₂ : OracleSpec ι₂}
-  {spec₃ : OracleSpec ι₃} {spec₄ : OracleSpec ι₄}
+variable {spec₁ : OracleSpec} {spec₂ : OracleSpec}
+  {spec₃ : OracleSpec} {spec₄ : OracleSpec}
 
 example (mx : OracleComp spec₁ α)
     (impl₁ : QueryImpl spec₁ (OracleComp spec₂))
@@ -310,25 +309,25 @@ end List
 
 section queryAll
 
-variable {ι : Type} (spec : OracleSpec.{0, 0} ι)
+variable (spec : OracleSpec.{0, 0})
 
 /-- The program querying each index of `ts` in turn, discarding the answers. -/
-def OracleSpec.queryAll (ts : List ι) : OracleComp spec Unit :=
+def OracleSpec.queryAll (ts : List spec.Domain) : OracleComp spec Unit :=
   ts.forM fun t ↦ do let _ ← spec.query t; pure ()
 
 @[simp] lemma OracleSpec.queryAll_nil : spec.queryAll [] = pure () := rfl
 
-@[simp] lemma OracleSpec.queryAll_cons (t : ι) (ts : List ι) :
+@[simp] lemma OracleSpec.queryAll_cons (t : spec.Domain) (ts : List spec.Domain) :
     spec.queryAll (t :: ts) = (do let _ ← spec.query t; spec.queryAll ts) := by
   simp only [queryAll, bind_pure_comp, List.forM_eq_forM, List.forM_cons, bind_map_left]
 
-lemma OracleSpec.queryAll_append (ts ts' : List ι) :
+lemma OracleSpec.queryAll_append (ts ts' : List spec.Domain) :
     spec.queryAll (ts ++ ts') = (do spec.queryAll ts; spec.queryAll ts') := by
   simp only [queryAll, bind_pure_comp, List.forM_eq_forM, List.forM_append]
 
 /-- Simulating `spec.queryAll ts` runs the handler at each index of `ts` in turn. -/
 lemma simulateQ_queryAll {m : Type → Type*} [Monad m] [LawfulMonad m]
-    (impl : QueryImpl spec m) (ts : List ι) :
+    (impl : QueryImpl spec m) (ts : List spec.Domain) :
     simulateQ impl (spec.queryAll ts) = ts.forM (fun t ↦ do let _ ← impl t; pure ()) := by
   simp only [OracleSpec.queryAll, simulateQ_list_forM, simulateQ_bind, simulateQ_spec_query,
     simulateQ_pure]
@@ -341,7 +340,7 @@ section Compose
 
 universe u' v'
 
-variable {ι₁ ι₂ : Type*} {spec₁ : OracleSpec ι₁} {spec₂ : OracleSpec ι₂}
+variable {spec₁ : OracleSpec} {spec₂ : OracleSpec}
 
 /-- Two-stage simulation: if a "reduction" `red : QueryImpl spec₁ (StateT σ (OracleComp spec₂))`
 followed by an inner `impl : QueryImpl spec₂ n` agrees per-query with a "combined" handler
