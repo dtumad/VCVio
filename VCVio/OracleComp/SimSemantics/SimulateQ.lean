@@ -27,7 +27,7 @@ section simulateQ
 
 /-- Given an implementation of `spec` in the monad `r`, convert an `OracleComp spec α` to a
 implementation in `r α` by substituting `impl t` for `query t` throughout. -/
-def simulateQ {ι} {spec : OracleSpec ι} {r : Type u → Type _} [Monad r]
+abbrev simulateQ {ι} {spec : OracleSpec ι} {r : Type u → Type _} [Monad r]
     (impl : QueryImpl spec r) {α : Type u} (mx : OracleComp spec α) : r α :=
   PFunctor.FreeM.liftM impl mx
 
