@@ -39,7 +39,7 @@ universe u v
 
 namespace OracleComp.ProgramLogic
 
-variable {ι : Type u} {spec : OracleSpec ι}
+variable {spec : OracleSpec}
 variable [OracleSpec.AnswerMeasure spec]
 variable {α β : Type}
 
@@ -59,7 +59,7 @@ namespace OracleComp.Lower
 
 /-! ## `Std.WP.WP` instance for `OracleComp` -/
 
-variable {ι : Type u} {spec : OracleSpec ι}
+variable {spec : OracleSpec}
 variable [OracleSpec.AnswerMeasure spec]
 variable {α β : Type}
 
@@ -224,7 +224,7 @@ end OracleComp.Lower
 
 namespace OracleComp.Lower
 
-variable {ι : Type u} {spec : OracleSpec ι}
+variable {spec : OracleSpec}
 variable [OracleSpec.AnswerMeasure spec]
 variable {α β : Type}
 

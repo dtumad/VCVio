@@ -33,7 +33,7 @@ open Std.WP
 
 namespace OracleComp.ProgramLogic.PropLogic
 
-variable {ι : Type u} {spec : OracleSpec ι}
+variable {spec : OracleSpec}
 variable {α : Type}
 
 /-- Support-based characterization of the qualitative weakest precondition for `OracleComp`. -/

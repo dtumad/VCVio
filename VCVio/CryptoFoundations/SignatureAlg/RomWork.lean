@@ -23,7 +23,7 @@ open OracleComp OracleSpec
 
 namespace SignatureAlg
 
-variable {ι : Type} {hs : OracleSpec ι} {M PK SK S : Type}
+variable {hs : OracleSpec} {M PK SK S : Type}
 
 /-- Hash traffic of an algorithm over private uniform samples and a hash oracle. -/
 @[expose] def IsAmbientHashQuery : (unifSpec + hs).Domain → Prop

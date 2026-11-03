@@ -236,8 +236,7 @@ For a protocol in the random oracle model, a typical instantiation is:
   (identity on `unifSpec`, lazy-cached on the hash)
 * `initOracle := ∅` (empty random oracle cache)
 -/
-noncomputable def processSemanticsOracle (Party : Type u) {ι : Type}
-    {superSpec : OracleSpec.{0, 0} ι} {σ : Type} {Result : Type}
+noncomputable def processSemanticsOracle (Party : Type u) {superSpec : OracleSpec.{0, 0}} {σ : Type} {Result : Type}
     [MeasurableSpace Result]
     (schedulerSampler : OracleComp superSpec (ULift Bool))
     (impl : QueryImpl superSpec (StateT σ ProbComp)) (initOracle : σ)

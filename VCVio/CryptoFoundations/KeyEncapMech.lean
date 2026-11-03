@@ -63,7 +63,7 @@ end Correct
 
 section IND_CPA
 
-variable {ι : Type} {spec : OracleSpec ι} [SampleableType K]
+variable {spec : OracleSpec} [SampleableType K]
 
 /-- Two-phase IND-CPA adversary for a KEM. The adversary only gets access to the base oracle
 set `spec`, with no decapsulation oracle. -/
@@ -118,7 +118,7 @@ end IND_CPA
 
 section IND_CCA
 
-variable {ι : Type} {spec : OracleSpec ι} [DecidableEq C] [SampleableType K]
+variable {spec : OracleSpec} [DecidableEq C] [SampleableType K]
 
 /-- IND-CCA adversaries get access to the base oracle set `spec` plus a decapsulation oracle. -/
 def IND_CCA_oracleSpec (_kem : KEMScheme (OracleComp spec) K PK SK C) :=

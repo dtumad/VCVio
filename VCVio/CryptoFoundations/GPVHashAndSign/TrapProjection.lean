@@ -51,7 +51,7 @@ projection in distribution.  This is the distributional relaxation of
 answer-irrelevant draw (e.g. a write-only trapdoor sample) that breaks the *monadic* equality but
 preserves the distribution. -/
 theorem evalDistEq_map_run_simulateQ_eq_of_query_evalDistEq_map_eq
-    {ι : Type} {spec : OracleSpec ι}
+    {spec : OracleSpec}
     {σ₁ σ₂ : Type} {α : Type}
     (impl₁ : QueryImpl spec (StateT σ₁ ProbComp))
     (impl₂ : QueryImpl spec (StateT σ₂ ProbComp))

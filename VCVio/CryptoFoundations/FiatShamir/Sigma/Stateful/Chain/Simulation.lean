@@ -53,7 +53,7 @@ noncomputable local instance instUniformAnswerMeasureChalSingleton [Finite Chal]
   UniformAnswerMeasure.ofFiniteNonempty _
 
 private lemma simulateQ_id_add_uniform_query_inl
-    {ι : Type*} (spec : OracleSpec ι) [∀ i, SampleableType (spec.Range i)]
+    (spec : OracleSpec) [∀ i, SampleableType (spec.Range i)]
     (n : unifSpec.Domain) :
     simulateQ (QueryImpl.id' unifSpec + uniformSampleImpl (spec := spec))
         (liftM ((unifSpec + spec).query (Sum.inl n))) =
@@ -63,7 +63,7 @@ private lemma simulateQ_id_add_uniform_query_inl
   exact QueryImpl.id'_apply n
 
 private lemma simulateQ_id_add_uniform_query_inr
-    {ι : Type*} (spec : OracleSpec ι) [∀ i, SampleableType (spec.Range i)]
+    (spec : OracleSpec) [∀ i, SampleableType (spec.Range i)]
     (t : spec.Domain) :
     simulateQ (QueryImpl.id' unifSpec + uniformSampleImpl (spec := spec))
         (liftM ((unifSpec + spec).query (Sum.inr t))) =

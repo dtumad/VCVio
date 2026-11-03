@@ -31,14 +31,14 @@ universe u v w x y z
 
 namespace HasQuery
 
-variable {ι : Type u} {spec : OracleSpec.{u, v} ι}
+variable {spec : OracleSpec.{u, v}}
   {m : Type v → Type w} [Monad m] [HasQuery spec m]
   {n : Type v → Type x} [Monad n] [HasQuery spec n]
 
 /-- A `QueryHom spec m n` is a monad morphism `m →ᵐ n` that also preserves the distinguished
 oracle-query capability for `spec`. This is the right notion of morphism for proving that a
 construction generic over `HasQuery spec` is natural in the chosen oracle semantics. -/
-structure QueryHom (spec : OracleSpec.{u, v} ι)
+structure QueryHom (spec : OracleSpec.{u, v})
     (m : Type v → Type w) [Monad m] [HasQuery spec m]
     (n : Type v → Type x) [Monad n] [HasQuery spec n]
     extends m →ᵐ n where
@@ -86,7 +86,7 @@ namespace QueryHom
 variable {o : Type v → Type y} [Monad o] [HasQuery spec o]
 
 /-- The identity monad morphism, bundled with its preservation of oracle queries. -/
-def id (spec : OracleSpec.{u, v} ι) (m : Type v → Type w) [Monad m] [HasQuery spec m] :
+def id (spec : OracleSpec.{u, v}) (m : Type v → Type w) [Monad m] [HasQuery spec m] :
     QueryHom spec m m where
   toMonadHom := MonadHom.id m
   map_query' _ := rfl

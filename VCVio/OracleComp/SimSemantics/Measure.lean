@@ -27,7 +27,7 @@ universe u v
 
 namespace OracleComp
 
-variable {ι : Type u} {spec : OracleSpec.{u, 0} ι}
+variable {spec : OracleSpec.{u, 0}}
   {m : Type → Type v} [Monad m] [LawfulMonad m]
   [EvalDistSemantics m] [LawfulEvalDistSemantics m]
 

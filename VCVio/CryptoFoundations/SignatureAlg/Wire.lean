@@ -58,7 +58,7 @@ end CanonicalEncoding
 
 namespace Wire
 
-variable {ι : Type} {spec : OracleSpec ι} {M E PK WPK SK S WS : Type}
+variable {spec : OracleSpec} {M E PK WPK SK S WS : Type}
 
 /-- A scheme with fixed message encoding and strict public-key and signature parsers.
 The signing oracle receives only challenger-generated public keys. -/
@@ -88,7 +88,7 @@ theorem scheme_verify_of_signature_decode_none
   cases hp : pk.decode key <;> simp [scheme, hp, h]
 
 /-- Interpreting ambient oracles commutes with the canonical wire wrapper. -/
-theorem map_scheme {ι' : Type} {spec' : OracleSpec ι'}
+theorem map_scheme {spec' : OracleSpec}
     (alg : SignatureAlg (OracleComp spec) M PK SK S) (message : E → M)
     (pk : CanonicalEncoding PK WPK) (sig : CanonicalEncoding S WS)
     (handler : QueryImpl spec (OracleComp spec')) :

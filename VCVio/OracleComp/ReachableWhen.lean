@@ -25,7 +25,7 @@ universe u v w
 
 namespace OracleComp
 
-variable {ι : Type u} {spec : OracleSpec.{u, v} ι} {α β : Type v}
+variable {spec : OracleSpec.{u, v}} {α β : Type v}
 
 section reachableWhen
 

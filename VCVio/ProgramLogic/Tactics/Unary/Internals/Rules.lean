@@ -31,14 +31,14 @@ universe u v
 The equality theorem `wp_pure` remains the canonical rewrite rule.
 This lower-bound form lets raw `wp` goals use the cached `@[vcspec]`
 backward-rule path before falling back to `@[wpStep]`. -/
-theorem wp_pure_le_vcspec {ι : Type u} {spec : OracleSpec ι}
+theorem wp_pure_le_vcspec {spec : OracleSpec}
     [OracleSpec.AnswerMeasure spec] {α : Type} (x : α)
     (post : α → ENNReal) :
     post x ≤ wp (pure x : OracleComp spec α) post := by
   rw [OracleComp.ProgramLogic.wp_pure]
 
 /-- Cached raw-`wp` structural leaf for functorial map. -/
-theorem wp_map_le_vcspec {ι : Type u} {spec : OracleSpec ι}
+theorem wp_map_le_vcspec {spec : OracleSpec}
     [OracleSpec.AnswerMeasure spec]
     {α β : Type}
     (f : α → β) (oa : OracleComp spec α) (post : β → ENNReal) :
@@ -46,7 +46,7 @@ theorem wp_map_le_vcspec {ι : Type u} {spec : OracleSpec ι}
   rw [OracleComp.ProgramLogic.wp_map]
 
 /-- Cached raw-`wp` structural leaf for conditionals. -/
-theorem wp_ite_le_vcspec {ι : Type u} {spec : OracleSpec ι}
+theorem wp_ite_le_vcspec {spec : OracleSpec}
     [OracleSpec.AnswerMeasure spec]
     {α : Type} (c : Prop) [Decidable c]
     (oa ob : OracleComp spec α) (post : α → ENNReal) :
@@ -54,7 +54,7 @@ theorem wp_ite_le_vcspec {ι : Type u} {spec : OracleSpec ι}
   rw [OracleComp.ProgramLogic.wp_ite]
 
 /-- Cached raw-`wp` structural leaf for dependent conditionals. -/
-theorem wp_dite_le_vcspec {ι : Type u} {spec : OracleSpec ι}
+theorem wp_dite_le_vcspec {spec : OracleSpec}
     [OracleSpec.AnswerMeasure spec]
     {α : Type} (c : Prop) [Decidable c]
     (oa : c → OracleComp spec α) (ob : ¬c → OracleComp spec α) (post : α → ENNReal) :
@@ -62,7 +62,7 @@ theorem wp_dite_le_vcspec {ι : Type u} {spec : OracleSpec ι}
   rw [OracleComp.ProgramLogic.wp_dite]
 
 /-- Cached raw-`wp` structural leaf for `replicate (n + 1)`. -/
-theorem wp_replicate_succ_le_vcspec {ι : Type u} {spec : OracleSpec ι}
+theorem wp_replicate_succ_le_vcspec {spec : OracleSpec}
     [OracleSpec.AnswerMeasure spec] {α : Type}
     (oa : OracleComp spec α) (n : Nat) (post : List α → ENNReal) :
     wp oa (fun x => wp (oa.replicate n) (fun xs => post (x :: xs))) ≤
@@ -70,7 +70,7 @@ theorem wp_replicate_succ_le_vcspec {ι : Type u} {spec : OracleSpec ι}
   rw [OracleComp.ProgramLogic.wp_replicate_succ]
 
 /-- Cached raw-`wp` structural leaf for `List.mapM` on `x :: xs`. -/
-theorem wp_list_mapM_cons_le_vcspec {ι : Type u} {spec : OracleSpec ι}
+theorem wp_list_mapM_cons_le_vcspec {spec : OracleSpec}
     [OracleSpec.AnswerMeasure spec]
     {α β : Type}
     (x : α) (xs : List α) (f : α → OracleComp spec β) (post : List β → ENNReal) :
@@ -79,7 +79,7 @@ theorem wp_list_mapM_cons_le_vcspec {ι : Type u} {spec : OracleSpec ι}
   rw [OracleComp.ProgramLogic.wp_list_mapM_cons]
 
 /-- Cached raw-`wp` structural leaf for `List.foldlM` on `x :: xs`. -/
-theorem wp_list_foldlM_cons_le_vcspec {ι : Type u} {spec : OracleSpec ι}
+theorem wp_list_foldlM_cons_le_vcspec {spec : OracleSpec}
     [OracleSpec.AnswerMeasure spec] {α σ : Type}
     (x : α) (xs : List α) (f : σ → α → OracleComp spec σ)
     (init : σ) (post : σ → ENNReal) :
@@ -88,7 +88,7 @@ theorem wp_list_foldlM_cons_le_vcspec {ι : Type u} {spec : OracleSpec ι}
   rw [OracleComp.ProgramLogic.wp_list_foldlM_cons]
 
 /-- Cached raw-`wp` structural leaf for oracle queries. -/
-theorem wp_query_le_vcspec {ι : Type u} {spec : OracleSpec ι}
+theorem wp_query_le_vcspec {spec : OracleSpec}
     [OracleSpec.AnswerMeasure spec]
     (t : spec.Domain) (post : spec.Range t → ENNReal) :
     (∫⁻ u, post u ∂OracleSpec.AnswerMeasure.toMeasure t) ≤
@@ -96,7 +96,7 @@ theorem wp_query_le_vcspec {ι : Type u} {spec : OracleSpec ι}
   simpa using le_of_eq (OracleComp.ProgramLogic.wp_HasQuery_query (spec := spec) t post).symm
 
 /-- Cached raw-`wp` structural leaf for `HasQuery.query`. -/
-theorem wp_HasQuery_query_le_vcspec {ι : Type u} {spec : OracleSpec ι}
+theorem wp_HasQuery_query_le_vcspec {spec : OracleSpec}
     [OracleSpec.AnswerMeasure spec]
     (t : spec.Domain) (post : spec.Range t → ENNReal) :
     (∫⁻ u, post u ∂OracleSpec.AnswerMeasure.toMeasure t) ≤
@@ -251,7 +251,7 @@ theorem wp_ReaderT_run_read_layer' {m : Type u → Type v} {Pred EPred : Type u}
       Std.WP.wp (pure r : m ρ) (fun a : ρ => post a r) epost :=
   rfl
 
-theorem wp_OptionT_run_StateT_get {ι : Type u} {spec : OracleSpec ι}
+theorem wp_OptionT_run_StateT_get {spec : OracleSpec}
     [OracleSpec.AnswerMeasure spec] {σ : Type} (s : σ)
     (post : σ → σ → ENNReal)
     (epost : EStack⟨Unit → ENNReal⟩) :
@@ -261,7 +261,7 @@ theorem wp_OptionT_run_StateT_get {ι : Type u} {spec : OracleSpec ι}
       (Lean.Order.pushOption (fun p : σ × σ => post p.1 p.2) epost.fst) = post s s
   rw [OracleComp.ProgramLogic.wp_pure, Lean.Order.pushOption_some]
 
-theorem wp_OptionT_run_StateT_set {ι : Type u} {spec : OracleSpec ι}
+theorem wp_OptionT_run_StateT_set {spec : OracleSpec}
     [OracleSpec.AnswerMeasure spec]
     {σ : Type} (s s' : σ)
     (post : PUnit → σ → ENNReal)
@@ -276,7 +276,7 @@ theorem wp_OptionT_run_StateT_set {ι : Type u} {spec : OracleSpec ι}
         post PUnit.unit s'
   rw [OracleComp.ProgramLogic.wp_pure, Lean.Order.pushOption_some]
 
-theorem wp_OptionT_run_lift {ι : Type u} {spec : OracleSpec ι}
+theorem wp_OptionT_run_lift {spec : OracleSpec}
     [OracleSpec.AnswerMeasure spec] {α : Type}
     (oa : OracleComp spec α) (post : α → ENNReal)
     (epost : EStack⟨Unit → ENNReal⟩) :
@@ -291,8 +291,7 @@ theorem wp_OptionT_run_lift {ι : Type u} {spec : OracleSpec ι}
   funext a
   rw [OracleComp.ProgramLogic.wp_pure, Lean.Order.pushOption_some]
 
-theorem wp_OptionT_run_StateT_monadLift_lift {ι : Type u}
-    {spec : OracleSpec ι}
+theorem wp_OptionT_run_StateT_monadLift_lift {spec : OracleSpec}
     [OracleSpec.AnswerMeasure spec]
     {σ α : Type} (oa : OracleComp spec α) (s : σ) (post : α → σ → ENNReal)
     (epost : EStack⟨Unit → ENNReal⟩) :
@@ -303,7 +302,7 @@ theorem wp_OptionT_run_StateT_monadLift_lift {ι : Type u}
   simp [MonadLift.monadLift, OptionT.run_lift,
     Lean.Order.pushOption]
 
-theorem wp_StateT_OptionT_monadLift_lift {ι : Type u} {spec : OracleSpec ι}
+theorem wp_StateT_OptionT_monadLift_lift {spec : OracleSpec}
     [OracleSpec.AnswerMeasure spec] {σ α : Type}
     (oa : OracleComp spec α) (post : α → σ → ENNReal)
     (epost : EStack⟨Unit → ENNReal⟩) :
@@ -319,8 +318,7 @@ theorem wp_StateT_OptionT_monadLift_lift {ι : Type u} {spec : OracleSpec ι}
         (OracleComp.ProgramLogic.wp (oa)) (fun a => post a s)
   exact wp_OptionT_run_StateT_monadLift_lift (spec := spec) oa s post epost
 
-theorem wp_OptionT_run_StateT_monadLift_lift_map {ι : Type u}
-    {spec : OracleSpec ι}
+theorem wp_OptionT_run_StateT_monadLift_lift_map {spec : OracleSpec}
     [OracleSpec.AnswerMeasure spec]
     {σ α β : Type} (oa : OracleComp spec α) (s : σ) (f : α × σ → β)
     (post : β → ENNReal) (nonePost : ENNReal) :

@@ -34,7 +34,7 @@ open BinaryTree OracleComp OracleSpec
 
 universe u
 
-variable {ι Y : Type u} {spec : OracleSpec.{u, u} ι}
+variable {spec.Domain Y : Type u} {spec : OracleSpec.{u, u}}
 
 private theorem tree_query_budget_succ (z leafBudget nodeBudget : ℕ) :
     2 * (2 ^ z * leafBudget + (2 ^ z - 1) * nodeBudget) + nodeBudget =

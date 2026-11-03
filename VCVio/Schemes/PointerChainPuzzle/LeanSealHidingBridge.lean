@@ -73,14 +73,14 @@ open OracleSpec OracleComp TimeLockPuzzle
 
 namespace OracleComp.RandomOracleEncoding
 
-variable {ι D M : Type} {spec : OracleSpec.{0, 0} ι} [SampleableType M]
+variable {spec.Domain D M : Type} {spec : OracleSpec.{0, 0}} [SampleableType M]
   [∀ t, SampleableType (spec.Range t)] (E : RandomOracleEncoding spec D M) [DecidableEq D]
 
 /-! ## The adapter for any free summand -/
 
 section FreeSummand
 
-variable {τ : Type} {free : OracleSpec.{0, 0} τ}
+variable {free : OracleSpec.{0, 0}}
   [MonadLiftT (OracleQuery unifSpec) (OracleQuery free)]
 
 /-- The online step of the adapter for the free summand `free`. Queries to `free` are forwarded.
@@ -287,9 +287,9 @@ lemma simulateQ_encodeImpl_combinedHidingExperiment {Puzzle Key Λ : Type} [Deci
 
 section typedWorld
 
-variable [DecidableEq ι]
+variable [DecidableEq spec.Domain]
 
-omit [∀ t, SampleableType (spec.Range t)] [DecidableEq ι] in
+omit [∀ t, SampleableType (spec.Range t)] [DecidableEq spec.Domain] in
 /-- Local coins lifted into the hiding adversary's interface, run through a handler that forwards
 local coins without touching its state, are the local coins themselves. -/
 private lemma run_simulateQ_liftComp_coins {σ α : Type}

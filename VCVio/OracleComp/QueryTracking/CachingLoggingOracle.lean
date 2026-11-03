@@ -29,11 +29,11 @@ open OracleComp OracleSpec
 
 universe u v
 
-variable {ι : Type u} {spec : OracleSpec.{u, u} ι}
+variable {spec : OracleSpec.{u, u}}
 
 namespace QueryImpl
 
-variable {m : Type u → Type v} [DecidableEq ι] {ω : Type u} [Append ω]
+variable {m : Type u → Type v} [DecidableEq spec.Domain] {ω : Type u} [Append ω]
 
 section handlers
 
@@ -84,10 +84,10 @@ end handlers
 The trace overlay does not change the underlying query count, so the `withCaching` bounds
 transfer through `withCachingAux_run_proj_eq` via `isQueryBound_iff_of_map_eq`. -/
 
-variable {α : Type u} {ι' : Type u} {spec' : OracleSpec ι'}
+variable {α : Type u} {spec' : OracleSpec}
 
 private lemma _root_.QueryImpl.withCachingTraceAppend_run_proj_eq
-    {ι₂ : Type u} {spec₂ : OracleSpec ι₂}
+    {spec₂ : OracleSpec}
     (so : QueryImpl spec (OracleComp spec₂))
     (traceFn : (t : spec.Domain) → spec.Range t → ω)
     {α : Type u} (oa : OracleComp spec α) (s : QueryCache spec × ω) :
@@ -113,7 +113,7 @@ theorem isQueryBoundP_run_simulateQ_withCachingTraceAppend
     (so : QueryImpl spec (OracleComp spec'))
     (traceFn : (t : spec.Domain) → spec.Range t → ω)
     {oa : OracleComp spec α}
-    {p : ι → Prop} [DecidablePred p] {q : ι' → Prop} [DecidablePred q] {n : ℕ}
+    {p : spec.Domain → Prop} [DecidablePred p] {q : spec'.Domain → Prop} [DecidablePred q] {n : ℕ}
     (h : OracleComp.IsQueryBoundP oa p n)
     (hstep_p : ∀ t, p t → OracleComp.IsQueryBoundP (so t) q 1)
     (hstep_np : ∀ t, ¬ p t → OracleComp.IsQueryBoundP (so t) q 0)
@@ -127,13 +127,13 @@ theorem isQueryBoundP_run_simulateQ_withCachingTraceAppend
 end QueryImpl
 
 /-- Canonical combined caching + logging oracle over `OracleComp spec`. -/
-def OracleSpec.cachingLoggingOracle [DecidableEq ι] :
+def OracleSpec.cachingLoggingOracle [DecidableEq spec.Domain] :
     QueryImpl spec (StateT (QueryCache spec × QueryLog spec) (OracleComp spec)) :=
   (QueryImpl.ofLift spec (OracleComp spec)).withCachingLogging
 
 namespace cachingLoggingOracle
 
-variable [DecidableEq ι]
+variable [DecidableEq spec.Domain]
 
 @[simp]
 lemma apply_eq (t : spec.Domain) :
@@ -219,8 +219,8 @@ theorem run'_simulateQ_eq {α : Type u}
 The log overlay does not change the underlying query count, so the `cachingOracle` bounds
 transfer through `fst_map_run_simulateQ` via `isQueryBound_iff_of_map_eq`. -/
 
-theorem isTotalQueryBound_run_simulateQ {ι₀ : Type} [DecidableEq ι₀]
-    {spec₀ : OracleSpec.{0, 0} ι₀}
+theorem isTotalQueryBound_run_simulateQ [DecidableEq spec₀.Domain]
+    {spec₀ : OracleSpec.{0, 0}}
     {α : Type} {oa : OracleComp spec₀ α} {n : ℕ}
     (h : OracleComp.IsTotalQueryBound oa n)
     (s : QueryCache spec₀ × QueryLog spec₀) :
@@ -228,18 +228,18 @@ theorem isTotalQueryBound_run_simulateQ {ι₀ : Type} [DecidableEq ι₀]
   (OracleComp.isQueryBound_iff_of_map_eq (fst_map_run_simulateQ oa s) _ _).mpr
     (cachingOracle.isTotalQueryBound_run_simulateQ h s.1)
 
-theorem isQueryBoundP_run_simulateQ {ι₀ : Type} [DecidableEq ι₀]
-    {spec₀ : OracleSpec.{0, 0} ι₀}
-    {α : Type} {oa : OracleComp spec₀ α} {p : ι₀ → Prop} [DecidablePred p] {n : ℕ}
+theorem isQueryBoundP_run_simulateQ [DecidableEq spec₀.Domain]
+    {spec₀ : OracleSpec.{0, 0}}
+    {α : Type} {oa : OracleComp spec₀ α} {p : spec₀.Domain → Prop} [DecidablePred p] {n : ℕ}
     (h : OracleComp.IsQueryBoundP oa p n)
     (s : QueryCache spec₀ × QueryLog spec₀) :
     OracleComp.IsQueryBoundP ((simulateQ spec₀.cachingLoggingOracle oa).run s) p n :=
   (OracleComp.isQueryBoundP_iff_of_map_eq (fst_map_run_simulateQ oa s)).mpr
     (cachingOracle.isQueryBoundP_run_simulateQ h s.1)
 
-theorem isPerIndexQueryBound_run_simulateQ {ι₀ : Type} [DecidableEq ι₀]
-    {spec₀ : OracleSpec.{0, 0} ι₀}
-    {α : Type} {oa : OracleComp spec₀ α} {qb : ι₀ → ℕ}
+theorem isPerIndexQueryBound_run_simulateQ [DecidableEq spec₀.Domain]
+    {spec₀ : OracleSpec.{0, 0}}
+    {α : Type} {oa : OracleComp spec₀ α} {qb : spec₀.Domain → ℕ}
     (h : OracleComp.IsPerIndexQueryBound oa qb)
     (s : QueryCache spec₀ × QueryLog spec₀) :
     OracleComp.IsPerIndexQueryBound ((simulateQ spec₀.cachingLoggingOracle oa).run s) qb :=
@@ -251,10 +251,10 @@ end cachingLoggingOracle
 /-! ## Cache and log coherence -/
 
 namespace OracleSpec.QueryCache
-variable {ι Y : Type}
+variable {spec.Domain Y : Type}
 /-- Appending a response already present in the cache preserves log consistency. -/
-theorem log_consistent_append (cache : (ι →ₒ Y).QueryCache) (log : (ι →ₒ Y).QueryLog)
-    (t : ι) (value : Y) (hlookup : cache t = some value)
+theorem log_consistent_append (cache : (spec.Domain →ₒ Y).QueryCache) (log : (spec.Domain →ₒ Y).QueryLog)
+    (t : spec.Domain) (value : Y) (hlookup : cache t = some value)
     (hlog : ∀ entry ∈ log, cache entry.1 = some entry.2) :
     ∀ entry ∈ log ++ [⟨t, value⟩], cache entry.1 = some entry.2 := by
   intro entry hentry
@@ -264,8 +264,8 @@ theorem log_consistent_append (cache : (ι →ₒ Y).QueryCache) (log : (ι →�
     exact hlookup
 
 /-- Caching a fresh response and appending it preserves log consistency. -/
-theorem log_consistent_cacheQuery_append [DecidableEq ι] (cache : (ι →ₒ Y).QueryCache)
-    (log : (ι →ₒ Y).QueryLog) (t : ι) (value : Y) (hnone : cache t = none)
+theorem log_consistent_cacheQuery_append [DecidableEq spec.Domain] (cache : (spec.Domain →ₒ Y).QueryCache)
+    (log : (spec.Domain →ₒ Y).QueryLog) (t : spec.Domain) (value : Y) (hnone : cache t = none)
     (hlog : ∀ entry ∈ log, cache entry.1 = some entry.2) :
     ∀ entry ∈ log ++ [⟨t, value⟩], (cache.cacheQuery t value) entry.1 = some entry.2 := by
   apply log_consistent_append _ _ t value (cacheQuery_self ..)
@@ -273,8 +273,8 @@ theorem log_consistent_cacheQuery_append [DecidableEq ι] (cache : (ι →ₒ Y)
   exact le_cacheQuery cache hnone (hlog entry hentry)
 
 /-- Appending entries preserves coverage of every cached response by the log. -/
-theorem cache_covered_append (cache : (ι →ₒ Y).QueryCache)
-    (log extra : (ι →ₒ Y).QueryLog)
+theorem cache_covered_append (cache : (spec.Domain →ₒ Y).QueryCache)
+    (log extra : (spec.Domain →ₒ Y).QueryLog)
     (hlog : ∀ input output, cache input = some output →
       ∃ entry ∈ log, entry.1 = input ∧ entry.2 = output) :
     ∀ input output, cache input = some output →
@@ -284,8 +284,8 @@ theorem cache_covered_append (cache : (ι →ₒ Y).QueryCache)
   exact ⟨entry, List.mem_append_left _ hentry, hi, ho⟩
 
 /-- The extended log covers every response in an updated cache. -/
-theorem cache_covered_cacheQuery_append [DecidableEq ι] (cache : (ι →ₒ Y).QueryCache)
-    (log : (ι →ₒ Y).QueryLog) (t : ι) (value : Y)
+theorem cache_covered_cacheQuery_append [DecidableEq spec.Domain] (cache : (spec.Domain →ₒ Y).QueryCache)
+    (log : (spec.Domain →ₒ Y).QueryLog) (t : spec.Domain) (value : Y)
     (hlog : ∀ input output, cache input = some output →
       ∃ entry ∈ log, entry.1 = input ∧ entry.2 = output) :
     ∀ input output, (cache.cacheQuery t value) input = some output →
@@ -300,10 +300,10 @@ theorem cache_covered_cacheQuery_append [DecidableEq ι] (cache : (ι →ₒ Y).
     exact cache_covered_append cache log _ hlog input output hcached
 
 /-- Inserting one response increases a finite cache-domain bound by at most one. -/
-theorem domain_bound_cacheQuery [DecidableEq ι] (cache : (ι →ₒ Y).QueryCache) (t : ι) (value : Y)
-    (bound : ℕ) (hbound : ∃ keys : Finset ι, keys.card ≤ bound ∧
+theorem domain_bound_cacheQuery [DecidableEq spec.Domain] (cache : (spec.Domain →ₒ Y).QueryCache) (t : spec.Domain) (value : Y)
+    (bound : ℕ) (hbound : ∃ keys : Finset spec.Domain, keys.card ≤ bound ∧
       ∀ input, cache input ≠ none → input ∈ keys) :
-    ∃ keys : Finset ι, keys.card ≤ bound + 1 ∧
+    ∃ keys : Finset spec.Domain, keys.card ≤ bound + 1 ∧
       ∀ input, (cache.cacheQuery t value) input ≠ none → input ∈ keys := by
   obtain ⟨keys, hcard, hmem⟩ := hbound
   refine ⟨insert t keys, (Finset.card_insert_le t keys).trans (by omega), ?_⟩

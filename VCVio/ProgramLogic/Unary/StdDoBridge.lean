@@ -28,7 +28,7 @@ universe u
 
 namespace OracleComp.ProgramLogic.StdDo
 
-variable {ι : Type u} {spec : OracleSpec ι}
+variable {spec : OracleSpec}
 variable {α β : Type}
 
 /-- Structural correctness through the core qualitative interpretation. -/
@@ -94,7 +94,7 @@ handler proof needs to leave `mvcgen` (e.g. to perform a structural induction on
 
 section StatefulBridges
 
-variable {ι : Type} {spec : OracleSpec.{0, 0} ι}
+variable {spec : OracleSpec.{0, 0}}
 
 /-- Support characterization of `Std.Do.Triple` on `StateT σ (OracleComp spec)`.
 
@@ -145,7 +145,7 @@ of `mx.run` satisfies `Q.1 a (s * w)` for every starting log `s` satisfying
 `P`. As in the `Append`-based variant, the starting log `s` threads through
 the WP interpretation (`s * _`), not through `mx`. This is the dual of the
 `Append`-based characterization and is what `countingOracle` / `costOracle`
-proofs use. Counting selects the monoid on `Multiplicative (QueryCount ι)`
+proofs use. Counting selects the monoid on `Multiplicative (QueryCount spec.Domain)`
 through `AddWriterT`, so accumulation is pointwise addition. -/
 theorem triple_writerT_iff_forall_support_monoid {ω α : Type} [Monoid ω]
     (mx : WriterT ω (OracleComp spec) α)

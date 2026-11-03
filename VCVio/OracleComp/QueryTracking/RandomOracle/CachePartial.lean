@@ -44,7 +44,7 @@ universe u v
 
 namespace OracleSpec.QueryCache
 
-variable {ι : Type u} {spec : OracleSpec ι} {α : Type u}
+variable {spec : OracleSpec} {α : Type u}
 
 /-- A cache read as a partial oracle: a cached query is answered from the cache and an uncached
 one fails. -/
@@ -84,7 +84,7 @@ end OracleSpec.QueryCache
 
 namespace QueryImpl
 
-variable {ι : Type u} [DecidableEq ι] {spec : OracleSpec ι} {m : Type u → Type v} [Monad m]
+variable [DecidableEq spec.Domain] {spec : OracleSpec} {m : Type u → Type v} [Monad m]
   [LawfulMonad m] [MonadAttach m] [ExactMonadAttach m] {α : Type u}
 
 /-- The final cache of a cached run extends the initial one. -/
@@ -124,7 +124,7 @@ namespace OracleComp
 /-- A run of a stateful handler `so` replays on every cache of a family `A` admissible at its
 final state, when admissibility is closed backwards along each step and every cache admissible
 after a step answers that step's query with its output. -/
-theorem simulateQ_toPartialImpl_of_mem_support_run_simulateQ {ι σ : Type} {spec : OracleSpec ι}
+theorem simulateQ_toPartialImpl_of_mem_support_run_simulateQ {spec.Domain σ : Type} {spec : OracleSpec}
     (so : QueryImpl spec (StateT σ ProbComp)) (A : σ → Set spec.QueryCache)
     (hstep : ∀ t s z, z ∈ support ((so t).run s) → ∀ c ∈ A z.2, c ∈ A s ∧ c t = some z.1)
     {α : Type} (oa : OracleComp spec α) {s : σ} {z : α × σ}
@@ -143,7 +143,7 @@ theorem simulateQ_toPartialImpl_of_mem_support_run_simulateQ {ι σ : Type} {spe
       (hstep t s z₁ h₁ c (hA hc)).2]
     exact ih z₁.1 h₂
 
-variable {ι : Type} [DecidableEq ι] {spec : OracleSpec ι} {α : Type}
+variable [DecidableEq spec.Domain] {spec : OracleSpec} {α : Type}
 
 /-- Running a computation that draws private randomness through `unifFwdImpl` and answers `spec`
 through a cached oracle only extends the cache. -/
@@ -164,7 +164,7 @@ variable [∀ t, SampleableType (spec.Range t)]
 
 /-- A step of the lazy random oracle at a query satisfying `P` keeps every cached point
 satisfying `P`. -/
-theorem forall_isSome_of_mem_support_run_romImpl {P : ι → Prop}
+theorem forall_isSome_of_mem_support_run_romImpl {P : spec.Domain → Prop}
     {t : (unifSpec + spec).Domain} (ht : Sum.elim (fun _ => True) P t) {c : spec.QueryCache}
     (hc : ∀ q, (c q).isSome → P q) {z : (unifSpec + spec).Range t × spec.QueryCache}
     (hz : z ∈ support ((spec.romImpl t).run c)) : ∀ q, (z.2 q).isSome → P q := by
@@ -177,7 +177,7 @@ theorem forall_isSome_of_mem_support_run_romImpl {P : ι → Prop}
 
 /-- **A run of the lazy random oracle caches only what the program queries.** If every query of
 `oa` satisfies `P`, a run of `oa` from a cache whose points satisfy `P` ends in such a cache. -/
-theorem forall_isSome_of_mem_support_run_simulateQ_romImpl {P : ι → Prop}
+theorem forall_isSome_of_mem_support_run_simulateQ_romImpl {P : spec.Domain → Prop}
     {oa : OracleComp (unifSpec + spec) α} (h : AllQueriesSatisfy oa (Sum.elim (fun _ => True) P))
     {c : spec.QueryCache} (hc : ∀ q, (c q).isSome → P q) {z : α × spec.QueryCache}
     (hz : z ∈ support ((simulateQ spec.romImpl oa).run c)) : ∀ q, (z.2 q).isSome → P q :=
@@ -188,8 +188,8 @@ end Provenance
 
 section Sum
 
-variable {ι₁ ι₂ : Type} [DecidableEq ι₁] [DecidableEq ι₂] {spec₁ : OracleSpec ι₁}
-  {spec₂ : OracleSpec ι₂} [∀ t, SampleableType ((spec₁ + spec₂).Range t)]
+variable [DecidableEq spec₁.Domain] [DecidableEq spec₂.Domain] {spec₁ : OracleSpec}
+  {spec₂ : OracleSpec} [∀ t, SampleableType ((spec₁ + spec₂).Range t)]
 
 /-- The final cache of a random-oracle run over `spec₁ + spec₂`, restricted to `spec₁`, replays a
 `spec₁`-only program issued through its query capability. -/
@@ -221,7 +221,7 @@ theorem simulateQ_toPartialImpl_snd_fst_of_mem_support_run_romImpl (oa : OracleC
 /-- A `spec₁`-only program that makes no query satisfying `K`, issued through its query capability
 and run in the random oracle model over `spec₁ + spec₂` from a cache with no `spec₁` entry at a
 query satisfying `K`, ends with a cache that has no such entry either. -/
-theorem snd_apply_inl_eq_none_of_mem_support_run_romImpl {K : ι₁ → Prop}
+theorem snd_apply_inl_eq_none_of_mem_support_run_romImpl {K : spec₁.Domain → Prop}
     (oa : OracleComp spec₁ α) (hoa : oa.AllQueriesSatisfy fun t => ¬K t)
     {cache : (spec₁ + spec₂).QueryCache} (hc : ∀ t, K t → cache (.inl t) = none)
     {z : α × (spec₁ + spec₂).QueryCache}
@@ -245,7 +245,7 @@ theorem snd_apply_inl_eq_none_of_mem_support_run_romImpl {K : ι₁ → Prop}
       (uniformSampleImpl (spec := spec₁ + spec₂)) h₁
     refine ih u (hoa.2 u) (fun t' ht' => ?_) h₂
     simp only at hc₁
-    have hne : (.inl t' : ι₁ ⊕ ι₂) ≠ .inl t := fun h => hoa.1 (Sum.inl.inj h ▸ ht')
+    have hne : (.inl t' : spec₁.Domain ⊕ spec₂.Domain) ≠ .inl t := fun h => hoa.1 (Sum.inl.inj h ▸ ht')
     rw [hc₁, QueryCache.cacheQuery_of_ne _ _ hne, hc t' ht']
 
 end Sum

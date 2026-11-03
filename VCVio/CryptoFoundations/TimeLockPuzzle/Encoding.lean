@@ -59,7 +59,7 @@ namespace OracleComp.RandomOracleEncoding
 
 open TimeLockPuzzle
 
-variable {ι D M : Type} {spec : OracleSpec.{0, 0} ι} [SampleableType M]
+variable {spec.Domain D M : Type} {spec : OracleSpec.{0, 0}} [SampleableType M]
   [∀ t, SampleableType (spec.Range t)] (E : RandomOracleEncoding spec D M)
 
 section adapter
@@ -127,7 +127,7 @@ lemma simulateQ_encodeImpl_combinedExperiment {Puzzle Key : Type} [DecidableEq K
 
 section typedWorld
 
-variable [DecidableEq ι] [DecidableEq D]
+variable [DecidableEq spec.Domain] [DecidableEq D]
 
 /-- In the typed world, the combined experiment wins with the probability of the typed delay
 experiment against the adapted adversary. -/

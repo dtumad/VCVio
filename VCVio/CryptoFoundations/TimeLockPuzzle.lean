@@ -75,7 +75,7 @@ open OracleSpec OracleComp ENNReal
 
 /-- A time-lock puzzle with puzzles `Puzzle` and keys `Key` over the oracles `spec`. Both
 algorithms sample local coins from `unifSpec` and submit rounds of parallel queries to `spec`. -/
-structure TimeLockPuzzle {ι : Type} (spec : OracleSpec.{0, 0} ι) (Puzzle Key : Type) where
+structure TimeLockPuzzle (spec : OracleSpec.{0, 0}) (Puzzle Key : Type) where
   /-- The generator: a puzzle together with its key. -/
   gen : OracleComp (unifSpec + spec.batch) (Puzzle × Key)
   /-- The solver: the key of a puzzle, or `none` for a malformed puzzle. -/
@@ -83,7 +83,7 @@ structure TimeLockPuzzle {ι : Type} (spec : OracleSpec.{0, 0} ι) (Puzzle Key :
 
 namespace TimeLockPuzzle
 
-variable {ι : Type} {spec : OracleSpec.{0, 0} ι} {Puzzle Key : Type}
+variable {spec : OracleSpec.{0, 0}} {Puzzle Key : Type}
 
 /-! ## Correctness -/
 
@@ -101,7 +101,7 @@ def correctnessExperiment [DecidableEq Key] (tlp : TimeLockPuzzle spec Puzzle Ke
 /-- Perfect correctness in the random oracle model: when the generator and the solver run against
 one lazily sampled random oracle, the solver returns the generated key with probability one. -/
 @[expose]
-def Correct [DecidableEq ι] [∀ t, SampleableType (spec.Range t)] [DecidableEq Key]
+def Correct [DecidableEq spec.Domain] [∀ t, SampleableType (spec.Range t)] [DecidableEq Key]
     (tlp : TimeLockPuzzle spec Puzzle Key) : Prop :=
   (ProbCompRuntime.rom spec).evalDist tlp.correctnessExperiment {true} = 1
 
@@ -126,7 +126,7 @@ puzzle, submits rounds of parallel queries to `spec`, and outputs a value of `Ou
 rounds, the online phase queries the oracles `free`, which cost no round: local coins `unifSpec`
 in the delay game, and local coins together with the challenger's encryption oracle in a hiding
 game. -/
-structure TwoPhaseAdversary {τ : Type} (free : OracleSpec.{0, 0} τ) (spec : OracleSpec.{0, 0} ι)
+structure TwoPhaseAdversary (free : OracleSpec.{0, 0}) (spec : OracleSpec.{0, 0})
     (Puzzle Out : Type) where
   /-- The state passed from the preprocessing phase to the online phase. -/
   State : Type
@@ -139,7 +139,7 @@ structure TwoPhaseAdversary {τ : Type} (free : OracleSpec.{0, 0} τ) (spec : Or
 at most `b.1` rounds holding at most `b.2` points on every state and puzzle. Local coins and the
 oracles `free` cost nothing. -/
 @[expose]
-def TwoPhaseAdversary.IsQueryBound {τ : Type} {free : OracleSpec.{0, 0} τ} {Out : Type}
+def TwoPhaseAdversary.IsQueryBound {free : OracleSpec.{0, 0}} {Out : Type}
     (adv : TwoPhaseAdversary free spec Puzzle Out) (Q : ℕ) (b : ℕ × ℕ) : Prop :=
   IsPreprocessingQueryBound adv.preprocess Q ∧
     ∀ σ puzzle, IsOnlineQueryBound (adv.online σ puzzle) b
@@ -147,7 +147,7 @@ def TwoPhaseAdversary.IsQueryBound {τ : Type} {free : OracleSpec.{0, 0} τ} {Ou
 /-- The adversary whose online phase applies `f` to the output of `adv`, with the same state,
 preprocessing phase and rounds. -/
 @[expose]
-def TwoPhaseAdversary.mapOutput {τ : Type} {free : OracleSpec.{0, 0} τ} {Out Out' : Type}
+def TwoPhaseAdversary.mapOutput {free : OracleSpec.{0, 0}} {Out Out' : Type}
     (f : Out → Out') (adv : TwoPhaseAdversary free spec Puzzle Out) :
     TwoPhaseAdversary free spec Puzzle Out' where
   State := adv.State
@@ -155,14 +155,14 @@ def TwoPhaseAdversary.mapOutput {τ : Type} {free : OracleSpec.{0, 0} τ} {Out O
   online σ puzzle := f <$> adv.online σ puzzle
 
 /-- Mapping the output keeps the preprocessing and online budgets. -/
-theorem TwoPhaseAdversary.isQueryBound_mapOutput {τ : Type} {free : OracleSpec.{0, 0} τ}
+theorem TwoPhaseAdversary.isQueryBound_mapOutput {free : OracleSpec.{0, 0}}
     {Out Out' : Type} (f : Out → Out') {adv : TwoPhaseAdversary free spec Puzzle Out} {Q : ℕ}
     {b : ℕ × ℕ} (h : adv.IsQueryBound Q b) : (adv.mapOutput f).IsQueryBound Q b :=
   ⟨h.1, fun σ puzzle => (isQueryBound_map_iff _ _ _ _ _).2 (h.2 σ puzzle)⟩
 
 /-- An adversary in the delay experiment: a two-phase adversary whose online phase queries only
 local coins beside its rounds, and outputs a key. -/
-abbrev Adversary (spec : OracleSpec.{0, 0} ι) (Puzzle Key : Type) : Type 1 :=
+abbrev Adversary (spec : OracleSpec.{0, 0}) (Puzzle Key : Type) : Type 1 :=
   TwoPhaseAdversary unifSpec spec Puzzle Key
 
 /-- The delay experiment: run the preprocessing phase, generate a puzzle with its key, run the
@@ -207,14 +207,14 @@ theorem guessExperiment_mapOutput {Out Out' : Type} (tlp : TimeLockPuzzle spec P
 
 /-- The success probability of `adv` in the delay experiment against one lazily sampled random
 oracle, starting from the empty cache. -/
-noncomputable def delayAdvantage [DecidableEq ι] [∀ t, SampleableType (spec.Range t)]
+noncomputable def delayAdvantage [DecidableEq spec.Domain] [∀ t, SampleableType (spec.Range t)]
     [DecidableEq Key] (tlp : TimeLockPuzzle spec Puzzle Key) (adv : Adversary spec Puzzle Key) :
     ℝ≥0∞ :=
   (ProbCompRuntime.rom spec).evalDist (tlp.delayExperiment adv) {true}
 
 /-- The delay advantage is the probability that the delay experiment returns `true` against one
 lazily sampled random oracle. -/
-theorem delayAdvantage_eq [DecidableEq ι] [∀ t, SampleableType (spec.Range t)]
+theorem delayAdvantage_eq [DecidableEq spec.Domain] [∀ t, SampleableType (spec.Range t)]
     [DecidableEq Key] (tlp : TimeLockPuzzle spec Puzzle Key) (adv : Adversary spec Puzzle Key) :
     delayAdvantage tlp adv =
       (ProbCompRuntime.rom spec).evalDist (tlp.delayExperiment adv) {true} := by
@@ -222,7 +222,7 @@ theorem delayAdvantage_eq [DecidableEq ι] [∀ t, SampleableType (spec.Range t)
 
 /-- The delay advantage is the probability, in the lazy random oracle model from the empty cache,
 that the online phase in `guessExperiment` outputs the key. -/
-theorem delayAdvantage_eq_prEvent_guessExperiment [DecidableEq ι]
+theorem delayAdvantage_eq_prEvent_guessExperiment [DecidableEq spec.Domain]
     [∀ t, SampleableType (spec.Range t)] [DecidableEq Key] (tlp : TimeLockPuzzle spec Puzzle Key)
     (adv : Adversary spec Puzzle Key) :
     delayAdvantage tlp adv =
@@ -237,7 +237,7 @@ of `b.1` rounds and `b.2` points wins the delay experiment with probability at m
 puzzle whose honest solver derives the key in round `T`, the meaningful budgets are
 `b = (T - 1, q)`. -/
 @[expose]
-def DelaySecure [DecidableEq ι] [∀ t, SampleableType (spec.Range t)] [DecidableEq Key]
+def DelaySecure [DecidableEq spec.Domain] [∀ t, SampleableType (spec.Range t)] [DecidableEq Key]
     (tlp : TimeLockPuzzle spec Puzzle Key) (Q : ℕ) (b : ℕ × ℕ) (ε : ℝ≥0∞) : Prop :=
   ∀ adv : Adversary spec Puzzle Key, adv.IsQueryBound Q b → delayAdvantage tlp adv ≤ ε
 

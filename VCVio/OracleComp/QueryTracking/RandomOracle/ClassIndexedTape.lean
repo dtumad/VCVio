@@ -96,7 +96,7 @@ open scoped ENNReal
 
 namespace AnswerTape
 
-variable {ι J : Type} {spec : OracleSpec.{0, 0} ι} [DecidableEq ι]
+variable {spec.Domain J : Type} {spec : OracleSpec.{0, 0}} [DecidableEq spec.Domain]
   [Fintype J] [DecidableEq J] {R : J → Type} [∀ j, SampleableType (R j)]
 
 /-! ## The bundled tape family -/
@@ -257,7 +257,7 @@ private theorem evalDist_uniformSample_bind_cast {A B γ : Type} [hA : Sampleabl
   rw [evalDist_bind_of_discrete, evalDist_bind_of_discrete, hu]
   simp
 
-omit [DecidableEq ι] [Fintype J] [DecidableEq J] [∀ j, SampleableType (R j)] in
+omit [DecidableEq spec.Domain] [Fintype J] [DecidableEq J] [∀ j, SampleableType (R j)] in
 private theorem length_of_mem_support_tapeList (A : Type) [SampleableType A] (n : ℕ)
     (l : List A) (hl : l ∈ support (tapeList A n)) : l.length = n := by
   rw [tapeList_eq_map_answerTape A n, support_map] at hl
@@ -292,7 +292,7 @@ theorem length_of_mem_support_tapeFamily (m : J → ℕ) {L : (j : J) → List (
 
 /-! ## Marginal and joint laws -/
 
-omit [DecidableEq ι] in
+omit [DecidableEq spec.Domain] in
 /-- **The marginal law of one class's tape.** Reading off class `j` from the bundled family is
 drawing that class's tape on its own. -/
 theorem evalDist_tapeFamily_bind_eval {β : Type} [MeasurableSpace β] (j : J) :
@@ -325,7 +325,7 @@ theorem evalDist_tapeFamily_bind_eval {β : Type} [MeasurableSpace β] (j : J) :
       filter_upwards [] with u
       exact ih (Function.update m j n) (by simp) (fun l => f (u :: l))
 
-omit [DecidableEq ι] in
+omit [DecidableEq spec.Domain] in
 /-- **The joint law of two distinct classes' tapes.** They are independent, so reading off both
 is drawing the two tapes one after the other. -/
 theorem evalDist_tapeFamily_bind_eval₂ {β : Type} [MeasurableSpace β] {j j' : J} (hne : j ≠ j') :
@@ -362,7 +362,7 @@ theorem evalDist_tapeFamily_bind_eval₂ {β : Type} [MeasurableSpace β] {j j' 
       have := ih (Function.update m j n) (by simp) (fun l l' => f (u :: l) l')
       rwa [Function.update_of_ne (Ne.symm hne)] at this
 
-omit [DecidableEq ι] in
+omit [DecidableEq spec.Domain] in
 /-- **An event of one class's tape is an event of that class's `answerTape`.** This is the
 shape the product bounds of `IndepProductEvents.lean` are stated for. -/
 theorem evalDist_tapeFamily_setOf_eq [∀ j, MeasurableSpace (R j)]
@@ -383,13 +383,13 @@ theorem evalDist_tapeFamily_setOf_eq [∀ j, MeasurableSpace (R j)]
     Measure.map_apply (f := fun v : Fin (m j) → R j => List.ofFn v)
       Measurable.of_discrete MeasurableSet.of_discrete, Set.preimage] using h2
 
-omit [DecidableEq ι] [Fintype J] [DecidableEq J] [∀ j, SampleableType (R j)] in
+omit [DecidableEq spec.Domain] [Fintype J] [DecidableEq J] [∀ j, SampleableType (R j)] in
 /-- A tuple transported across an equality of its entry type, read as a list. -/
 private theorem cast_list_ofFn {A B : Type} (h : A = B) {n : ℕ} (v : Fin n → A) :
     cast (congrArg List h) (List.ofFn v) = List.ofFn fun i => cast h (v i) := by
   subst h; simp
 
-omit [DecidableEq ι] [Fintype J] [DecidableEq J] [∀ j, SampleableType (R j)] in
+omit [DecidableEq spec.Domain] [Fintype J] [DecidableEq J] [∀ j, SampleableType (R j)] in
 /-- The law of a tape does not depend on which uniform sampler its entry type carries. -/
 private theorem evalDist_answerTape_congr_instance (A : Type) (h₁ h₂ : SampleableType A)
     (n : ℕ) [MeasurableSpace A] [MeasurableSingletonClass A] :
@@ -400,7 +400,7 @@ private theorem evalDist_answerTape_congr_instance (A : Type) (h₁ h₂ : Sampl
   rw [@SampleableType.evalDist_uniformSample A h₁ _ _,
     @SampleableType.evalDist_uniformSample A h₂ _ _]
 
-omit [DecidableEq ι] [Fintype J] [DecidableEq J] [∀ j, SampleableType (R j)] in
+omit [DecidableEq spec.Domain] [Fintype J] [DecidableEq J] [∀ j, SampleableType (R j)] in
 /-- A tape drawn at one entry type, transported across an equality of entry types, before a
 common continuation. -/
 private theorem evalDist_answerTape_bind_cast {A B γ : Type} [h₁ : SampleableType A]
@@ -414,7 +414,7 @@ private theorem evalDist_answerTape_bind_cast {A B γ : Type} [h₁ : Sampleable
   rw [evalDist_bind_of_discrete, evalDist_bind_of_discrete,
     evalDist_answerTape_congr_instance A h₁ h₂ n]
 
-omit [DecidableEq ι] in
+omit [DecidableEq spec.Domain] in
 /-- **An event of two distinct classes' tapes is an event of a single `answerTape` over the
 summed index.** The tape of class `j` occupies the first `m j` coordinates and the tape of
 class `j'` the last `m j'`, so a caller reaches them through `Fin.castAdd` and `Fin.natAdd` —
@@ -486,7 +486,7 @@ theorem evalDist_tapeFamily_setOf_eq₂ [∀ j, MeasurableSpace (R j)]
 section Duplicated
 
 /-- Collapsing the duplication: either copy of a query is the same query of `spec`. -/
-def dupCollapse (spec : OracleSpec.{0, 0} ι) : QueryImpl (spec + spec) (OracleComp spec) :=
+def dupCollapse (spec : OracleSpec.{0, 0}) : QueryImpl (spec + spec) (OracleComp spec) :=
   QueryImpl.id' spec + QueryImpl.id' spec
 
 variable [∀ t : spec.Domain, SampleableType (spec.Range t)]

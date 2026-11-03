@@ -191,7 +191,7 @@ the binder collapsing under `Prod.fst`. The log carrier uses the append-based `W
 log of the GPV signing oracle, whose `WriterT` monad instance is the append-based one (there is
 deliberately no `Monoid (QueryLog spec)` instance). -/
 theorem fst_map_writerT_run_simulateQ_noLog
-    {ι ιB : Type} {spec : OracleSpec ι} {specBase : OracleSpec ιB}
+    {spec.Domain ιB : Type} {spec : OracleSpec} {specBase : OracleSpec ιB}
     {ω : Type} [EmptyCollection ω] [Append ω] [LawfulAppend ω] {α : Type}
     (so : QueryImpl spec (WriterT ω (OracleComp specBase)))
     (soNoLog : QueryImpl spec (OracleComp specBase))

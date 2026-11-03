@@ -83,8 +83,7 @@ private lemma ENNReal_tsum_iSup_le {ι : Type*} {J : ι → Type*}
   refine iSup_le fun s => le_trans (Finset_sum_iSup_le_iSup_sum g s) ?_
   exact iSup_mono fun f => ENNReal.sum_le_tsum _
 
-variable {ι₁ : Type u} {ι₂ : Type u}
-variable {spec₁ : OracleSpec.{u, 0} ι₁} {spec₂ : OracleSpec.{u, 0} ι₂}
+variable variable {spec₁ : OracleSpec.{u, 0}} {spec₂ : OracleSpec.{u, 0}}
 variable {α β γ δ : Type}
 
 section measureSpec

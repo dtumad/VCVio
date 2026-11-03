@@ -168,7 +168,7 @@ variable {spec : QuantumOracleSpec.{u₁, v₁}} (R : QuantumRuntime spec) {B : 
 
 /-- A classical algorithm run from inside an experiment, sequenced: the program of `oa >>= f` is
 the program of `oa` followed by the programs of `f`. -/
-theorem _root_.OracleComp.toQuantumAt_bind {ι : Type u} {ospec : OracleSpec.{u, v} ι}
+theorem _root_.OracleComp.toQuantumAt_bind {ospec : OracleSpec.{u, v}}
     {α β : Type v} (q : QueryImpl ospec (QComp spec B B)) (oa : OracleComp ospec α)
     (f : α → OracleComp ospec β) :
     (oa >>= f).toQuantumAt q = (oa.toQuantumAt q).bind fun a ↦ (f a).toQuantumAt q := by

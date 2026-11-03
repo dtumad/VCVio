@@ -69,7 +69,7 @@ attribute [local implicit_reducible] FreeMonoid PFunctor.Idx
 
 namespace OracleComp
 
-variable {ι : Type} {spec : OracleSpec ι} {α : Type}
+variable {spec : OracleSpec} {α : Type}
 
 /-- Run `main` with query logging. This is the first-run object for replay forks. -/
 @[reducible]
@@ -144,7 +144,7 @@ original oracle computation. -/
 
 /-- The selected entry of an occurrence completion's erased trace is exactly
 its focused answer. -/
-lemma getQueryValue?_completion_path_eq_answer [DecidableEq ι] {main : OracleComp spec α} {i : ι}
+lemma getQueryValue?_completion_path_eq_answer [DecidableEq spec.Domain] {main : OracleComp spec α} {i : spec.Domain}
     {n : Nat} (occurrence : PFunctor.FreeM.Cursor.Occurrence i main n)
     (completion : occurrence.Completion) :
     QueryLog.getQueryValue? (PFunctor.FreeM.Path.trace main completion.path) i n =
@@ -159,7 +159,7 @@ of `main` outputs `x` and the recorded log is `log`, every selected fork index
 `s = cf x` actually corresponds to an `i`-query in `log` (i.e. the `s`-th
 `i`-query exists in the log). In Fiat--Shamir applications `cf` extracts the
 index of a recorded query, so this property holds by construction. -/
-def CfReachable [DecidableEq ι] (main : OracleComp spec α) (qb : ι → ℕ) (i : ι)
+def CfReachable [DecidableEq spec.Domain] (main : OracleComp spec α) (qb : spec.Domain → ℕ) (i : spec.Domain)
     (cf : α → Option (Fin (qb i + 1))) :
     Prop :=
   ∀ {x : α} {log : QueryLog spec},
@@ -169,15 +169,15 @@ def CfReachable [DecidableEq ι] (main : OracleComp spec α) (qb : ι → ℕ) (
 
 /-- Intrinsic form of selector reachability: every selected ordinal is an
 actual occurrence on the typed execution path. -/
-def PathCfReachable [DecidableEq ι] (main : OracleComp spec α) (qb : ι → ℕ) (i : ι)
+def PathCfReachable [DecidableEq spec.Domain] (main : OracleComp spec α) (qb : spec.Domain → ℕ) (i : spec.Domain)
     (cf : α → Option (Fin (qb i + 1))) : Prop :=
   ∀ (path : PFunctor.FreeM.Path main) (s : Fin (qb i + 1)),
     cf (PFunctor.FreeM.output main path) = some s →
       (PFunctor.FreeM.Cursor.locateAt? (P := spec.toPFunctor) i main path s).isSome
 
 /-- Transcript reachability implies the canonical path-level condition. -/
-theorem CfReachable.toPathCfReachable [DecidableEq ι] {main : OracleComp spec α} {qb : ι → ℕ}
-    {i : ι} {cf : α → Option (Fin (qb i + 1))} (hreach : CfReachable main qb i cf) :
+theorem CfReachable.toPathCfReachable [DecidableEq spec.Domain] {main : OracleComp spec α} {qb : spec.Domain → ℕ}
+    {i : spec.Domain} {cf : α → Option (Fin (qb i + 1))} (hreach : CfReachable main qb i cf) :
     PathCfReachable main qb i cf := by
   intro path s hcf
   rw [PFunctor.FreeM.Cursor.locateAt?_isSome_iff_lt_occurrences,
@@ -189,15 +189,15 @@ theorem CfReachable.toPathCfReachable [DecidableEq ι] {main : OracleComp spec �
 
 /-- Two independent completions of occurrence `s`, represented entirely by
 PolyFun's typed context machinery. -/
-def contextForkView [DecidableEq ι] (main : OracleComp spec α) (i : ι) (s : Nat) :
+def contextForkView [DecidableEq spec.Domain] (main : OracleComp spec α) (i : spec.Domain) (s : Nat) :
     OracleComp spec (Option (PFunctor.FreeM.Cursor.ForkView i main s)) :=
   PFunctor.FreeM.Cursor.locateAndForkAt (P := spec.toPFunctor) i main s
 
 /-- The success classifier shared by the fixed-index and dynamically selected context forks. On a
 fork view at occurrence `s` it returns the outputs of the two completions when their focused
 answers differ and both outputs select `s` under `cf`, and `none` otherwise. -/
-def classifyForkView [∀ t, DecidableEq (spec.Range t)] (main : OracleComp spec α) (qb : ι → ℕ)
-    (i : ι) (cf : α → Option (Fin (qb i + 1))) (s : Fin (qb i + 1))
+def classifyForkView [∀ t, DecidableEq (spec.Range t)] (main : OracleComp spec α) (qb : spec.Domain → ℕ)
+    (i : spec.Domain) (cf : α → Option (Fin (qb i + 1))) (s : Fin (qb i + 1))
     (view : PFunctor.FreeM.Cursor.ForkView i main s) : Option (α × α) :=
   let x₁ := PFunctor.FreeM.output main view.firstPath
   let x₂ := PFunctor.FreeM.output main view.secondPath
@@ -206,7 +206,7 @@ def classifyForkView [∀ t, DecidableEq (spec.Range t)] (main : OracleComp spec
   else none
 
 @[simp] private theorem classifyForkView_isSome [∀ t, DecidableEq (spec.Range t)]
-    (main : OracleComp spec α) (qb : ι → ℕ) (i : ι) (cf : α → Option (Fin (qb i + 1)))
+    (main : OracleComp spec α) (qb : spec.Domain → ℕ) (i : spec.Domain) (cf : α → Option (Fin (qb i + 1)))
     (s : Fin (qb i + 1)) (view : PFunctor.FreeM.Cursor.ForkView i main s) :
     (classifyForkView main qb i cf s view).isSome ↔
       view.firstAnswer ≠ view.secondAnswer ∧
@@ -215,7 +215,7 @@ def classifyForkView [∀ t, DecidableEq (spec.Range t)] (main : OracleComp spec
   grind [classifyForkView]
 
 private theorem classifyForkView_component_iff [∀ t, DecidableEq (spec.Range t)]
-    (main : OracleComp spec α) (qb : ι → ℕ) (i : ι) (cf : α → Option (Fin (qb i + 1)))
+    (main : OracleComp spec α) (qb : spec.Domain → ℕ) (i : spec.Domain) (cf : α → Option (Fin (qb i + 1)))
     (s : Fin (qb i + 1)) (view : PFunctor.FreeM.Cursor.ForkView i main s) :
     (classifyForkView main qb i cf s view).map (cf ∘ Prod.fst) = some (some s) ↔
       (classifyForkView main qb i cf s view).isSome := by
@@ -224,21 +224,21 @@ private theorem classifyForkView_component_iff [∀ t, DecidableEq (spec.Range t
 /-- Semantic result of a dynamically selected fork.  The selecting ordinal,
 shared occurrence context, and both completions remain available to
 reduction-facing proofs. -/
-abbrev ContextForkWitness (main : OracleComp spec α) (qb : ι → ℕ) (i : ι) :=
+abbrev ContextForkWitness (main : OracleComp spec α) (qb : spec.Domain → ℕ) (i : spec.Domain) :=
   PFunctor.FreeM.Cursor.SelectedForkView i main (Fin (qb i + 1)) Fin.val
 
 /-- Package a fork view at the selected ordinal `s` as a `ContextForkWitness` when
 `classifyForkView` accepts it, that is, when the two focused answers differ and both outputs
 select `s` under `cf`; otherwise return `none`. -/
 def acceptContextForkWitness [∀ t, DecidableEq (spec.Range t)] (main : OracleComp spec α)
-    (qb : ι → ℕ) (i : ι)
+    (qb : spec.Domain → ℕ) (i : spec.Domain)
     (cf : α → Option (Fin (qb i + 1))) (s : Fin (qb i + 1))
     (view : PFunctor.FreeM.Cursor.ForkView i main s) :
     Option (ContextForkWitness main qb i) :=
   if (classifyForkView main qb i cf s view).isSome then some ⟨s, view⟩ else none
 
 @[simp] private theorem acceptContextForkWitness_eq_some [∀ t, DecidableEq (spec.Range t)]
-    (main : OracleComp spec α) (qb : ι → ℕ) (i : ι) (cf : α → Option (Fin (qb i + 1)))
+    (main : OracleComp spec α) (qb : spec.Domain → ℕ) (i : spec.Domain) (cf : α → Option (Fin (qb i + 1)))
     (s : Fin (qb i + 1)) (view : PFunctor.FreeM.Cursor.ForkView i main s) :
     acceptContextForkWitness main qb i cf s view = some ⟨s, view⟩ ↔
       view.firstAnswer ≠ view.secondAnswer ∧
@@ -249,8 +249,8 @@ def acceptContextForkWitness [∀ t, DecidableEq (spec.Range t)] (main : OracleC
 /-- Canonical rich forking experiment. Probability statements may project
 its output pair, while Fiat--Shamir reductions can consume the typed
 occurrence and the two completions directly. -/
-def contextForkWitness [DecidableEq ι] [∀ t, DecidableEq (spec.Range t)]
-    (main : OracleComp spec α) (qb : ι → ℕ) (i : ι)
+def contextForkWitness [DecidableEq spec.Domain] [∀ t, DecidableEq (spec.Range t)]
+    (main : OracleComp spec α) (qb : spec.Domain → ℕ) (i : spec.Domain)
     (cf : α → Option (Fin (qb i + 1))) :
     OracleComp spec (Option (ContextForkWitness main qb i)) :=
   PFunctor.FreeM.Cursor.filterMapLocateAndForkSelected (P := spec.toPFunctor)
@@ -259,7 +259,7 @@ def contextForkWitness [DecidableEq ι] [∀ t, DecidableEq (spec.Range t)]
 
 /-- The `outputs` pair of a contextual-fork witness is the pair of oracle outputs read at its
 first and second fork paths. -/
-@[simp] theorem contextForkWitness_outputs (main : OracleComp spec α) (qb : ι → ℕ) (i : ι)
+@[simp] theorem contextForkWitness_outputs (main : OracleComp spec α) (qb : spec.Domain → ℕ) (i : spec.Domain)
     (witness : ContextForkWitness main qb i) :
     (PFunctor.FreeM.Cursor.SelectedForkView.outputs witness) =
       (PFunctor.FreeM.output main witness.view.firstPath,
@@ -268,15 +268,15 @@ first and second fork paths. -/
 /-- The dynamically selected context fork computed directly by `classifyForkView`: the first
 execution chooses an ordinal through `cf`, the selected occurrence is completed a second time,
 and the classified pair of outputs is returned. It is the same experiment as `contextFork`. -/
-def contextForkByClassify [DecidableEq ι] [∀ t, DecidableEq (spec.Range t)]
-    (main : OracleComp spec α) (qb : ι → ℕ) (i : ι)
+def contextForkByClassify [DecidableEq spec.Domain] [∀ t, DecidableEq (spec.Range t)]
+    (main : OracleComp spec α) (qb : spec.Domain → ℕ) (i : spec.Domain)
     (cf : α → Option (Fin (qb i + 1))) : OracleComp spec (Option (α × α)) :=
   PFunctor.FreeM.Cursor.filterMapLocateAndForkBy (P := spec.toPFunctor)
     i main cf Fin.val (classifyForkView main qb i cf)
 
-private theorem map_contextForkWitness_outputs_eq_contextForkByClassify [DecidableEq ι]
+private theorem map_contextForkWitness_outputs_eq_contextForkByClassify [DecidableEq spec.Domain]
     [∀ t, DecidableEq (spec.Range t)]
-    (main : OracleComp spec α) (qb : ι → ℕ) (i : ι)
+    (main : OracleComp spec α) (qb : spec.Domain → ℕ) (i : spec.Domain)
     (cf : α → Option (Fin (qb i + 1))) :
     PFunctor.FreeM.map
         (Option.map PFunctor.FreeM.Cursor.SelectedForkView.outputs)
@@ -305,23 +305,23 @@ private theorem map_contextForkWitness_outputs_eq_contextForkByClassify [Decidab
 /-- Canonical dynamically selected fork. The first execution chooses an
 ordinal through `cf`; PolyFun locates that occurrence and independently
 completes the same typed context a second time. -/
-def contextFork [DecidableEq ι] [∀ t, DecidableEq (spec.Range t)] (main : OracleComp spec α)
-    (qb : ι → ℕ) (i : ι) (cf : α → Option (Fin (qb i + 1))) :
+def contextFork [DecidableEq spec.Domain] [∀ t, DecidableEq (spec.Range t)] (main : OracleComp spec α)
+    (qb : spec.Domain → ℕ) (i : spec.Domain) (cf : α → Option (Fin (qb i + 1))) :
     OracleComp spec (Option (α × α)) :=
   PFunctor.FreeM.map
     (Option.map PFunctor.FreeM.Cursor.SelectedForkView.outputs)
     (contextForkWitness main qb i cf)
 
-private theorem contextFork_eq_contextForkByClassify [DecidableEq ι]
-    [∀ t, DecidableEq (spec.Range t)] (main : OracleComp spec α) (qb : ι → ℕ) (i : ι)
+private theorem contextFork_eq_contextForkByClassify [DecidableEq spec.Domain]
+    [∀ t, DecidableEq (spec.Range t)] (main : OracleComp spec α) (qb : spec.Domain → ℕ) (i : spec.Domain)
     (cf : α → Option (Fin (qb i + 1))) :
     contextFork main qb i cf = contextForkByClassify main qb i cf :=
   map_contextForkWitness_outputs_eq_contextForkByClassify main qb i cf
 
 /-- Every supported rich witness carries a supported second completion and
 the pure success conditions checked by the contextual fork. -/
-theorem contextForkWitness_success [DecidableEq ι] [∀ t, DecidableEq (spec.Range t)]
-    (main : OracleComp spec α) (qb : ι → ℕ) (i : ι)
+theorem contextForkWitness_success [DecidableEq spec.Domain] [∀ t, DecidableEq (spec.Range t)]
+    (main : OracleComp spec α) (qb : spec.Domain → ℕ) (i : spec.Domain)
     (cf : α → Option (Fin (qb i + 1)))
     {witness : ContextForkWitness main qb i}
     (h : some witness ∈ support (contextForkWitness main qb i cf)) :
@@ -352,8 +352,8 @@ theorem contextForkWitness_success [DecidableEq ι] [∀ t, DecidableEq (spec.Ra
 
 /-- Successful contextual forks expose the selected path, its certified
 occurrence, and the independently sampled second completion. -/
-theorem contextFork_success [DecidableEq ι] [∀ t, DecidableEq (spec.Range t)]
-    (main : OracleComp spec α) (qb : ι → ℕ) (i : ι)
+theorem contextFork_success [DecidableEq spec.Domain] [∀ t, DecidableEq (spec.Range t)]
+    (main : OracleComp spec α) (qb : spec.Domain → ℕ) (i : spec.Domain)
     (cf : α → Option (Fin (qb i + 1))) {x₁ x₂ : α}
     (h : some (x₁, x₂) ∈ support (contextFork main qb i cf)) :
     ∃ (path : PFunctor.FreeM.Path main) (s : Fin (qb i + 1))
@@ -388,8 +388,8 @@ theorem contextFork_success [DecidableEq ι] [∀ t, DecidableEq (spec.Range t)]
 /-- Transfer first-run log invariants through a successful contextual fork.
 The differing selected entries follow directly from the two completions of
 the retained occurrence. -/
-theorem contextFork_propertyTransfer [DecidableEq ι] [∀ t, DecidableEq (spec.Range t)]
-    (main : OracleComp spec α) (qb : ι → ℕ) (i : ι)
+theorem contextFork_propertyTransfer [DecidableEq spec.Domain] [∀ t, DecidableEq (spec.Range t)]
+    (main : OracleComp spec α) (qb : spec.Domain → ℕ) (i : spec.Domain)
     (cf : α → Option (Fin (qb i + 1)))
     (P_out : α → QueryLog spec → Prop)
     (hP : ∀ {x log}, (x, log) ∈ support (replayFirstRun main) → P_out x log)
@@ -417,8 +417,8 @@ theorem contextFork_propertyTransfer [DecidableEq ι] [∀ t, DecidableEq (spec.
 
 /-- The fixed-index guarded context experiment. It succeeds exactly when both
 outputs select `s` and the two focused oracle answers differ. -/
-def guardedContextFork [DecidableEq ι] [∀ t, DecidableEq (spec.Range t)]
-    (main : OracleComp spec α) (qb : ι → ℕ) (i : ι)
+def guardedContextFork [DecidableEq spec.Domain] [∀ t, DecidableEq (spec.Range t)]
+    (main : OracleComp spec α) (qb : spec.Domain → ℕ) (i : spec.Domain)
     (cf : α → Option (Fin (qb i + 1))) (s : Fin (qb i + 1)) :
     OracleComp spec (Option (α × α)) :=
   PFunctor.FreeM.Cursor.filterMapLocateAndForkAt i main s (classifyForkView main qb i cf s)
@@ -426,8 +426,8 @@ def guardedContextFork [DecidableEq ι] [∀ t, DecidableEq (spec.Range t)]
 /-- The collision classifier on an optional fork view at occurrence `s`: it returns `some s` when
 the two focused answers are equal and both outputs select `s` under `cf`, and `none` otherwise,
 including when the occurrence is absent. -/
-def collideForkView [∀ t, DecidableEq (spec.Range t)] (main : OracleComp spec α) (qb : ι → ℕ)
-    (i : ι) (cf : α → Option (Fin (qb i + 1))) (s : Fin (qb i + 1)) :
+def collideForkView [∀ t, DecidableEq (spec.Range t)] (main : OracleComp spec α) (qb : spec.Domain → ℕ)
+    (i : spec.Domain) (cf : α → Option (Fin (qb i + 1))) (s : Fin (qb i + 1)) :
     Option (PFunctor.FreeM.Cursor.ForkView i main s) → Option (Fin (qb i + 1))
   | none => none
   | some view => if view.firstAnswer = view.secondAnswer ∧
@@ -436,7 +436,7 @@ def collideForkView [∀ t, DecidableEq (spec.Range t)] (main : OracleComp spec 
       then some s else none
 
 @[simp] private theorem collideForkView_eq_some [∀ t, DecidableEq (spec.Range t)]
-    (main : OracleComp spec α) (qb : ι → ℕ) (i : ι) (cf : α → Option (Fin (qb i + 1)))
+    (main : OracleComp spec α) (qb : spec.Domain → ℕ) (i : spec.Domain) (cf : α → Option (Fin (qb i + 1)))
     (s : Fin (qb i + 1)) (view : PFunctor.FreeM.Cursor.ForkView i main s) :
     collideForkView main qb i cf s (some view) = some s ↔
       view.firstAnswer = view.secondAnswer ∧
@@ -448,8 +448,8 @@ def collideForkView [∀ t, DecidableEq (spec.Range t)] (main : OracleComp spec 
 returns `some s` exactly when both completions of occurrence `s` select `s` under `cf` and their
 focused answers coincide. Together with `guardedContextFork` it covers the success event of
 `contextForkPair`. -/
-def contextForkViewCollision [DecidableEq ι] [∀ t, DecidableEq (spec.Range t)]
-    (main : OracleComp spec α) (qb : ι → ℕ) (i : ι)
+def contextForkViewCollision [DecidableEq spec.Domain] [∀ t, DecidableEq (spec.Range t)]
+    (main : OracleComp spec α) (qb : spec.Domain → ℕ) (i : spec.Domain)
     (cf : α → Option (Fin (qb i + 1))) (s : Fin (qb i + 1)) :
     OracleComp spec (Option (Fin (qb i + 1))) :=
   PFunctor.FreeM.map (collideForkView main qb i cf s) (contextForkView main i s)
@@ -457,8 +457,8 @@ def contextForkViewCollision [DecidableEq ι] [∀ t, DecidableEq (spec.Range t)
 /-- Per-path continuation of `contextForkCollision`. Locate occurrence `s` on `path`; if it is
 present, resample the focused answer and report `some s` exactly when the fresh answer collides
 with the first completion's answer and the path already selected `s`. -/
-def contextForkCollisionCont [DecidableEq ι] [∀ t, DecidableEq (spec.Range t)]
-    (main : OracleComp spec α) (qb : ι → ℕ) (i : ι)
+def contextForkCollisionCont [DecidableEq spec.Domain] [∀ t, DecidableEq (spec.Range t)]
+    (main : OracleComp spec α) (qb : spec.Domain → ℕ) (i : spec.Domain)
     (cf : α → Option (Fin (qb i + 1))) (s : Fin (qb i + 1)) (path : PFunctor.FreeM.Path main) :
     OracleComp spec (Option (Fin (qb i + 1))) :=
   match PFunctor.FreeM.Cursor.locateAt? (P := spec.toPFunctor) i main path s with
@@ -470,8 +470,8 @@ def contextForkCollisionCont [DecidableEq ι] [∀ t, DecidableEq (spec.Range t)
 
 /-- Equal focused answers form the sole collision branch removed by
 `guardedContextFork`. -/
-def contextForkCollision [DecidableEq ι] [∀ t, DecidableEq (spec.Range t)]
-    (main : OracleComp spec α) (qb : ι → ℕ) (i : ι)
+def contextForkCollision [DecidableEq spec.Domain] [∀ t, DecidableEq (spec.Range t)]
+    (main : OracleComp spec α) (qb : spec.Domain → ℕ) (i : spec.Domain)
     (cf : α → Option (Fin (qb i + 1))) (s : Fin (qb i + 1)) :
     OracleComp spec (Option (Fin (qb i + 1))) :=
   PFunctor.FreeM.withPath main >>= contextForkCollisionCont main qb i cf s
@@ -506,7 +506,7 @@ private theorem prEvent_ofFreeM_bind_congr [OracleSpec.AnswerMeasure spec] {β �
 /-- A classified fork whose first completion does not select `s` never succeeds. -/
 private theorem prEvent_classifyForkView_isSome_eq_zero_of_first_ne
     [∀ t, DecidableEq (spec.Range t)] [OracleSpec.AnswerMeasure spec]
-    (main : OracleComp spec α) (qb : ι → ℕ) (i : ι)
+    (main : OracleComp spec α) (qb : spec.Domain → ℕ) (i : spec.Domain)
     (cf : α → Option (Fin (qb i + 1))) (s : Fin (qb i + 1))
     {path : PFunctor.FreeM.Path main}
     (located : PFunctor.FreeM.Cursor.Located i main path s)
@@ -523,7 +523,7 @@ private theorem prEvent_classifyForkView_isSome_eq_zero_of_first_ne
 /-- A classified fork for index `t` never reports the component of a different index `s`. -/
 private theorem prEvent_classifyForkView_component_eq_zero_of_ne
     [∀ t, DecidableEq (spec.Range t)] [OracleSpec.AnswerMeasure spec]
-    (main : OracleComp spec α) (qb : ι → ℕ) (i : ι)
+    (main : OracleComp spec α) (qb : spec.Domain → ℕ) (i : spec.Domain)
     (cf : α → Option (Fin (qb i + 1))) (t s : Fin (qb i + 1))
     {path : PFunctor.FreeM.Path main}
     (located : PFunctor.FreeM.Cursor.Located i main path t) (hne : t ≠ s) :
@@ -539,7 +539,7 @@ private theorem prEvent_classifyForkView_component_eq_zero_of_ne
 /-- The pair of `cf`-classifications observed from the two completions of the fixed
 occurrence at index `i` and position `s`: the `contextForkView`-family specialization of
 `observedForkPair` over which the replay-forking squaring and partition bounds are stated. -/
-def contextForkPair [DecidableEq ι] (main : OracleComp spec α) (qb : ι → ℕ) (i : ι)
+def contextForkPair [DecidableEq spec.Domain] (main : OracleComp spec α) (qb : spec.Domain → ℕ) (i : spec.Domain)
     (cf : α → Option (Fin (qb i + 1))) (s : Fin (qb i + 1)) :
     OracleComp spec (Option (Option (Fin (qb i + 1)) × Option (Fin (qb i + 1)))) :=
   observedForkPair main i s cf
@@ -547,8 +547,8 @@ def contextForkPair [DecidableEq ι] (main : OracleComp spec α) (qb : ι → �
 /-- Fixed-index success squares under two independent completions of the
 PolyFun occurrence context. This is the analytic core of replay forking and
 does not use query logs, replay cursors, or a bespoke oracle interpreter. -/
-theorem sq_prEvent_main_le_contextForkPair [DecidableEq ι] [OracleSpec.AnswerMeasure spec]
-    (main : OracleComp spec α) (qb : ι → ℕ) (i : ι)
+theorem sq_prEvent_main_le_contextForkPair [DecidableEq spec.Domain] [OracleSpec.AnswerMeasure spec]
+    (main : OracleComp spec α) (qb : spec.Domain → ℕ) (i : spec.Domain)
     (cf : α → Option (Fin (qb i + 1)))
     (hreach : PathCfReachable main qb i cf) (s : Fin (qb i + 1)) :
     Pr{let x ← main}[cf x = some s] ^ 2 ≤
@@ -557,9 +557,9 @@ theorem sq_prEvent_main_le_contextForkPair [DecidableEq ι] [OracleSpec.AnswerMe
 
 /-- Fixed-index pair success partitions into a genuine guarded fork or an
 equal-answer collision, all as observations of the same `ForkView`. -/
-theorem prEvent_contextForkPair_le_guarded_add_collision [DecidableEq ι]
+theorem prEvent_contextForkPair_le_guarded_add_collision [DecidableEq spec.Domain]
     [∀ t, DecidableEq (spec.Range t)] [OracleSpec.AnswerMeasure spec]
-    (main : OracleComp spec α) (qb : ι → ℕ) (i : ι)
+    (main : OracleComp spec α) (qb : spec.Domain → ℕ) (i : spec.Domain)
     (cf : α → Option (Fin (qb i + 1))) (s : Fin (qb i + 1)) :
     Pr{let r ← contextForkPair main qb i cf s}[r = some (some s, some s)] ≤
       Pr{let r ← guardedContextFork main qb i cf s}[r.isSome] +
@@ -593,9 +593,9 @@ theorem prEvent_contextForkPair_le_guarded_add_collision [DecidableEq ι]
 
 /-- A fresh focused answer collides with the first completion's answer with
 probability at most the inverse answer-space cardinality. -/
-theorem prEvent_contextForkCollision_le_main_div [DecidableEq ι]
+theorem prEvent_contextForkCollision_le_main_div [DecidableEq spec.Domain]
     [∀ t, DecidableEq (spec.Range t)] [OracleSpec.UniformAnswerMeasure spec]
-    (main : OracleComp spec α) (qb : ι → ℕ) (i : ι) [Fintype (spec.Range i)]
+    (main : OracleComp spec α) (qb : spec.Domain → ℕ) (i : spec.Domain) [Fintype (spec.Range i)]
     (cf : α → Option (Fin (qb i + 1))) (s : Fin (qb i + 1)) :
     Pr{let r ← contextForkCollision main qb i cf s}[r = some s] ≤
       Pr{let x ← main}[cf x = some s] / Fintype.card (spec.Range i) := by
@@ -625,9 +625,9 @@ theorem prEvent_contextForkCollision_le_main_div [DecidableEq ι]
 
 /-- Requiring the colliding second completion to finish successfully can only
 decrease the path-first equal-answer collision probability. -/
-theorem prEvent_contextForkViewCollision_le_collision [DecidableEq ι]
+theorem prEvent_contextForkViewCollision_le_collision [DecidableEq spec.Domain]
     [∀ t, DecidableEq (spec.Range t)] [OracleSpec.AnswerMeasure spec]
-    (main : OracleComp spec α) (qb : ι → ℕ) (i : ι)
+    (main : OracleComp spec α) (qb : spec.Domain → ℕ) (i : spec.Domain)
     (cf : α → Option (Fin (qb i + 1))) (s : Fin (qb i + 1)) :
     Pr{let r ← contextForkViewCollision main qb i cf s}[r = some s] ≤
       Pr{let r ← contextForkCollision main qb i cf s}[r = some s] := by
@@ -690,9 +690,9 @@ theorem prEvent_contextForkViewCollision_le_collision [DecidableEq ι]
 
 /-- The successful equal-answer branch of the intrinsic context experiment is
 bounded by one uniform-answer collision against the original success event. -/
-theorem prEvent_contextForkViewCollision_le_main_div [DecidableEq ι]
+theorem prEvent_contextForkViewCollision_le_main_div [DecidableEq spec.Domain]
     [∀ t, DecidableEq (spec.Range t)] [OracleSpec.UniformAnswerMeasure spec]
-    (main : OracleComp spec α) (qb : ι → ℕ) (i : ι) [Fintype (spec.Range i)]
+    (main : OracleComp spec α) (qb : spec.Domain → ℕ) (i : spec.Domain) [Fintype (spec.Range i)]
     (cf : α → Option (Fin (qb i + 1))) (s : Fin (qb i + 1)) :
     Pr{let r ← contextForkViewCollision main qb i cf s}[r = some s] ≤
       Pr{let x ← main}[cf x = some s] / Fintype.card (spec.Range i) :=
@@ -701,9 +701,9 @@ theorem prEvent_contextForkViewCollision_le_main_div [DecidableEq ι]
 
 /-- Fixed-occurrence forking succeeds with the usual square-minus-collision
 lower bound, stated directly for the guarded PolyFun context experiment. -/
-theorem sq_sub_div_le_prEvent_guardedContextFork [DecidableEq ι]
+theorem sq_sub_div_le_prEvent_guardedContextFork [DecidableEq spec.Domain]
     [∀ t, DecidableEq (spec.Range t)] [OracleSpec.UniformAnswerMeasure spec]
-    (main : OracleComp spec α) (qb : ι → ℕ) (i : ι) [Fintype (spec.Range i)]
+    (main : OracleComp spec α) (qb : spec.Domain → ℕ) (i : spec.Domain) [Fintype (spec.Range i)]
     (cf : α → Option (Fin (qb i + 1)))
     (hreach : PathCfReachable main qb i cf) (s : Fin (qb i + 1)) :
     let h : ℝ≥0∞ := ↑(Fintype.card (spec.Range i))
@@ -716,9 +716,9 @@ theorem sq_sub_div_le_prEvent_guardedContextFork [DecidableEq ι]
 
 /-- A fixed guarded fork is the corresponding component of the dynamic
 semantic fork. -/
-theorem prEvent_guardedContextFork_eq_contextFork_component [DecidableEq ι]
+theorem prEvent_guardedContextFork_eq_contextFork_component [DecidableEq spec.Domain]
     [∀ t, DecidableEq (spec.Range t)] [OracleSpec.AnswerMeasure spec]
-    (main : OracleComp spec α) (qb : ι → ℕ) (i : ι)
+    (main : OracleComp spec α) (qb : spec.Domain → ℕ) (i : spec.Domain)
     (cf : α → Option (Fin (qb i + 1))) (s : Fin (qb i + 1)) :
     Pr{let r ← guardedContextFork main qb i cf s}[r.isSome] =
       Pr{let r ← contextFork main qb i cf}[r.map (cf ∘ Prod.fst) = some (some s)] := by
@@ -781,9 +781,9 @@ theorem prEvent_guardedContextFork_eq_contextFork_component [DecidableEq ι]
 /-- Direct probability bound for the canonical semantic context fork. The
 program manipulation is discharged by PolyFun; this theorem contains only
 the finite selector aggregation and the usual Cauchy--Schwarz estimate. -/
-theorem le_prEvent_isSome_contextFork [DecidableEq ι] [∀ t, DecidableEq (spec.Range t)]
+theorem le_prEvent_isSome_contextFork [DecidableEq spec.Domain] [∀ t, DecidableEq (spec.Range t)]
     [OracleSpec.UniformAnswerMeasure spec]
-    (main : OracleComp spec α) (qb : ι → ℕ) (i : ι) [Fintype (spec.Range i)]
+    (main : OracleComp spec α) (qb : spec.Domain → ℕ) (i : spec.Domain) [Fintype (spec.Range i)]
     (cf : α → Option (Fin (qb i + 1)))
     (hreach : PathCfReachable main qb i cf) :
     (let acc : ℝ≥0∞ := ∑ s, Pr{let x ← main}[cf x = some s]

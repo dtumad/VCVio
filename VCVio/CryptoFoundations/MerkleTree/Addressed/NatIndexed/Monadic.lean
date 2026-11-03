@@ -266,7 +266,7 @@ end PureInterpretation
 
 section DeterministicInterpretation
 
-variable {ι : Type u} {spec : OracleSpec.{u, v} ι}
+variable {spec : OracleSpec.{u, v}}
 
 /-- A deterministic handler commutes with effectful perfect-tree construction. -/
 @[simp]

@@ -26,7 +26,7 @@ universe u v
 
 namespace OracleComp
 
-variable {ι : Type u} {τ : Type v} {spec : OracleSpec ι} {superSpec : OracleSpec τ}
+variable {spec : OracleSpec} {superSpec : OracleSpec}
   [h : spec ⊂ₒ superSpec]
 
 /-- Translated queries equal in distribution to the original ones preserve every output measure. -/

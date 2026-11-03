@@ -84,7 +84,7 @@ open OracleComp MeasureTheory
 
 namespace QueryImpl
 
-variable {ι : Type} {spec : OracleSpec ι} {σ α : Type}
+variable {spec : OracleSpec} {σ α : Type}
 
 /-! ## Domination through a state map until bad -/
 
@@ -336,7 +336,7 @@ end QueryImpl
 
 namespace QueryImpl.DominatedUntilBad
 
-variable {ι : Type} {spec : OracleSpec ι} {σ₁ σ₂ : Type}
+variable {spec : OracleSpec} {σ₁ σ₂ : Type}
   {impl₁ : QueryImpl spec (StateT σ₁ ProbComp)} {impl₂ : QueryImpl spec (StateT σ₂ ProbComp)}
   {f : σ₁ → σ₂} {inv bad : σ₁ → Prop}
 

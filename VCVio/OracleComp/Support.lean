@@ -25,7 +25,7 @@ open scoped OracleSpec.PrimitiveQuery
 
 namespace OracleComp
 
-variable {ι : Type u} {spec : OracleSpec.{u, v} ι} {α β : Type w}
+variable {spec : OracleSpec.{u, v}} {α β : Type w}
 
 @[simp, grind =] lemma support_liftM (q : OracleQuery spec α) :
     support (liftM q : OracleComp spec α) = Set.range q.cont := by

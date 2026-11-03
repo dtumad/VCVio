@@ -29,7 +29,7 @@ open Std.WP
 
 namespace OracleComp.Necessary
 
-variable {ι : Type u} {spec : OracleSpec ι}
+variable {spec : OracleSpec}
 variable {α β : Type}
 
 /-- Core weakest preconditions for all possible outputs. Opening the scope selects

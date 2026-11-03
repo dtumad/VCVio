@@ -31,7 +31,7 @@ universe u
 
 namespace OracleComp
 
-variable {ι : Type u} {spec : OracleSpec.{u, 0} ι} [OracleSpec.AnswerMeasure spec] {α β : Type}
+variable {spec : OracleSpec.{u, 0}} [OracleSpec.AnswerMeasure spec] {α β : Type}
 
 /-- The output measure is concentrated on the reachable outputs. -/
 theorem evalDist_ae_mem_support [MeasurableSpace α] [DiscreteMeasurableSpace α]

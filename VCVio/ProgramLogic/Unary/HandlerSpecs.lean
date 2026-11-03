@@ -79,10 +79,9 @@ set_option experimental.vcgen true
 namespace OracleComp.ProgramLogic
 
 /- The handlers' state types (caches, seeds, logs, counts) live in `Type (max u v)` for
-`spec : OracleSpec.{u, v} ι`, and `StateT` / `WriterT` over `OracleComp spec : Type v → Type _`
+`spec : OracleSpec.{u, v}`, and `StateT` / `WriterT` over `OracleComp spec : Type v → Type _`
 needs them in `Type v`; both universes are pinned to `Type`. -/
-variable {ι : Type}
-variable {spec : OracleSpec.{0, 0} ι}
+variable variable {spec : OracleSpec.{0, 0}}
 
 /-! ## Reading triples against the support -/
 
@@ -172,7 +171,7 @@ theorem simulateQ_writerT_triple_preserves_invariant {ω α : Type} [Monoid ω]
 
 section cachingOracle
 
-variable [DecidableEq ι]
+variable [DecidableEq spec.Domain]
 
 /-- Cache-monotonicity specification for `cachingOracle t`: if the cache on entry is
 `≥ cache₀`, then after a single call the updated cache is still `≥ cache₀` and contains the
@@ -234,7 +233,7 @@ end cachingOracle
 
 section seededOracle
 
-variable [DecidableEq ι]
+variable [DecidableEq spec.Domain]
 
 /-- Specification for `seededOracle t`: the call consumes at most one value at index `t`.
 Either the seed was empty at `t` (state unchanged, returned value fresh) or the seed started
@@ -313,24 +312,24 @@ end loggingOracle
 
 section countingOracle
 
-variable [DecidableEq ι]
+variable [DecidableEq spec.Domain]
 
 /-- A counting query adds one at its index. The writer log uses Mathlib's multiplicative tag,
 and the predicates observe the additive count through `toAdd`. -/
 @[spec]
-theorem countingOracle_triple (t : spec.Domain) (qc₀ : QueryCount ι) :
+theorem countingOracle_triple (t : spec.Domain) (qc₀ : QueryCount spec.Domain) :
     ⦃ fun qc => Multiplicative.toAdd qc = qc₀ ⦄
-      (countingOracle t : AddWriterT (QueryCount ι) (OracleComp spec) (spec.Range t))
+      (countingOracle t : AddWriterT (QueryCount spec.Domain) (OracleComp spec) (spec.Range t))
     ⦃ fun _ qc' => Multiplicative.toAdd qc' = qc₀ + QueryCount.single t ⦄ := by
   vcgen [countingOracle_apply, AddWriterT.addTell]
   grind [toAdd_mul, toAdd_ofAdd]
 
 /-- `vcgen` example: two consecutive `countingOracle` calls increment the count by
 `QueryCount.single t₁ + QueryCount.single t₂`, in that order. -/
-example (t₁ t₂ : spec.Domain) (qc₀ : QueryCount ι) :
+example (t₁ t₂ : spec.Domain) (qc₀ : QueryCount spec.Domain) :
     ⦃ fun qc => Multiplicative.toAdd qc = qc₀ ⦄
       (do let _ ← countingOracle t₁; countingOracle t₂ :
-        AddWriterT (QueryCount ι) (OracleComp spec) (spec.Range t₂))
+        AddWriterT (QueryCount spec.Domain) (OracleComp spec) (spec.Range t₂))
     ⦃ fun _ qc' =>
         Multiplicative.toAdd qc' = qc₀ + QueryCount.single t₁ + QueryCount.single t₂ ⦄ := by
   vcgen [countingOracle_triple] with finish
@@ -339,9 +338,9 @@ example (t₁ t₂ : spec.Domain) (qc₀ : QueryCount ι) :
 `simulateQ countingOracle oa` only grows. Derived from the generic
 `simulateQ_writerT_triple_preserves_invariant` with invariant `I qc := qc₀ ≤ qc`. -/
 theorem simulateQ_countingOracle_preserves_le {α : Type}
-    (qc₀ : QueryCount ι) (oa : OracleComp spec α) :
+    (qc₀ : QueryCount spec.Domain) (oa : OracleComp spec α) :
     ⦃ fun qc => qc₀ ≤ Multiplicative.toAdd qc ⦄
-      (simulateQ countingOracle oa : AddWriterT (QueryCount ι) (OracleComp spec) α)
+      (simulateQ countingOracle oa : AddWriterT (QueryCount spec.Domain) (OracleComp spec) α)
     ⦃ fun _ qc' => qc₀ ≤ Multiplicative.toAdd qc' ⦄ :=
   simulateQ_writerT_triple_preserves_invariant countingOracle
     (fun qc => qc₀ ≤ Multiplicative.toAdd qc) (fun t => by
@@ -405,7 +404,7 @@ handlers. -/
 
 section stackedHandlers
 
-variable [DecidableEq ι]
+variable [DecidableEq spec.Domain]
 
 /-- Per-call specification for `cachingLoggingOracle t`: the log is extended by exactly one
 entry `⟨t, v⟩`, the cache only grows, and the returned value is now cached at `t`. -/

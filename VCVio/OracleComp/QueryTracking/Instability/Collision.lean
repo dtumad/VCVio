@@ -64,7 +64,7 @@ open ENNReal OracleComp Set
 namespace OracleComp
 
 /-- A collision in a database persists in every extension of it. -/
-theorem CacheHasCollision.mono {ι : Type*} {spec : OracleSpec ι} {D D' : spec.QueryCache}
+theorem CacheHasCollision.mono {spec : OracleSpec} {D D' : spec.QueryCache}
     (h : D ≤ D') (hD : CacheHasCollision D) : CacheHasCollision D' := by
   obtain ⟨x₁, x₂, u₁, u₂, hne, h₁, h₂, hu⟩ := hD
   exact ⟨x₁, x₂, u₁, u₂, hne, h h₁, h h₂, hu⟩
@@ -77,8 +77,8 @@ universe u
 
 /-- One fresh answer never removes a collision: the flip probability from "collision" to
 "no collision" is `0`. -/
-theorem flip_cacheHasCollision_compl {ι : Type u} {spec : OracleSpec.{u, u} ι}
-    [DecidableEq ι] [AnswerMeasure spec] (t : ℕ) :
+theorem flip_cacheHasCollision_compl {spec : OracleSpec.{u, u}}
+    [DecidableEq spec.Domain] [AnswerMeasure spec] (t : ℕ) :
     flip {D : QueryCache spec | CacheHasCollision D} {D | CacheHasCollision D}ᶜ t = 0 := by
   apply nonpos_iff_eq_zero.mp
   apply flip_le_iff.mpr
@@ -90,7 +90,7 @@ theorem flip_cacheHasCollision_compl {ι : Type u} {spec : OracleSpec.{u, u} ι}
     exact not_not.mpr (CacheHasCollision.mono (le_cacheQuery D hx) hD)
   rw [updateProb, hempty, MeasureTheory.measure_empty]
 
-variable {ι : Type} {spec : OracleSpec.{0, 0} ι} [DecidableEq ι]
+variable {spec : OracleSpec.{0, 0}} [DecidableEq spec.Domain]
 
 variable [UniformAnswerMeasure spec] [∀ x, Fintype (spec.Range x)]
 

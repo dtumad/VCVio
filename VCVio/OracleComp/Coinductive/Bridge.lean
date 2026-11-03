@@ -26,7 +26,7 @@ in scope; hence we provide only the forward direction here.
 ## Universe restriction
 
 To keep the polynomial functor uniform-universe, we specialise to
-`OracleSpec.{u, u} ι`. The general `OracleSpec.{u, v}` case would force
+`OracleSpec.{u, u}`. The general `OracleSpec.{u, v}` case would force
 `Poly F α` to live in `Type (max u v + 1)`, which is at odds with our
 single-universe ITree definition.
 -/
@@ -37,7 +37,7 @@ universe u
 
 namespace OracleComp
 
-variable {ι : Type u} {spec : OracleSpec.{u, u} ι} {α β : Type u}
+variable {spec : OracleSpec.{u, u}} {α β : Type u}
 
 /-- Embed an `OracleComp spec α` into the corresponding `ITree`. Each `pure x`
 becomes `ITree.pure x`; each `queryBind t k` becomes `ITree.query t (toITree ∘ k)`.

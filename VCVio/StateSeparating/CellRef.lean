@@ -594,7 +594,7 @@ open OracleComp OracleSpec
 
 namespace QueryImpl
 
-variable {ι : Type uι} {spec : OracleSpec.{uι, max u₀ v} ι}
+variable {spec : OracleSpec.{uι, max u₀ v}}
 variable {Ident₀ : Type u₀} [CellSpec.{u₀, max u₀ v} Ident₀]
 variable {m : Type (max u₀ v) → Type*} [Monad m] [MonadAttach m] [ExactMonadAttach m]
 
@@ -647,7 +647,7 @@ end QueryImpl
 
 namespace OracleComp
 
-variable {ι : Type uι} {spec : OracleSpec.{uι, max u₀ v} ι}
+variable {spec : OracleSpec.{uι, max u₀ v}}
 variable {α : Type (max u₀ v)}
 variable {Ident₀ : Type u₀} [CellSpec.{u₀, max u₀ v} Ident₀]
 variable {m : Type (max u₀ v)
@@ -682,7 +682,7 @@ end OracleComp
 
 namespace QueryImpl
 
-variable {ι : Type uι} {spec : OracleSpec.{uι, max u₀ v} ι}
+variable {spec : OracleSpec.{uι, max u₀ v}}
 variable {α : Type (max u₀ v)}
 variable {Ident₀ : Type u₀} [CellSpec.{u₀, max u₀ v} Ident₀]
 variable {m : Type (max u₀ v)

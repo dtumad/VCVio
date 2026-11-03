@@ -156,7 +156,7 @@ namespace QueryImpl.EqDistTriple
 
 open OracleComp PerfectMerkleTree
 
-variable {ι : Type} {spec : OracleSpec ι} {σ Y : Type} {so : QueryImpl spec (StateT σ ProbComp)}
+variable {spec : OracleSpec} {σ Y : Type} {so : QueryImpl spec (StateT σ ProbComp)}
   {r : σ → σ → Prop} [IsPreorder σ r] (Inv : σ → Prop) (R : ℕ → ℕ → Y → σ → Prop)
   {leaf₁ leaf₂ : ℕ → OracleComp spec Y} {node₁ node₂ : ℕ → ℕ → Y → Y → OracleComp spec Y}
 

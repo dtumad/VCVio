@@ -51,13 +51,13 @@ namespace CanonicalGraph
 
 section
 
-variable {ι : Type} {pub : OracleSpec ι} {X K R : Type} (G : CanonicalGraph pub X K R)
-  [DecidableEq ι] [DecidableEq X] [DecidableEq K] [SampleableType R]
+variable {pub : OracleSpec} {X K R : Type} (G : CanonicalGraph pub X K R)
+  [DecidableEq pub.Domain] [DecidableEq X] [DecidableEq K] [SampleableType R]
   [∀ t, SampleableType (pub.Range t)]
 
 /-- A public query of the relabelled game leaves its answer at its point in the merged cache of
 the post-state. -/
-theorem merge_apply_of_mem_support_relabelImpl_pub {t : ι} {st : RelabelState pub X K R}
+theorem merge_apply_of_mem_support_relabelImpl_pub {t : pub.Domain} {st : RelabelState pub X K R}
     {z : pub.Range t × RelabelState pub X K R}
     (hz : z ∈ support ((G.relabelImpl (.inl (.inr t))).run st)) : G.merge z.2 t = some z.1 := by
   by_cases ht : ∃ k vs, G.childVals st k = some vs ∧ G.pt k vs = t
@@ -76,7 +76,7 @@ theorem merge_apply_of_mem_support_relabelImpl_pub {t : ι} {st : RelabelState p
 
 /-- A public query of the deferred game at a point that is no node's point leaves its answer at
 that point in the public cache. -/
-theorem fst_apply_of_mem_support_deferredImpl_pub {t : ι} (ht : ∀ k vs, G.pt k vs ≠ t)
+theorem fst_apply_of_mem_support_deferredImpl_pub {t : pub.Domain} (ht : ∀ k vs, G.pt k vs ≠ t)
     {s : RelabelState pub X K R × List (X ⊕ K)} {z}
     (hz : z ∈ support ((G.deferredImpl (.inl (.inl (.inr t)))).run s)) :
     z.2.1.1 t = some z.1 := by
@@ -89,7 +89,7 @@ theorem fst_apply_of_mem_support_deferredImpl_pub {t : ι} (ht : ∀ k vs, G.pt 
 holds at `t` for every conflict-free state `st` extending its post-state, then a program run
 through `h` returns its replay on `rd st` for every conflict-free state `st` extending its final
 state. -/
-theorem simulateQ_toPartialImpl_of_mem_support_deferredImpl {κ : Type} {spec : OracleSpec κ}
+theorem simulateQ_toPartialImpl_of_mem_support_deferredImpl {spec : OracleSpec}
     (h : QueryImpl spec (OracleComp (pub.withLabels X K R)))
     (rd : RelabelState pub X K R → spec.QueryCache)
     (hstep : ∀ t s z, z ∈ support ((simulateQ G.deferredImpl (h t)).run s) →
@@ -111,8 +111,7 @@ end
 
 section LeftSummand
 
-variable {X K R : Type} [DecidableEq X] [DecidableEq K] [SampleableType R] {κ₁ κ₂ : Type}
-  [DecidableEq κ₁] [DecidableEq κ₂] {spec₁ : OracleSpec κ₁} {spec₂ : OracleSpec κ₂}
+variable {X K R : Type} [DecidableEq X] [DecidableEq K] [SampleableType R] [DecidableEq spec₁.Domain] [DecidableEq spec₂.Domain] {spec₁ : OracleSpec} {spec₂ : OracleSpec}
   [∀ t, SampleableType ((spec₁ + spec₂).Range t)] (G : CanonicalGraph (spec₁ + spec₂) X K R)
 
 /-- **Settledness.** For a public oracle `spec₁ + spec₂`, a program over `spec₁`, run in the

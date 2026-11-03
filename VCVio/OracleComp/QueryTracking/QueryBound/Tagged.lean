@@ -31,11 +31,11 @@ universe u
 
 namespace OracleComp
 
-variable {ι K : Type u} {spec : OracleSpec.{u, u} ι} {α : Type u}
+variable {spec.Domain K : Type u} {spec : OracleSpec.{u, u}} {α : Type u}
 
 /-- A computation tagged with `k` is `p`-bounded by `n` exactly when the computation is bounded
 by `n` for the predicate `p` read at the tag `k`. -/
-theorem isQueryBoundP_simulateQ_tagWith_iff (k : K) (p : K × ι → Prop) [DecidablePred p]
+theorem isQueryBoundP_simulateQ_tagWith_iff (k : K) (p : K × spec.Domain → Prop) [DecidablePred p]
     (oa : OracleComp spec α) (n : ℕ) :
     IsQueryBoundP (simulateQ (tagWith k) oa) p n ↔ IsQueryBoundP oa (fun t => p (k, t)) n := by
   induction oa using OracleComp.inductionOn generalizing n with
@@ -46,7 +46,7 @@ theorem isQueryBoundP_simulateQ_tagWith_iff (k : K) (p : K × ι → Prop) [Deci
 
 /-- Forgetting the tags of a computation, the result is `p`-bounded by `n` exactly when the
 tagged computation is bounded by `n` for `p` read on the untagged query. -/
-theorem isQueryBoundP_simulateQ_untag_iff (p : ι → Prop) [DecidablePred p]
+theorem isQueryBoundP_simulateQ_untag_iff (p : spec.Domain → Prop) [DecidablePred p]
     (oa : OracleComp (spec.tagged K) α) (n : ℕ) :
     IsQueryBoundP (simulateQ untag oa) p n ↔ IsQueryBoundP oa (fun kt => p kt.2) n := by
   induction oa using OracleComp.inductionOn generalizing n with
@@ -57,14 +57,14 @@ theorem isQueryBoundP_simulateQ_untag_iff (p : ι → Prop) [DecidablePred p]
 
 /-- A `p`-bound on a computation is a `q`-bound on the computation tagged with `k`, whenever
 every `k`-tagged `q`-query is a `p`-query. -/
-theorem IsQueryBoundP.simulateQ_tagWith {k : K} {p : ι → Prop} [DecidablePred p]
-    {q : K × ι → Prop} [DecidablePred q] {oa : OracleComp spec α} {n : ℕ}
+theorem IsQueryBoundP.simulateQ_tagWith {k : K} {p : spec.Domain → Prop} [DecidablePred p]
+    {q : K × spec.Domain → Prop} [DecidablePred q] {oa : OracleComp spec α} {n : ℕ}
     (h : IsQueryBoundP oa p n) (hq : ∀ t, q (k, t) → p t) :
     IsQueryBoundP (simulateQ (tagWith k) oa) q n :=
   (isQueryBoundP_simulateQ_tagWith_iff k q oa n).2 (h.of_imp hq)
 
 /-- A computation tagged with `k` makes no `q`-query when no `k`-tagged query satisfies `q`. -/
-theorem isQueryBoundP_simulateQ_tagWith_zero {k : K} {q : K × ι → Prop} [DecidablePred q]
+theorem isQueryBoundP_simulateQ_tagWith_zero {k : K} {q : K × spec.Domain → Prop} [DecidablePred q]
     (hq : ∀ t, ¬ q (k, t)) (oa : OracleComp spec α) :
     IsQueryBoundP (simulateQ (tagWith k) oa) q 0 :=
   (isQueryBoundP_false oa 0).simulateQ_tagWith fun t h => hq t h

@@ -52,7 +52,7 @@ open OracleComp OracleSpec
 
 universe u v
 
-variable {ι : Type u} {spec : OracleSpec.{u, v} ι} {Y : Type v} (impl : QueryImpl spec Option)
+variable {spec : OracleSpec.{u, v}} {Y : Type v} (impl : QueryImpl spec Option)
   (leaf : ℕ → OracleComp spec Y) (nodeHash : ℕ → ℕ → Y → Y → OracleComp spec Y)
 
 /-! ## Settled subtrees -/

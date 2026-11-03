@@ -40,7 +40,7 @@ open OracleSpec OracleComp MeasureTheory ENNReal
 
 namespace DEMScheme
 
-variable {K M C : Type} {ι : Type} {spec : OracleSpec ι}
+variable {K M C : Type} {spec : OracleSpec}
 
 /-- Two-phase one-time real-or-random IND-CPA adversary for a DEM. The key is hidden, so the
 message-selection phase receives no public input. -/

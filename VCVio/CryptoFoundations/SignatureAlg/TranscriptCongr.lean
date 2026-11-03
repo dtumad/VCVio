@@ -36,7 +36,7 @@ open OracleSpec OracleComp MeasureTheory
 
 namespace SignatureAlg
 
-variable {ι : Type} {spec : OracleSpec ι} {M PK SK S σ : Type}
+variable {spec : OracleSpec} {M PK SK S σ : Type}
 
 /-- Signing stages agree under every continuation. Let `I` be a predicate on the state of a
 stateful interpretation `so` of the ambient oracles, preserved by every step at an `allowed`
@@ -46,7 +46,7 @@ are all `allowed`, run with the signing oracle of `A` or of `B` from a state sat
 the same measure followed by any continuation. -/
 theorem evalDist_simulateQ_run_runWithSigningOracle_bind_congr_of_inv
     (so : QueryImpl spec (StateT σ ProbComp)) {A B : SignatureAlg (OracleComp spec) M PK SK S}
-    (pk : PK) (sk : SK) {allowed : ι → Prop} (I : σ → Prop)
+    (pk : PK) (sk : SK) {allowed : spec.Domain → Prop} (I : σ → Prop)
     (hamb : ∀ t, allowed t → ∀ s, I s → ∀ z ∈ support ((so t).run s), I z.2)
     (hsign : ∀ msg s, I s → ∀ [MeasurableSpace (S × σ)],
       𝒟[(simulateQ so (A.sign pk sk msg)).run s] = 𝒟[(simulateQ so (B.sign pk sk msg)).run s])
@@ -88,7 +88,7 @@ satisfying `I`. Against an adversary whose ambient queries are all `allowed`, th
 experiments of `A` and `B` have equal measures from `s₀`. -/
 theorem evalDist_simulateQ_run_unforgeableTranscriptExperiment_congr_of_inv
     (so : QueryImpl spec (StateT σ ProbComp)) {A B : SignatureAlg (OracleComp spec) M PK SK S}
-    {allowed : ι → Prop} (I : PK → SK → σ → Prop) {s₀ : σ}
+    {allowed : spec.Domain → Prop} (I : PK → SK → σ → Prop) {s₀ : σ}
     (hkeygen : ∀ [MeasurableSpace ((PK × SK) × σ)],
       𝒟[(simulateQ so A.keygen).run s₀] = 𝒟[(simulateQ so B.keygen).run s₀])
     (hkeygenI : ∀ z ∈ support ((simulateQ so A.keygen).run s₀), I z.1.1 z.1.2 z.2)

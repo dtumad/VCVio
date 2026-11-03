@@ -439,7 +439,7 @@ distribution, then `oa` and `ob` are related (as a `RelTriple`) by the graph rel
 witnessing coupling is the deterministic coupling of `oa` with `F <$> oa`, whose first marginal
 is `𝒟[oa]` and whose second marginal is `𝒟[ob]` (as `F <$> oa =ᵈ ob`), supported on the graph. -/
 private lemma relTriple_graph_of_evalDistEq_map
-    {ι₁ ι₂ : Type} {spec₁ : OracleSpec ι₁} {spec₂ : OracleSpec ι₂}
+    {spec₁ : OracleSpec} {spec₂ : OracleSpec}
     [OracleSpec.AnswerMeasure spec₁] [OracleSpec.AnswerMeasure spec₂]
     [∀ t, Finite (spec₁.Range t)] [∀ t, Finite (spec₂.Range t)]
     {α' σ' : Type} (F : α' → σ')

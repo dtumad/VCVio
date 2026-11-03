@@ -504,7 +504,7 @@ namespace uniformSampleImpl
 
 open OracleSpec OracleComp
 
-variable {ι : Type*} {spec : OracleSpec ι} [∀ t, SampleableType (spec.Range t)]
+variable {spec : OracleSpec} [∀ t, SampleableType (spec.Range t)]
   [OracleSpec.UniformAnswerMeasure spec]
 
 /-- Answering every query with the canonical uniform sampler preserves the output measure of every

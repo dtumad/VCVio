@@ -45,7 +45,7 @@ namespace OracleComp
 
 section Unpredictability
 
-variable {ι : Type} [DecidableEq ι] {spec : OracleSpec.{0, 0} ι}
+variable [DecidableEq spec.Domain] {spec : OracleSpec.{0, 0}}
   [UniformAnswerMeasure spec] [∀ t, Fintype (spec.Range t)]
 
 /-- **Fresh query uniformity**: querying `cachingOracle` at an uncached point
@@ -72,7 +72,7 @@ over the at most `n` misses gives the result.
 
 This is the reusable ROM lemma for the extractability "fresh target hit" case. -/
 theorem prEvent_cache_has_value_le_of_unique_preimage {α : Type}
-    [Inhabited ι]
+    [Inhabited spec.Domain]
     (oa : OracleComp spec α)
     (n : ℕ) (hbound : IsTotalQueryBound oa n)
     (hrange : ∀ t, Fintype.card (spec.Range default) ≤ Fintype.card (spec.Range t))
@@ -202,7 +202,7 @@ theorem prEvent_cache_has_value_le_of_unique_preimage {α : Type}
 `prEvent_cache_has_value_le_of_unique_preimage` when the initial cache
 contains at most one preimage of `v₀` because the cache is collision-free. -/
 theorem prEvent_cache_has_value_le_of_noCollision {α : Type}
-    [Inhabited ι]
+    [Inhabited spec.Domain]
     (oa : OracleComp spec α)
     (n : ℕ) (hbound : IsTotalQueryBound oa n)
     (hrange : ∀ t, Fintype.card (spec.Range default) ≤ Fintype.card (spec.Range t))
@@ -221,7 +221,7 @@ theorem prEvent_cache_has_value_le_of_noCollision {α : Type}
 `prEvent_cache_has_value_le_of_unique_preimage` when the initial cache
 contains no preimage of `v₀`. -/
 theorem prEvent_cache_has_value_le {α : Type}
-    [Inhabited ι]
+    [Inhabited spec.Domain]
     (oa : OracleComp spec α)
     (n : ℕ) (hbound : IsTotalQueryBound oa n)
     (hrange : ∀ t, Fintype.card (spec.Range default) ≤ Fintype.card (spec.Range t))
@@ -244,7 +244,7 @@ cached execution creates a fresh entry whose value belongs to `targets` is at mo
 A consumer that starts from a positional collection can deduplicate its values into a `Finset`
 and then weaken the result using the corresponding cardinality bound. -/
 theorem prEvent_cache_hits_targets_le_of_unique_preimage {α : Type}
-    [Inhabited ι]
+    [Inhabited spec.Domain]
     (oa : OracleComp spec α)
     (n : ℕ) (hbound : IsTotalQueryBound oa n)
     (hrange : ∀ t, Fintype.card (spec.Range default) ≤ Fintype.card (spec.Range t))
@@ -281,7 +281,7 @@ theorem prEvent_cache_hits_targets_le_of_unique_preimage {α : Type}
 /-- Finite-target cache-hit bound specialized to a collision-free initial cache. Collision
 freeness ensures that each distinct target value has at most one initial preimage. -/
 theorem prEvent_cache_hits_targets_le_of_noCollision {α : Type}
-    [Inhabited ι]
+    [Inhabited spec.Domain]
     (oa : OracleComp spec α)
     (n : ℕ) (hbound : IsTotalQueryBound oa n)
     (hrange : ∀ t, Fintype.card (spec.Range default) ≤ Fintype.card (spec.Range t))
@@ -302,28 +302,28 @@ end Unpredictability
 assumption.  If the query domain is empty, the event is impossible; otherwise this is the
 homogeneous specialization of `prEvent_cache_hits_targets_le_of_noCollision`. -/
 theorem prEvent_cache_hits_targets_le_of_noCollision_homogeneous
-    {ι Y α : Type} [DecidableEq ι] [Finite Y]
-    [UniformAnswerMeasure (ι →ₒ Y)]
-    (oa : OracleComp (ι →ₒ Y) α)
+    {spec.Domain Y α : Type} [DecidableEq spec.Domain] [Finite Y]
+    [UniformAnswerMeasure (spec.Domain →ₒ Y)]
+    (oa : OracleComp (spec.Domain →ₒ Y) α)
     (n : ℕ) (hbound : IsTotalQueryBound oa n)
     (targets : Finset Y)
-    (cache₀ : (ι →ₒ Y).QueryCache)
+    (cache₀ : (spec.Domain →ₒ Y).QueryCache)
     (hno : ¬ CacheHasCollision cache₀) :
-    Pr{let z ← (simulateQ (ι →ₒ Y).cachingOracle oa).run cache₀}[∃ target ∈ targets,
-        ∃ input : ι, ∃ value : Y, z.2 input = some value ∧ cache₀ input = none ∧
+    Pr{let z ← (simulateQ (spec.Domain →ₒ Y).cachingOracle oa).run cache₀}[∃ target ∈ targets,
+        ∃ input : spec.Domain, ∃ value : Y, z.2 input = some value ∧ cache₀ input = none ∧
           value = target] ≤
       ((targets.card * n : ℕ) : ℝ≥0∞) * (Nat.card Y : ℝ≥0∞)⁻¹ := by
   classical
   let _ : Fintype Y := Fintype.ofFinite Y
-  cases isEmpty_or_nonempty ι with
+  cases isEmpty_or_nonempty spec.Domain with
   | inl hempty =>
       refine le_of_eq_of_le (prEvent_eq_zero_of_forall_not _ _ fun z hhit => ?_) bot_le
       obtain ⟨_, _, input, _⟩ := hhit
       exact isEmptyElim input
   | inr hnonempty =>
-      let _ : Inhabited ι := Classical.inhabited_of_nonempty hnonempty
+      let _ : Inhabited spec.Domain := Classical.inhabited_of_nonempty hnonempty
       have hbase := prEvent_cache_hits_targets_le_of_noCollision
-        (spec := ι →ₒ Y) oa n hbound (fun _ => le_rfl) targets cache₀ hno
+        (spec := spec.Domain →ₒ Y) oa n hbound (fun _ => le_rfl) targets cache₀ hno
       simpa only [Nat.card_eq_fintype_card, heq_eq_eq] using hbase
 
 /-! ## `HasUnpredictableSample` -/

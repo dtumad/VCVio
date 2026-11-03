@@ -50,7 +50,7 @@ universe u v
 
 namespace QueryImpl
 
-variable {ι : Type u} [DecidableEq ι] {spec : OracleSpec ι}
+variable [DecidableEq spec.Domain] {spec : OracleSpec}
   {m : Type u → Type v} [Monad m] [LawfulMonad m]
 
 /-- **Cache-hit absorption for the lazy-caching oracle.** Running a `withCaching` step at `t`

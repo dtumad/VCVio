@@ -46,7 +46,7 @@ All definitions below operate at `Type` (= `Type 0`), matching the program logic
 support API.
 -/
 
-variable {ι : Type} {spec : OracleSpec ι} {α β : Type} {ω : Type}
+variable {spec : OracleSpec} {α β : Type} {ω : Type}
 
 /-- Oracle that tracks additive cost. Wraps `costOracle` with `Multiplicative`
 to get additive accumulation through the existing `WriterT` infrastructure. -/
@@ -61,8 +61,8 @@ lemma fst_map_run_simulateQ_addCostOracle [AddCommMonoid ω] (costFn : spec.Doma
   simp [addCostOracle, QueryImpl.withAddCost, QueryImpl.fst_map_run_withCost]
 
 /-- A cost model assigns a cost in `ω` to each oracle query.
-The cost type `ω` can be `ℕ`, `ℝ≥0∞`, `ι → ℕ` (per-oracle), or any `AddCommMonoid`. -/
-structure CostModel (spec : OracleSpec ι) (ω : Type) [AddCommMonoid ω] where
+The cost type `ω` can be `ℕ`, `ℝ≥0∞`, `spec.Domain → ℕ` (per-oracle), or any `AddCommMonoid`. -/
+structure CostModel (spec : OracleSpec) (ω : Type) [AddCommMonoid ω] where
   /-- The cost charged for one query on input `t`; costs of successive queries add up. -/
   queryCost : spec.Domain → ω
 
@@ -291,7 +291,7 @@ private lemma mem_support_costDist_unit_query_bind_of_mem_support
     exact ⟨z, hz, by simp [Nat.add_comm]⟩
 
 private theorem isPerIndexQueryBound_of_unit_support_bound
-    [DecidableEq ι] [∀ t, Nonempty (spec.Range t)]
+    [DecidableEq spec.Domain] [∀ t, Nonempty (spec.Range t)]
     {oa : OracleComp spec α} {bound : ℕ}
     (hSupport : ∀ z ∈ support (costDist oa CostModel.unit),
       Multiplicative.toAdd z.2 ≤ bound) :
@@ -325,7 +325,7 @@ private theorem isPerIndexQueryBound_of_unit_support_bound
 if every execution uses at most `bound` total unit-cost steps, then each oracle index
 is queried at most `bound` times. -/
 theorem WorstCaseCostBound.toIsPerIndexQueryBound_unit
-    [DecidableEq ι] [∀ t, Nonempty (spec.Range t)]
+    [DecidableEq spec.Domain] [∀ t, Nonempty (spec.Range t)]
     {oa : OracleComp spec α} {bound : ℕ}
     (h : WorstCaseCostBound oa CostModel.unit bound) :
     IsPerIndexQueryBound oa (fun _ => bound) :=
@@ -333,8 +333,8 @@ theorem WorstCaseCostBound.toIsPerIndexQueryBound_unit
     exact h z hz
 
 private lemma sum_update_pred_eq
-    [DecidableEq ι] [Fintype ι]
-    (qb : ι → ℕ) (t : ι) (ht : 0 < qb t) :
+    [DecidableEq spec.Domain] [Fintype spec.Domain]
+    (qb : spec.Domain → ℕ) (t : spec.Domain) (ht : 0 < qb t) :
     (∑ j, Function.update qb t (qb t - 1) j) + 1 = ∑ j, qb j := by
   rw [Finset.sum_update_of_mem (Finset.mem_univ t), Finset.sdiff_singleton_eq_erase,
     ← Finset.add_sum_erase _ qb (Finset.mem_univ t)]
@@ -343,12 +343,12 @@ private lemma sum_update_pred_eq
 /-- If `main` makes at most `qb i` queries to each oracle `i`, then its total query count
 (under the unit cost model) is at most `∑ i, qb i` on every execution path. -/
 theorem IsPerIndexQueryBound.toWorstCaseCostBound_unit_sum
-    [DecidableEq ι] [Fintype ι]
-    {oa : OracleComp spec α} {qb : ι → ℕ}
+    [DecidableEq spec.Domain] [Fintype spec.Domain]
+    {oa : OracleComp spec α} {qb : spec.Domain → ℕ}
     (h : IsPerIndexQueryBound oa qb) :
     WorstCaseCostBound oa CostModel.unit (∑ i, qb i) := by
   have haux :
-      ∀ {oa : OracleComp spec α} {qb : ι → ℕ},
+      ∀ {oa : OracleComp spec α} {qb : spec.Domain → ℕ},
         IsPerIndexQueryBound oa qb →
           AddWriterT.QueryBoundedAboveBy (instrumentedRun oa CostModel.unit) (∑ i, qb i) := by
     intro oa
@@ -380,9 +380,9 @@ theorem IsPerIndexQueryBound.toWorstCaseCostBound_unit_sum
 /-- Corollary: the expected total query count is also at most `∑ i, qb i`. Follows from the
 worst-case bound `toWorstCaseCostBound_unit_sum`. -/
 theorem IsPerIndexQueryBound.toExpectedCostBound_unit_sum
-    [DecidableEq ι] [Fintype ι]
+    [DecidableEq spec.Domain] [Fintype spec.Domain]
     [AnswerMeasure spec]
-    {oa : OracleComp spec α} {qb : ι → ℕ}
+    {oa : OracleComp spec α} {qb : spec.Domain → ℕ}
     (h : IsPerIndexQueryBound oa qb) :
     ExpectedCostBound oa CostModel.unit (fun n => (n : ENNReal)) (∑ i, qb i) := by
   simpa using (toWorstCaseCostBound_unit_sum h).toExpectedCostBound

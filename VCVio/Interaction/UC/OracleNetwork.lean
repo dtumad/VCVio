@@ -26,24 +26,22 @@ namespace Interaction.UC.OracleNetwork
 
 open Interaction.Execution
 
-variable {ι : Type}
-
-/-- Residual oracle code or a continuation awaiting a ticketed response. -/
-abbrev ClientState (spec : OracleSpec ι) (α : Type) :=
+variable /-- Residual oracle code or a continuation awaiting a ticketed response. -/
+abbrev ClientState (spec : OracleSpec) (α : Type) :=
   RequestNetwork.ClientState spec.toPFunctor α
 
 /-- A queued oracle request or typed ticketed response. -/
-abbrev Envelope (Client : Type) (spec : OracleSpec ι) :=
+abbrev Envelope (Client : Type) (spec : OracleSpec) :=
   RequestNetwork.Envelope Client spec.toPFunctor
 
 /-- Complete residual oracle network state, including its single shared service. -/
-abbrev State (Client : Type) (spec : OracleSpec ι) (α S : Type) :=
+abbrev State (Client : Type) (spec : OracleSpec) (α S : Type) :=
   RequestNetwork.State Client spec.toPFunctor α S
 
 /-- Client activation or delivery of the oldest queued packet. -/
 abbrev Activation := RequestNetwork.Activation
 
-variable {Client α S : Type} {spec : OracleSpec ι} [DecidableEq Client] [DecidableEq ι]
+variable {Client α S : Type} {spec : OracleSpec} [DecidableEq Client] [DecidableEq spec.Domain]
 
 /-- Emit an oracle request and suspend its client until the matching response arrives. -/
 abbrev emit (id : Client) (state : State Client spec α S) := RequestNetwork.emit id state

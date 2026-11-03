@@ -28,7 +28,7 @@ namespace FujisakiOkamoto
 
 /-- A reusable FO hash world packages the public hash-oracle interface together with the
 variant-specific ways of deriving encryption coins and shared keys. -/
-structure Variant {ι : Type} (hashOracleSpec : OracleSpec ι) (M PK C R K : Type) where
+structure Variant (hashOracleSpec : OracleSpec) (M PK C R K : Type) where
   /-- The state of the hash oracles, such as the caches of lazily sampled random oracles. -/
   QueryCache : Type
   /-- The hash-oracle state before any query has been answered. -/
@@ -69,20 +69,20 @@ def implicitRejection {K C KPRF : Type} (prf : PRFScheme KPRF C K) : RejectionPo
 
 /-- Bundled measure semantics for an FO hash world, obtained by hiding the
 variant-specific cache after running the public-randomness-plus-hash simulation. -/
-noncomputable def measureSemantics {ι : Type} {hashOracleSpec : OracleSpec ι}
+noncomputable def measureSemantics {hashOracleSpec : OracleSpec}
     {M PK C R K : Type} (variant : Variant hashOracleSpec M PK C R K) :
     SemanticsVia (OracleComp (unifSpec + hashOracleSpec)) :=
   SemanticsVia.withStateOracle variant.queryImpl variant.initCache
 
 /-- Full public-randomness runtime for an FO hash world. -/
-noncomputable def runtime {ι : Type} {hashOracleSpec : OracleSpec ι}
+noncomputable def runtime {hashOracleSpec : OracleSpec}
     {M PK C R K : Type} (variant : Variant hashOracleSpec M PK C R K) :
     ProbCompRuntime (OracleComp (unifSpec + hashOracleSpec)) :=
   ProbCompRuntime.withStateOracle variant.queryImpl variant.initCache
 
 /-- Generic FO construction parameterized by a hash world and a rejection policy. -/
 def scheme
-    {ι : Type} {hashOracleSpec : OracleSpec ι} {M PK SK R C K : Type}
+    {hashOracleSpec : OracleSpec} {M PK SK R C K : Type}
     {m : Type → Type v} [Monad m] [MonadLiftT ProbComp m]
     (pke : AsymmEncAlg.ExplicitCoins ProbComp M PK SK R C)
     (variant : Variant hashOracleSpec M PK C R K)

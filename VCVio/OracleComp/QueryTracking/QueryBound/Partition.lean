@@ -19,11 +19,11 @@ public section
 
 namespace OracleComp
 
-variable {ι α : Type} {spec : OracleSpec ι}
+variable {spec.Domain α : Type} {spec : OracleSpec}
 
 /-- Complementary query classes cover every operation, so their budgets add to a total bound. -/
 theorem isTotalQueryBound_of_partition (program : OracleComp spec α)
-    (p q : ι → Prop) [DecidablePred p] [DecidablePred q]
+    (p q : spec.Domain → Prop) [DecidablePred p] [DecidablePred q]
     (hpartition : ∀ a, q a ↔ ¬ p a) (left right : ℕ)
     (hleft : IsQueryBoundP program p left) (hright : IsQueryBoundP program q right) :
     IsTotalQueryBound program (left + right) := by

@@ -69,11 +69,11 @@ open scoped ENNReal
 
 namespace CanonicalGraph
 
-variable {ι : Type} {pub : OracleSpec ι} {X K R : Type}
+variable {pub : OracleSpec} {X K R : Type}
 
 section DeferredFillDraw
 
-variable (G : CanonicalGraph pub X K R) [DecidableEq ι] [DecidableEq X] [DecidableEq K]
+variable (G : CanonicalGraph pub X K R) [DecidableEq pub.Domain] [DecidableEq X] [DecidableEq K]
   [SampleableType R] [∀ t, SampleableType (pub.Range t)]
 
 /-- The deferred game from the empty state, followed by the end fill and an independent draw
@@ -122,7 +122,7 @@ private theorem exists_charge_or {α : Type} [SampleableType α]
 
 section Charged
 
-variable (G : CanonicalGraph pub X K R) [DecidableEq ι] [DecidableEq X] [DecidableEq K]
+variable (G : CanonicalGraph pub X K R) [DecidableEq pub.Domain] [DecidableEq X] [DecidableEq K]
   [SampleableType R] [∀ t, SampleableType (pub.Range t)]
 
 /-- A hazard `P` of relabelled states is charged to the potential `Φ`: `Φ` is monotone, and out of
@@ -138,7 +138,7 @@ structure IsCharged (P : RelabelState pub X K R → Prop) (Φ : RelabelState pub
     Pr{let u ← $ᵗ R}[P (st.1, st.2.cacheQuery c u)] ≤ w ∧
       ∀ u : R, w + Φ st ≤ Φ (st.1, st.2.cacheQuery c u)
   /-- A fresh public answer off the node points at drawn children values is charged. -/
-  pub : ∀ st (t : ι), ¬P st → st.1 t = none →
+  pub : ∀ st (t : pub.Domain), ¬P st → st.1 t = none →
     (¬∃ k vs, G.childVals st k = some vs ∧ G.pt k vs = t) → ∃ w : ℝ≥0∞,
       Pr{let u ← $ᵗ pub.Range t}[P (st.1.cacheQuery t u, st.2)] ≤ w ∧
         ∀ u, w + Φ st ≤ Φ (st.1.cacheQuery t u, st.2)
@@ -304,11 +304,11 @@ section Potential
 variable (nk : G.NodeKeys)
 
 /-- The public entries at the key of a node whose children are all drawn. -/
-def completeEntries (st : RelabelState pub X K R) : Set ι :=
+def completeEntries (st : RelabelState pub X K R) : Set pub.Domain :=
   {t | (st.1 t).isSome ∧ ∃ k, nk.node t = some k ∧ ∀ c ∈ G.ch k, (st.2 c).isSome}
 
 /-- The public entries at the key of a node whose label is drawn. -/
-def labelledEntries (st : RelabelState pub X K R) : Set ι :=
+def labelledEntries (st : RelabelState pub X K R) : Set pub.Domain :=
   {t | (st.1 t).isSome ∧ ∃ k, nk.node t = some k ∧ (st.2 (.inr k)).isSome}
 
 /-- The joint potential of conflicts and target collisions: the public entries at the key of a
@@ -373,11 +373,11 @@ private theorem encard_le_of_rel {α β : Type} {A : Set α} {T : Set β} (r : �
 variable [DecidableEq X] [DecidableEq K]
 
 /-- The public entries at the key of a node whose children are all drawn once `c` is. -/
-private def completeEntriesAfter (st : RelabelState pub X K R) (c : X ⊕ K) : Set ι :=
+private def completeEntriesAfter (st : RelabelState pub X K R) (c : X ⊕ K) : Set pub.Domain :=
   {t | (st.1 t).isSome ∧ ∃ k, nk.node t = some k ∧ ∀ c' ∈ G.ch k, c' = c ∨ (st.2 c').isSome}
 
 /-- The public entries at the key of a node whose label is drawn once `c` is. -/
-private def labelledEntriesAfter (st : RelabelState pub X K R) (c : X ⊕ K) : Set ι :=
+private def labelledEntriesAfter (st : RelabelState pub X K R) (c : X ⊕ K) : Set pub.Domain :=
   {t | (st.1 t).isSome ∧ ∃ k, nk.node t = some k ∧
     ((Sum.inr k : X ⊕ K) = c ∨ (st.2 (.inr k)).isSome)}
 
@@ -488,10 +488,10 @@ end CellDraw
 
 section PublicMiss
 
-variable {nk : G.NodeKeys} [DecidableEq ι]
+variable {nk : G.NodeKeys} [DecidableEq pub.Domain]
 
 private theorem not_conflict_cacheQuery_pub {st : RelabelState pub X K R}
-    (hst : ¬(G.Conflict st ∨ nk.TCHazard st)) {t : ι}
+    (hst : ¬(G.Conflict st ∨ nk.TCHazard st)) {t : pub.Domain}
     (hn : ¬∃ k vs, G.childVals st k = some vs ∧ G.pt k vs = t) (u : pub.Range t) :
     ¬G.Conflict (st.1.cacheQuery t u, st.2) := by
   rintro ⟨k, vs, hk, hC⟩
@@ -503,7 +503,7 @@ private theorem not_conflict_cacheQuery_pub {st : RelabelState pub X K R}
   · exact hst (Or.inl ⟨k, vs, hk', by rwa [QueryCache.cacheQuery_of_ne _ _ hpt] at hC⟩)
 
 private theorem tcHazard_cacheQuery_pub {st : RelabelState pub X K R}
-    (hst : ¬(G.Conflict st ∨ nk.TCHazard st)) {t : ι} (u : pub.Range t)
+    (hst : ¬(G.Conflict st ∨ nk.TCHazard st)) {t : pub.Domain} (u : pub.Range t)
     (h : nk.TCHazard (st.1.cacheQuery t u, st.2)) :
     ∃ k ℓ, ∃ hk : nk.node t = some k, st.2 (.inr k) = some ℓ ∧
       (st.1.cacheQuery t u) t = some (cast (nk.range_eq hk).symm ℓ) := by
@@ -518,7 +518,7 @@ private theorem tcHazard_cacheQuery_pub {st : RelabelState pub X K R}
 of a state with neither hazard, fires one with probability at most the weight it adds to the
 potential: `1/|R|` if the point is at the key of a node whose label is drawn, and `0` otherwise. -/
 private theorem exists_pub_charge [∀ t, SampleableType (pub.Range t)]
-    {st : RelabelState pub X K R} (hst : ¬(G.Conflict st ∨ nk.TCHazard st)) {t : ι}
+    {st : RelabelState pub X K R} (hst : ¬(G.Conflict st ∨ nk.TCHazard st)) {t : pub.Domain}
     (ht : st.1 t = none) (hn : ¬∃ k vs, G.childVals st k = some vs ∧ G.pt k vs = t) :
     ∃ w : ℝ≥0∞, Pr{let u ← $ᵗ pub.Range t}[G.Conflict (st.1.cacheQuery t u, st.2) ∨
         nk.TCHazard (st.1.cacheQuery t u, st.2)] ≤ w ∧
@@ -574,7 +574,7 @@ end PublicMiss
 
 section Steps
 
-variable (nk : G.NodeKeys) [DecidableEq ι] [DecidableEq X] [DecidableEq K] [SampleableType R]
+variable (nk : G.NodeKeys) [DecidableEq pub.Domain] [DecidableEq X] [DecidableEq K] [SampleableType R]
   [∀ t, SampleableType (pub.Range t)]
 
 /-- Conflicts and target collisions at node keys are charged to the joint potential. -/
@@ -590,7 +590,7 @@ end Steps
 
 section ThreePhase
 
-variable (nk : G.NodeKeys) [DecidableEq ι] [DecidableEq X] [DecidableEq K] [SampleableType R]
+variable (nk : G.NodeKeys) [DecidableEq pub.Domain] [DecidableEq X] [DecidableEq K] [SampleableType R]
   [∀ t, SampleableType (pub.Range t)]
 
 /-- **The joint potential over three phases.** The deferred game from the empty state, the end

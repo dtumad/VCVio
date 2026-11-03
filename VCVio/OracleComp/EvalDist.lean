@@ -32,7 +32,7 @@ universe u v w
 
 namespace OracleComp
 
-variable {ι ι'} {spec : OracleSpec ι} {spec' : OracleSpec ι'} {α β γ : Type w}
+variable {spec : OracleSpec} {spec' : OracleSpec} {α β γ : Type w}
 
 section guard
 
@@ -50,7 +50,7 @@ end OracleComp
 
 namespace OptionT
 
-variable {ι : Type} {spec : OracleSpec ι} {α β : Type}
+variable {spec : OracleSpec} {α β : Type}
 
 /-- Support-level peeler for an `OptionT`-monadic bind, stated at the underlying
 `OracleComp`-level `.run`: every element `y` of the support of the *run* of `mx >>= f` factors

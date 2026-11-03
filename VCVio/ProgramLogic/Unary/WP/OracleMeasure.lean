@@ -24,7 +24,7 @@ universe u
 
 namespace ExpectationWP.Lower
 
-variable {ι : Type u} {spec : OracleSpec.{u, 0} ι}
+variable {spec : OracleSpec.{u, 0}}
   [OracleSpec.AnswerMeasure spec]
   {α : Type}
 

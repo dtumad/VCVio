@@ -41,7 +41,7 @@ oracle implementation.
 The surface computation is interpreted in `StateT σ ProbComp`; running it from `s` and discarding
 the final state produces the visible successful-output measure directly. -/
 noncomputable def withStateOracle
-    {ι : Type} {hashSpec : OracleSpec ι} {σ : Type}
+    {hashSpec : OracleSpec} {σ : Type}
     (hashImpl : QueryImpl hashSpec (StateT σ ProbComp)) (s : σ) :
     SemanticsVia (OracleComp (unifSpec + hashSpec)) where
   Sem := StateT σ ProbComp
@@ -55,7 +55,7 @@ noncomputable def withStateOracle
 /-- The state-oracle measure semantics exposes the measure of the simulated run from its initial
 state. -/
 lemma withStateOracle_evalDist
-    {ι : Type} {hashSpec : OracleSpec ι} {σ α : Type}
+    {hashSpec : OracleSpec} {σ α : Type}
     (hashImpl : QueryImpl hashSpec (StateT σ ProbComp)) (s : σ)
     [MeasurableSpace α] (mx : OracleComp (unifSpec + hashSpec) α) :
     (SemanticsVia.withStateOracle hashImpl s).evalDist mx =
@@ -66,7 +66,7 @@ lemma withStateOracle_evalDist
 /-- Mapping a measurable function over a state-oracle computation maps its visible measure. -/
 @[simp]
 lemma withStateOracle_evalDist_map
-    {ι : Type} {hashSpec : OracleSpec ι} {σ α β : Type}
+    {hashSpec : OracleSpec} {σ α β : Type}
     (hashImpl : QueryImpl hashSpec (StateT σ ProbComp)) (s : σ)
     [MeasurableSpace α] [MeasurableSpace β] (f : α → β) (hf : Measurable f)
     (mx : OracleComp (unifSpec + hashSpec) α) :
@@ -77,7 +77,7 @@ lemma withStateOracle_evalDist_map
 
 /-- Binding a pure measurable function after a state-oracle computation maps its visible measure. -/
 lemma withStateOracle_evalDist_bind_pure
-    {ι : Type} {hashSpec : OracleSpec ι} {σ α β : Type}
+    {hashSpec : OracleSpec} {σ α β : Type}
     (hashImpl : QueryImpl hashSpec (StateT σ ProbComp)) (s : σ)
     [MeasurableSpace α] [MeasurableSpace β] (mx : OracleComp (unifSpec + hashSpec) α)
     (f : α → β) (hf : Measurable f) :
@@ -95,7 +95,7 @@ implementation `hashImpl` started from `s`. Experiments are observed through
 `SemanticsVia.withStateOracle`, and plain `ProbComp` sampling lifts into the uniform
 summand. -/
 noncomputable def withStateOracle
-    {ι : Type} {hashSpec : OracleSpec ι} {σ : Type}
+    {hashSpec : OracleSpec} {σ : Type}
     (hashImpl : QueryImpl hashSpec (StateT σ ProbComp)) (s : σ) :
     ProbCompRuntime (OracleComp (unifSpec + hashSpec)) where
   toSemanticsVia := SemanticsVia.withStateOracle hashImpl s
@@ -105,7 +105,7 @@ noncomputable def withStateOracle
 /-- The state-oracle runtime observes the measure of the simulated run from its initial
 state. -/
 lemma withStateOracle_evalDist
-    {ι : Type} {hashSpec : OracleSpec ι} {σ α : Type}
+    {hashSpec : OracleSpec} {σ α : Type}
     (hashImpl : QueryImpl hashSpec (StateT σ ProbComp)) (s : σ)
     [MeasurableSpace α] (mx : OracleComp (unifSpec + hashSpec) α) :
     (ProbCompRuntime.withStateOracle hashImpl s).evalDist mx =

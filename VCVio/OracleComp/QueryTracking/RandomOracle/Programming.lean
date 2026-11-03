@@ -34,7 +34,7 @@ open OracleComp OracleSpec
 
 namespace roSim
 
-variable {ι : Type} [DecidableEq ι] {hashSpec : OracleSpec.{0, 0} ι}
+variable [DecidableEq hashSpec.Domain] {hashSpec : OracleSpec.{0, 0}}
   [∀ t, SampleableType (hashSpec.Range t)]
 
 /-- A run of the forwarded lazy random oracle only extends its cache. -/
@@ -48,9 +48,9 @@ theorem le_of_mem_support_run {α : Type} (oa : OracleComp (unifSpec + hashSpec)
 
 /-- One query of the forwarded lazy random oracle gains a cached answer at `t` exactly when it
 queries `t`. -/
-theorem isCached_of_mem_support_run_apply {q : ℕ ⊕ ι} {s s' : hashSpec.QueryCache}
+theorem isCached_of_mem_support_run_apply {q : ℕ ⊕ hashSpec.Domain} {s s' : hashSpec.QueryCache}
     {u : (unifSpec + hashSpec).Range q}
-    (h : (u, s') ∈ support ((hashSpec.romImpl q).run s)) (t : ι) :
+    (h : (u, s') ∈ support ((hashSpec.romImpl q).run s)) (t : hashSpec.Domain) :
     s'.isCached t = (s.isCached t || decide (q = Sum.inr t)) := by
   cases q with
   | inl n =>
@@ -82,7 +82,7 @@ theorem isCached_of_mem_support_run_apply {q : ℕ ⊕ ι} {s s' : hashSpec.Quer
 /-- Along a logged run of the forwarded lazy random oracle, the cache gains an answer at `t`
 exactly when the transcript queries `t`. -/
 theorem isCached_of_mem_support_run_withLogging {α : Type}
-    (oa : OracleComp (unifSpec + hashSpec) α) (t : ι) :
+    (oa : OracleComp (unifSpec + hashSpec) α) (t : hashSpec.Domain) :
     ∀ s : hashSpec.QueryCache,
       ∀ z ∈ support (((simulateQ hashSpec.romImpl.withLogging oa).run).run s),
         z.2.isCached t = (s.isCached t || z.1.2.wasQueried (Sum.inr t)) := by
@@ -115,7 +115,7 @@ theorem isCached_of_mem_support_run_withLogging {α : Type}
 lazy random oracle until the run queries `t`: an event of the unprogrammed run that leaves `t`
 uncached is at most as likely as the same event in the programmed run. -/
 theorem prEvent_run_uncached_le_run_cacheQuery {α : Type}
-    (oa : OracleComp (unifSpec + hashSpec) α) (t : ι) (u : hashSpec.Range t) (E : α → Prop) :
+    (oa : OracleComp (unifSpec + hashSpec) α) (t : hashSpec.Domain) (u : hashSpec.Range t) (E : α → Prop) :
     ∀ s : hashSpec.QueryCache, s t = none →
       Pr{let z ← (simulateQ hashSpec.romImpl oa).run s}[E z.1 ∧ z.2 t = none] ≤
         Pr{let z ← (simulateQ hashSpec.romImpl oa).run (s.cacheQuery t u)}[E z.1] := by

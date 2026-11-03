@@ -30,7 +30,7 @@ universe u v w
 
 namespace OracleComp
 
-variable {ι} {spec : OracleSpec ι} {α β : Type v}
+variable {spec : OracleSpec} {α β : Type v}
   (oa : OracleComp spec α) (n : ℕ)
 
 /-- Possible outputs of `replicate n oa` are lists of length `n` where
@@ -57,7 +57,7 @@ lemma mem_finSupport_replicate [∀ t, Fintype (spec.Range t)] [DecidableEq α]
 
 section SimulateQ
 
-variable {ι'} {spec' : OracleSpec ι'} {r : Type v → Type*}
+variable {spec' : OracleSpec} {r : Type v → Type*}
   [Monad r] [LawfulMonad r] (impl : QueryImpl spec r)
 
 /-- `simulateQ` distributes over `replicate`: simulating a replicated computation
@@ -79,7 +79,7 @@ section VectorMapM
 support of the monadic `mapM` has each component lying in the support of the corresponding
 inner computation. -/
 lemma support_ofFn_mapM_index
-    {ι α : Type} {spec : OracleSpec ι} {L : ℕ}
+    {spec.Domain α : Type} {spec : OracleSpec} {L : ℕ}
     (f : Fin L → OracleComp spec α)
     {v : Vector α L}
     (hv : v ∈ support ((Vector.ofFn (id : Fin L → Fin L)).mapM f))

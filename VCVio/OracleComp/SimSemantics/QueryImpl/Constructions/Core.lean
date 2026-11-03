@@ -51,7 +51,7 @@ section insertPre
 
 variable {m : Type u → Type v}
     {n : Type u → Type w} [Monad n] [MonadLiftT m n]
-    {ι : Type*} {spec : OracleSpec ι} {α β γ : Type u}
+    {spec : OracleSpec} {α β γ : Type u}
 
 /-- Oracle-facing compatibility alias for `PFunctor.Handler.preInsert`. -/
 abbrev preInsert (so : QueryImpl spec m) (nx : spec.Domain → n α) :
@@ -162,7 +162,7 @@ end insertPre
 section insertPost
 
 variable {m : Type u → Type v} {n : Type u → Type w} [Monad n] [MonadLiftT m n]
-    {ι : Type*} {spec : OracleSpec ι}
+    {spec : OracleSpec}
 
 /-- Oracle-facing compatibility alias for `PFunctor.Handler.postInsert`. -/
 abbrev postInsert (so : QueryImpl spec m) {α}

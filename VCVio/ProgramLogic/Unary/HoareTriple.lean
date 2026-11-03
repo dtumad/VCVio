@@ -76,7 +76,7 @@ lemma propInd_not {P : Prop} : propInd (¬P) = 1 - propInd P := by
 
 
 
-variable {ι : Type u} {spec : OracleSpec ι}
+variable {spec : OracleSpec}
 variable {α β σ : Type}
 
 section answerMeasure
@@ -351,7 +351,7 @@ lemma prEvent_eq_wp_indicator (oa : OracleComp spec α) (p : α → Prop)
       by_cases hx : p x <;> simp [hx])
 
 /-- Event probability is WP of its proposition indicator. -/
-lemma prEvent_eq_wp_propInd {ι : Type u} {spec : OracleSpec ι}
+lemma prEvent_eq_wp_propInd {spec : OracleSpec}
     [OracleSpec.AnswerMeasure spec] {α : Type}
     (oa : OracleComp spec α) (p : α → Prop) :
     Pr{let x ← oa}[p x] = wp oa (fun x => propInd (p x)) := by
@@ -360,7 +360,7 @@ lemma prEvent_eq_wp_propInd {ι : Type u} {spec : OracleSpec ι}
 
 /-- The probability of a proposition-valued computation is the expectation of its indicator.
 An event over several draws, `Pr{let x ← oa; let y ← ob x}[p x y]`, is of this form. -/
-lemma prEvent_eq_wp {ι : Type u} {spec : OracleSpec ι} [OracleSpec.AnswerMeasure spec]
+lemma prEvent_eq_wp {spec : OracleSpec} [OracleSpec.AnswerMeasure spec]
     (mx : OracleComp spec Prop) : prEvent mx = wp mx (fun P => propInd P) := by
   simpa using prEvent_eq_wp_propInd mx id
 

@@ -34,7 +34,7 @@ open scoped OracleSpec.PrimitiveQuery
 
 namespace OracleComp.ProgramLogic
 
-variable {ι : Type*} {spec : OracleSpec ι}
+variable {spec : OracleSpec}
 variable {α : Type}
 
 section answerMeasure
@@ -61,7 +61,7 @@ then `wp` of the simulated computation equals `wp` of the original. -/
     exact wp_congr_evalDist (hImpl t).evalDist_eq _ Measurable.of_discrete
 
 /-- A distribution-preserving signature inclusion preserves quantitative WP. -/
-theorem wp_liftComp_of_evalDistEq {ι' : Type*} {superSpec : OracleSpec ι'}
+theorem wp_liftComp_of_evalDistEq {superSpec : OracleSpec}
     [OracleSpec.AnswerMeasure superSpec]
     [h : spec ⊂ₒ superSpec]
     (hMeasure : ∀ t, (liftM (spec.query t) : OracleComp superSpec (spec.Range t)) =ᵈ
@@ -82,7 +82,7 @@ end answerMeasure
 
 /-- Cartesian lifting between uniform specifications preserves quantitative WP. -/
 @[game_rule] theorem wp_liftComp [OracleSpec.UniformAnswerMeasure spec]
-    {ι' : Type*} {superSpec : OracleSpec ι'}
+    {superSpec : OracleSpec}
     [OracleSpec.UniformAnswerMeasure superSpec] [spec ⊂ₒ superSpec] [spec ˡ⊂ₒ superSpec]
     (mx : OracleComp spec α) (post : α → ℝ≥0∞) :
     wp (liftComp mx superSpec) post = wp mx post :=

@@ -50,7 +50,7 @@ open OracleSpec PFunctor PFunctor.DynSystem
 
 namespace OracleComp.OracleMachine
 
-variable {ι : Type} {spec : OracleSpec.{0, 0} ι} {α β : Type}
+variable {spec : OracleSpec.{0, 0}} {α β : Type}
 
 /-! ## The wired run -/
 
@@ -145,7 +145,7 @@ Installing an interface translation on a machine adversary is PolyFun's
 same lens: wrapping the adversary forward equals pulling the challenger's responder
 back. -/
 
-variable {ι' : Type} {spec' : OracleSpec.{0, 0} ι'}
+variable {spec' : OracleSpec.{0, 0}}
 
 /-- **The run-level interface-wrapping adjunction**: running the wrapped machine
 against a `spec'`-responder equals running the original machine against the responder

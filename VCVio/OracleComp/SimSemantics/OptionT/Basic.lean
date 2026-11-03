@@ -28,7 +28,7 @@ universe u v w
 
 variable {α β γ : Type u}
 
-variable {ι} {spec : OracleSpec ι} {r n : Type u → Type*} [Monad n] (impl : QueryImpl spec n)
+variable {spec : OracleSpec} {r n : Type u → Type*} [Monad n] (impl : QueryImpl spec n)
 
 @[simp, grind =] lemma simulateQ_option_elim (x : Option α) (my : OracleComp spec β)
     (my' : α → OracleComp spec β) : simulateQ impl (x.elim my my') =

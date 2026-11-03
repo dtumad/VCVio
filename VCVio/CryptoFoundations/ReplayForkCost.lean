@@ -26,14 +26,14 @@ namespace OracleComp
 
 attribute [local implicit_reducible] PFunctor.FreeM.bind PFunctor.FreeM.map
 
-variable {ι α : Type} {spec : OracleSpec ι}
-variable (p : ι → Prop) [DecidablePred p]
+variable {spec.Domain α : Type} {spec : OracleSpec}
+variable (p : spec.Domain → Prop) [DecidablePred p]
 
 private theorem free_map_bound {β : Type} (main : OracleComp spec α) (f : α → β) (N : ℕ) :
     IsQueryBoundP (PFunctor.FreeM.map f main) p N ↔ IsQueryBoundP main p N :=
   PFunctor.FreeM.isRollBound_map_iff _ _ _ _ _
 
-private theorem queryBind_bound (t : ι) (k : spec.Range t → OracleComp spec α) (N : ℕ) :
+private theorem queryBind_bound (t : spec.Domain) (k : spec.Range t → OracleComp spec α) (N : ℕ) :
     IsQueryBoundP (OracleComp.queryBind (spec := spec) t k) p N ↔
       (¬ p t ∨ 0 < N) ∧ ∀ u, IsQueryBoundP (k u) p (if p t then N - 1 else N) := Iff.rfl
 
@@ -42,7 +42,7 @@ theorem isQueryBoundP_withPath (main : OracleComp spec α) (N : ℕ) :
     IsQueryBoundP (withPath main) p N ↔ IsQueryBoundP main p N :=
   isQueryBoundP_iff_of_map_eq (PFunctor.FreeM.map_output_withPath main)
 
-private theorem occurrence_residual_bound {main : OracleComp spec α} {target : ι} {n N : ℕ}
+private theorem occurrence_residual_bound {main : OracleComp spec α} {target : spec.Domain} {n N : ℕ}
     (occ : Occurrence target main n) (h : IsQueryBoundP main p N) :
     IsQueryBoundP (OracleComp.queryBind target occ.resume) p N := by
   induction occ generalizing N with
@@ -55,7 +55,7 @@ private theorem occurrence_residual_bound {main : OracleComp spec α} {target : 
     exact (ih (hh.2 answer)).mono (by split <;> omega)
 
 /-- Completing any retained occurrence uses no more queries than the original program. -/
-theorem isQueryBoundP_occurrence_complete {main : OracleComp spec α} {target : ι} {n N : ℕ}
+theorem isQueryBoundP_occurrence_complete {main : OracleComp spec α} {target : spec.Domain} {n N : ℕ}
     (occ : Occurrence target main n) (h : IsQueryBoundP main p N) :
     IsQueryBoundP occ.complete p N := by
   have hr := occurrence_residual_bound p occ h
@@ -67,8 +67,8 @@ theorem isQueryBoundP_occurrence_complete {main : OracleComp spec α} {target : 
 
 /-- The actual selected replay fork uses at most twice the source program's query budget.
 The bound holds on every branch, including an absent selector or a rejected fork. -/
-theorem isQueryBoundP_contextFork [DecidableEq ι] [∀ t, DecidableEq (spec.Range t)]
-    (main : OracleComp spec α) (qb : ι → ℕ) (target : ι)
+theorem isQueryBoundP_contextFork [DecidableEq spec.Domain] [∀ t, DecidableEq (spec.Range t)]
+    (main : OracleComp spec α) (qb : spec.Domain → ℕ) (target : spec.Domain)
     (select : α → Option (Fin (qb target + 1))) (N : ℕ)
     (h : IsQueryBoundP main p N) :
     IsQueryBoundP (contextFork main qb target select) p (N + N) := by

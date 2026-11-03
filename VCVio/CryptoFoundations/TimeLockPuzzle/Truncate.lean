@@ -50,13 +50,13 @@ open OracleSpec OracleComp ENNReal
 
 namespace TimeLockPuzzle
 
-variable {ι : Type} {spec : OracleSpec.{0, 0} ι} {Puzzle Key : Type}
+variable {spec : OracleSpec.{0, 0}} {Puzzle Key : Type}
 
 /-! ## The truncated adversary -/
 
 section TwoPhaseAdversary
 
-variable {τ : Type} {free : OracleSpec.{0, 0} τ} {Out : Type}
+variable {free : OracleSpec.{0, 0}} {Out : Type}
 
 /-- The adversary with the preprocessing phase and state of `adv`, whose online phase runs that of
 `adv` until it would submit round `r + 1` and outputs `k₀` there (`OracleComp.truncate`). -/
@@ -104,14 +104,14 @@ def delayExperimentWithin [DecidableEq Key] (tlp : TimeLockPuzzle spec Puzzle Ke
 /-- The probability of the paper's event "A_1 outputs K within `r` completed rounds": the success
 probability of `adv` in `delayExperimentWithin` against one lazily sampled random oracle, starting
 from the empty cache. -/
-noncomputable def delayAdvantageWithin [DecidableEq ι] [∀ t, SampleableType (spec.Range t)]
+noncomputable def delayAdvantageWithin [DecidableEq spec.Domain] [∀ t, SampleableType (spec.Range t)]
     [DecidableEq Key] (tlp : TimeLockPuzzle spec Puzzle Key) (adv : Adversary spec Puzzle Key)
     (r : ℕ) : ℝ≥0∞ :=
   (ProbCompRuntime.rom spec).evalDist (tlp.delayExperimentWithin adv r) {true}
 
 section rom
 
-variable [DecidableEq ι] [∀ t, SampleableType (spec.Range t)] [DecidableEq Key]
+variable [DecidableEq spec.Domain] [∀ t, SampleableType (spec.Range t)] [DecidableEq Key]
 
 /-- The probability that `adv` outputs the key within `r` completed rounds is the probability that
 `delayExperimentWithin` returns `true` against one lazily sampled random oracle. -/

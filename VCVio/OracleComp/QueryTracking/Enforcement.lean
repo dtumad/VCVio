@@ -34,13 +34,13 @@ universe u
 
 open scoped OracleSpec.PrimitiveQuery
 
-variable {ι : Type u} {spec : OracleSpec ι} {α : Type u}
+variable {spec : OracleSpec} {α : Type u}
 
 /-- Enforcement oracle: wraps the original oracle with a per-index budget tracked via `StateT`.
 When the remaining budget for the queried oracle is positive, the query is forwarded and
 the budget decremented. When the budget is exhausted, `default` is returned silently. -/
-def OracleSpec.enforceOracle [DecidableEq ι] [∀ t, Inhabited (spec.Range t)] :
-    QueryImpl spec (StateT (ι → ℕ) (OracleComp spec)) :=
+def OracleSpec.enforceOracle [DecidableEq spec.Domain] [∀ t, Inhabited (spec.Range t)] :
+    QueryImpl spec (StateT (spec.Domain → ℕ) (OracleComp spec)) :=
   fun t => StateT.mk fun budget =>
     if 0 < budget t then
       (·, Function.update budget t (budget t - 1)) <$> liftM (query t)
@@ -49,10 +49,10 @@ def OracleSpec.enforceOracle [DecidableEq ι] [∀ t, Inhabited (spec.Range t)] 
 
 namespace enforceOracle
 
-variable [DecidableEq ι] [∀ t, Inhabited (spec.Range t)]
+variable [DecidableEq spec.Domain] [∀ t, Inhabited (spec.Range t)]
 
 @[simp]
-lemma run_apply (t : ι) (budget : ι → ℕ) :
+lemma run_apply (t : spec.Domain) (budget : spec.Domain → ℕ) :
     (spec.enforceOracle t).run budget =
       if 0 < budget t then
         (·, Function.update budget t (budget t - 1)) <$> liftM (query t)
@@ -61,7 +61,7 @@ lemma run_apply (t : ι) (budget : ι → ℕ) :
 
 /-- When the computation is within its query bound, enforcement is transparent:
 the output distribution is identical to running without enforcement. -/
-theorem fst_map_run_simulateQ {oa : OracleComp spec α} {qb : ι → ℕ}
+theorem fst_map_run_simulateQ {oa : OracleComp spec α} {qb : spec.Domain → ℕ}
     (h : IsPerIndexQueryBound oa qb) :
     Prod.fst <$> (simulateQ enforceOracle oa).run qb = oa := by
   induction oa using OracleComp.inductionOn generalizing qb with
@@ -77,11 +77,11 @@ theorem fst_map_run_simulateQ {oa : OracleComp spec α} {qb : ι → ℕ}
 
 section Probability
 
-variable {ι : Type} {spec : OracleSpec ι} {α : Type} [DecidableEq ι]
+variable {spec : OracleSpec} {α : Type} [DecidableEq spec.Domain]
   [AnswerMeasure spec]
 
 /-- A structural query bound makes its budget check redundant in the counting event. -/
-theorem prEvent_counting_budget_eq {oa : OracleComp spec α} {qb : ι → ℕ}
+theorem prEvent_counting_budget_eq {oa : OracleComp spec α} {qb : spec.Domain → ℕ}
     (h : IsPerIndexQueryBound oa qb) (p : α → Prop) :
     Pr{let z ← countingOracle.simulate oa 0}[p z.1 ∧ z.2 ≤ qb] =
       Pr{let x ← oa}[p x] := by
@@ -97,7 +97,7 @@ theorem prEvent_counting_budget_eq {oa : OracleComp spec α} {qb : ι → ℕ}
 variable [∀ t, Inhabited (spec.Range t)]
 
 /-- Under a structural query bound, the counting event agrees with the enforcement event. -/
-theorem prEvent_counting_budget_eq_enforce {oa : OracleComp spec α} {qb : ι → ℕ}
+theorem prEvent_counting_budget_eq_enforce {oa : OracleComp spec α} {qb : spec.Domain → ℕ}
     (h : IsPerIndexQueryBound oa qb) (p : α → Prop) :
     Pr{let z ← countingOracle.simulate oa 0}[p z.1 ∧ z.2 ≤ qb] =
       Pr{let x ← Prod.fst <$> (simulateQ enforceOracle oa).run qb}[p x] := by
@@ -105,7 +105,7 @@ theorem prEvent_counting_budget_eq_enforce {oa : OracleComp spec α} {qb : ι �
   exact prEvent_counting_budget_eq h p
 
 /-- Structural boundedness implies the counting-to-enforcement event inequality. -/
-theorem prEvent_counting_budget_le_enforce {oa : OracleComp spec α} {qb : ι → ℕ}
+theorem prEvent_counting_budget_le_enforce {oa : OracleComp spec α} {qb : spec.Domain → ℕ}
     (h : IsPerIndexQueryBound oa qb) (p : α → Prop) :
     Pr{let z ← countingOracle.simulate oa 0}[p z.1 ∧ z.2 ≤ qb] ≤
       Pr{let x ← Prod.fst <$> (simulateQ enforceOracle oa).run qb}[p x] := by

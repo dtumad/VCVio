@@ -44,23 +44,20 @@ component states are embedded as separated lawful state lenses inside a larger
 state.
 -/
 @[reducible] def Stateful
-    {ιᵢ : Type uᵢ} {ιₑ : Type uₑ}
-    (I : OracleSpec.{uᵢ, vᵢ} ιᵢ) (E : OracleSpec.{uₑ, v} ιₑ) (σ : Type v) :
+    (I : OracleSpec.{uᵢ, vᵢ}) (E : OracleSpec.{uₑ, v}) (σ : Type v) :
     Type _ :=
   QueryImpl E (StateT σ (OracleComp I))
 
 /-- `QueryImpl.Stateful` is definitionally PolyFun's generic effectful
 stateful-handler interface specialized to oracle computations. -/
 theorem Stateful.eq_handler
-    {ιᵢ : Type uᵢ} {ιₑ : Type uₑ}
-    (I : OracleSpec.{uᵢ, vᵢ} ιᵢ) (E : OracleSpec.{uₑ, v} ιₑ) (σ : Type v) :
+    (I : OracleSpec.{uᵢ, vᵢ}) (E : OracleSpec.{uₑ, v}) (σ : Type v) :
     QueryImpl.Stateful I E σ =
       PFunctor.Handler.Stateful (OracleComp I) σ E.toPFunctor := rfl
 
 namespace Stateful
 
-variable {ιᵢ : Type uᵢ} {ιₘ : Type uₘ} {ιₑ : Type uₑ}
-  {I : OracleSpec.{uᵢ, vᵢ} ιᵢ} {M : OracleSpec.{uₘ, v} ιₘ} {E : OracleSpec.{uₑ, v} ιₑ}
+variable {M.Domainₘ : Type uₘ} {I : OracleSpec.{uᵢ, vᵢ}} {M : OracleSpec.{uₘ, v}ₘ} {E : OracleSpec.{uₑ, v}}
   {σ σ₁ σ₂ σ' : Type v}
 
 /-! ## State frames -/
@@ -124,7 +121,7 @@ end Frame
 
 /-- The identity stateful handler forwards each query to the same interface,
 threading a trivial state. -/
-protected def id (E : OracleSpec.{uₑ, v} ιₑ) :
+protected def id (E : OracleSpec.{uₑ, v}) :
     QueryImpl.Stateful E E PUnit.{v + 1} :=
   (QueryImpl.id' E).liftTarget (StateT PUnit.{v + 1} (OracleComp E))
 
@@ -203,7 +200,7 @@ The hypothesis is query-local: each lifted input query runs as the same query in
 the base interface and leaves the state unchanged. The conclusion lifts this to
 all computations by free-monad induction. -/
 theorem simulateQ_liftComp_run_of_query
-    {I₀ : OracleSpec.{uᵢ, v} ιᵢ} {M₀ : OracleSpec.{uₘ, v} ιₘ}
+    {I₀ : OracleSpec.{uᵢ, v}} {M₀ : OracleSpec.{uₘ, v}ₘ}
     [MonadLiftT (OracleQuery I₀) (OracleQuery M₀)]
     (h : QueryImpl.Stateful I₀ M₀ σ)
     (hquery : ∀ (t : I₀.Domain) (s : σ),
@@ -346,9 +343,8 @@ theorem run_link_ofStateless {α : Type v}
 
 /-! ## Parallel composition -/
 
-variable {ιᵢ₁ : Type uᵢ} {ιᵢ₂ : Type uᵢ} {ιₑ₁ : Type uₑ} {ιₑ₂ : Type uₑ}
-  {I₁ : OracleSpec.{uᵢ, v} ιᵢ₁} {I₂ : OracleSpec.{uᵢ, v} ιᵢ₂}
-  {E₁ : OracleSpec.{uₑ, v} ιₑ₁} {E₂ : OracleSpec.{uₑ, v} ιₑ₂}
+variable {I₁ : OracleSpec.{uᵢ, v}} {I₂ : OracleSpec.{uᵢ, v}}
+  {E₁ : OracleSpec.{uₑ, v}} {E₂ : OracleSpec.{uₑ, v}}
 
 /-- A typed routing of a named export interface into a two-component parallel
 composition.
@@ -356,9 +352,9 @@ composition.
 Each external query is owned by exactly one component. The equivalence transports
 between the external response type and the selected component response type. -/
 structure ExportRoute
-    {ιₑ : Type uₑ} (E : OracleSpec.{uₑ, v} ιₑ)
-    {ιₑ₁ : Type uₑ} (E₁ : OracleSpec.{uₑ, v} ιₑ₁)
-    {ιₑ₂ : Type uₑ} (E₂ : OracleSpec.{uₑ, v} ιₑ₂) where
+    (E : OracleSpec.{uₑ, v})
+    (E₁ : OracleSpec.{uₑ, v})
+    (E₂ : OracleSpec.{uₑ, v}) where
   /-- For each external query `t`, the component that owns it, the component query it becomes,
   and the equivalence between the external and component response types. -/
   route : (t : E.Domain) →
@@ -368,7 +364,7 @@ structure ExportRoute
 namespace ExportRoute
 
 /-- The tagged component query selected by an export route. -/
-def target {ιₑ : Type uₑ} {E : OracleSpec.{uₑ, v} ιₑ}
+def target {E : OracleSpec.{uₑ, v}}
     (R : ExportRoute E E₁ E₂) (t : E.Domain) : E₁.Domain ⊕ E₂.Domain :=
   match R.route t with
   | .inl q => .inl q.1
@@ -389,9 +385,9 @@ query space. It is the right assumption for transporting query-count predicates
 from a routed interface to its component interfaces without double-counting
 aliases. -/
 structure LawfulExportRoute
-    {ιₑ : Type uₑ} (E : OracleSpec.{uₑ, v} ιₑ)
-    {ιₑ₁ : Type uₑ} (E₁ : OracleSpec.{uₑ, v} ιₑ₁)
-    {ιₑ₂ : Type uₑ} (E₂ : OracleSpec.{uₑ, v} ιₑ₂)
+    (E : OracleSpec.{uₑ, v})
+    (E₁ : OracleSpec.{uₑ, v})
+    (E₂ : OracleSpec.{uₑ, v})
     extends ExportRoute E E₁ E₂ where
   /-- The route does not alias two external query names to one tagged component query. -/
   target_injective : Function.Injective toExportRoute.target
@@ -402,9 +398,9 @@ interfaces.
 This is the strongest route law: every component query is exposed exactly once,
 and every external query is a named presentation of a tagged component query. -/
 structure ExportRouteEquiv
-    {ιₑ : Type uₑ} (E : OracleSpec.{uₑ, v} ιₑ)
-    {ιₑ₁ : Type uₑ} (E₁ : OracleSpec.{uₑ, v} ιₑ₁)
-    {ιₑ₂ : Type uₑ} (E₂ : OracleSpec.{uₑ, v} ιₑ₂)
+    (E : OracleSpec.{uₑ, v})
+    (E₁ : OracleSpec.{uₑ, v})
+    (E₂ : OracleSpec.{uₑ, v})
     extends ExportRoute E E₁ E₂ where
   /-- The query-domain equivalence induced by the route. -/
   targetEquiv : E.Domain ≃ E₁.Domain ⊕ E₂.Domain
@@ -415,7 +411,7 @@ namespace ExportRouteEquiv
 
 /-- Forget an equivalence route to a no-alias lawful route. -/
 def toLawfulExportRoute
-    {ιₑ : Type uₑ} {E : OracleSpec.{uₑ, v} ιₑ}
+    {E : OracleSpec.{uₑ, v}}
     (R : ExportRouteEquiv E E₁ E₂) : LawfulExportRoute E E₁ E₂ where
   toExportRoute := R.toExportRoute
   target_injective := by
@@ -440,8 +436,7 @@ the right view. The frame's separation law records that these two updates are
 non-interfering.
 -/
 def parRouteWith
-    {ιᵢ : Type uᵢ} {I : OracleSpec.{uᵢ, v} ιᵢ} {ιₑ : Type uₑ}
-    {E : OracleSpec.{uₑ, v} ιₑ} (F : Frame σ σ₁ σ₂)
+    {I : OracleSpec.{uᵢ, v}} {E : OracleSpec.{uₑ, v}} (F : Frame σ σ₁ σ₂)
     (R : ExportRoute E E₁ E₂)
     [MonadLiftT (OracleQuery I₁) (OracleQuery I)]
     [MonadLiftT (OracleQuery I₂) (OracleQuery I)]
@@ -458,8 +453,7 @@ def parRouteWith
 /-- Parallel composition of two stateful handlers over a named export interface
 and canonical product state. -/
 def parRoute
-    {ιᵢ : Type uᵢ} {I : OracleSpec.{uᵢ, v} ιᵢ} {ιₑ : Type uₑ}
-    {E : OracleSpec.{uₑ, v} ιₑ} (R : ExportRoute E E₁ E₂)
+    {I : OracleSpec.{uᵢ, v}} {E : OracleSpec.{uₑ, v}} (R : ExportRoute E E₁ E₂)
     [MonadLiftT (OracleQuery I₁) (OracleQuery I)]
     [MonadLiftT (OracleQuery I₂) (OracleQuery I)]
     (h₁ : QueryImpl.Stateful I₁ E₁ σ₁) (h₂ : QueryImpl.Stateful I₂ E₂ σ₂) :
@@ -469,7 +463,7 @@ def parRoute
 /-- Parallel composition of two stateful handlers using an explicit state
 frame and ambient import interface. The export interface is the canonical sum. -/
 def parWithImports
-    {ιᵢ : Type uᵢ} {I : OracleSpec.{uᵢ, v} ιᵢ} (F : Frame σ σ₁ σ₂)
+    {I : OracleSpec.{uᵢ, v}} (F : Frame σ σ₁ σ₂)
     [MonadLiftT (OracleQuery I₁) (OracleQuery I)]
     [MonadLiftT (OracleQuery I₂) (OracleQuery I)]
     (h₁ : QueryImpl.Stateful I₁ E₁ σ₁) (h₂ : QueryImpl.Stateful I₂ E₂ σ₂) :
@@ -481,8 +475,7 @@ component import embeddings are known to have disjoint query images. The
 implementation is the same as `parRouteWith`; the extra hypothesis is available
 to downstream proofs that need sum-like import separation. -/
 def parRouteSeparatedWith
-    {ιᵢ : Type uᵢ} {I : OracleSpec.{uᵢ, v} ιᵢ} {ιₑ : Type uₑ}
-    {E : OracleSpec.{uₑ, v} ιₑ} (F : Frame σ σ₁ σ₂)
+    {I : OracleSpec.{uᵢ, v}} {E : OracleSpec.{uₑ, v}} (F : Frame σ σ₁ σ₂)
     (R : ExportRoute E E₁ E₂) [I₁ ⊂ₒ I] [I₁ ˡ⊂ₒ I] [I₂ ⊂ₒ I] [I₂ ˡ⊂ₒ I]
     [I₁ ⊥ₒ[I] I₂]
     (h₁ : QueryImpl.Stateful I₁ E₁ σ₁) (h₂ : QueryImpl.Stateful I₂ E₂ σ₂) :

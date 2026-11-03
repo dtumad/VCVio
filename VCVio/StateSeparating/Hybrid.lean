@@ -22,7 +22,7 @@ open OracleSpec OracleComp
 
 namespace QueryImpl.Stateful
 
-variable {ιₑ : Type uₑ} {E : OracleSpec.{uₑ, 0} ιₑ}
+variable {E : OracleSpec.{uₑ, 0}}
 
 /-- Hybrid lemma for any sequence of stateful handlers and explicit initial
 states. -/
@@ -38,8 +38,8 @@ theorem advantage_hybrid {σ : ℕ → Type}
     rw [Finset.sum_range_succ]
     exact (advantage_triangle _ _ _ _ _ _ _).trans (by gcongr)
 
-variable {ιₘ : Type uₘ}
-  {M : OracleSpec.{uₘ, 0} ιₘ} {σP σ₀ σ₁ : Type}
+variable {M.Domainₘ : Type uₘ}
+  {M : OracleSpec.{uₘ, 0}ₘ} {σP σ₀ σ₁ : Type}
 
 /-- Advantage form of the linked-game reduction. The outer handler and its
 initial state are absorbed into the shifted client. -/

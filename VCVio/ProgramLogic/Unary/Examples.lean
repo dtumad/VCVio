@@ -20,7 +20,7 @@ universe u
 
 namespace OracleComp.ProgramLogic
 
-variable {ι : Type u} {spec : OracleSpec ι}
+variable {spec : OracleSpec}
 variable [OracleSpec.AnswerMeasure spec]
 variable {α β : Type}
 

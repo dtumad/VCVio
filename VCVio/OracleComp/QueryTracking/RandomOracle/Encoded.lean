@@ -102,38 +102,38 @@ a uniform typed answer completed with an independent uniform value is a uniform 
 whose truncation is the typed answer (`evalDist_bind_complete`). The partial map `route` reads a
 raw input `x` as the typed point it encodes: it is defined on every encoding, and a typed point it
 returns encodes `x`. -/
-structure RandomOracleEncoding {ι : Type} (spec : OracleSpec ι) (D M : Type) [SampleableType M]
+structure RandomOracleEncoding (spec : OracleSpec) (D M : Type) [SampleableType M]
     [∀ t, SampleableType (spec.Range t)] where
   /-- The input of the single oracle that encodes a typed point. -/
-  encode : ι → D
+  encode : spec.Domain → D
   /-- The typed answer read off a value of the single oracle. -/
-  trunc : (t : ι) → M → spec.Range t
+  trunc : (t : spec.Domain) → M → spec.Range t
   /-- A value of the single oracle carrying a typed answer, completed from another value. -/
-  complete : (t : ι) → spec.Range t → M → M
+  complete : (t : spec.Domain) → spec.Range t → M → M
   /-- The typed point that a raw input of the single oracle is read as, if any. -/
-  route : D → Option ι
-  encode_eq_of_route_eq_some {x : D} {t : ι} : route x = some t → encode t = x
-  isSome_route_encode (t : ι) : (route (encode t)).isSome
-  trunc_complete (t : ι) (r : spec.Range t) (p : M) : trunc t (complete t r p) = r
-  evalDist_bind_complete (t : ι) {γ : Type} [MeasurableSpace γ]
+  route : D → Option spec.Domain
+  encode_eq_of_route_eq_some {x : D} {t : spec.Domain} : route x = some t → encode t = x
+  isSome_route_encode (t : spec.Domain) : (route (encode t)).isSome
+  trunc_complete (t : spec.Domain) (r : spec.Range t) (p : M) : trunc t (complete t r p) = r
+  evalDist_bind_complete (t : spec.Domain) {γ : Type} [MeasurableSpace γ]
     (f : spec.Range t → M → ProbComp γ) :
     𝒟[do let r ← $ᵗ spec.Range t; let p ← $ᵗ M; f r (complete t r p)] =
       𝒟[do let w ← $ᵗ M; f (trunc t w) w]
 
 namespace RandomOracleEncoding
 
-variable {ι D M : Type} {spec : OracleSpec ι} [SampleableType M]
+variable {spec.Domain D M : Type} {spec : OracleSpec} [SampleableType M]
   [∀ t, SampleableType (spec.Range t)]
 
 /-- The encoding of `spec` into `D →ₒ M` by `encode` and `route` in which every value of `M`
 splits, for each typed point `t`, into a typed answer at `t` and a tail in `Tail t`: truncating
 takes the typed answer, and completing a typed answer joins it to the tail of the completing
 value. -/
-@[expose] noncomputable def ofSplit {Tail : ι → Type} [∀ t, SampleableType (Tail t)]
-    (encode : ι → D) (route : D → Option ι)
+@[expose] noncomputable def ofSplit {Tail : spec.Domain → Type} [∀ t, SampleableType (Tail t)]
+    (encode : spec.Domain → D) (route : D → Option spec.Domain)
     (encode_eq_of_route_eq_some : ∀ {x t}, route x = some t → encode t = x)
     (isSome_route_encode : ∀ t, (route (encode t)).isSome)
-    (split : (t : ι) → M ≃ spec.Range t × Tail t) : RandomOracleEncoding spec D M where
+    (split : (t : spec.Domain) → M ≃ spec.Range t × Tail t) : RandomOracleEncoding spec D M where
   encode := encode
   trunc t w := (split t w).1
   complete t r p := (split t).symm (r, (split t p).2)
@@ -182,7 +182,7 @@ truncated. -/
 variable {E}
 
 /-- A typed query of the single-oracle world is the truncated query at its encoding. -/
-theorem singleHashImpl_inl_run (t : ι) (b : (D →ₒ M).QueryCache) :
+theorem singleHashImpl_inl_run (t : spec.Domain) (b : (D →ₒ M).QueryCache) :
     (E.singleHashImpl (.inl t)).run b =
       (fun z ↦ (E.trunc t z.1, z.2)) <$> ((D →ₒ M).randomOracle (E.encode t)).run b := by
   simp only [singleHashImpl, QueryImpl.add_apply_inl, truncatedImpl, StateT.run_map]
@@ -214,7 +214,7 @@ end single
 
 section typed
 
-variable [DecidableEq ι] [DecidableEq D]
+variable [DecidableEq spec.Domain] [DecidableEq D]
 
 /-- Independent lazy random oracles for the typed points and for a private table of the raw
 inputs, on the pair of their caches. -/
@@ -250,7 +250,7 @@ lazy random oracles and raw inputs by the router. -/
 variable {E}
 
 /-- A typed query of the typed world queries the typed lazy random oracle on the typed cache. -/
-theorem typedHashImpl_inl_run (t : ι) (s : spec.QueryCache × (D →ₒ M).QueryCache) :
+theorem typedHashImpl_inl_run (t : spec.Domain) (s : spec.QueryCache × (D →ₒ M).QueryCache) :
     (E.typedHashImpl (.inl t)).run s =
       (fun z ↦ (z.1, (z.2, s.2))) <$> (spec.randomOracle t).run s.1 := by
   obtain ⟨c, pv⟩ := s
@@ -286,7 +286,7 @@ theorem typedImpl_inl_run (n : ℕ) (c : spec.QueryCache) (pv : (D →ₒ M).Que
 
 /-- On a typed query the typed world is the random oracle model of `spec`, with the table of
 private values passive. -/
-theorem typedImpl_inr_inl_run (t : ι) (c : spec.QueryCache) (pv : (D →ₒ M).QueryCache) :
+theorem typedImpl_inr_inl_run (t : spec.Domain) (c : spec.QueryCache) (pv : (D →ₒ M).QueryCache) :
     (E.typedImpl (.inr (.inl t))).run (c, pv) =
       (fun z ↦ (z.1, (z.2, pv))) <$> (spec.romImpl (.inr t)).run c :=
   typedHashImpl_inl_run (E := E) t (c, pv)
@@ -341,7 +341,7 @@ theorem singleView_apply_of_not_covered {c : spec.QueryCache} {pv : (D →ₒ M)
 
 /-- Without a clash, the single view at the encoding of a cached typed point is the table entry
 completed by its typed answer. -/
-theorem singleView_apply_encode {c : spec.QueryCache} {pv : (D →ₒ M).QueryCache} {q : ι}
+theorem singleView_apply_encode {c : spec.QueryCache} {pv : (D →ₒ M).QueryCache} {q : spec.Domain}
     {r : spec.Range q} (hc : ¬E.Clash c) (hq : c q = some r) :
     E.singleView c pv (E.encode q) = (pv (E.encode q)).map (E.complete q r) := by
   have hcov : E.Covered c (E.encode q) := ⟨q, rfl, by simp [hq]⟩
@@ -370,7 +370,7 @@ end view
 
 section mark
 
-variable [DecidableEq ι]
+variable [DecidableEq spec.Domain]
 
 /-- The step of the typed world at `u` caches a new typed point whose encoding is already
 covered. -/
@@ -390,7 +390,7 @@ def mark (c : spec.QueryCache) :
 variable {E}
 
 /-- Caching a new typed point whose encoding is covered creates a clash. -/
-theorem clash_cacheQuery_of_covered {c : spec.QueryCache} {q : ι} (hq : c q = none)
+theorem clash_cacheQuery_of_covered {c : spec.QueryCache} {q : spec.Domain} (hq : c q = none)
     (hcov : E.Covered c (E.encode q)) (r : spec.Range q) : E.Clash (c.cacheQuery q r) := by
   obtain ⟨q', he, hq'⟩ := hcov
   have hne : q' ≠ q := by rintro rfl; simp [hq] at hq'
@@ -398,7 +398,7 @@ theorem clash_cacheQuery_of_covered {c : spec.QueryCache} {q : ι} (hq : c q = n
   rwa [QueryCache.cacheQuery_of_ne _ _ hne]
 
 /-- Caching a typed point whose encoding is not covered creates no clash. -/
-theorem not_clash_cacheQuery {c : spec.QueryCache} {q : ι} (hc : ¬E.Clash c)
+theorem not_clash_cacheQuery {c : spec.QueryCache} {q : spec.Domain} (hc : ¬E.Clash c)
     (hcov : ¬E.Covered c (E.encode q)) (r : spec.Range q) : ¬E.Clash (c.cacheQuery q r) := by
   rintro ⟨q₁, q₂, hne, h₁, h₂, he⟩
   rw [QueryCache.isSome_cacheQuery_apply_iff] at h₁ h₂
@@ -410,7 +410,7 @@ theorem not_clash_cacheQuery {c : spec.QueryCache} {q : ι} (hc : ¬E.Clash c)
 
 /-- Recording a step keeps every cached typed point cached. -/
 theorem isSome_mark {c : spec.QueryCache} {u : (spec + (D →ₒ M)).Domain}
-    (a : (spec + (D →ₒ M)).Range u) {q : ι} (hq : (c q).isSome) : (E.mark c u a q).isSome := by
+    (a : (spec + (D →ₒ M)).Range u) {q : spec.Domain} (hq : (c q).isSome) : (E.mark c u a q).isSome := by
   rcases u with t | x
   · simp [mark, QueryCache.isSome_cacheQuery_apply_iff, hq]
   · simp only [mark]
@@ -434,7 +434,7 @@ theorem clash_mark {c : spec.QueryCache} {u : (spec + (D →ₒ M)).Domain}
 theorem finite_mark {c : spec.QueryCache} (hf : {q | (c q).isSome}.Finite)
     (u : (spec + (D →ₒ M)).Domain) (a : (spec + (D →ₒ M)).Range u) :
     {q | (E.mark c u a q).isSome}.Finite := by
-  have hins : ∀ (t : ι) (r : spec.Range t), {q | ((c.cacheQuery t r) q).isSome}.Finite :=
+  have hins : ∀ (t : spec.Domain) (r : spec.Range t), {q | ((c.cacheQuery t r) q).isSome}.Finite :=
     fun t _ ↦ (hf.insert t).subset fun q hq ↦ by
       simp only [Set.mem_ofPred_eq, QueryCache.isSome_cacheQuery_apply_iff] at hq
       simpa using hq
@@ -522,7 +522,7 @@ theorem isSome_apply_encode_of_mem_support_queryAll {c : spec.QueryCache}
     {pv : (D →ₒ M).QueryCache} (hf : {q | (c q).isSome}.Finite) {w : Unit × (D →ₒ M).QueryCache}
     (hw : w ∈ support ((simulateQ (D →ₒ M).randomOracle
       ((D →ₒ M).queryAll (hf.toFinset.toList.map E.encode))).run pv))
-    {q : ι} (hq : (c q).isSome) : (w.2 (E.encode q)).isSome :=
+    {q : spec.Domain} (hq : (c q).isSome) : (w.2 (E.encode q)).isSome :=
   ((QueryImpl.withCaching_queryAll_le_and_isSome_iff _ hw).2 _).2
     (.inr ((mem_map_encode_toList_iff hf _).2 ⟨q, rfl, hq⟩))
 
@@ -532,7 +532,7 @@ end fill
 
 section intertwining
 
-variable [DecidableEq ι] [DecidableEq D]
+variable [DecidableEq spec.Domain] [DecidableEq D]
 
 open Classical in
 /-- The typed world patched to follow the single-oracle world through `fill` on the steps that
@@ -575,7 +575,7 @@ theorem mem_support_typedHashImpl_run {u : (spec + (D →ₒ M)).Domain} {c : sp
     exact ⟨QueryImpl.withCaching_run_eq_cacheQuery _ hy, fun _ hx ↦ .inl hx⟩
   · rw [typedHashImpl_inr_run, mem_support_bind_iff] at hz
     obtain ⟨y, hy, hz⟩ := hz
-    have htab : ∀ x', (y.2 x').isSome → (pv x').isSome ∨ (.inr x : ι ⊕ D) = .inr x' :=
+    have htab : ∀ x', (y.2 x').isSome → (pv x').isSome ∨ (.inr x : spec.Domain ⊕ D) = .inr x' :=
       fun x' hx' ↦ ((QueryImpl.withCaching_run_isSome_apply_iff _ hy x').1 hx').imp_right
         fun h ↦ by rw [h]
     cases hr : E.route x with
@@ -593,7 +593,7 @@ theorem mem_support_typedHashImpl_run {u : (spec + (D →ₒ M)).Domain} {c : sp
 /-- Without a clash, caching a typed point `q` with an uncovered encoding and tabulating its
 encoding tabulates there, in the single view, the typed answer completed from the table entry. -/
 theorem singleView_cacheQuery_cacheQuery {c : spec.QueryCache} {pv : (D →ₒ M).QueryCache}
-    {q : ι} (hc : ¬E.Clash c) (hcov : ¬E.Covered c (E.encode q)) (r : spec.Range q) (p : M) :
+    {q : spec.Domain} (hc : ¬E.Clash c) (hcov : ¬E.Covered c (E.encode q)) (r : spec.Range q) (p : M) :
     E.singleView (c.cacheQuery q r) (pv.cacheQuery (E.encode q) p) =
       (E.singleView c pv).cacheQuery (E.encode q) (E.complete q r p) := by
   have hc' := not_clash_cacheQuery hc hcov r
@@ -620,7 +620,7 @@ theorem singleView_cacheQuery_cacheQuery {c : spec.QueryCache} {pv : (D →ₒ M
 
 /-- Caching a typed point `q` with an uncovered encoding fills by querying the table at the
 encoding of `q` first and then at the encodings of the other cached typed points. -/
-theorem evalDist_fill_cacheQuery_bind {c : spec.QueryCache} {pv : (D →ₒ M).QueryCache} {q : ι}
+theorem evalDist_fill_cacheQuery_bind {c : spec.QueryCache} {pv : (D →ₒ M).QueryCache} {q : spec.Domain}
     (hc : ¬E.Clash c) (hf : {q | (c q).isSome}.Finite) (hcov : ¬E.Covered c (E.encode q))
     (r : spec.Range q) {γ : Type} [MeasurableSpace γ] (g : (D →ₒ M).QueryCache → ProbComp γ) :
     𝒟[E.fill (c.cacheQuery q r, pv) >>= g] =
@@ -651,7 +651,7 @@ theorem evalDist_fill_cacheQuery_bind {c : spec.QueryCache} {pv : (D →ₒ M).Q
 /-- A fresh typed answer at a point `q` with an uncovered encoding, a fresh table entry there and
 the fill of the other cached typed points, read through the single view, are the fill followed by
 a fresh value of the single oracle at the encoding of `q`, truncated to the typed answer. -/
-private theorem evalDist_fresh {c : spec.QueryCache} {pv : (D →ₒ M).QueryCache} {q : ι}
+private theorem evalDist_fresh {c : spec.QueryCache} {pv : (D →ₒ M).QueryCache} {q : spec.Domain}
     (hc : ¬E.Clash c) (hf : {q | (c q).isSome}.Finite)
     (hraw : ∀ x, (pv x).isSome → ∀ q, E.route x = some q → (c q).isSome)
     (hcov : ¬E.Covered c (E.encode q)) {γ : Type} [MeasurableSpace γ]

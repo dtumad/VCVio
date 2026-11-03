@@ -29,8 +29,7 @@ open ENNReal Std.WP OracleComp.Lower
 
 namespace OracleComp.Rel.Probabilistic
 
-variable {ι₁ ι₂ : Type u}
-variable {spec₁ : OracleSpec.{u, 0} ι₁} {spec₂ : OracleSpec.{u, 0} ι₂}
+variable variable {spec₁ : OracleSpec.{u, 0}} {spec₂ : OracleSpec.{u, 0}}
 variable [OracleSpec.AnswerMeasure spec₁] [OracleSpec.AnswerMeasure spec₂]
 variable {α β γ δ : Type}
 

@@ -59,7 +59,7 @@ open OracleComp.ProgramLogic
 
 section exact
 
-variable {ι : Type u} {spec : OracleSpec ι} [OracleSpec.AnswerMeasure spec]
+variable {spec : OracleSpec} [OracleSpec.AnswerMeasure spec]
 
 /-- A lifted primitive query integrates the postcondition against its answer measure. This is
 the form `vcgen` reaches from `liftM (OracleSpec.query t)`. -/
@@ -101,9 +101,9 @@ end exact
 
 section liftComp
 
-variable {ι : Type u} {spec : OracleSpec ι} {α : Type}
+variable {spec : OracleSpec} {α : Type}
   [OracleSpec.UniformAnswerMeasure spec]
-  {τ : Type u'} {superSpec : OracleSpec τ} [OracleSpec.UniformAnswerMeasure superSpec]
+  {superSpec : OracleSpec} [OracleSpec.UniformAnswerMeasure superSpec]
   [spec ⊂ₒ superSpec] [spec ˡ⊂ₒ superSpec]
 
 /-- Lifting along an inclusion of uniform specifications keeps the expectation. The precondition
@@ -124,7 +124,7 @@ end liftComp
 
 section pointwise
 
-variable {ι : Type u} {spec : OracleSpec ι} [OracleSpec.AnswerMeasure spec] {α : Type}
+variable {spec : OracleSpec} [OracleSpec.AnswerMeasure spec] {α : Type}
 
 /-- A lower bound at every output bounds the expectation. -/
 theorem iInf_le_wp (oa : OracleComp spec α) (post : α → ℝ≥0∞) :

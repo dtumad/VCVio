@@ -118,7 +118,7 @@ namespace OracleComp
 
 section Potential
 
-variable {ι : Type} {spec : OracleSpec ι} {σ α τ : Type}
+variable {spec : OracleSpec} {σ α τ : Type}
 
 /-- A potential that never decreases along a step never decreases along a whole run. -/
 theorem le_of_mem_support_run_simulateQ_of_step (so : QueryImpl spec (StateT σ ProbComp))
@@ -349,7 +349,7 @@ end Potential
 
 section Steps
 
-variable {ι : Type} [DecidableEq ι] {spec : OracleSpec.{0, 0} ι}
+variable [DecidableEq spec.Domain] {spec : OracleSpec.{0, 0}}
   [∀ t : spec.Domain, SampleableType (spec.Range t)]
 
 /-- A private-sampling step of the shared lazy oracle is a sample that leaves the cache

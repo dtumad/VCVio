@@ -177,7 +177,7 @@ proof inducts on `oa`: at `pure` the output is the start state (`hF` applies); a
 step's expected continuation functional is itself `Rel`-invariant by the inductive hypothesis, so
 `hstep` closes the step. Outputs and states carry the discrete measurable structure. -/
 theorem lintegral_simulateQ_run_eq_of_rel
-    {ι : Type} {spec : OracleSpec ι} {σ : Type}
+    {spec : OracleSpec} {σ : Type}
     (impl : QueryImpl spec (StateT σ ProbComp))
     {γ : Type} (oa : OracleComp spec γ)
     (Rel : σ → σ → Prop)

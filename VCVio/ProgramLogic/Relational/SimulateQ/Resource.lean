@@ -41,8 +41,8 @@ closed form. -/
 
 section SingleWorldResourceBad
 
-variable {ι : Type} {spec : OracleSpec ι}
-variable {ι' : Type} {spec' : OracleSpec ι'} [AnswerMeasure spec']
+variable {spec : OracleSpec}
+variable {spec' : OracleSpec} [AnswerMeasure spec']
 variable {σ γ : Type}
 
 /-- **Single-world resource-charged bad accumulator.**
@@ -146,8 +146,8 @@ types. -/
 
 section AveragedStateMeasureBad
 
-variable {ι : Type} {spec : OracleSpec ι}
-variable {ι' : Type} {spec' : OracleSpec ι'} [AnswerMeasure spec']
+variable {spec : OracleSpec}
+variable {spec' : OracleSpec} [AnswerMeasure spec']
 variable {σ γ : Type}
 
 /-- **Bare-measure averaged bad mass.** The per-state bad mass of a run, averaged against an

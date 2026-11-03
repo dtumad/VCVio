@@ -48,7 +48,7 @@ open OracleSpec
 
 namespace OracleComp
 
-variable {τ ι : Type} {free : OracleSpec.{0, 0} τ} {spec : OracleSpec.{0, 0} ι} {α β : Type}
+variable {free : OracleSpec.{0, 0}} {spec : OracleSpec.{0, 0}} {α β : Type}
 
 /-! ## Preprocessing budget -/
 
@@ -62,38 +62,38 @@ abbrev IsPreprocessingQueryBound (oa : OracleComp (unifSpec + spec) α) (Q : ℕ
 /-- Whether a query fits the online budget `(r, q)`: queries to the free summand always fit, and a
 round `ts` needs a round left and room for its `ts.length` points. -/
 @[expose]
-def onlineCanQuery : τ ⊕ List ι → ℕ × ℕ → Prop
+def onlineCanQuery : free.Domain ⊕ List spec.Domain → ℕ × ℕ → Prop
   | .inl _, _ => True
   | .inr ts, b => 0 < b.1 ∧ ts.length ≤ b.2
 
 /-- The online budget left after a query: queries to the free summand cost nothing, and a round
 `ts` costs one round and `ts.length` points. -/
 @[expose]
-def onlineCost : τ ⊕ List ι → ℕ × ℕ → ℕ × ℕ
+def onlineCost : free.Domain ⊕ List spec.Domain → ℕ × ℕ → ℕ × ℕ
   | .inl _, b => b
   | .inr ts, b => (b.1 - 1, b.2 - ts.length)
 
 /-- The online budget a single query uses: nothing for a query to the free summand, and one round
 of `ts.length` points for a round `ts`. -/
 @[expose]
-def onlineStep : τ ⊕ List ι → ℕ × ℕ
+def onlineStep : free.Domain ⊕ List spec.Domain → ℕ × ℕ
   | .inl _ => (0, 0)
   | .inr ts => (1, ts.length)
 
-@[simp] lemma onlineCanQuery_inl (n : τ) (b : ℕ × ℕ) :
-    onlineCanQuery (ι := ι) (.inl n) b := trivial
+@[simp] lemma onlineCanQuery_inl (n : free.Domain) (b : ℕ × ℕ) :
+    onlineCanQuery (spec.Domain := spec.Domain) (.inl n) b := trivial
 
-@[simp] lemma onlineCanQuery_inr (ts : List ι) (b : ℕ × ℕ) :
-    onlineCanQuery (τ := τ) (.inr ts) b ↔ 0 < b.1 ∧ ts.length ≤ b.2 := Iff.rfl
+@[simp] lemma onlineCanQuery_inr (ts : List spec.Domain) (b : ℕ × ℕ) :
+    onlineCanQuery (free.Domain := free.Domain) (.inr ts) b ↔ 0 < b.1 ∧ ts.length ≤ b.2 := Iff.rfl
 
-@[simp] lemma onlineCost_inl (n : τ) (b : ℕ × ℕ) : onlineCost (ι := ι) (.inl n) b = b := rfl
+@[simp] lemma onlineCost_inl (n : free.Domain) (b : ℕ × ℕ) : onlineCost (spec.Domain := spec.Domain) (.inl n) b = b := rfl
 
-@[simp] lemma onlineCost_inr (ts : List ι) (b : ℕ × ℕ) :
-    onlineCost (τ := τ) (.inr ts) b = (b.1 - 1, b.2 - ts.length) := rfl
+@[simp] lemma onlineCost_inr (ts : List spec.Domain) (b : ℕ × ℕ) :
+    onlineCost (free.Domain := free.Domain) (.inr ts) b = (b.1 - 1, b.2 - ts.length) := rfl
 
-@[simp] lemma onlineStep_inl (n : τ) : onlineStep (ι := ι) (.inl n) = (0, 0) := rfl
+@[simp] lemma onlineStep_inl (n : free.Domain) : onlineStep (spec.Domain := spec.Domain) (.inl n) = (0, 0) := rfl
 
-@[simp] lemma onlineStep_inr (ts : List ι) : onlineStep (τ := τ) (.inr ts) = (1, ts.length) :=
+@[simp] lemma onlineStep_inr (ts : List spec.Domain) : onlineStep (free.Domain := free.Domain) (.inr ts) = (1, ts.length) :=
   rfl
 
 /-- `oa` submits at most `r` rounds of parallel queries to `spec`, holding at most `q` points in
@@ -104,27 +104,27 @@ abbrev IsOnlineQueryBound (oa : OracleComp (free + spec.batch) α) (b : ℕ × �
 /-- The number of points a single query submits: none for a query to the free summand, and
 `ts.length` for a round `ts`. -/
 @[expose]
-def pointCount : τ ⊕ List ι → ℕ
+def pointCount : free.Domain ⊕ List spec.Domain → ℕ
   | .inl _ => 0
   | .inr ts => ts.length
 
-@[simp] lemma pointCount_inl (n : τ) : pointCount (ι := ι) (.inl n) = 0 := rfl
+@[simp] lemma pointCount_inl (n : free.Domain) : pointCount (spec.Domain := spec.Domain) (.inl n) = 0 := rfl
 
-@[simp] lemma pointCount_inr (ts : List ι) : pointCount (τ := τ) (.inr ts) = ts.length := rfl
+@[simp] lemma pointCount_inr (ts : List spec.Domain) : pointCount (free.Domain := free.Domain) (.inr ts) = ts.length := rfl
 
 /-- `oa` submits rounds of parallel queries to `spec` holding at most `q` points in total, on
 every path; the number of rounds and its queries to `free` are free. -/
 abbrev IsPointQueryBound (oa : OracleComp (free + spec.batch) α) (q : ℕ) : Prop :=
   IsQueryBound oa q (fun t q => pointCount t ≤ q) (fun t q => q - pointCount t)
 
-lemma isOnlineQueryBound_query_bind_inl_iff (n : τ)
+lemma isOnlineQueryBound_query_bind_inl_iff (n : free.Domain)
     (mx : (free + spec.batch).Range (.inl n) → OracleComp (free + spec.batch) α)
     (b : ℕ × ℕ) :
     IsOnlineQueryBound (liftM ((free + spec.batch).query (.inl n)) >>= mx) b ↔
       ∀ u, IsOnlineQueryBound (mx u) b := by
   simp [IsOnlineQueryBound]
 
-lemma isOnlineQueryBound_query_bind_inr_iff (ts : List ι)
+lemma isOnlineQueryBound_query_bind_inr_iff (ts : List spec.Domain)
     (mx : (free + spec.batch).Range (.inr ts) → OracleComp (free + spec.batch) α)
     (b : ℕ × ℕ) :
     IsOnlineQueryBound (liftM ((free + spec.batch).query (.inr ts)) >>= mx) b ↔
@@ -175,7 +175,7 @@ lemma isOnlineQueryBound_pure (x : α) (b : ℕ × ℕ) :
 
 /-- A program on oracles `spec₀` inside the free summand, such as a `ProbComp` flipping local
 coins, submits no rounds once lifted. -/
-lemma isOnlineQueryBound_liftComp {κ : Type} {spec₀ : OracleSpec.{0, 0} κ}
+lemma isOnlineQueryBound_liftComp {spec₀ : OracleSpec.{0, 0}}
     [MonadLiftT (OracleQuery spec₀) (OracleQuery free)] (oa : OracleComp spec₀ α) (b : ℕ × ℕ) :
     IsOnlineQueryBound (liftComp oa (free + spec.batch)) b := by
   induction oa using OracleComp.inductionOn with
@@ -197,19 +197,19 @@ lemma isOnlineQueryBound_bind_le {oa : OracleComp (free + spec.batch) α}
   (isOnlineQueryBound_bind h₁ h₂).mono (Prod.mk_le_mk.mpr hb)
 
 /-- The round `queryRound₂ p q` costs one round of `k + l` points. -/
-lemma isOnlineQueryBound_queryRound₂ {k l : ℕ} (p : Fin k → ι) (q : Fin l → ι) :
+lemma isOnlineQueryBound_queryRound₂ {k l : ℕ} (p : Fin k → spec.Domain) (q : Fin l → spec.Domain) :
     IsOnlineQueryBound (queryRound₂ (free := free) (spec := spec) p q) (1, k + l) := by
   rw [queryRound₂, IsOnlineQueryBound, isQueryBound_map_iff, isQueryBound_query_iff]
   simp
 
 /-- The round `queryRound p` costs one round of `k` points. -/
-lemma isOnlineQueryBound_queryRound {k : ℕ} (p : Fin k → ι) :
+lemma isOnlineQueryBound_queryRound {k : ℕ} (p : Fin k → spec.Domain) :
     IsOnlineQueryBound (queryRound (free := free) (spec := spec) p) (1, k) := by
   rw [queryRound, IsOnlineQueryBound, isQueryBound_map_iff]
   exact isOnlineQueryBound_queryRound₂ p _
 
 /-- The single-point round `queryPoint t` costs one round of one point. -/
-lemma isOnlineQueryBound_queryPoint (t : ι) :
+lemma isOnlineQueryBound_queryPoint (t : spec.Domain) :
     IsOnlineQueryBound (queryPoint (free := free) (spec := spec) t) (1, 1) := by
   rw [queryPoint, IsOnlineQueryBound, isQueryBound_map_iff]
   exact isOnlineQueryBound_queryRound _
@@ -217,7 +217,7 @@ lemma isOnlineQueryBound_queryPoint (t : ι) :
 /-! ## Rewriting rounds as single queries -/
 
 /-- Answering a round point by point makes one query to `spec` per point. -/
-lemma isQueryBoundP_batch_query (ts : List ι) :
+lemma isQueryBoundP_batch_query (ts : List spec.Domain) :
     IsQueryBoundP (QueryImpl.batch (fun t => liftM ((free + spec).query (.inr t))) ts :
         OracleComp (free + spec) _) (·.isRight) ts.length := by
   induction ts with
@@ -258,8 +258,8 @@ theorem IsOnlineQueryBound.isQueryBoundP_simulateQ_unbatch
 /-- A handler that sends each query to the free summand to a program with no rounds, and each
 round `ts` to a program with at most one round of at most `ts.length` points, preserves the online
 budget. The free summands `free` and `free'` of the two sides may differ. -/
-theorem IsOnlineQueryBound.simulateQ_of_step {τ' ι' : Type} {free' : OracleSpec.{0, 0} τ'}
-    {spec' : OracleSpec.{0, 0} ι'}
+theorem IsOnlineQueryBound.simulateQ_of_step {free' : OracleSpec.{0, 0}}
+    {spec' : OracleSpec.{0, 0}}
     {so : QueryImpl (free + spec.batch) (OracleComp (free' + spec'.batch))}
     {oa : OracleComp (free + spec.batch) α} {b : ℕ × ℕ}
     (h : IsOnlineQueryBound oa b) (hstep : ∀ t, IsOnlineQueryBound (so t) (onlineStep t)) :
@@ -279,7 +279,7 @@ theorem IsOnlineQueryBound.simulateQ_of_step {τ' ι' : Type} {free' : OracleSpe
 
 /-- Lifting a program through a `SubSpec` inclusion `spec ⊂ₒ superSpec`, which sends each round
 to the round of its translated points, preserves the online budget. -/
-theorem IsOnlineQueryBound.liftComp {ι' : Type} {superSpec : OracleSpec.{0, 0} ι'}
+theorem IsOnlineQueryBound.liftComp {superSpec : OracleSpec.{0, 0}}
     [spec ⊂ₒ superSpec] {oa : OracleComp (free + spec.batch) α} {b : ℕ × ℕ}
     (h : IsOnlineQueryBound oa b) :
     IsOnlineQueryBound (liftComp oa (free + superSpec.batch)) b := by

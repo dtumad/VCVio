@@ -42,7 +42,7 @@ namespace OracleComp
 
 open PFunctor
 
-variable {ι : Type u} {spec : OracleSpec.{u, v} ι} {α β γ : Type v}
+variable {spec : OracleSpec.{u, v}} {α β γ : Type v}
 
 /-- Given that oracle outputs are bounded by `possibleOutputs`, every reachable query input in the
 computation satisfies `queryPred`, and every reachable pure output satisfies `outputPred`.

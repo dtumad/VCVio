@@ -183,7 +183,7 @@ structure CmaH3RunFacts
 /-- Stepwise preservation of a trailing Boolean flag lifts through
 `simulateQ`. -/
 theorem simulateQ_bad_preserved_of_step
-    {ι ι' : Type} {spec : OracleSpec ι} {spec' : OracleSpec ι'}
+    {spec : OracleSpec} {spec' : OracleSpec}
     {σ : Type} {α : Type}
     (impl : QueryImpl spec (StateT (σ × Bool) (OracleComp spec')))
     (hstep : ∀ (t : spec.Domain) (p : σ × Bool) (z),

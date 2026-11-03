@@ -30,7 +30,7 @@ universe u v
 
 namespace QueryImpl.Stateful
 
-variable {ι : Type u} {I : OracleSpec.{u, 0} ι}
+variable {I : OracleSpec.{u, 0}}
   {ε : Type v} {E : OracleSpec.{v, 0} ε} {σ σ₀ σ₁ σ₂ : Type}
   [EvalDistSemantics (OracleComp I)]
 
@@ -189,7 +189,7 @@ theorem link_inner_congr {μ : Type} {M : OracleSpec μ} {τ : Type}
 
 section parSum
 
-variable {ι₁ ι₂ : Type u} {I₁ : OracleSpec.{u, 0} ι₁} {I₂ : OracleSpec.{u, 0} ι₂}
+variable {I₁ : OracleSpec.{u, 0}} {I₂ : OracleSpec.{u, 0}}
   [OracleSpec.UniformAnswerMeasure I₁] [OracleSpec.UniformAnswerMeasure I₂]
   {ε₁ ε₂ : Type v} {E₁ : OracleSpec.{v, 0} ε₁} {E₂ : OracleSpec.{v, 0} ε₂}
 

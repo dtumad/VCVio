@@ -25,10 +25,10 @@ namespace HasQuery
 
 section programInstantiation
 
-variable {ι : Type} {spec : OracleSpec ι} {m : Type → Type*} {α : Type}
+variable {spec : OracleSpec} {m : Type → Type*} {α : Type}
 
 /-- A direct-style computation parameterized by an oracle-query capability. -/
-abbrev Program (spec : OracleSpec ι) (m : Type → Type*) (α : Type) :=
+abbrev Program (spec : OracleSpec) (m : Type → Type*) (α : Type) :=
   [HasQuery spec m] → m α
 
 namespace Program
@@ -90,7 +90,7 @@ end programInstantiation
 
 section queryBounds
 
-variable {ι : Type} {spec : OracleSpec ι} {m : Type → Type*}
+variable {spec : OracleSpec} {m : Type → Type*}
 variable [Monad m] [LawfulMonad m]
 
 lemma hasCost_withAddCost_query {ω : Type} [AddMonoid ω]
@@ -147,10 +147,10 @@ end queryBounds
 
 section costAccounting
 
-variable {ι : Type} {spec : OracleSpec ι} {m : Type → Type*} {α : Type}
+variable {spec : OracleSpec} {m : Type → Type*} {α : Type}
 
 /-- A computation generic over a `HasQuery spec m` capability. -/
-abbrev Computation (spec : OracleSpec ι) (m : Type → Type*) (α : Type) :=
+abbrev Computation (spec : OracleSpec) (m : Type → Type*) (α : Type) :=
   [HasQuery spec m] → m α
 
 section genericCost

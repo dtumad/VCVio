@@ -28,7 +28,7 @@ open ENNReal OracleComp.ProgramLogic OracleComp.ProgramLogic.PropLogic
 
 namespace OracleComp.WP.Coherence
 
-variable {ι : Type u} {spec : OracleSpec ι}
+variable {spec : OracleSpec}
 variable [OracleSpec.UniformAnswerMeasure spec]
 variable {α : Type}
 

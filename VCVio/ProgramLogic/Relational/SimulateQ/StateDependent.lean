@@ -41,8 +41,8 @@ namespace OracleComp.ProgramLogic.Relational
 
 section expectedQuerySlack
 
-variable {ι : Type} {spec : OracleSpec ι}
-variable {ι' : Type} {spec' : OracleSpec ι'} [AnswerMeasure spec']
+variable {spec : OracleSpec}
+variable {spec' : OracleSpec} [AnswerMeasure spec']
 variable {α : Type} {σ : Type}
 
 /-- A lossless computation has the constant expectation of a constant. -/

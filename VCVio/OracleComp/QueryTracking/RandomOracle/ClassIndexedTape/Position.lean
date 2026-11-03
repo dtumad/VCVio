@@ -89,7 +89,7 @@ open scoped ENNReal
 
 namespace AnswerTape
 
-variable {ι J : Type} {spec : OracleSpec.{0, 0} ι} [DecidableEq ι]
+variable {spec.Domain J : Type} {spec : OracleSpec.{0, 0}} [DecidableEq spec.Domain]
   [Fintype J] [DecidableEq J] {R : J → Type} [∀ j, SampleableType (R j)]
 
 /-! ## The position instrumentation -/
@@ -191,7 +191,7 @@ structure ClassPosInv (τ : (spec + spec).Domain → J) (Lfam : (k : J) → List
 
 namespace ClassPosInv
 
-omit [DecidableEq ι] [Fintype J] [DecidableEq J] [∀ j, SampleableType (R j)]
+omit [DecidableEq spec.Domain] [Fintype J] [DecidableEq J] [∀ j, SampleableType (R j)]
   [∀ t : spec.Domain, SampleableType (spec.Range t)] in
 /-- The empty cache with every tape unconsumed and no queries made satisfies the invariant. -/
 theorem empty (τ : (spec + spec).Domain → J) (Lfam : (k : J) → List (R k)) :
@@ -210,13 +210,13 @@ theorem empty (τ : (spec + spec).Domain → J) (Lfam : (k : J) → List (R k)) 
 
 end ClassPosInv
 
-omit [DecidableEq ι] [Fintype J] [DecidableEq J] [∀ j, SampleableType (R j)]
+omit [DecidableEq spec.Domain] [Fintype J] [DecidableEq J] [∀ j, SampleableType (R j)]
   [∀ t : spec.Domain, SampleableType (spec.Range t)] in
 private theorem heq_some_cast {A B : Type} (h : A = B) (u : B) :
     HEq (some (cast h.symm u)) (some u) := by
   subst h; rfl
 
-omit [DecidableEq ι] [Fintype J] [DecidableEq J] [∀ j, SampleableType (R j)]
+omit [DecidableEq spec.Domain] [Fintype J] [DecidableEq J] [∀ j, SampleableType (R j)]
   [∀ t : spec.Domain, SampleableType (spec.Range t)] in
 private theorem eq_some_cast_of_heq {A B : Type} (h : A = B) {a : A} {o : Option B}
     (hh : HEq (some a) o) : o = some (cast h a) := by
@@ -481,7 +481,7 @@ theorem classPosInvAux_step (Lfam : (k : J) → List (R k)) (t : (spec + spec).D
     exact classPosInv_step (spec := spec) (j := τ (Sum.inr t)) (t := t) (c := c) (L := L)
       (p := p) Lfam (hR (Sum.inr t)) (Or.inr rfl) hs y hy
 
-omit [DecidableEq ι] [Fintype J] [DecidableEq J] [∀ j, SampleableType (R j)]
+omit [DecidableEq spec.Domain] [Fintype J] [DecidableEq J] [∀ j, SampleableType (R j)]
   [∀ t : spec.Domain, SampleableType (spec.Range t)] in
 /-- **The positions of cached points, read off the invariant.** Under `ClassPosInv` with
 bookkeeping `p`, every cached point has a class, pinned to one of its two call sites. If every
@@ -578,12 +578,12 @@ def classPosAuxFwd (R : J → Type) (τ : (spec + spec).Domain → J) :
   | .inl _ => fun _ _ _ p => p
   | .inr t => classPosAux R τ t
 
-omit [DecidableEq ι] [Fintype J] [DecidableEq J] [∀ j, SampleableType (R j)]
+omit [DecidableEq spec.Domain] [Fintype J] [DecidableEq J] [∀ j, SampleableType (R j)]
   [∀ t : spec.Domain, SampleableType (spec.Range t)] in
 @[simp] theorem classOf_inl (τ : (spec + spec).Domain → J) (n : unifSpec.Domain) :
     classOf τ (Sum.inl n) = none := rfl
 
-omit [DecidableEq ι] [Fintype J] [DecidableEq J] [∀ j, SampleableType (R j)]
+omit [DecidableEq spec.Domain] [Fintype J] [DecidableEq J] [∀ j, SampleableType (R j)]
   [∀ t : spec.Domain, SampleableType (spec.Range t)] in
 @[simp] theorem classOf_inr (τ : (spec + spec).Domain → J) (t : (spec + spec).Domain) :
     classOf τ (Sum.inr t) = some (τ t) := rfl
@@ -782,7 +782,7 @@ namespace AnswerTape
 
 section FreshHitStep
 
-variable {ι : Type} {spec : OracleSpec.{0, 0} ι} (trig : spec.Domain → Prop) [DecidablePred trig]
+variable {spec : OracleSpec.{0, 0}} (trig : spec.Domain → Prop) [DecidablePred trig]
   (rel : (x : spec.Domain) → spec.Range x → spec.Domain → Prop)
 
 /-- The hit set after the point `x` is answered `u` on the cache `c`: if `x` is uncached in `c`
@@ -829,7 +829,7 @@ end FreshHitStep
 
 section FreshHit
 
-variable {ι J : Type} {spec : OracleSpec.{0, 0} ι} [DecidableEq ι] [DecidableEq J]
+variable {spec.Domain J : Type} {spec : OracleSpec.{0, 0}} [DecidableEq spec.Domain] [DecidableEq J]
   {R : J → Type} (trig : spec.Domain → Prop) [DecidablePred trig]
   (rel : (x : spec.Domain) → spec.Range x → spec.Domain → Prop)
 

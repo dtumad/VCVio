@@ -37,12 +37,12 @@ open OracleComp OracleSpec MeasureTheory
 
 namespace randomOracle
 
-variable {ι₀ : Type} [DecidableEq ι₀] {spec₀ : OracleSpec.{0, 0} ι₀}
+variable [DecidableEq spec₀.Domain] {spec₀ : OracleSpec.{0, 0}}
   [∀ t : spec₀.Domain, SampleableType (spec₀.Range t)]
 
 /-- Two queries to the lazy random oracle commute: their answers and the final cache have the
 same joint distribution in either order. -/
-theorem evalDist_run_bind_run_swap {γ : Type} [MeasurableSpace γ] (t t' : ι₀)
+theorem evalDist_run_bind_run_swap {γ : Type} [MeasurableSpace γ] (t t' : spec₀.Domain)
     (cache : spec₀.QueryCache)
     (f : spec₀.Range t → spec₀.Range t' → spec₀.QueryCache → ProbComp γ) :
     𝒟[(spec₀.randomOracle t).run cache >>= fun z ↦
@@ -50,10 +50,10 @@ theorem evalDist_run_bind_run_swap {γ : Type} [MeasurableSpace γ] (t t' : ι�
       𝒟[(spec₀.randomOracle t').run cache >>= fun y ↦
         (spec₀.randomOracle t).run y.2 >>= fun z ↦ f z.1 y.1 z.2] := by
   -- After a query at `t`, a query at `t` is answered from the cache.
-  have hit : ∀ {t : ι₀} {c : spec₀.QueryCache} {z}, z ∈ support ((spec₀.randomOracle t).run c) →
+  have hit : ∀ {t : spec₀.Domain} {c : spec₀.QueryCache} {z}, z ∈ support ((spec₀.randomOracle t).run c) →
       (spec₀.randomOracle t).run z.2 = pure z := fun {t c z} hz ↦ by
     rw [QueryImpl.withCaching_run_some _ (QueryImpl.withCaching_run_caches _ _ _ _ hz)]
-  have keep : ∀ {t t' : ι₀} {c : spec₀.QueryCache} {v : spec₀.Range t'} {z},
+  have keep : ∀ {t t' : spec₀.Domain} {c : spec₀.QueryCache} {v : spec₀.Range t'} {z},
       z ∈ support ((spec₀.randomOracle t).run c) → c t' = some v →
       (spec₀.randomOracle t').run z.2 = pure (v, z.2) := fun {t t' c v z} hz hv ↦
     QueryImpl.withCaching_run_some _ (QueryImpl.withCaching_cache_le _ _ _ _ hz hv)
@@ -87,7 +87,7 @@ theorem evalDist_run_bind_run_swap {γ : Type} [MeasurableSpace γ] (t t' : ι�
 /-- A query to the lazy random oracle commutes with any computation run against the same
 oracle: the answer, the computation's output and the final cache have the same joint
 distribution in either order. -/
-theorem evalDist_run_bind_simulateQ_run_swap {α γ : Type} [MeasurableSpace γ] (t : ι₀)
+theorem evalDist_run_bind_simulateQ_run_swap {α γ : Type} [MeasurableSpace γ] (t : spec₀.Domain)
     (oa : OracleComp spec₀ α) (cache : spec₀.QueryCache)
     (f : spec₀.Range t → α → spec₀.QueryCache → ProbComp γ) :
     𝒟[(spec₀.randomOracle t).run cache >>= fun z ↦
@@ -105,7 +105,7 @@ theorem evalDist_run_bind_simulateQ_run_swap {α γ : Type} [MeasurableSpace γ]
 /-- Querying the lazy random oracle at the indices of a list leaves a final cache whose
 distribution is unchanged when the list is permuted. -/
 theorem evalDist_simulateQ_queryAll_run_bind_of_perm {γ : Type} [MeasurableSpace γ]
-    {ts ts' : List ι₀} (h : ts.Perm ts') (cache : spec₀.QueryCache)
+    {ts ts' : List spec₀.Domain} (h : ts.Perm ts') (cache : spec₀.QueryCache)
     (f : spec₀.QueryCache → ProbComp γ) :
     𝒟[(simulateQ spec₀.randomOracle (spec₀.queryAll ts)).run cache >>= fun w ↦ f w.2] =
       𝒟[(simulateQ spec₀.randomOracle (spec₀.queryAll ts')).run cache >>= fun w ↦ f w.2] := by
@@ -123,7 +123,7 @@ theorem evalDist_simulateQ_queryAll_run_bind_of_perm {γ : Type} [MeasurableSpac
   | trans _ _ ih₁ ih₂ => exact (ih₁ cache).trans (ih₂ cache)
 
 /-- A query to the lazy random oracle at `s` leaves the cache unchanged at every other index. -/
-theorem run_apply_of_ne {s t : ι₀} (hst : s ≠ t) (cache : spec₀.QueryCache)
+theorem run_apply_of_ne {s t : spec₀.Domain} (hst : s ≠ t) (cache : spec₀.QueryCache)
     {z : spec₀.Range s × spec₀.QueryCache} (hz : z ∈ support ((spec₀.randomOracle s).run cache)) :
     z.2 t = cache t := by
   rw [QueryImpl.withCaching_run_eq_cacheQuery uniformSampleImpl hz]

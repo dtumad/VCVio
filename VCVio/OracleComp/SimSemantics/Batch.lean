@@ -13,7 +13,7 @@ public import VCVio.OracleComp.SimSemantics.QueryImpl.Compose
 /-!
 # Rounds of parallel oracle queries
 
-A round of parallel queries to `spec` is a list of points `ts : List ι`, submitted at once and
+A round of parallel queries to `spec` is a list of points `ts : List spec.Domain`, submitted at once and
 answered by one answer per point. `OracleSpec.batch spec` is the oracle specification whose
 queries are such rounds: its answer to `ts` is a dependent tuple
 `(j : Fin ts.length) → spec.Range ts[j]`, so points of oracles with different answer types share
@@ -62,35 +62,33 @@ open scoped OracleSpec.PrimitiveQuery
 
 namespace OracleSpec
 
-variable {ι : Type u}
-
-/-- One round of parallel queries to `spec`: a list of points `ts`, answered by one answer per
+variable /-- One round of parallel queries to `spec`: a list of points `ts`, answered by one answer per
 point, the answer at position `j` lying in `spec.Range ts[j]`. -/
 @[expose]
-def batch (spec : OracleSpec.{u, v} ι) : OracleSpec.{u, v} (List ι) :=
+def batch (spec : OracleSpec.{u, v}) : OracleSpec.{u, v} (List spec.Domain) :=
   fun ts => (j : Fin ts.length) → spec.Range ts[j]
 
-variable {spec : OracleSpec.{u, v} ι}
+variable {spec : OracleSpec.{u, v}}
 
-lemma batch_apply (ts : List ι) :
+lemma batch_apply (ts : List spec.Domain) :
     spec.batch ts = ((j : Fin ts.length) → spec.Range ts[j]) := rfl
 
-lemma batch_range (ts : List ι) :
+lemma batch_range (ts : List spec.Domain) :
     spec.batch.Range ts = ((j : Fin ts.length) → spec.Range ts[j]) := rfl
 
 /-! ## Answers to a round
 
 These instances are indexed on the `batch` head, so they apply only to answers of rounds. -/
 
-instance [∀ t, DecidableEq (spec.Range t)] (ts : List ι) :
+instance [∀ t, DecidableEq (spec.Range t)] (ts : List spec.Domain) :
     DecidableEq (spec.batch.Range ts) :=
   inferInstanceAs (DecidableEq ((j : Fin ts.length) → spec.Range ts[j]))
 
-instance [∀ t, Fintype (spec.Range t)] (ts : List ι) :
+instance [∀ t, Fintype (spec.Range t)] (ts : List spec.Domain) :
     Fintype (spec.batch.Range ts) :=
   inferInstanceAs (Fintype ((j : Fin ts.length) → spec.Range ts[j]))
 
-instance [∀ t, Inhabited (spec.Range t)] (ts : List ι) :
+instance [∀ t, Inhabited (spec.Range t)] (ts : List spec.Domain) :
     Inhabited (spec.batch.Range ts) :=
   inferInstanceAs (Inhabited ((j : Fin ts.length) → spec.Range ts[j]))
 
@@ -100,19 +98,19 @@ def batchNil : spec.batch.Range [] := fun j => j.elim0
 
 /-- The answer to the round `t :: ts` made of an answer `u` at `t` and an answer `us` to `ts`. -/
 @[expose]
-def batchCons {t : ι} {ts : List ι} (u : spec.Range t) (us : spec.batch.Range ts) :
+def batchCons {t : spec.Domain} {ts : List spec.Domain} (u : spec.Range t) (us : spec.batch.Range ts) :
     spec.batch.Range (t :: ts) :=
   Fin.cons (α := fun j : Fin (ts.length + 1) => spec.Range (t :: ts)[j]) u us
 
-@[simp] lemma batchCons_zero {t : ι} {ts : List ι} (u : spec.Range t)
+@[simp] lemma batchCons_zero {t : spec.Domain} {ts : List spec.Domain} (u : spec.Range t)
     (us : spec.batch.Range ts) :
     batchCons u us (0 : Fin (ts.length + 1)) = u := rfl
 
-@[simp] lemma batchCons_succ {t : ι} {ts : List ι} (u : spec.Range t)
+@[simp] lemma batchCons_succ {t : spec.Domain} {ts : List spec.Domain} (u : spec.Range t)
     (us : spec.batch.Range ts) (j : Fin ts.length) :
     batchCons u us j.succ = us j := rfl
 
-@[simp] lemma batchCons_mk_succ {t : ι} {ts : List ι} (u : spec.Range t)
+@[simp] lemma batchCons_mk_succ {t : spec.Domain} {ts : List spec.Domain} (u : spec.Range t)
     (us : spec.batch.Range ts) (j : ℕ) (hj : j + 1 < (t :: ts).length) :
     batchCons u us ⟨j + 1, hj⟩ = us ⟨j, Nat.lt_of_succ_lt_succ hj⟩ := rfl
 
@@ -121,7 +119,7 @@ lemma eq_batchNil (us : spec.batch.Range []) : us = batchNil :=
   funext fun j => j.elim0
 
 /-- Every answer to a nonempty round is `batchCons` of its head and its tail. -/
-lemma eq_batchCons {t : ι} {ts : List ι} (us : spec.batch.Range (t :: ts)) :
+lemma eq_batchCons {t : spec.Domain} {ts : List spec.Domain} (us : spec.batch.Range (t :: ts)) :
     us = batchCons (us ⟨0, Nat.zero_lt_succ _⟩) (fun j => us j.succ) :=
   funext fun j => Fin.cases rfl (fun _ => rfl) j
 
@@ -129,7 +127,7 @@ end OracleSpec
 
 namespace QueryImpl
 
-variable {ι : Type u} {spec : OracleSpec.{u, v} ι} {m : Type v → Type w}
+variable {spec : OracleSpec.{u, v}} {m : Type v → Type w}
 
 /-- Answer a round point by point, in the order of its list. -/
 @[expose]
@@ -143,15 +141,15 @@ def batch [Monad m] (impl : QueryImpl spec m) : QueryImpl spec.batch m
 @[simp] lemma batch_nil [Monad m] (impl : QueryImpl spec m) :
     impl.batch [] = pure batchNil := rfl
 
-@[simp] lemma batch_cons [Monad m] (impl : QueryImpl spec m) (t : ι) (ts : List ι) :
+@[simp] lemma batch_cons [Monad m] (impl : QueryImpl spec m) (t : spec.Domain) (ts : List spec.Domain) :
     impl.batch (t :: ts) = (do
       let u ← impl t
       let us ← impl.batch ts
       pure (batchCons u us)) := rfl
 
 /-- Two handlers that agree on every query of a batch handle the batch alike. -/
-lemma batch_congr {ι : Type} {spec : OracleSpec.{0, 0} ι} {m' : Type → Type}
-    [Monad m'] {impl₁ impl₂ : QueryImpl spec m'} {ts : List ι}
+lemma batch_congr {spec : OracleSpec.{0, 0}} {m' : Type → Type}
+    [Monad m'] {impl₁ impl₂ : QueryImpl spec m'} {ts : List spec.Domain}
     (h : ∀ t ∈ ts, impl₁ t = impl₂ t) : impl₁.batch ts = impl₂.batch ts := by
   induction ts with
   | nil => rfl
@@ -160,7 +158,7 @@ lemma batch_congr {ι : Type} {spec : OracleSpec.{0, 0} ι} {m' : Type → Type}
         ih fun t' ht' => h t' (List.mem_cons_of_mem _ ht')]
 
 /-- A deterministic handler answers each point of a round by itself. -/
-@[simp] lemma batch_id_apply (impl : QueryImpl spec Id) (ts : List ι) (j : Fin ts.length) :
+@[simp] lemma batch_id_apply (impl : QueryImpl spec Id) (ts : List spec.Domain) (j : Fin ts.length) :
     (impl.batch ts).run j = (impl ts[j]).run := by
   induction ts with
   | nil => exact j.elim0
@@ -169,7 +167,7 @@ lemma batch_congr {ι : Type} {spec : OracleSpec.{0, 0} ι} {m' : Type → Type}
     | succ j => exact ih j
 
 /-- Running the programs of `so` under `so'`, round by round, is batching the composite. -/
-lemma compose_batch {ι' : Type*} {spec' : OracleSpec ι'} {m : Type v → Type w} [Monad m]
+lemma compose_batch {spec' : OracleSpec} {m : Type v → Type w} [Monad m]
     [LawfulMonad m] (so' : QueryImpl spec' m) (so : QueryImpl spec (OracleComp spec')) :
     so' ∘ₛ so.batch = (so' ∘ₛ so).batch := by
   funext ts
@@ -180,7 +178,7 @@ lemma compose_batch {ι' : Type*} {spec' : OracleSpec ι'} {m : Type v → Type 
 /-- A handler lifted into `StateT σ m` answers a round without touching the state: the round is
 answered by `impl`, and the initial state is returned unchanged. -/
 lemma run_batch_liftTarget [Monad m] [LawfulMonad m] {σ : Type v} (impl : QueryImpl spec m)
-    (ts : List ι) (s : σ) :
+    (ts : List spec.Domain) (s : σ) :
     ((impl.liftTarget (StateT σ m)).batch ts).run s = (·, s) <$> impl.batch ts := by
   induction ts with
   | nil => simp
@@ -188,7 +186,7 @@ lemma run_batch_liftTarget [Monad m] [LawfulMonad m] {σ : Type v} (impl : Query
 
 section batch'
 
-variable {τ ι : Type} {free : OracleSpec.{0, 0} τ} {spec : OracleSpec.{0, 0} ι}
+variable {free : OracleSpec.{0, 0}} {spec : OracleSpec.{0, 0}}
   {m : Type → Type w} [Monad m]
 
 /-- Extend a handler of `free + spec` to rounds: queries to `free` are answered as `impl` answers
@@ -197,10 +195,10 @@ them, and a round is answered point by point by `impl`. -/
 def batch' (impl : QueryImpl (free + spec) m) : QueryImpl (free + spec.batch) m :=
   QueryImpl.add (fun n => impl (.inl n)) (QueryImpl.batch fun t => impl (.inr t))
 
-@[simp] lemma batch'_apply_inl (impl : QueryImpl (free + spec) m) (n : τ) :
+@[simp] lemma batch'_apply_inl (impl : QueryImpl (free + spec) m) (n : free.Domain) :
     impl.batch' (.inl n) = impl (.inl n) := rfl
 
-@[simp] lemma batch'_apply_inr (impl : QueryImpl (free + spec) m) (ts : List ι) :
+@[simp] lemma batch'_apply_inr (impl : QueryImpl (free + spec) m) (ts : List spec.Domain) :
     impl.batch' (.inr ts) = QueryImpl.batch (fun t => impl (.inr t)) ts := rfl
 
 /-- The batched form of a sum handler batches its right summand. -/
@@ -213,7 +211,7 @@ end QueryImpl
 
 namespace OracleSpec
 
-variable {τ ι : Type} (spec : OracleSpec.{0, 0} ι) {free : OracleSpec.{0, 0} τ}
+variable (spec : OracleSpec.{0, 0}) {free : OracleSpec.{0, 0}}
 
 /-- Rewrite each round as the sequence of its single queries, in order; queries to the summand
 `free` pass through unchanged. -/
@@ -223,10 +221,10 @@ def unbatch : QueryImpl (free + spec.batch) (OracleComp (free + spec)) :=
 
 variable {spec}
 
-@[simp] lemma unbatch_apply_inl (n : τ) :
+@[simp] lemma unbatch_apply_inl (n : free.Domain) :
     spec.unbatch (.inl n) = liftM ((free + spec).query (.inl n)) := rfl
 
-@[simp] lemma unbatch_apply_inr (ts : List ι) :
+@[simp] lemma unbatch_apply_inr (ts : List spec.Domain) :
     spec.unbatch (free := free) (.inr ts) =
       QueryImpl.batch (fun t => liftM ((free + spec).query (.inr t))) ts := rfl
 
@@ -234,7 +232,7 @@ end OracleSpec
 
 namespace QueryImpl
 
-variable {τ ι : Type} {free : OracleSpec.{0, 0} τ} {spec : OracleSpec.{0, 0} ι}
+variable {free : OracleSpec.{0, 0}} {spec : OracleSpec.{0, 0}}
   {m : Type → Type w} [Monad m] [LawfulMonad m]
 
 /-- Running a program with rounds through `unbatch` and then `impl` is running it through the
@@ -255,7 +253,7 @@ end QueryImpl
 
 namespace OracleSpec
 
-variable {ι : Type} {hashSpec : OracleSpec.{0, 0} ι} [DecidableEq ι]
+variable {hashSpec : OracleSpec.{0, 0}} [DecidableEq spec.Domain]
   [∀ t : hashSpec.Domain, SampleableType (hashSpec.Range t)]
 
 /-- In the random oracle model, running a program with rounds through `unbatch` is answering
@@ -271,12 +269,12 @@ end OracleSpec
 
 namespace QueryImpl
 
-variable {ι : Type} [DecidableEq ι] {spec : OracleSpec.{0, 0} ι} {m : Type → Type w} [Monad m]
+variable [DecidableEq spec.Domain] {spec : OracleSpec.{0, 0}} {m : Type → Type w} [Monad m]
   [LawfulMonad m] [MonadAttach m] [ExactMonadAttach m]
 
 /-- Answering a round `ts` point by point with `so.withCaching` only extends the cache, and caches
 exactly the points cached before or listed in `ts`. -/
-lemma withCaching_batch_le_and_isSome_iff (so : QueryImpl spec m) {ts : List ι}
+lemma withCaching_batch_le_and_isSome_iff (so : QueryImpl spec m) {ts : List spec.Domain}
     {cache₀ : spec.QueryCache} {z : spec.batch.Range ts × spec.QueryCache}
     (hz : z ∈ support ((so.withCaching.batch ts).run cache₀)) :
     cache₀ ≤ z.2 ∧ ∀ t, (z.2 t).isSome ↔ (cache₀ t).isSome ∨ t ∈ ts := by
@@ -298,13 +296,13 @@ end QueryImpl
 
 namespace OracleSpec.SubSpec
 
-variable {ι : Type u} {τ : Type v} {spec : OracleSpec.{u, w} ι} {superSpec : OracleSpec.{v, w} τ}
+variable {spec : OracleSpec.{u, w}} {superSpec : OracleSpec.{v, w}}
 
 /-- The answer translation of `SubSpec.batch`: translate the answer at each point by
 `h.onResponse`. -/
 @[expose]
 def batchOnResponse (h : spec ⊂ₒ superSpec) :
-    (ts : List ι) → superSpec.batch.Range (ts.map h.onQuery) → spec.batch.Range ts
+    (ts : List spec.Domain) → superSpec.batch.Range (ts.map h.onQuery) → spec.batch.Range ts
   | [], _ => batchNil
   | t :: ts, us =>
       batchCons (h.onResponse t (us ⟨0, Nat.zero_lt_succ _⟩))
@@ -312,7 +310,7 @@ def batchOnResponse (h : spec ⊂ₒ superSpec) :
 
 /-- The translated answer at position `j` is `h.onResponse` of the answer at the matching
 position of the translated round. -/
-lemma batchOnResponse_apply (h : spec ⊂ₒ superSpec) (ts : List ι)
+lemma batchOnResponse_apply (h : spec ⊂ₒ superSpec) (ts : List spec.Domain)
     (us : superSpec.batch.Range (ts.map h.onQuery)) (j : Fin ts.length) :
     batchOnResponse h ts us j =
       h.onResponse ts[j] (cast (by simp) (us ⟨j, by simp⟩)) := by
@@ -332,7 +330,7 @@ def batch (h : spec ⊂ₒ superSpec) : spec.batch ⊂ₒ superSpec.batch where
 
 instance [h : spec ⊂ₒ superSpec] : spec.batch ⊂ₒ superSpec.batch := SubSpec.batch h
 
-@[simp] lemma batch_onQuery (h : spec ⊂ₒ superSpec) (ts : List ι) :
+@[simp] lemma batch_onQuery (h : spec ⊂ₒ superSpec) (ts : List spec.Domain) :
     (SubSpec.batch h).onQuery ts = ts.map h.onQuery := rfl
 
 @[simp] lemma batch_onResponse (h : spec ⊂ₒ superSpec) :
@@ -370,14 +368,14 @@ end OracleSpec.SubSpec
 
 namespace QueryImpl
 
-variable {ι ι' σ₁ σ₂ : Type} {spec : OracleSpec.{0, 0} ι} {side : OracleSpec.{0, 0} ι'}
+variable {spec.Domain spec'.Domain σ₁ σ₂ : Type} {spec : OracleSpec.{0, 0}} {side : OracleSpec.{0, 0}}
   {m : Type → Type w} [Monad m] [LawfulMonad m]
 
 /-- A round of `spec`, lifted to the round of `spec + side` at its translated points and answered
 point by point by `impl₁` and `impl₂` side by side, is answered by `impl₁` and leaves the state of
 `impl₂` unchanged. -/
 lemma run_batchOnResponse_map_batch_parallelStateT (impl₁ : QueryImpl spec (StateT σ₁ m))
-    (impl₂ : QueryImpl side (StateT σ₂ m)) (ts : List ι) (s₁ : σ₁) (s₂ : σ₂) :
+    (impl₂ : QueryImpl side (StateT σ₂ m)) (ts : List spec.Domain) (s₁ : σ₁) (s₂ : σ₂) :
     (SubSpec.batchOnResponse (inferInstance : spec ⊂ₒ (spec + side)) ts <$>
         (parallelStateT impl₁ impl₂).batch (ts.map Sum.inl)).run (s₁, s₂) =
       Prod.map id (·, s₂) <$> (impl₁.batch ts).run s₁ := by
@@ -407,7 +405,7 @@ lemma run_batchOnResponse_map_batch_parallelStateT (impl₁ : QueryImpl spec (St
 rounds of `spec + side` and run with queries to `free` answered by `base` and rounds answered
 point by point by `impl₁` and `impl₂` side by side, runs as against `base` and `impl₁` alone and
 leaves the state of `impl₂` unchanged. -/
-theorem run_simulateQ_add_parallelStateT_batch_liftComp {τ : Type} {free : OracleSpec.{0, 0} τ}
+theorem run_simulateQ_add_parallelStateT_batch_liftComp {free : OracleSpec.{0, 0}}
     (base : QueryImpl free m) (impl₁ : QueryImpl spec (StateT σ₁ m))
     (impl₂ : QueryImpl side (StateT σ₂ m)) {α : Type} (oa : OracleComp (free + spec.batch) α)
     (s₁ : σ₁) (s₂ : σ₂) :
@@ -433,18 +431,18 @@ end QueryImpl
 
 /-! ## Rounds with typed answers
 
-A round whose points are given by functions `p : Fin k → ι` and `q : Fin l → ι` returns its
+A round whose points are given by functions `p : Fin k → spec.Domain` and `q : Fin l → spec.Domain` returns its
 answers as two dependent families, so that the answer at `p j` has type `spec.Range (p j)`, which
 reduces when `p j` is a constructor application. -/
 
 namespace OracleSpec
 
-variable {ι : Type u} {spec : OracleSpec.{u, v} ι}
+variable {spec : OracleSpec.{u, v}}
 
 /-- Split the answer to the round `List.ofFn p ++ List.ofFn q` into the answers at the points
 `p j` and the answers at the points `q j`. -/
 @[expose]
-def splitAnswers {k l : ℕ} (p : Fin k → ι) (q : Fin l → ι)
+def splitAnswers {k l : ℕ} (p : Fin k → spec.Domain) (q : Fin l → spec.Domain)
     (us : spec.batch.Range (List.ofFn p ++ List.ofFn q)) :
     ((j : Fin k) → spec.Range (p j)) × ((j : Fin l) → spec.Range (q j)) :=
   (fun j => cast (by simp) (us ⟨j, by simp; omega⟩),
@@ -454,12 +452,12 @@ end OracleSpec
 
 namespace OracleComp
 
-variable {τ ι : Type} {free : OracleSpec.{0, 0} τ} {spec : OracleSpec.{0, 0} ι}
+variable {free : OracleSpec.{0, 0}} {spec : OracleSpec.{0, 0}}
 
 /-- One round holding the points `p j`, then the points `q j`; the answers are returned as two
 families. The oracles `free` beside the rounds are not queried. -/
 @[expose]
-def queryRound₂ {k l : ℕ} (p : Fin k → ι) (q : Fin l → ι) :
+def queryRound₂ {k l : ℕ} (p : Fin k → spec.Domain) (q : Fin l → spec.Domain) :
     OracleComp (free + spec.batch)
       (((j : Fin k) → spec.Range (p j)) × ((j : Fin l) → spec.Range (q j))) :=
   splitAnswers p q <$>
@@ -467,13 +465,13 @@ def queryRound₂ {k l : ℕ} (p : Fin k → ι) (q : Fin l → ι) :
 
 /-- One round holding the points `p j`. -/
 @[expose]
-def queryRound {k : ℕ} (p : Fin k → ι) :
+def queryRound {k : ℕ} (p : Fin k → spec.Domain) :
     OracleComp (free + spec.batch) ((j : Fin k) → spec.Range (p j)) :=
-  Prod.fst <$> queryRound₂ p (Fin.elim0 : Fin 0 → ι)
+  Prod.fst <$> queryRound₂ p (Fin.elim0 : Fin 0 → spec.Domain)
 
 /-- One round holding the single point `t`. -/
 @[expose]
-def queryPoint (t : ι) : OracleComp (free + spec.batch) (spec.Range t) :=
+def queryPoint (t : spec.Domain) : OracleComp (free + spec.batch) (spec.Range t) :=
   (fun us => us 0) <$> queryRound (fun _ : Fin 1 => t)
 
 end OracleComp
@@ -482,10 +480,10 @@ end OracleComp
 
 namespace QueryImpl
 
-variable {ι : Type} {spec : OracleSpec.{0, 0} ι}
+variable {spec : OracleSpec.{0, 0}}
 
 /-- Answering each point of a round from the table `f` answers the round with `f` pointwise. -/
-lemma batch_unifFwdAnswerImpl (f : QueryImpl spec Id) (ts : List ι) :
+lemma batch_unifFwdAnswerImpl (f : QueryImpl spec Id) (ts : List spec.Domain) :
     QueryImpl.batch (fun t => unifFwdAnswerImpl f (.inr t)) ts =
       (pure (fun j => (f ts[j]).run) : ProbComp (spec.batch.Range ts)) := by
   induction ts with
@@ -502,15 +500,15 @@ end QueryImpl
 
 namespace OracleComp
 
-variable {ι : Type} {spec : OracleSpec.{0, 0} ι}
+variable {spec : OracleSpec.{0, 0}}
 
-private lemma cast_run_of_eq (f : QueryImpl spec Id) {a b : ι} (hab : a = b)
+private lemma cast_run_of_eq (f : QueryImpl spec Id) {a b : spec.Domain} (hab : a = b)
     (h : spec.Range a = spec.Range b) : cast h (f a).run = (f b).run := by
   subst hab
   rfl
 
-private lemma splitAnswers_table (f : QueryImpl spec Id) {k l : ℕ} (p : Fin k → ι)
-    (q : Fin l → ι) :
+private lemma splitAnswers_table (f : QueryImpl spec Id) {k l : ℕ} (p : Fin k → spec.Domain)
+    (q : Fin l → spec.Domain) :
     splitAnswers p q (fun j => (f (List.ofFn p ++ List.ofFn q)[j]).run) =
       (fun j => (f (p j)).run, fun j => (f (q j)).run) := by
   simp only [splitAnswers]
@@ -518,8 +516,8 @@ private lemma splitAnswers_table (f : QueryImpl spec Id) {k l : ℕ} (p : Fin k 
 
 /-- Against the fixed table `f`, the round `queryRound₂ p q` returns the table's answers at the
 points `p j` and `q j`. -/
-@[simp] lemma simulateQ_queryRound₂ (f : QueryImpl spec Id) {k l : ℕ} (p : Fin k → ι)
-    (q : Fin l → ι) :
+@[simp] lemma simulateQ_queryRound₂ (f : QueryImpl spec Id) {k l : ℕ} (p : Fin k → spec.Domain)
+    (q : Fin l → spec.Domain) :
     simulateQ (unifFwdAnswerImpl f).batch' (queryRound₂ p q) =
       pure (fun j => (f (p j)).run, fun j => (f (q j)).run) := by
   rw [queryRound₂, simulateQ_map, simulateQ_spec_query, QueryImpl.batch'_apply_inr,
@@ -528,13 +526,13 @@ points `p j` and `q j`. -/
 
 /-- Against the fixed table `f`, the round `queryRound p` returns the table's answers at the points
 `p j`. -/
-@[simp] lemma simulateQ_queryRound (f : QueryImpl spec Id) {k : ℕ} (p : Fin k → ι) :
+@[simp] lemma simulateQ_queryRound (f : QueryImpl spec Id) {k : ℕ} (p : Fin k → spec.Domain) :
     simulateQ (unifFwdAnswerImpl f).batch' (queryRound p) = pure (fun j => (f (p j)).run) := by
   rw [queryRound, simulateQ_map, simulateQ_queryRound₂, map_pure]
 
 /-- Against the fixed table `f`, the single-point round `queryPoint t` returns the table's answer
 at `t`. -/
-@[simp] lemma simulateQ_queryPoint (f : QueryImpl spec Id) (t : ι) :
+@[simp] lemma simulateQ_queryPoint (f : QueryImpl spec Id) (t : spec.Domain) :
     simulateQ (unifFwdAnswerImpl f).batch' (queryPoint t) = pure (f t).run := by
   rw [queryPoint, simulateQ_map, simulateQ_queryRound, map_pure]
 
@@ -545,9 +543,9 @@ end OracleComp
 namespace OracleComp
 
 /-- A single-point round, answered by the rounds of a point handler, is that handler's answer. -/
-lemma simulateQ_add_batch_queryPoint {ι : Type} {spec : OracleSpec.{0, 0} ι}
+lemma simulateQ_add_batch_queryPoint {spec : OracleSpec.{0, 0}}
     {m : Type → Type} [Monad m] [LawfulMonad m] (impl₁ : QueryImpl unifSpec m)
-    (impl₂ : QueryImpl spec m) (t : ι) :
+    (impl₂ : QueryImpl spec m) (t : spec.Domain) :
     simulateQ (impl₁ + impl₂.batch) (queryPoint t) = impl₂ t := by
   simp only [queryPoint, queryRound, queryRound₂, simulateQ_map, simulateQ_spec_query,
     QueryImpl.add_apply_inr, Functor.map_map]
@@ -563,13 +561,13 @@ end OracleComp
 
 namespace OracleComp.RandomOracleEncoding
 
-@[simp] lemma batchCons_mk_zero {τ : Type} {spec' : OracleSpec τ} {t : τ} {ts : List τ}
+@[simp] lemma batchCons_mk_zero {spec' : OracleSpec} {t : free.Domain} {ts : List free.Domain}
     (u : spec'.Range t) (us : spec'.batch.Range ts) (h : 0 < (t :: ts).length) :
     batchCons u us ⟨0, h⟩ = u :=
   rfl
 
-lemma batch_randomOracle_run_bind_cast {ι β : Type} {spec : OracleSpec.{0, 0} ι} [DecidableEq ι]
-    [∀ t, SampleableType (spec.Range t)] {l l' : List ι} (h : l = l') (c : spec.QueryCache)
+lemma batch_randomOracle_run_bind_cast {spec.Domain β : Type} {spec : OracleSpec.{0, 0}} [DecidableEq spec.Domain]
+    [∀ t, SampleableType (spec.Range t)] {l l' : List spec.Domain} (h : l = l') (c : spec.QueryCache)
     (f : spec.batch.Range l × spec.QueryCache → ProbComp β) :
     (spec.randomOracle.batch l).run c >>= f =
       (spec.randomOracle.batch l').run c >>= fun y => f (cast (by rw [h]) y.1, y.2) := by
@@ -580,17 +578,17 @@ end OracleComp.RandomOracleEncoding
 
 namespace QueryImpl
 
-variable {ι : Type} [DecidableEq ι] {spec : OracleSpec.{0, 0} ι} {m : Type → Type w} [Monad m]
+variable [DecidableEq spec.Domain] {spec : OracleSpec.{0, 0}} {m : Type → Type w} [Monad m]
   [LawfulMonad m]
 
 /-- A map `g` of caches that, at every point satisfying `P`, leaves the entry unchanged and
 commutes with caching an answer commutes with answering a round `ts` of points satisfying `P` with
 `so.withCaching`: running the round and mapping the final cache through `g` is running the round
 from the mapped cache. -/
-lemma map_withCaching_batch_run_of_commute (so : QueryImpl spec m) {P : ι → Prop}
+lemma map_withCaching_batch_run_of_commute (so : QueryImpl spec m) {P : spec.Domain → Prop}
     (g : spec.QueryCache → spec.QueryCache) (h₁ : ∀ cache t, P t → g cache t = cache t)
     (h₂ : ∀ cache t u, P t → g (cache.cacheQuery t u) = (g cache).cacheQuery t u)
-    {ts : List ι} (hts : ∀ t ∈ ts, P t) (cache : spec.QueryCache) :
+    {ts : List spec.Domain} (hts : ∀ t ∈ ts, P t) (cache : spec.QueryCache) :
     Prod.map id g <$> (so.withCaching.batch ts).run cache =
       (so.withCaching.batch ts).run (g cache) := by
   induction ts generalizing cache with

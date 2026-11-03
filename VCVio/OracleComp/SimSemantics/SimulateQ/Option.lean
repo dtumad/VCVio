@@ -37,7 +37,7 @@ end Vector
 
 namespace OracleComp
 
-variable {ι : Type v} {spec : OracleSpec ι} {α β : Type u}
+variable {spec : OracleSpec} {α β : Type u}
 
 /-- A simulated `bind` in `Option` succeeds exactly when the prefix succeeds and the
 continuation succeeds at the prefix's value. -/

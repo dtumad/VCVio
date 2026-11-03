@@ -50,11 +50,11 @@ open scoped ENNReal
 
 namespace AnswerTape
 
-variable {ι J : Type} {spec : OracleSpec.{0, 0} ι} {R : J → Type}
+variable {spec.Domain J : Type} {spec : OracleSpec.{0, 0}} {R : J → Type}
 
 /-- The state of `classPosImplFwd` with a hit set as its passive component: the cache and the
 unconsumed tapes, the position bookkeeping, and the hit set. -/
-abbrev HitState (spec : OracleSpec.{0, 0} ι) (R : J → Type) : Type :=
+abbrev HitState (spec : OracleSpec.{0, 0}) (R : J → Type) : Type :=
   (spec.QueryCache × ((k : J) → List (R k))) × (ClassPos spec.Domain J × Set spec.Domain)
 
 /-! ## The potential -/
@@ -163,7 +163,7 @@ end Potential
 
 section Step
 
-variable [DecidableEq ι] [DecidableEq J] [∀ t : spec.Domain, SampleableType (spec.Range t)]
+variable [DecidableEq spec.Domain] [DecidableEq J] [∀ t : spec.Domain, SampleableType (spec.Range t)]
   (trig : spec.Domain → Prop) [DecidablePred trig]
   (rel : (x : spec.Domain) → spec.Range x → spec.Domain → Prop)
   (τ : (spec + spec).Domain → J)
@@ -340,7 +340,7 @@ private theorem lintegral_le_of_fst_uniform {A σ : Type} [SampleableType A]
     _ = a ^ k + k * a ^ (k - 1) * ε := by ring
     _ ≤ (a + ε) ^ k := pow_add_mul_le_add_pow zero_le zero_le k
 
-variable [DecidableEq ι] [DecidableEq J] [∀ t : spec.Domain, SampleableType (spec.Range t)]
+variable [DecidableEq spec.Domain] [DecidableEq J] [∀ t : spec.Domain, SampleableType (spec.Range t)]
   (trig : spec.Domain → Prop) [DecidablePred trig]
   (rel : (x : spec.Domain) → spec.Range x → spec.Domain → Prop)
   (τ : (spec + spec).Domain → J)

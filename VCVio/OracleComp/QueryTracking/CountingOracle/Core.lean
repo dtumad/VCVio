@@ -13,7 +13,7 @@ public import VCVio.OracleComp.QueryTracking.Tracing.Core
 
 Response-independent writer traces accumulate per-query costs and per-index query counts.
 Their output projections and operational support equations preserve the original program.
-Counting uses an additive writer backed by `Multiplicative (QueryCount ι)`; an abort in the
+Counting uses an additive writer backed by `Multiplicative (QueryCount spec.Domain)`; an abort in the
 underlying monad can discard the whole writer result.
 -/
 
@@ -25,7 +25,7 @@ universe u v w
 
 open scoped OracleSpec.PrimitiveQuery
 
-variable {ι : Type u} {spec : OracleSpec ι} {α β γ : Type u}
+variable {spec : OracleSpec} {α β γ : Type u}
 
 namespace QueryImpl
 
@@ -100,25 +100,25 @@ end withCost
 Counting happens before the implementation runs; failure in the base monad can discard
 the writer result. Use `AddWriterT.runAdd` to observe ordinary pointwise counts.
 The underlying `withCost` uses `Multiplicative.ofAdd ∘ QueryCount.single`. -/
-@[expose] def withCounting [DecidableEq ι] (so : QueryImpl spec m) :
-    QueryImpl spec (AddWriterT (QueryCount ι) m) :=
+@[expose] def withCounting [DecidableEq spec.Domain] (so : QueryImpl spec m) :
+    QueryImpl spec (AddWriterT (QueryCount spec.Domain) m) :=
   so.withCost (fun t => Multiplicative.ofAdd (QueryCount.single t))
 
 @[simp, grind =]
-lemma withCounting_apply [DecidableEq ι] (so : QueryImpl spec m) (t : spec.Domain) :
+lemma withCounting_apply [DecidableEq spec.Domain] (so : QueryImpl spec m) (t : spec.Domain) :
     so.withCounting t = (do AddWriterT.addTell (QueryCount.single t); so t) := by
   exact withCost_apply so (fun t => Multiplicative.ofAdd (QueryCount.single t)) t
 
-lemma withCounting_eq_withCost [DecidableEq ι] (so : QueryImpl spec m) :
+lemma withCounting_eq_withCost [DecidableEq spec.Domain] (so : QueryImpl spec m) :
     so.withCounting = so.withCost (fun t => Multiplicative.ofAdd (QueryCount.single t)) := rfl
 
-lemma fst_map_run_withCounting [DecidableEq ι] [LawfulMonad m]
+lemma fst_map_run_withCounting [DecidableEq spec.Domain] [LawfulMonad m]
     (so : QueryImpl spec m) (mx : OracleComp spec α) :
     Prod.fst <$> (simulateQ (so.withCounting) mx).run = simulateQ so mx :=
   fst_map_run_withCost so _ mx
 
 /-- Forgetting the additive query count preserves the underlying computation. -/
-lemma fst_map_runAdd_withCounting [DecidableEq ι] [LawfulMonad m]
+lemma fst_map_runAdd_withCounting [DecidableEq spec.Domain] [LawfulMonad m]
     (so : QueryImpl spec m) (mx : OracleComp spec α) :
     Prod.fst <$> (simulateQ so.withCounting mx).runAdd = simulateQ so mx := by
   rw [AddWriterT.fst_map_runAdd, fst_map_run_withCounting]
@@ -133,8 +133,8 @@ while preserving the original oracle behavior. -/
 
 /-- Oracle for counting the number of queries made by a computation. The count is stored as a
 function from oracle indices to counts, to give finer grained information about the count. -/
-@[expose] def OracleSpec.countingOracle [DecidableEq ι] :
-    QueryImpl spec (AddWriterT (QueryCount ι) (OracleComp spec)) :=
+@[expose] def OracleSpec.countingOracle [DecidableEq spec.Domain] :
+    QueryImpl spec (AddWriterT (QueryCount spec.Domain) (OracleComp spec)) :=
   (QueryImpl.ofLift spec (OracleComp spec)).withCounting
 
 /-- Pointwise behavior of the generic cost oracle. -/
@@ -147,14 +147,14 @@ lemma costOracle_apply {ω : Type u} [Monoid ω] (costFn : spec.Domain → ω)
 
 /-- Pointwise behavior of the per-index counting oracle. -/
 @[simp]
-lemma OracleSpec.countingOracle_apply [DecidableEq ι] (t : spec.Domain) :
+lemma OracleSpec.countingOracle_apply [DecidableEq spec.Domain] (t : spec.Domain) :
     spec.countingOracle t =
       (do
         AddWriterT.addTell (QueryCount.single t)
         liftM (liftM (spec.query t) : OracleComp spec _)) := by
   rw [OracleSpec.countingOracle, QueryImpl.withCounting_apply, QueryImpl.ofLift_apply]
 
-lemma countingOracle_eq_costOracle [DecidableEq ι] :
+lemma countingOracle_eq_costOracle [DecidableEq spec.Domain] :
     spec.countingOracle = costOracle (fun t => Multiplicative.ofAdd (QueryCount.single t)) := rfl
 
 namespace costOracle
@@ -174,7 +174,7 @@ end costOracle
 
 namespace countingOracle
 
-variable [DecidableEq ι]
+variable [DecidableEq spec.Domain]
 
 @[simp]
 lemma fst_map_run_simulateQ (oa : OracleComp spec α) :
@@ -186,7 +186,7 @@ lemma run_simulateQ_bind_fst (oa : OracleComp spec α) (ob : α → OracleComp s
     ((simulateQ countingOracle oa).run >>= fun x => ob x.1) = oa >>= ob := by
   rw [← bind_map_left Prod.fst, fst_map_run_simulateQ]
 
-lemma support_fst_map_run_simulateQ {ι₀ : Type} {spec₀ : OracleSpec.{0, 0} ι₀} [DecidableEq ι₀]
+lemma support_fst_map_run_simulateQ {spec₀ : OracleSpec.{0, 0}} [DecidableEq spec₀.Domain]
     {α : Type} (oa : OracleComp spec₀ α) :
     support (Prod.fst <$> (simulateQ (spec₀.countingOracle) oa).run) = support oa := by
   rw [fst_map_run_simulateQ]
@@ -194,11 +194,11 @@ lemma support_fst_map_run_simulateQ {ι₀ : Type} {spec₀ : OracleSpec.{0, 0} 
 section support
 
 /-- Run the counting interpretation with initial accumulated count `qc`. -/
-@[expose] def simulate (oa : OracleComp spec α) (qc : QueryCount ι) :
-    OracleComp spec (α × QueryCount ι) :=
+@[expose] def simulate (oa : OracleComp spec α) (qc : QueryCount spec.Domain) :
+    OracleComp spec (α × QueryCount spec.Domain) :=
   Prod.map id (qc + ·) <$> (simulateQ countingOracle oa).runAdd
 
-lemma simulate_eq_map_simulate_zero (oa : OracleComp spec α) (qc : QueryCount ι) :
+lemma simulate_eq_map_simulate_zero (oa : OracleComp spec α) (qc : QueryCount spec.Domain) :
     simulate oa qc = Prod.map id (qc + ·) <$> simulate oa 0 := by
   simp only [simulate, Functor.map_map]
   congr 1
@@ -207,21 +207,21 @@ lemma simulate_eq_map_simulate_zero (oa : OracleComp spec α) (qc : QueryCount �
 
 /-- We can always reduce simulation with counting to start with `0`,
 and add the initial count back at the end. -/
-lemma support_simulate (oa : OracleComp spec α) (qc : QueryCount ι) :
+lemma support_simulate (oa : OracleComp spec α) (qc : QueryCount spec.Domain) :
     support (simulate oa qc) = Prod.map id (qc + ·) '' support (simulate oa 0) := by
   rw [simulate_eq_map_simulate_zero]
   simp
 
 /-- Reduce membership in support of simulation with counting to simulation starting from `0`. -/
-lemma mem_support_simulate_iff (oa : OracleComp spec α) (qc : QueryCount ι)
-    (z : α × QueryCount ι) :
+lemma mem_support_simulate_iff (oa : OracleComp spec α) (qc : QueryCount spec.Domain)
+    (z : α × QueryCount spec.Domain) :
     z ∈ support (simulate oa qc) ↔
       ∃ qc', (z.1, qc') ∈ support (simulate oa 0) ∧ qc + qc' = z.2 := by
   rw [support_simulate]
   aesop
 
-lemma mem_support_simulate_iff_of_le (oa : OracleComp spec α) (qc : QueryCount ι)
-    (z : α × QueryCount ι) (hz : qc ≤ z.2) :
+lemma mem_support_simulate_iff_of_le (oa : OracleComp spec α) (qc : QueryCount spec.Domain)
+    (z : α × QueryCount spec.Domain) (hz : qc ≤ z.2) :
     z ∈ support (simulate oa qc) ↔ (z.1, z.2 - qc) ∈ support (simulate oa 0) := by
   rw [mem_support_simulate_iff oa qc z]
   refine ⟨?_, ?_⟩
@@ -234,17 +234,17 @@ lemma mem_support_simulate_iff_of_le (oa : OracleComp spec α) (qc : QueryCount 
     funext i
     simp [Pi.add_apply, Pi.sub_apply, Nat.add_sub_of_le (hz i)]
 
-lemma le_of_mem_support_simulate {oa : OracleComp spec α} {qc : QueryCount ι}
-    {z : α × QueryCount ι} (h : z ∈ support (simulate oa qc)) : qc ≤ z.2 := by
+lemma le_of_mem_support_simulate {oa : OracleComp spec α} {qc : QueryCount spec.Domain}
+    {z : α × QueryCount spec.Domain} (h : z ∈ support (simulate oa qc)) : qc ≤ z.2 := by
   obtain ⟨qc', _, hq⟩ := (mem_support_simulate_iff oa qc z).1 h
   exact fun i => le_of_le_of_eq (Nat.le_add_right _ _) (congrFun hq i)
 
 section snd_map
 
 lemma mem_support_snd_map_simulate_iff (oa : OracleComp spec α)
-    (qc qc' : QueryCount ι) :
-    qc' ∈ support (((fun z : α × QueryCount ι => z.2) <$> simulate oa qc) :
-      OracleComp spec (QueryCount ι)) ↔
+    (qc qc' : QueryCount spec.Domain) :
+    qc' ∈ support (((fun z : α × QueryCount spec.Domain => z.2) <$> simulate oa qc) :
+      OracleComp spec (QueryCount spec.Domain)) ↔
       ∃ qc'', ∃ x, (x, qc'') ∈ support (simulate oa 0) ∧ qc + qc'' = qc' := by
   simp only [support_map, Set.mem_image, Prod.exists, exists_eq_right]
   refine ⟨fun ⟨x, hx⟩ => ?_, fun ⟨qc'', x, hmem, hq⟩ => ?_⟩
@@ -253,11 +253,11 @@ lemma mem_support_snd_map_simulate_iff (oa : OracleComp spec α)
   · exact ⟨x, (mem_support_simulate_iff oa qc (x, qc')).2 ⟨qc'', hmem, hq⟩⟩
 
 lemma mem_support_snd_map_simulate_iff_of_le (oa : OracleComp spec α)
-    {qc qc' : QueryCount ι} (hqc : qc ≤ qc') :
-    qc' ∈ support (((fun z : α × QueryCount ι => z.2) <$> simulate oa qc) :
-      OracleComp spec (QueryCount ι)) ↔
-      qc' - qc ∈ support (((fun z : α × QueryCount ι => z.2) <$> simulate oa 0) :
-        OracleComp spec (QueryCount ι)) := by
+    {qc qc' : QueryCount spec.Domain} (hqc : qc ≤ qc') :
+    qc' ∈ support (((fun z : α × QueryCount spec.Domain => z.2) <$> simulate oa qc) :
+      OracleComp spec (QueryCount spec.Domain)) ↔
+      qc' - qc ∈ support (((fun z : α × QueryCount spec.Domain => z.2) <$> simulate oa 0) :
+        OracleComp spec (QueryCount spec.Domain)) := by
   rw [mem_support_snd_map_simulate_iff]
   simp only [support_map, Set.mem_image, Prod.exists, exists_eq_right]
   refine ⟨fun ⟨qc'', x, hmem, hq⟩ => ⟨x, ?_⟩, fun ⟨x, hx⟩ => ⟨qc' - qc, x, hx, ?_⟩⟩
@@ -268,25 +268,25 @@ lemma mem_support_snd_map_simulate_iff_of_le (oa : OracleComp spec α)
     simp [Pi.add_apply, Pi.sub_apply, Nat.add_sub_of_le (hqc i)]
 
 lemma le_of_mem_support_snd_map_simulate {oa : OracleComp spec α}
-    {qc qc' : QueryCount ι}
-    (h : qc' ∈ support (((fun z : α × QueryCount ι => z.2) <$> simulate oa qc) :
-      OracleComp spec (QueryCount ι))) : qc ≤ qc' := by
+    {qc qc' : QueryCount spec.Domain}
+    (h : qc' ∈ support (((fun z : α × QueryCount spec.Domain => z.2) <$> simulate oa qc) :
+      OracleComp spec (QueryCount spec.Domain))) : qc ≤ qc' := by
   obtain ⟨qc'', _, _, hq⟩ := (mem_support_snd_map_simulate_iff oa qc qc').1 h
   exact fun i => le_of_le_of_eq (Nat.le_add_right _ _) (congrFun hq i)
 
 lemma sub_mem_support_snd_map_simulate {oa : OracleComp spec α}
-    {qc qc' : QueryCount ι}
-    (h : qc' ∈ support (((fun z : α × QueryCount ι => z.2) <$> simulate oa qc) :
-      OracleComp spec (QueryCount ι))) :
-    qc' - qc ∈ support (((fun z : α × QueryCount ι => z.2) <$> simulate oa 0) :
-      OracleComp spec (QueryCount ι)) :=
+    {qc qc' : QueryCount spec.Domain}
+    (h : qc' ∈ support (((fun z : α × QueryCount spec.Domain => z.2) <$> simulate oa qc) :
+      OracleComp spec (QueryCount spec.Domain))) :
+    qc' - qc ∈ support (((fun z : α × QueryCount spec.Domain => z.2) <$> simulate oa 0) :
+      OracleComp spec (QueryCount spec.Domain)) :=
   (mem_support_snd_map_simulate_iff_of_le (oa := oa)
     (hqc := le_of_mem_support_snd_map_simulate h)).1 h
 
 end snd_map
 
-lemma add_mem_support_simulate {oa : OracleComp spec α} {qc : QueryCount ι}
-    {z : α × QueryCount ι} (hz : z ∈ support (simulate oa qc)) (qc' : QueryCount ι) :
+lemma add_mem_support_simulate {oa : OracleComp spec α} {qc : QueryCount spec.Domain}
+    {z : α × QueryCount spec.Domain} (hz : z ∈ support (simulate oa qc)) (qc' : QueryCount spec.Domain) :
     (z.1, z.2 + qc') ∈ support (simulate oa (qc + qc')) := by
   rcases (mem_support_simulate_iff oa qc z).1 hz with ⟨qc1, hmem, hq⟩
   refine (mem_support_simulate_iff oa (qc + qc') (z.1, z.2 + qc')).2 ?_
@@ -297,24 +297,24 @@ lemma add_mem_support_simulate {oa : OracleComp spec α} {qc : QueryCount ι}
   omega
 
 lemma add_right_mem_support_simulate_iff (oa : OracleComp spec α)
-    (qc qc' : QueryCount ι) (x : α) :
+    (qc qc' : QueryCount spec.Domain) (x : α) :
     (x, qc + qc') ∈ support (simulate oa qc) ↔ (x, qc') ∈ support (simulate oa 0) := by
   rw [mem_support_simulate_iff]
   aesop
 
 lemma add_left_mem_support_simulate_iff (oa : OracleComp spec α)
-    (qc qc' : QueryCount ι) (x : α) :
+    (qc qc' : QueryCount spec.Domain) (x : α) :
     (x, qc' + qc) ∈ support (simulate oa qc) ↔ (x, qc') ∈ support (simulate oa 0) := by
   rw [add_comm qc' qc]
   exact add_right_mem_support_simulate_iff oa qc qc' x
 
-lemma mem_support_simulate_pure_iff (x : α) (qc : QueryCount ι)
-    (z : α × QueryCount ι) :
+lemma mem_support_simulate_pure_iff (x : α) (qc : QueryCount spec.Domain)
+    (z : α × QueryCount spec.Domain) :
     z ∈ support (simulate (pure x : OracleComp spec α) qc) ↔ z = (x, qc) := by
   simp [simulate]
 
 lemma apply_ne_zero_of_mem_support_simulate_queryBind {t : spec.Domain}
-    {oa : spec.Range t → OracleComp spec α} {qc : QueryCount ι} {z : α × QueryCount ι}
+    {oa : spec.Range t → OracleComp spec α} {qc : QueryCount spec.Domain} {z : α × QueryCount spec.Domain}
     (hz : z ∈ support (simulate ((query t : OracleComp spec _) >>= oa) qc)) :
     z.2 t ≠ 0 := by
   obtain ⟨q0, hq0mem, hqsum⟩ :=
@@ -328,7 +328,7 @@ lemma apply_ne_zero_of_mem_support_simulate_queryBind {t : spec.Domain}
   omega
 
 lemma exists_mem_support_of_mem_support_simulate_queryBind {t : spec.Domain}
-    {oa : spec.Range t → OracleComp spec α} {qc : QueryCount ι} {z : α × QueryCount ι}
+    {oa : spec.Range t → OracleComp spec α} {qc : QueryCount spec.Domain} {z : α × QueryCount spec.Domain}
     (hz : z ∈ support (simulate ((query t : OracleComp spec _) >>= oa) qc)) :
     ∃ u, (z.1, Function.update z.2 t (z.2 t - 1)) ∈ support (simulate (oa u) qc) := by
   obtain ⟨q0, hq0mem, hqsum⟩ :=
@@ -352,7 +352,7 @@ lemma exists_mem_support_of_mem_support_simulate_queryBind {t : spec.Domain}
     omega
 
 lemma mem_support_simulate_queryBind_iff (t : spec.Domain)
-    (oa : spec.Range t → OracleComp spec α) (qc : QueryCount ι) (z : α × QueryCount ι) :
+    (oa : spec.Range t → OracleComp spec α) (qc : QueryCount spec.Domain) (z : α × QueryCount spec.Domain) :
     z ∈ support (simulate ((query t : OracleComp spec _) >>= oa) qc) ↔
       z.2 t ≠ 0 ∧
       ∃ u, (z.1, Function.update z.2 t (z.2 t - 1)) ∈ support (simulate (oa u) qc) := by
@@ -369,7 +369,7 @@ lemma mem_support_simulate_queryBind_iff (t : spec.Domain)
     have hbRun' : (z.1, b) ∈
         support ((simulateQ (QueryImpl.id' spec).withCounting (oa u)).runAdd) := by
       simpa [countingOracle] using hbRun
-    let q0 : QueryCount ι := QueryCount.single t + b
+    let q0 : QueryCount spec.Domain := QueryCount.single t + b
     have hq0mem : (z.1, q0) ∈ support (simulate ((query t : OracleComp spec _) >>= oa) 0) := by
       have hex :
           ∃ i a b', (a, b') ∈ support (simulateQ (QueryImpl.id' spec).withCounting (oa i)).runAdd ∧
@@ -392,7 +392,7 @@ lemma mem_support_simulate_queryBind_iff (t : spec.Domain)
       qc z).2 ⟨q0, hq0mem, hqsum⟩
 
 lemma exists_mem_support_of_mem_support {oa : OracleComp spec α} {x : α} (hx : x ∈ support oa)
-    (qc : QueryCount ι) : ∃ qc', (x, qc') ∈ support (simulate oa qc) := by
+    (qc : QueryCount spec.Domain) : ∃ qc', (x, qc') ∈ support (simulate oa qc) := by
   have hx' : x ∈ support (Prod.fst <$> (simulateQ countingOracle oa).runAdd) := by
     simpa [fst_map_run_simulateQ] using hx
   rw [support_map] at hx'

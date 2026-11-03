@@ -27,21 +27,20 @@ namespace OracleQuery
 
 universe u v w
 
-variable {ι₁} {ι₂} {ι₃} {ι₄}
-  {spec₁ : OracleSpec ι₁} {spec₂ : OracleSpec ι₂}
-  {spec₃ : OracleSpec ι₃} {spec₄ : OracleSpec ι₄} {α β γ : Type u}
+variable {spec₁ : OracleSpec} {spec₂ : OracleSpec}
+  {spec₃ : OracleSpec} {spec₄ : OracleSpec} {α β γ : Type u}
 
 section instances
 
 /-- We need `Inhabited` to prevent infinite type-class searching. -/
-instance (priority := low) {τ : Type u} [Inhabited τ] {spec : OracleSpec.{u, v} τ} :
+instance (priority := low) [Inhabited spec.Domain] {spec : OracleSpec.{u, v}} :
     OracleSpec.emptySpec.{u,v} ⊂ₒ spec where
   monadLift q := PEmpty.elim q.input
   onQuery t := t.elim
   onResponse t := t.elim
   liftM_eq_lift q := PEmpty.elim q.input
 
-instance (priority := low) {τ : Type u} [Inhabited τ] {spec : OracleSpec.{u, v} τ} :
+instance (priority := low) [Inhabited spec.Domain] {spec : OracleSpec.{u, v}} :
     OracleSpec.emptySpec ˡ⊂ₒ spec where
   onResponse_bijective t := PEmpty.elim t
 
@@ -241,11 +240,11 @@ end add_assoc
 
 section sigma
 
-variable {σ ι} (specs : σ → OracleSpec ι)
+variable {σ coeSpec.Domain} (specs : σ → OracleSpec)
 
 -- dtumad: we could expand this more to lifting a finite sum to the sigma type
 
-instance subSpec_sigma {σ ι} (specs : σ → OracleSpec ι) (j : σ) :
+instance subSpec_sigma {σ coeSpec.Domain} (specs : σ → OracleSpec) (j : σ) :
     specs j ⊂ₒ OracleSpec.sigma specs where
   monadLift q := ⟨⟨j, q.input⟩, q.cont⟩
   onQuery t := ⟨j, t⟩
@@ -278,10 +277,9 @@ section tests
 
 -- This set of examples serves as sort of a "unit test" for the coercions above
 variable (α : Type)
-  {ι₁ ι₂ ι₃ ι₄ ι ι'}
-  {spec₁ : OracleSpec ι₁} {spec₂ : OracleSpec ι₂}
-  {spec₃ : OracleSpec ι₃} {spec₄ : OracleSpec ι₄}
-  (coeSpec : OracleSpec ι) (coeSuperSpec : OracleSpec ι')
+  {spec₁ : OracleSpec} {spec₂ : OracleSpec}
+  {spec₃ : OracleSpec} {spec₄ : OracleSpec}
+  (coeSpec : OracleSpec) (coeSuperSpec : OracleSpec)
   [_hSub : coeSpec ⊂ₒ coeSuperSpec]
 
 -- coerce a single oracle and then add extra oracles

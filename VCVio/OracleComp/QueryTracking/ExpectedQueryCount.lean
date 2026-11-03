@@ -78,7 +78,7 @@ universe v
 
 namespace OracleComp
 
-variable {ι : Type} {spec : OracleSpec ι} {α β σ : Type} {m : Type → Type v} [Monad m]
+variable {spec : OracleSpec} {α β σ : Type} {m : Type → Type v} [Monad m]
   [EvalDistSemantics m]
 
 /-! ## The expected charged-query count -/

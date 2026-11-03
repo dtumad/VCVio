@@ -30,8 +30,7 @@ namespace QueryImpl
 /-- Given implementations for oracles in `spec₁` and `spec₂` in terms of writer monads for
 two different log monoids `ω₁` and `ω₂`, implement the combined set `spec₁ + spec₂` in terms
 of the product monoid `ω₁ × ω₂`. Each side leaves the other component at the identity. -/
-@[expose] def parallelWriterT {ι₁ : Type u} {ι₂ : Type v}
-    {spec₁ : OracleSpec.{u, w} ι₁} {spec₂ : OracleSpec.{v, w} ι₂}
+@[expose] def parallelWriterT {spec₁ : OracleSpec.{u, w}} {spec₂ : OracleSpec.{v, w}}
     {m : Type w → Type x} [Functor m] {ω₁ ω₂ : Type w} [Monoid ω₁] [Monoid ω₂]
     (impl₁ : QueryImpl spec₁ (WriterT ω₁ m))
     (impl₂ : QueryImpl spec₂ (WriterT ω₂ m)) :
@@ -42,8 +41,8 @@ of the product monoid `ω₁ × ω₂`. Each side leaves the other component at 
 /-- Indexed version of `QueryImpl.parallelWriterT`. Each query for index `t` writes into the
 `t`-th component of the pi-product `(t : τ) → ω t`, leaving every other component at the
 identity. Note that `m` cannot vary with `t`. -/
-@[expose] def sigmaWriterT {τ : Type} [DecidableEq τ] {ι : τ → Type v}
-    {spec : (t : τ) → OracleSpec.{v, w} (ι t)}
+@[expose] def sigmaWriterT {τ : Type} [DecidableEq τ] {spec.Domain : τ → Type v}
+    {spec : (t : τ) → OracleSpec.{v, w} (spec.Domain t)}
     {m : Type w → Type x} [Functor m] {ω : τ → Type w} [(t : τ) → Monoid (ω t)]
     (impl : (t : τ) → QueryImpl (spec t) (WriterT (ω t) m)) :
     QueryImpl (OracleSpec.sigma spec) (WriterT ((t : τ) → ω t) m)
@@ -54,7 +53,7 @@ identity. Note that `m` cannot vary with `t`. -/
 The outer log is the first component of the product; the inner/base log is the second. This
 is the writer-transformer analogue of `flattenStateT`. Requires `[Monoid ω₂]` to lift the
 inner writer's run; the resulting `WriterT (ω₁ × ω₂) m` carries both logs as a product. -/
-@[expose] def flattenWriterT {ι : Type _} {spec : OracleSpec ι}
+@[expose] def flattenWriterT {spec : OracleSpec}
     {m : Type u → Type v} [Monad m] {ω₁ ω₂ : Type u} [Monoid ω₂]
     (impl : QueryImpl spec (WriterT ω₁ (WriterT ω₂ m))) :
     QueryImpl spec (WriterT (ω₁ × ω₂) m) := fun t =>
@@ -66,7 +65,7 @@ end QueryImpl
 
 namespace OracleComp
 
-variable {ι : Type u} {spec : OracleSpec ι} {α : Type u} {ω : Type u} [Monoid ω]
+variable {spec : OracleSpec} {α : Type u} {ω : Type u} [Monoid ω]
 
 /-- Taking the first component of the WriterT output recovers the original computation,
 when the query implementation preserves the underlying oracle behavior (hso). -/
@@ -88,7 +87,7 @@ end OracleComp
 
 namespace OracleComp
 
-variable {ι : Type u} {spec : OracleSpec ι} {ω : Type u}
+variable {spec : OracleSpec} {ω : Type u}
   [EmptyCollection ω] [Append ω] [LawfulAppend ω]
 
 /-- Simulating through a handler lifted into an append-logged `WriterT` logs nothing: the run is
@@ -107,8 +106,8 @@ lemma writerT_run_simulateQ_liftTarget {m : Type u → Type v} [Monad m] [Lawful
 `red : QueryImpl spec₁ (WriterT ω (OracleComp spec₂))` followed by an inner `impl` agrees on
 every query with a combined handler `game : QueryImpl spec₁ (WriterT ω n)`, then the agreement
 extends to every computation. This is the append-log analogue of `simulateQ_StateT_compose`. -/
-theorem simulateQ_WriterT_compose {ι₁ ι₂ : Type*} {spec₁ : OracleSpec ι₁}
-    {spec₂ : OracleSpec ι₂} {n : Type u → Type v} [Monad n] [LawfulMonad n]
+theorem simulateQ_WriterT_compose {spec₁ : OracleSpec}
+    {spec₂ : OracleSpec} {n : Type u → Type v} [Monad n] [LawfulMonad n]
     (red : QueryImpl spec₁ (WriterT ω (OracleComp spec₂))) (impl : QueryImpl spec₂ n)
     (game : QueryImpl spec₁ (WriterT ω n))
     (bridge : ∀ q : spec₁.Domain, simulateQ impl (red q).run = (game q).run)

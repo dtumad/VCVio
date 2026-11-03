@@ -38,7 +38,7 @@ universe u u'
 
 namespace OracleComp.ProgramLogic.Relational
 
-variable {ι : Type u} {spec : OracleSpec.{u, 0} ι} {ι' : Type u'} {spec' : OracleSpec.{u', 0} ι'}
+variable {spec : OracleSpec.{u, 0}} {spec' : OracleSpec.{u', 0}}
   {α σ : Type}
 
 /-- A simulation started from a bad state ends in a bad state whenever its handler keeps bad
@@ -239,7 +239,7 @@ charges every query, and taking no bad state gives a pure per-query budget. -/
 
 section epsilon
 
-variable {κ : Type} {specκ : OracleSpec.{0, 0} κ}
+variable {κ : Type} {specκ : OracleSpec.{0, 0}}
 
 /-- **ε-perturbed identical until bad**, on output-state pairs from any starting state. -/
 theorem measureETVDist_simulateQ_run_le_queryBoundP_mul_add_prEvent_bad

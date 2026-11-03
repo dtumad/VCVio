@@ -29,7 +29,7 @@ OracleComp  (algebra / answer side, inductive)  ⟷  OracleStrategy  (coalgebra 
 ```
 
 * `OracleStrategy S spec := PFunctor.DynSystem S spec.toPFunctor` — states `S` with
-  `expose : S → ι` (the next query to ask) and `update : S → spec.Range _ → S`
+  `expose : S → spec.Domain` (the next query to ask) and `update : S → spec.Range _ → S`
   (digest the answer, advance) — literally a lens `selfMonomial S ⟹ spec.toPFunctor`.
   This is exactly an adaptive querying strategy / adversary.
 * `OracleHandler spec := PFunctor.Section spec.toPFunctor` — a deterministic oracle as a section
@@ -52,14 +52,14 @@ universe u v w
 open OracleSpec
 open scoped PFunctor
 
-variable {ι : Type u} {spec : OracleSpec.{u, v} ι}
+variable {spec : OracleSpec.{u, v}}
 
 /-- A stateful, adaptive querier against `spec` with states `S` (an adversary / environment): a
 PolyFun dynamical system whose interface is the oracle's polynomial functor `spec.toPFunctor` —
 literally a lens `selfMonomial S ⟹ spec.toPFunctor`. Its `expose` chooses the next query from the
 current state; `update` digests an oracle answer into the next state. The whole
 `PFunctor.DynSystem` / `PFunctor.Lens` combinator library applies directly. -/
-abbrev OracleStrategy (S : Type w) (spec : OracleSpec ι) : Type _ :=
+abbrev OracleStrategy (S : Type w) (spec : OracleSpec) : Type _ :=
   PFunctor.DynSystem S spec.toPFunctor
 
 /-- A deterministic, total oracle for `spec`, as a PolyFun **section** — a lens
@@ -68,7 +68,7 @@ answer function with `OracleHandler.ofFn`, apply it as a function through the `D
 (`h t : spec.Range t`), and recover the underlying `QueryImpl spec Id` with
 `OracleHandler.toQueryImpl`. Being a lens, it is exactly what `PFunctor.DynSystem.wrap` closes a
 strategy with (`OracleStrategy.runAgainst`), and the whole `PFunctor.Lens` algebra applies. -/
-abbrev OracleHandler (spec : OracleSpec.{u, v} ι) : Type _ :=
+abbrev OracleHandler (spec : OracleSpec.{u, v}) : Type _ :=
   PFunctor.Section spec.toPFunctor
 
 namespace OracleHandler
@@ -109,14 +109,14 @@ end OracleHandler
 a probabilistic program whose distribution is read through `𝒟`. This is the Kleisli-category
 section that closes a strategy into a Markov chain on its states (`OracleStrategy.kleisliStep`).
 It lives in `Type` because the measure semantics of `ProbComp` does. -/
-abbrev ProbHandler {ι : Type} (spec : OracleSpec.{0, 0} ι) : Type := QueryImpl spec ProbComp
+abbrev ProbHandler (spec : OracleSpec.{0, 0}) : Type := QueryImpl spec ProbComp
 
 namespace OracleSpec
 
 /-- The canonical randomized oracle of a specification with sampleable answers: answer each query
 by uniform sampling. Specializes to a fair coin on `coinSpec` and to uniform selection on
 `unifSpec`. -/
-noncomputable def uniformHandler {ι : Type} (spec : OracleSpec.{0, 0} ι)
+noncomputable def uniformHandler (spec : OracleSpec.{0, 0})
     [∀ t, SampleableType (spec.Range t)] : ProbHandler spec :=
   uniformSampleImpl
 
@@ -124,7 +124,7 @@ open OracleComp in
 /-- Running a program against the canonical randomized oracle of a uniform specification preserves
 its distribution: machine-level game values against `uniformHandler` are statements about the
 program itself. -/
-theorem simulateQ_uniformHandler {ι : Type} {spec : OracleSpec.{0, 0} ι}
+theorem simulateQ_uniformHandler {spec : OracleSpec.{0, 0}}
     [∀ t, SampleableType (spec.Range t)] [UniformAnswerMeasure spec] {α : Type}
     (oa : OracleComp spec α) : simulateQ spec.uniformHandler oa =ᵈ oa :=
   uniformSampleImpl.evalDistEq_simulateQ oa
@@ -217,13 +217,13 @@ identification is **a reduction is a lens**: a sub-spec coercion `⊂ₒ` is a `
 /-- Install a strategy into a larger oracle along a sub-spec inclusion `spec ⊂ₒ superSpec`. This is
 `wrap` along the reduction lens `SubSpec.toLens`; it rewrites each query forward and each answer
 backward, exactly a reduction of adversaries. -/
-def reduce {τ : Type u} {superSpec : OracleSpec.{u, v} τ} (h : spec ⊂ₒ superSpec)
+def reduce {superSpec : OracleSpec.{u, v}} (h : spec ⊂ₒ superSpec)
     (A : OracleStrategy S spec) : OracleStrategy S superSpec :=
   PFunctor.DynSystem.wrap (SubSpec.toLens h) A
 
 /-- Reductions compose: reducing along `h₁` then `h₂` is reducing along `h₁.trans h₂`. Free from
 `PFunctor.DynSystem.wrap_comp` and `SubSpec.trans_toLens`. -/
-theorem reduce_trans {τ : Type u} {superSpec : OracleSpec.{u, v} τ}
+theorem reduce_trans {superSpec : OracleSpec.{u, v}}
     {ρ : Type u} {superSpec' : OracleSpec.{u, v} ρ}
     (h₁ : spec ⊂ₒ superSpec) (h₂ : superSpec ⊂ₒ superSpec') (A : OracleStrategy S spec) :
     reduce h₂ (reduce h₁ A) = reduce (h₁.trans h₂) A := rfl
@@ -231,7 +231,7 @@ theorem reduce_trans {τ : Type u} {superSpec : OracleSpec.{u, v} τ}
 /-- A shared-state strategy against the product oracle `spec₁ * spec₂`, built from two interface
 lenses out of one self-monomial state. This is PolyFun's categorical product `pairing`, landing in
 `PFunctor.prod = *` definitionally (directions are a `Sum`, matching `OracleSpec` `*`). -/
-def pair {ι₁ : Type u} {spec₁ : OracleSpec.{u, v} ι₁} {ι₂ : Type u} {spec₂ : OracleSpec.{u, v} ι₂}
+def pair {spec₁ : OracleSpec.{u, v}} {spec₂ : OracleSpec.{u, v}}
     {S : Type u} (l₁ : OracleStrategy S spec₁) (l₂ : OracleStrategy S spec₂) :
     OracleStrategy S (spec₁ * spec₂) :=
   PFunctor.DynSystem.pairing l₁ l₂
@@ -240,8 +240,7 @@ def pair {ι₁ : Type u} {spec₁ : OracleSpec.{u, v} ι₁} {ι₂ : Type u} {
 `spec₁.toPFunctor ⊗ spec₂.toPFunctor`, a *synchronous joint oracle* (answers both at once) whose
 directions are a `Prod`. Note `⊗ ≠ *`: this interface has no standard `OracleSpec` preimage, unlike
 `pair`. Kept for modeling genuinely parallel adversaries. -/
-def juxtapose {ι₁ : Type u} {spec₁ : OracleSpec.{u, v} ι₁} {ι₂ : Type u}
-    {spec₂ : OracleSpec.{u, v} ι₂} {S₁ S₂ : Type w} (A : OracleStrategy S₁ spec₁)
+def juxtapose {spec₁ : OracleSpec.{u, v}} {spec₂ : OracleSpec.{u, v}} {S₁ S₂ : Type w} (A : OracleStrategy S₁ spec₁)
     (B : OracleStrategy S₂ spec₂) :
     PFunctor.DynSystem (S₁ × S₂) (spec₁.toPFunctor ⊗ spec₂.toPFunctor) :=
   A.tensor B
@@ -255,7 +254,7 @@ queries. The deterministic run embeds as the Dirac special case (`ofHandler`). -
 
 section Probabilistic
 
-variable {ι : Type} {spec : OracleSpec.{0, 0} ι} {S : Type}
+variable {spec : OracleSpec.{0, 0}} {S : Type}
 
 /-- One probabilistic step: sample an answer to the exposed query from the handler, then advance the
 state. The result is a probabilistic program over next states. -/
@@ -418,7 +417,7 @@ namespace OracleComp
 
 section Probabilistic
 
-variable {ι : Type} {spec : OracleSpec.{0, 0} ι} {α : Type}
+variable {spec : OracleSpec.{0, 0}} {α : Type}
 
 /-- One randomized coalgebra step on programs: sample the head query's answer from `H`, exposing the
 continuation; a `pure` is already the answer. -/
@@ -484,11 +483,11 @@ a program that makes at most `n` queries has a transcript of length at most `n`.
   | queryBind t k ih =>
       simp only [transcript_queryBind, List.length_cons, stepsToHalt_queryBind, ih]
 
-theorem transcript_countQ_pure (h : OracleHandler spec) (p : ι → Prop) [DecidablePred p]
+theorem transcript_countQ_pure (h : OracleHandler spec) (p : spec.Domain → Prop) [DecidablePred p]
     (x : α) : (transcript h (pure x : OracleComp spec α)).countQ p = 0 := rfl
 
 /-- `countQ` recurrence on the transcript: a query to `t` contributes one iff `p t`. -/
-theorem transcript_countQ_queryBind (h : OracleHandler spec) (p : ι → Prop) [DecidablePred p]
+theorem transcript_countQ_queryBind (h : OracleHandler spec) (p : spec.Domain → Prop) [DecidablePred p]
     (t : spec.Domain) (k : spec.Range t → OracleComp spec α) :
     (transcript h (queryBind t k)).countQ p =
       (if p t then 1 else 0) + (transcript h (k (h t))).countQ p := by
@@ -544,7 +543,7 @@ the denotational content of "a reduction is a lens". -/
 
 section Reduction
 
-variable {τ : Type u} {superSpec : OracleSpec.{u, v} τ}
+variable {superSpec : OracleSpec.{u, v}}
 
 /-- A super-spec handler pulled back along a sub-spec inclusion: translate a `spec`-query forward,
 ask the super-handler, translate the answer back. -/
@@ -579,7 +578,7 @@ end Reduction
 
 section QueryBound
 
-variable {spec : OracleSpec.{u, u} ι} {α : Type u}
+variable {spec : OracleSpec.{u, u}} {α : Type u}
 
 /-- A total query bound bounds the number of handler-answered steps: if `oa` makes at most `n`
 queries, the run halts within `n` steps. The operational `IsTotalQueryBound` made denotational. -/
@@ -604,7 +603,7 @@ theorem transcript_length_le_of_isTotalQueryBound (h : OracleHandler spec)
 
 /-- **Predicate query bound.** If `oa` makes at most `n` queries matching `p`, the transcript
 contains at most `n` `p`-matching entries (`QueryLog.countQ`). -/
-theorem transcript_countQ_le_of_isQueryBoundP (h : OracleHandler spec) (p : ι → Prop)
+theorem transcript_countQ_le_of_isQueryBoundP (h : OracleHandler spec) (p : spec.Domain → Prop)
     [DecidablePred p] :
     ∀ {oa : OracleComp spec α} {n : ℕ}, IsQueryBoundP oa p n →
       (transcript h oa).countQ p ≤ n := by
@@ -626,9 +625,9 @@ theorem transcript_countQ_le_of_isQueryBoundP (h : OracleHandler spec) (p : ι �
 
 /-- **Per-index query bound.** If `oa` respects a per-index budget `qb`, then for every oracle index
 `t` the transcript contains at most `qb t` queries to `t`. -/
-theorem transcript_countQ_le_of_isPerIndexQueryBound (h : OracleHandler spec) [DecidableEq ι]
-    (t : ι) :
-    ∀ {oa : OracleComp spec α} {qb : ι → ℕ}, IsPerIndexQueryBound oa qb →
+theorem transcript_countQ_le_of_isPerIndexQueryBound (h : OracleHandler spec) [DecidableEq spec.Domain]
+    (t : spec.Domain) :
+    ∀ {oa : OracleComp spec α} {qb : spec.Domain → ℕ}, IsPerIndexQueryBound oa qb →
       (transcript h oa).countQ (· = t) ≤ qb t := by
   intro oa
   induction oa with
@@ -649,7 +648,7 @@ end QueryBound
 
 section Subsumption
 
-variable {spec : OracleSpec.{u, u} ι} {α : Type u}
+variable {spec : OracleSpec.{u, u}} {α : Type u}
 
 /-- **Subsumption bridge.** Running a program against the deterministic handler `ofFn h` through the
 existing `QueryImpl.withLogging` instrumentation yields exactly the simulated value paired with the

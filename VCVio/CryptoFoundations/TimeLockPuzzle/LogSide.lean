@@ -49,7 +49,7 @@ open OracleSpec OracleComp
 
 namespace TimeLockPuzzle
 
-variable {ι ι' : Type} {spec : OracleSpec.{0, 0} ι} {side : OracleSpec.{0, 0} ι'}
+variable {spec : OracleSpec.{0, 0}} {side : OracleSpec.{0, 0}}
   {Puzzle Key : Type}
 
 /-! ## The instrumented adversary -/
@@ -58,7 +58,7 @@ variable {ι ι' : Type} {spec : OracleSpec.{0, 0} ι} {side : OracleSpec.{0, 0}
 query to `side` appends its point to the log. -/
 @[expose]
 def sideLogPreImpl : QueryImpl (unifSpec + (spec + side))
-    (StateT (List ι') (OracleComp (unifSpec + (spec + side))))
+    (StateT (List side.Domain) (OracleComp (unifSpec + (spec + side))))
   | .inl n => StateT.lift (liftM ((unifSpec + (spec + side)).query (.inl n)))
   | .inr (.inl t) => StateT.lift (liftM ((unifSpec + (spec + side)).query (.inr (.inl t))))
   | .inr (.inr t) => do
@@ -68,9 +68,9 @@ def sideLogPreImpl : QueryImpl (unifSpec + (spec + side))
 /-- The online handler logging `side` points: every query passes through unchanged, and a round
 appends its `side` points to the log, in the order of the round and with repetitions. -/
 @[expose]
-def sideLogOnImpl {τ : Type} {free : OracleSpec.{0, 0} τ} :
+def sideLogOnImpl {free : OracleSpec.{0, 0}} :
     QueryImpl (free + (spec + side).batch)
-      (StateT (List ι') (OracleComp (free + (spec + side).batch)))
+      (StateT (List side.Domain) (OracleComp (free + (spec + side).batch)))
   | .inl n => StateT.lift (liftM ((free + (spec + side).batch).query (.inl n)))
   | .inr ts => do
       modify (· ++ ts.filterMap Sum.getRight?)
@@ -81,24 +81,24 @@ queries, and also returns the `side` points it queried in both phases, in order 
 repetitions: the preprocessing phase starts the log empty and passes it to the online phase in
 its state. -/
 @[expose]
-def TwoPhaseAdversary.logSide {τ : Type} {free : OracleSpec.{0, 0} τ} {Out : Type}
+def TwoPhaseAdversary.logSide {free : OracleSpec.{0, 0}} {Out : Type}
     (adv : TwoPhaseAdversary free (spec + side) Puzzle Out) :
-    TwoPhaseAdversary free (spec + side) Puzzle (Out × List ι') where
-  State := adv.State × List ι'
+    TwoPhaseAdversary free (spec + side) Puzzle (Out × List side.Domain) where
+  State := adv.State × List side.Domain
   preprocess := (simulateQ sideLogPreImpl adv.preprocess).run []
   online σ puzzle := (simulateQ sideLogOnImpl (adv.online σ.1 puzzle)).run σ.2
 
 /-- A step of the preprocessing handler makes its query and appends the `side` point of the
 query, if any, to the log. -/
-lemma sideLogPreImpl_run (t : (unifSpec + (spec + side)).Domain) (s : List ι') :
+lemma sideLogPreImpl_run (t : (unifSpec + (spec + side)).Domain) (s : List side.Domain) :
     (sideLogPreImpl t).run s = (liftM ((unifSpec + (spec + side)).query t) >>= fun u =>
       pure (u, s ++ (t.getRight?.bind Sum.getRight?).toList)) := by
   rcases t with n | t | t <;> simp [sideLogPreImpl]
 
 /-- A step of the online handler makes its query and appends the `side` points of the query, if
 it is a round, to the log. -/
-lemma sideLogOnImpl_run {τ : Type} {free : OracleSpec.{0, 0} τ}
-    (t : (free + (spec + side).batch).Domain) (s : List ι') :
+lemma sideLogOnImpl_run {free : OracleSpec.{0, 0}}
+    (t : (free + (spec + side).batch).Domain) (s : List side.Domain) :
     (sideLogOnImpl t).run s = (liftM ((free + (spec + side).batch).query t) >>= fun u =>
       pure (u, s ++ (t.getRight?.map (·.filterMap Sum.getRight?)).getD [])) := by
   rcases t with n | ts <;> simp [sideLogOnImpl]
@@ -108,7 +108,7 @@ lemma sideLogOnImpl_run {τ : Type} {free : OracleSpec.{0, 0} τ}
 /-- **The instrumentation keeps the budgets.** If `adv` makes at most `Q` preprocessing queries
 and its online phase submits at most `b.1` rounds holding at most `b.2` points, then so does
 `adv.logSide`: logging makes no query. -/
-theorem TwoPhaseAdversary.isQueryBound_logSide {τ : Type} {free : OracleSpec.{0, 0} τ}
+theorem TwoPhaseAdversary.isQueryBound_logSide {free : OracleSpec.{0, 0}}
     {Out : Type} {adv : TwoPhaseAdversary free (spec + side) Puzzle Out} {Q : ℕ} {b : ℕ × ℕ}
     (h : adv.IsQueryBound Q b) : adv.logSide.IsQueryBound Q b := by
   refine ⟨h.1.simulateQ_run_StateT_of_step (fun t s => ?_) [], fun σ puzzle => ?_⟩
@@ -153,7 +153,7 @@ theorem map_guessExperiment_logSide {Out : Type} (tlp : TimeLockPuzzle (spec + s
 the log. -/
 lemma length_le_of_mem_support_run_simulateQ_sideLogPreImpl {α : Type}
     {oa : OracleComp (unifSpec + (spec + side)) α} {Q : ℕ} (h : IsPreprocessingQueryBound oa Q)
-    (s : List ι') {z : α × List ι'} (hz : z ∈ support ((simulateQ sideLogPreImpl oa).run s)) :
+    (s : List side.Domain) {z : α × List side.Domain} (hz : z ∈ support ((simulateQ sideLogPreImpl oa).run s)) :
     z.2.length ≤ s.length + Q := by
   induction oa using OracleComp.inductionOn generalizing Q s with
   | pure x =>
@@ -179,9 +179,8 @@ lemma length_le_of_mem_support_run_simulateQ_sideLogPreImpl {α : Type}
       omega
 
 /-- An online phase with at most `b.2` points appends at most `b.2` points to the log. -/
-lemma length_le_of_mem_support_run_simulateQ_sideLogOnImpl {τ : Type}
-    {free : OracleSpec.{0, 0} τ} {α : Type} {oa : OracleComp (free + (spec + side).batch) α}
-    {b : ℕ × ℕ} (h : IsOnlineQueryBound oa b) (s : List ι') {z : α × List ι'}
+lemma length_le_of_mem_support_run_simulateQ_sideLogOnImpl {free : OracleSpec.{0, 0}} {α : Type} {oa : OracleComp (free + (spec + side).batch) α}
+    {b : ℕ × ℕ} (h : IsOnlineQueryBound oa b) (s : List side.Domain) {z : α × List side.Domain}
     (hz : z ∈ support ((simulateQ sideLogOnImpl oa).run s)) :
     z.2.length ≤ s.length + b.2 := by
   induction oa using OracleComp.inductionOn generalizing b s with
@@ -210,7 +209,7 @@ most `Q + b.2` points. -/
 theorem length_le_of_mem_support_guessExperiment_logSide {Out : Type}
     (tlp : TimeLockPuzzle (spec + side) Puzzle Key)
     {adv : TwoPhaseAdversary unifSpec (spec + side) Puzzle Out} {Q : ℕ} {b : ℕ × ℕ}
-    (h : adv.IsQueryBound Q b) {z : (Out × List ι') × Key}
+    (h : adv.IsQueryBound Q b) {z : (Out × List side.Domain) × Key}
     (hz : z ∈ support (tlp.guessExperiment adv.logSide)) : z.1.2.length ≤ Q + b.2 := by
   simp only [guessExperiment, TwoPhaseAdversary.logSide, mem_support_bind_iff, support_pure,
     Set.mem_singleton_iff] at hz
@@ -225,17 +224,17 @@ theorem length_le_of_mem_support_guessExperiment_logSide {Out : Type}
 
 section Cache
 
-variable [DecidableEq ι] [DecidableEq ι'] [∀ t, SampleableType (spec.Range t)]
+variable [DecidableEq spec.Domain] [DecidableEq side.Domain] [∀ t, SampleableType (spec.Range t)]
   [∀ t, SampleableType (side.Range t)]
 
 /-- A preprocessing step in the random oracle model keeps the cached `side` points those of `P`
 together with the logged ones. -/
 private lemma isSome_inr_iff_of_mem_support_sideLogPreImpl
-    (t : (unifSpec + (spec + side)).Domain) (s : List ι') (P : ι' → Prop)
+    (t : (unifSpec + (spec + side)).Domain) (s : List side.Domain) (P : side.Domain → Prop)
     (c : (spec + side).QueryCache) (hc : ∀ x, (c (.inr x)).isSome ↔ P x ∨ x ∈ s)
-    {z : ((unifSpec + (spec + side)).Range t × List ι') × (spec + side).QueryCache}
+    {z : ((unifSpec + (spec + side)).Range t × List side.Domain) × (spec + side).QueryCache}
     (hz : z ∈ support ((simulateQ (spec + side).romImpl ((sideLogPreImpl t).run s)).run c))
-    (x : ι') : (z.2 (.inr x)).isSome ↔ P x ∨ x ∈ z.1.2 := by
+    (x : side.Domain) : (z.2 (.inr x)).isSome ↔ P x ∨ x ∈ z.1.2 := by
   rw [sideLogPreImpl_run, simulateQ_bind, simulateQ_spec_query, StateT.run_bind,
     mem_support_bind_iff] at hz
   obtain ⟨y, hy, hz⟩ := hz
@@ -254,12 +253,12 @@ private lemma isSome_inr_iff_of_mem_support_sideLogPreImpl
 /-- An online step in the random oracle model, rounds answered point by point, keeps the cached
 `side` points those of `P` together with the logged ones. -/
 private lemma isSome_inr_iff_of_mem_support_sideLogOnImpl
-    (t : (unifSpec + (spec + side).batch).Domain) (s : List ι') (P : ι' → Prop)
+    (t : (unifSpec + (spec + side).batch).Domain) (s : List side.Domain) (P : side.Domain → Prop)
     (c : (spec + side).QueryCache) (hc : ∀ x, (c (.inr x)).isSome ↔ P x ∨ x ∈ s)
-    {z : ((unifSpec + (spec + side).batch).Range t × List ι') × (spec + side).QueryCache}
+    {z : ((unifSpec + (spec + side).batch).Range t × List side.Domain) × (spec + side).QueryCache}
     (hz : z ∈ support ((simulateQ (unifFwdImpl (spec + side) + (spec + side).randomOracle.batch)
       ((sideLogOnImpl t).run s)).run c))
-    (x : ι') : (z.2 (.inr x)).isSome ↔ P x ∨ x ∈ z.1.2 := by
+    (x : side.Domain) : (z.2 (.inr x)).isSome ↔ P x ∨ x ∈ z.1.2 := by
   rw [sideLogOnImpl_run, simulateQ_bind, simulateQ_spec_query, StateT.run_bind,
     mem_support_bind_iff] at hz
   obtain ⟨y, hy, hz⟩ := hz
@@ -278,7 +277,7 @@ private lemma isSome_inr_iff_of_mem_support_liftComp {α : Type}
     (oa : OracleComp (unifSpec + spec.batch) α) (c : (spec + side).QueryCache)
     {z : α × (spec + side).QueryCache}
     (hz : z ∈ support ((simulateQ (unifFwdImpl (spec + side) + (spec + side).randomOracle.batch)
-      (liftComp oa (unifSpec + (spec + side).batch))).run c)) (x : ι') :
+      (liftComp oa (unifSpec + (spec + side).batch))).run c)) (x : side.Domain) :
     (z.2 (.inr x)).isSome ↔ (c (.inr x)).isSome := by
   rw [liftComp_def, ← QueryImpl.simulateQ_compose] at hz
   refine simulateQ_run_preservesInv _ (fun c' => ∀ x, (c' (.inr x)).isSome ↔ (c (.inr x)).isSome)
@@ -307,9 +306,9 @@ generator never queries `side`, and every `side` point the adversary queries is 
 theorem cache_inr_isSome_iff_or_mem_log {Out : Type}
     (tlp : TimeLockPuzzle spec Puzzle Key)
     (adv : TwoPhaseAdversary unifSpec (spec + side) Puzzle Out) (cache : (spec + side).QueryCache)
-    {z : ((Out × List ι') × Key) × (spec + side).QueryCache}
+    {z : ((Out × List side.Domain) × Key) × (spec + side).QueryCache}
     (hz : z ∈ support ((simulateQ (spec + side).romImpl
-      ((tlp.liftSpec (spec + side)).guessExperiment adv.logSide)).run cache)) (t : ι') :
+      ((tlp.liftSpec (spec + side)).guessExperiment adv.logSide)).run cache)) (t : side.Domain) :
     (z.2 (.inr t)).isSome ↔ (cache (.inr t)).isSome ∨ t ∈ z.1.1.2 := by
   simp only [guessExperiment, liftSpec, TwoPhaseAdversary.logSide, simulateQ_bind, simulateQ_pure,
     StateT.run_bind, mem_support_bind_iff, OracleSpec.simulateQ_romImpl_simulateQ_unbatch] at hz
@@ -333,9 +332,9 @@ the empty cache of the delay experiment of the puzzle `tlp` lifted to `spec + si
 theorem cache_inr_isSome_iff_mem_log {Out : Type}
     (tlp : TimeLockPuzzle spec Puzzle Key)
     (adv : TwoPhaseAdversary unifSpec (spec + side) Puzzle Out)
-    {z : ((Out × List ι') × Key) × (spec + side).QueryCache}
+    {z : ((Out × List side.Domain) × Key) × (spec + side).QueryCache}
     (hz : z ∈ support ((simulateQ (spec + side).romImpl
-      ((tlp.liftSpec (spec + side)).guessExperiment adv.logSide)).run ∅)) (t : ι') :
+      ((tlp.liftSpec (spec + side)).guessExperiment adv.logSide)).run ∅)) (t : side.Domain) :
     (z.2 (.inr t)).isSome ↔ t ∈ z.1.1.2 := by
   simpa using cache_inr_isSome_iff_or_mem_log tlp adv ∅ hz t
 

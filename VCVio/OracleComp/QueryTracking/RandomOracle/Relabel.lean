@@ -91,11 +91,11 @@ variable (X K R : Type)
 `Unit`, and `read` the label of a node, answered in `R`. -/
 abbrev labelOps : OracleSpec ((X ⊕ K) ⊕ K) := ((X ⊕ K) →ₒ Unit) + (K →ₒ R)
 
-variable {ι : Type} (pub : OracleSpec ι)
+variable (pub : OracleSpec)
 
 /-- Programs with uniform sampling, a public random oracle `pub`, derivation queries `X →ₒ R`
 and the label operations on `X ⊕ K`. -/
-abbrev withLabels : OracleSpec (((ℕ ⊕ ι) ⊕ X) ⊕ ((X ⊕ K) ⊕ K)) :=
+abbrev withLabels : OracleSpec (((ℕ ⊕ pub.Domain) ⊕ X) ⊕ ((X ⊕ K) ⊕ K)) :=
   pub.withDerivations X R + labelOps X K R
 
 end OracleSpec
@@ -104,11 +104,11 @@ end OracleSpec
 public point `pt k vs` at children values `vs`, answered in `R`. Points of distinct nodes, or of
 one node at distinct children values of the right length, are distinct; at values of another
 length, `pt k vs` is unconstrained. -/
-structure CanonicalGraph {ι : Type} (pub : OracleSpec ι) (X K R : Type) where
+structure CanonicalGraph (pub : OracleSpec) (X K R : Type) where
   /-- The children of a node. -/
   ch : K → List (X ⊕ K)
   /-- The public point of a node at children values. -/
-  pt : K → List R → ι
+  pt : K → List R → pub.Domain
   /-- The public oracle answers every node point in `R`. -/
   range_eq : ∀ k vs, pub.Range (pt k vs) = R
   /-- Distinct nodes, or distinct children values, have distinct points. -/
@@ -117,12 +117,12 @@ structure CanonicalGraph {ι : Type} (pub : OracleSpec ι) (X K R : Type) where
 
 /-- The state of the relabelled game: the public cache, and the cells (derivations and node
 labels) as one lazy cache. -/
-abbrev RelabelState {ι : Type} (pub : OracleSpec ι) (X K R : Type) :=
+abbrev RelabelState (pub : OracleSpec) (X K R : Type) :=
   pub.QueryCache × ((X ⊕ K) →ₒ R).QueryCache
 
 namespace RelabelState
 
-variable {ι : Type} {pub : OracleSpec ι} {X K R : Type}
+variable {pub : OracleSpec} {X K R : Type}
 
 /-- The derivation table: the derivation cells. -/
 def table (st : RelabelState pub X K R) : (X →ₒ R).QueryCache :=
@@ -211,10 +211,10 @@ end RelabelState
 
 namespace CanonicalGraph
 
-variable {ι : Type} {pub : OracleSpec ι} {X K R : Type} (G : CanonicalGraph pub X K R)
+variable {pub : OracleSpec} {X K R : Type} (G : CanonicalGraph pub X K R)
 
 /-- Every point witnessed as a node point is answered in `R`. -/
-theorem range_eq_of_pt_eq {k : K} {vs : List R} {t : ι} (h : G.pt k vs = t) : pub.Range t = R :=
+theorem range_eq_of_pt_eq {k : K} {vs : List R} {t : pub.Domain} (h : G.pt k vs = t) : pub.Range t = R :=
   h ▸ G.range_eq k vs
 
 /-! ## Children values -/
@@ -289,7 +289,7 @@ theorem merge_apply_pt {st : RelabelState pub X K R} {k : K} {vs : List R}
   exact G.dite_exists_pt_eq h (fun k' e ↦ (st.2 (.inr k')).map (cast e.symm)) _
 
 /-- The merged cache at a point of no node at drawn children values reads the public cache. -/
-theorem merge_apply_of_not_exists {st : RelabelState pub X K R} {t : ι}
+theorem merge_apply_of_not_exists {st : RelabelState pub X K R} {t : pub.Domain}
     (ht : ¬∃ k vs, G.childVals st k = some vs ∧ G.pt k vs = t) : G.merge st t = st.1 t := by
   simp only [merge, QueryCache.ofFn_apply, ht, ↓reduceDIte]
 
@@ -331,7 +331,7 @@ theorem _root_.SecretEncoding.merge_toSplitCache_apply_pt {S : Type}
 /-- The merge of the split state under a secret encoding reads the public cache at a point that
 encodes no derivation and is the point of no node at drawn children values. -/
 theorem _root_.SecretEncoding.merge_toSplitCache_apply_of_not_exists {S : Type}
-    (E : SecretEncoding pub S X R) (s : S) {st : RelabelState pub X K R} {t : ι}
+    (E : SecretEncoding pub S X R) (s : S) {st : RelabelState pub X K R} {t : pub.Domain}
     (hne : ∀ x, E.enc s x ≠ t) (ht : ¬∃ k vs, G.childVals st k = some vs ∧ G.pt k vs = t) :
     E.merge s (G.toSplitCache st) t = st.1 t := by
   rw [E.merge_apply_of_not_exists s _ fun ⟨x, hx⟩ ↦ hne x hx]
@@ -367,7 +367,7 @@ where the public cache is unchanged and no node at `t` with drawn children has a
 every label drawn in `st` belongs to a node with drawn children. For the one-sided order of the
 merged caches, with no condition on the labels, see `CanonicalGraph.merge_le_merge`. -/
 theorem merge_apply_eq_of_le {st st' : RelabelState pub X K R} (hle : st ≤ st')
-    (hinv : G.LabelsComplete st) (hc : ¬G.Conflict st') {t : ι} (hcache : st'.1 t = st.1 t)
+    (hinv : G.LabelsComplete st) (hc : ¬G.Conflict st') {t : pub.Domain} (hcache : st'.1 t = st.1 t)
     (hlab : ∀ k vs, G.childVals st' k = some vs → G.pt k vs = t →
       st'.2 (.inr k) = st.2 (.inr k)) :
     G.merge st' t = G.merge st t := by
@@ -439,11 +439,11 @@ answered in `R`; a point at a node's key need not be a point of that node, for i
 children values of another length. -/
 structure NodeKeys (G : CanonicalGraph pub X K R) where
   /-- The node at whose key a public point is, if any. -/
-  node : ι → Option K
+  node : pub.Domain → Option K
   /-- A node's points at children values of the right length are at its key. -/
   node_pt : ∀ {k : K} {vs : List R}, vs.length = (G.ch k).length → node (G.pt k vs) = some k
   /-- Every point at a node's key is answered in `R`. -/
-  range_eq : ∀ {t : ι} {k : K}, node t = some k → pub.Range t = R
+  range_eq : ∀ {t : pub.Domain} {k : K}, node t = some k → pub.Range t = R
 
 namespace NodeKeys
 
@@ -457,7 +457,7 @@ length than `k`'s children. -/
     st.1 t = some (cast (nk.range_eq h).symm ℓ)
 
 /-- The public entries at node keys. -/
-@[expose] def keyEntries (C : pub.QueryCache) : Set ι :=
+@[expose] def keyEntries (C : pub.QueryCache) : Set pub.Domain :=
   {t | (C t).isSome ∧ (nk.node t).isSome}
 
 variable {nk}
@@ -486,7 +486,7 @@ end NodeKeys
 
 /-! ## The relabelled game -/
 
-variable [DecidableEq ι] [DecidableEq X] [DecidableEq K] [SampleableType R]
+variable [DecidableEq pub.Domain] [DecidableEq X] [DecidableEq K] [SampleableType R]
   [∀ t, SampleableType (pub.Range t)]
 
 open Classical in
@@ -528,7 +528,7 @@ theorem relabelImpl_run_pt {st : RelabelState pub X K R} {k : K} {vs : List R}
 
 /-- A public query at a point of no node at drawn children values is answered by the public
 cache. -/
-theorem relabelImpl_run_pub_of_not_exists {st : RelabelState pub X K R} {t : ι}
+theorem relabelImpl_run_pub_of_not_exists {st : RelabelState pub X K R} {t : pub.Domain}
     (ht : ¬∃ k vs, G.childVals st k = some vs ∧ G.pt k vs = t) :
     (G.relabelImpl (.inl (.inr t))).run st =
       (fun z ↦ (z.1, (z.2, st.2))) <$> (pub.randomOracle t).run st.1 := by
@@ -704,7 +704,7 @@ private theorem step_pt (st : RelabelState pub X K R) (hinv : G.LabelsComplete s
     exact h2 ▸ hu.1
 
 private theorem step_pub_of_not_exists (st : RelabelState pub X K R) (hinv : G.LabelsComplete st)
-    {t : ι} (ht : ¬∃ k vs, G.childVals st k = some vs ∧ G.pt k vs = t)
+    {t : pub.Domain} (ht : ¬∃ k vs, G.childVals st k = some vs ∧ G.pt k vs = t)
     (Q : (pub.withDerivations X R).Range (.inl (.inr t)) ×
       SecretEncoding.SplitCache pub X R → Prop) :
     Pr{let z ← (G.relabelImpl (.inl (.inr t))).run st}[

@@ -23,7 +23,7 @@ open OracleComp.ProgramLogic.Relational
 
 namespace QueryImpl.Stateful
 
-variable {ιₑ : Type} {E : OracleSpec.{0, 0} ιₑ} {σ : Type}
+variable {E : OracleSpec.{0, 0}} {σ : Type}
 
 /-- A stateful handler preserves a state invariant as long as the bad flag has not fired. -/
 def PreservesNoBadInvariant (h : QueryImpl.Stateful unifSpec E (σ × Bool))

@@ -259,7 +259,7 @@ private theorem main_induction_gen_init {T K C : Type} [DecidableEq T]
 /-- Left query on the logged stack: forwarded, no log, cache unchanged. Stated with the
 mapped function's domain at the sum-spec `Range` type so keyed rewriting fires after
 `simulateQ_bind`. -/
-private lemma loggedImpl_run_run_inl {ι : Type} {hashSpec : OracleSpec ι} [DecidableEq ι]
+private lemma loggedImpl_run_run_inl {hashSpec : OracleSpec} [DecidableEq hashSpec.Domain]
      [∀ t : hashSpec.Domain, SampleableType (hashSpec.Range t)]
     (i : unifSpec.Domain) (c : hashSpec.QueryCache) :
     (((idImplW hashSpec + loggedROW hashSpec) (Sum.inl i)).run).run c =
@@ -269,8 +269,8 @@ private lemma loggedImpl_run_run_inl {ι : Type} {hashSpec : OracleSpec ι} [Dec
   rfl
 
 /-- Right query on the logged stack, cache hit: cached value, logged, cache unchanged. -/
-private lemma loggedImpl_run_run_inr_some {ι : Type} {hashSpec : OracleSpec ι}
-    [DecidableEq ι]
+private lemma loggedImpl_run_run_inr_some {hashSpec : OracleSpec}
+    [DecidableEq hashSpec.Domain]
     [∀ t : hashSpec.Domain, SampleableType (hashSpec.Range t)]
     {j : hashSpec.Domain} {c : hashSpec.QueryCache}
     {u : hashSpec.Range j} (h : c j = some u) :
@@ -285,8 +285,8 @@ private lemma loggedImpl_run_run_inr_some {ι : Type} {hashSpec : OracleSpec ι}
   rfl
 
 /-- Right query on the logged stack, cache miss: sample, log, cache the value. -/
-private lemma loggedImpl_run_run_inr_none {ι : Type} {hashSpec : OracleSpec ι}
-    [DecidableEq ι]
+private lemma loggedImpl_run_run_inr_none {hashSpec : OracleSpec}
+    [DecidableEq hashSpec.Domain]
     [∀ t : hashSpec.Domain, SampleableType (hashSpec.Range t)]
     {j : hashSpec.Domain} {c : hashSpec.QueryCache} (h : c j = none) :
     (((idImplW hashSpec + loggedROW hashSpec) (Sum.inr j)).run).run c =
@@ -305,7 +305,7 @@ private lemma loggedImpl_run_run_inr_none {ι : Type} {hashSpec : OracleSpec ι}
     ($ᵗ hashSpec.Range j)).symm
 
 /-- Left query on the unlogged stack: forwarded, cache unchanged. -/
-private lemma unloggedImpl_run_inl {ι : Type} {hashSpec : OracleSpec ι} [DecidableEq ι]
+private lemma unloggedImpl_run_inl {hashSpec : OracleSpec} [DecidableEq hashSpec.Domain]
     [∀ t : hashSpec.Domain, SampleableType (hashSpec.Range t)]
     (i : unifSpec.Domain) (c : hashSpec.QueryCache) :
     (hashSpec.romImpl (Sum.inl i)).run c =
@@ -315,7 +315,7 @@ private lemma unloggedImpl_run_inl {ι : Type} {hashSpec : OracleSpec ι} [Decid
   simp [unifFwdImpl, StateT.run_monadLift, bind_pure_comp]
 
 /-- Right query on the unlogged stack, cache hit. -/
-private lemma unloggedImpl_run_inr_some {ι : Type} {hashSpec : OracleSpec ι} [DecidableEq ι]
+private lemma unloggedImpl_run_inr_some {hashSpec : OracleSpec} [DecidableEq hashSpec.Domain]
     [∀ t : hashSpec.Domain, SampleableType (hashSpec.Range t)]
     {j : hashSpec.Domain} {c : hashSpec.QueryCache}
     {u : hashSpec.Range j} (h : c j = some u) :
@@ -324,7 +324,7 @@ private lemma unloggedImpl_run_inr_some {ι : Type} {hashSpec : OracleSpec ι} [
   QueryImpl.withCaching_run_some (so := uniformSampleImpl) h
 
 /-- Right query on the unlogged stack, cache miss. -/
-private lemma unloggedImpl_run_inr_none {ι : Type} {hashSpec : OracleSpec ι} [DecidableEq ι]
+private lemma unloggedImpl_run_inr_none {hashSpec : OracleSpec} [DecidableEq hashSpec.Domain]
     [∀ t : hashSpec.Domain, SampleableType (hashSpec.Range t)]
     {j : hashSpec.Domain} {c : hashSpec.QueryCache} (h : c j = none) :
     (hashSpec.romImpl (Sum.inr j)).run c =
@@ -334,7 +334,7 @@ private lemma unloggedImpl_run_inr_none {ι : Type} {hashSpec : OracleSpec ι} [
 
 /-- **Dropping the log.** Projecting away the query log from the logged run yields, as a
 plain `ProbComp` term equality, the unlogged run. -/
-private theorem dropLog_run_eq {ι : Type} {hashSpec : OracleSpec ι} [DecidableEq ι]
+private theorem dropLog_run_eq {hashSpec : OracleSpec} [DecidableEq hashSpec.Domain]
      [∀ t : hashSpec.Domain, SampleableType (hashSpec.Range t)]
     {α : Type} (oa : OracleComp (unifSpec + hashSpec) α) (cache : hashSpec.QueryCache) :
     (fun z => (z.1.1, z.2)) <$>
@@ -366,7 +366,7 @@ private theorem dropLog_run_eq {ι : Type} {hashSpec : OracleSpec ι} [Decidable
               exact bind_congr fun u => ih u (cache.cacheQuery j u)
 
 /-- Expected payoffs that ignore the log coincide between the logged and unlogged runs. -/
-private theorem dropLog_wp {ι : Type} {hashSpec : OracleSpec ι} [DecidableEq ι]
+private theorem dropLog_wp {hashSpec : OracleSpec} [DecidableEq hashSpec.Domain]
     [∀ t : hashSpec.Domain, SampleableType (hashSpec.Range t)]
     {α : Type} (oa : OracleComp (unifSpec + hashSpec) α) (cache : hashSpec.QueryCache)
     (f : α → hashSpec.QueryCache → ℝ≥0∞) :

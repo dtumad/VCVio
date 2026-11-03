@@ -32,7 +32,7 @@ universe u v w
 
 open scoped OracleSpec.PrimitiveQuery
 
-variable {ι : Type u} {spec : OracleSpec ι} [DecidableEq ι]
+variable {spec : OracleSpec} [DecidableEq spec.Domain]
 
 namespace QueryImpl
 
@@ -75,11 +75,11 @@ bound on `so t` transfers to `(so.withPregen t).run seed`. -/
 
 section QueryBound
 
-variable {ι' : Type u} {spec' : OracleSpec ι'}
+variable {spec' : OracleSpec}
 
 lemma isQueryBoundP_run_withPregen
     (so : QueryImpl spec (OracleComp spec')) (t : spec.Domain)
-    {p : ι' → Prop} [DecidablePred p] {n : ℕ}
+    {p : spec'.Domain → Prop} [DecidablePred p] {n : ℕ}
     (h : OracleComp.IsQueryBoundP (so t) p n) (seed : QuerySeed spec) :
     OracleComp.IsQueryBoundP ((so.withPregen t).run seed) p n := by
   cases hseed : seed t with
@@ -103,7 +103,7 @@ lemma isTotalQueryBound_run_withPregen
       trivial
 
 lemma isPerIndexQueryBound_run_withPregen
-    (so : QueryImpl spec (OracleComp spec)) (t : spec.Domain) {qb : ι → ℕ}
+    (so : QueryImpl spec (OracleComp spec)) (t : spec.Domain) {qb : spec.Domain → ℕ}
     (h : OracleComp.IsPerIndexQueryBound (so t) qb) (seed : QuerySeed spec) :
     OracleComp.IsPerIndexQueryBound ((so.withPregen t).run seed) qb := by
   cases hseed : seed t with
@@ -122,10 +122,10 @@ end QueryImpl
 
 namespace OracleComp
 
-variable {ι' : Type u} {spec' : OracleSpec ι'} {α : Type u}
+variable {spec' : OracleSpec} {α : Type u}
 
 theorem IsQueryBoundP.simulateQ_run_withPregen
-    {p : ι → Prop} [DecidablePred p] {q : ι' → Prop} [DecidablePred q]
+    {p : spec.Domain → Prop} [DecidablePred p] {q : spec'.Domain → Prop} [DecidablePred q]
     (so : QueryImpl spec (OracleComp spec'))
     {oa : OracleComp spec α} {n : ℕ}
     (h : IsQueryBoundP oa p n)
@@ -151,7 +151,7 @@ theorem IsTotalQueryBound.simulateQ_run_withPregen
 
 theorem IsPerIndexQueryBound.simulateQ_run_withPregen
     (so : QueryImpl spec (OracleComp spec))
-    {oa : OracleComp spec α} {qb : ι → ℕ}
+    {oa : OracleComp spec α} {qb : spec.Domain → ℕ}
     (h : IsPerIndexQueryBound oa qb)
     (hstep : ∀ t, IsPerIndexQueryBound (so t) (Function.update 0 t 1))
     (seed : QuerySeed spec) :
@@ -221,23 +221,23 @@ lemma run'_bind_query_eq_pop {α : Type u}
   | some p => rfl
 
 /-- A uniform answer draw lifted into the oracle computation keeps its uniform measure. -/
-private lemma evalDist_liftComp_uniformSample {ι₀ : Type} {spec₀ : OracleSpec ι₀}
+private lemma evalDist_liftComp_uniformSample {spec₀ : OracleSpec}
     [∀ i, SampleableType (spec₀.Range i)] [unifSpec ⊂ₒ spec₀] [unifSpec ˡ⊂ₒ spec₀]
-    [OracleSpec.UniformAnswerMeasure spec₀] (t : ι₀) [MeasurableSpace (spec₀.Range t)]
+    [OracleSpec.UniformAnswerMeasure spec₀] (t : spec₀.Domain) [MeasurableSpace (spec₀.Range t)]
     [DiscreteMeasurableSpace (spec₀.Range t)] :
     𝒟[liftComp ($ᵗ spec₀.Range t) spec₀] = ProbabilityTheory.uniformOn Set.univ :=
   (evalDist_liftComp_uniform _).trans SampleableType.evalDist_uniformSample
 
 section uniformSeeds
 
-variable {ι₀ : Type} {spec₀ : OracleSpec ι₀} [DecidableEq ι₀]
+variable {spec₀ : OracleSpec} [DecidableEq spec₀.Domain]
   [∀ i, SampleableType (spec₀.Range i)] [unifSpec ⊂ₒ spec₀] [unifSpec ˡ⊂ₒ spec₀]
   [OracleSpec.UniformAnswerMeasure spec₀]
 
 /-- The lifted seed distribution splits off a uniform head answer at `t` whenever `t` has a
 positive answer count, as `evalDistEq_generateSeed_prependValues` does before lifting. -/
-private lemma evalDistEq_liftComp_generateSeed_prependValues (qc : ι₀ → ℕ) (js : List ι₀)
-    {t : ι₀} (hpos : 0 < qc t * js.count t) :
+private lemma evalDistEq_liftComp_generateSeed_prependValues (qc : spec₀.Domain → ℕ) (js : List spec₀.Domain)
+    {t : spec₀.Domain} (hpos : 0 < qc t * js.count t) :
     liftComp (generateSeed spec₀ qc js) spec₀ =ᵈ (do
       let u ← liftComp ($ᵗ spec₀.Range t) spec₀
       let s' ← liftComp (generateSeed spec₀
@@ -260,7 +260,7 @@ private lemma evalDistEq_liftComp_generateSeed_prependValues (qc : ι₀ → ℕ
 
 /-- Running a computation against the seeded oracle on a uniformly generated seed has the output
 measure of the computation itself: pre-generated answers are fresh uniform answers. -/
-theorem evalDist_liftComp_generateSeed_bind_simulateQ_run' (qc : ι₀ → ℕ) (js : List ι₀)
+theorem evalDist_liftComp_generateSeed_bind_simulateQ_run' (qc : spec₀.Domain → ℕ) (js : List spec₀.Domain)
     {α : Type} [MeasurableSpace α] (oa : OracleComp spec₀ α) :
     𝒟[(do
       let seed ← liftComp (generateSeed spec₀ qc js) spec₀
@@ -292,7 +292,7 @@ theorem evalDist_liftComp_generateSeed_bind_simulateQ_run' (qc : ι₀ → ℕ) 
       exact evalDist_bind_eq_query_bind_of_uniform t _
         (evalDist_liftComp_uniformSample t) _ _ fun u => ih u _ js.dedup
 
-private lemma pop_addValue_self_nil_aux {seed : QuerySeed spec} {i : ι} (h : seed i = [])
+private lemma pop_addValue_self_nil_aux {seed : QuerySeed spec} {i : spec.Domain} (h : seed i = [])
     (v : spec.Range i) : (seed.addValue i v).pop i = some (v, seed) := by
   have hlist : (seed.addValue i v) i = [v] := by
     simp [QuerySeed.addValue, QuerySeed.addValues, h]
@@ -301,7 +301,7 @@ private lemma pop_addValue_self_nil_aux {seed : QuerySeed spec} {i : ι} (h : se
     simpa only [QuerySeed.addValue, QuerySeed.update_addValues_same, h] using
       QuerySeed.update_eq_self seed i
 
-private lemma pop_addValue_self_cons_aux {seed : QuerySeed spec} {i : ι} {u₀ : spec.Range i}
+private lemma pop_addValue_self_cons_aux {seed : QuerySeed spec} {i : spec.Domain} {u₀ : spec.Range i}
     {rest : List (spec.Range i)} (h : seed i = u₀ :: rest) (v : spec.Range i) :
     (seed.addValue i v).pop i =
       some (u₀, QuerySeed.addValue (seed.update i rest) i v) := by
@@ -310,12 +310,12 @@ private lemma pop_addValue_self_cons_aux {seed : QuerySeed spec} {i : ι} {u₀ 
   rw [QuerySeed.pop_eq_some_of_cons _ _ u₀ (rest ++ [v]) hlist]
   simp [QuerySeed.addValue, QuerySeed.addValues]
 
-private lemma pop_addValue_of_ne_nil_aux {seed : QuerySeed spec} {i t : ι} (hti : t ≠ i)
+private lemma pop_addValue_of_ne_nil_aux {seed : QuerySeed spec} {i t : spec.Domain} (hti : t ≠ i)
     (h : seed t = []) (v : spec.Range i) : (seed.addValue i v).pop t = none := by
   rw [QuerySeed.pop_eq_none_iff]
   exact (QuerySeed.addValues_of_ne seed [_] hti).trans h
 
-private lemma pop_addValue_of_ne_cons_aux {seed : QuerySeed spec} {i t : ι} {u₀ : spec.Range t}
+private lemma pop_addValue_of_ne_cons_aux {seed : QuerySeed spec} {i t : spec.Domain} {u₀ : spec.Range t}
     {rest : List (spec.Range t)} (hti : t ≠ i) (h : seed t = u₀ :: rest) (v : spec.Range i) :
     (seed.addValue i v).pop t =
       some (u₀, QuerySeed.addValue (seed.update t rest) i v) := by
@@ -329,7 +329,7 @@ private lemma pop_addValue_of_ne_cons_aux {seed : QuerySeed spec} {i t : ι} {u�
 a computation with the seeded oracle: the extra value replaces what would otherwise be a fresh
 uniform oracle response. -/
 theorem evalDist_liftComp_uniformSample_bind_simulateQ_run'_addValue
-    (σ : QuerySeed spec₀) (i : ι₀) {α : Type} [MeasurableSpace α] (oa : OracleComp spec₀ α) :
+    (σ : QuerySeed spec₀) (i : spec₀.Domain) {α : Type} [MeasurableSpace α] (oa : OracleComp spec₀ α) :
     𝒟[(do
       let u ← liftComp ($ᵗ spec₀.Range i) spec₀
       (simulateQ seededOracle oa).run' (σ.addValue i u) : OracleComp spec₀ α)] =
@@ -363,8 +363,8 @@ theorem evalDist_liftComp_uniformSample_bind_simulateQ_run'_addValue
           QuerySeed.pop_eq_some_of_cons σ t u₀ rest hσt]
         exact ih u₀ (σ.update t rest)
 
-private lemma takeAtIndex_prependValues_singleton_self_aux {ι₀ : Type} {spec₀ : OracleSpec ι₀}
-    [DecidableEq ι₀] (t : ι₀) (k : ℕ) (hk : 0 < k) (u₀ : spec₀.Range t) (s' : QuerySeed spec₀) :
+private lemma takeAtIndex_prependValues_singleton_self_aux {spec₀ : OracleSpec}
+    [DecidableEq spec₀.Domain] (t : spec₀.Domain) (k : ℕ) (hk : 0 < k) (u₀ : spec₀.Range t) (s' : QuerySeed spec₀) :
     (s'.prependValues [u₀]).takeAtIndex t k =
       (s'.takeAtIndex t (k - 1)).prependValues [u₀] := by
   funext j; by_cases hj : j = t
@@ -374,8 +374,8 @@ private lemma takeAtIndex_prependValues_singleton_self_aux {ι₀ : Type} {spec�
     rw [List.take_succ_cons]
   · simp [QuerySeed.takeAtIndex_apply_of_ne _ _ _ _ hj, QuerySeed.prependValues_of_ne _ _ hj]
 
-private lemma takeAtIndex_prependValues_singleton_of_ne_aux {ι₀ : Type} {spec₀ : OracleSpec ι₀}
-    [DecidableEq ι₀] (t i₀ : ι₀) (hti : t ≠ i₀) (k : ℕ) (u₀ : spec₀.Range t)
+private lemma takeAtIndex_prependValues_singleton_of_ne_aux {spec₀ : OracleSpec}
+    [DecidableEq spec₀.Domain] (t i₀ : spec₀.Domain) (hti : t ≠ i₀) (k : ℕ) (u₀ : spec₀.Range t)
     (s' : QuerySeed spec₀) :
     (s'.prependValues [u₀]).takeAtIndex i₀ k = (s'.takeAtIndex i₀ k).prependValues [u₀] := by
   funext j; by_cases hji : j = i₀
@@ -386,8 +386,8 @@ private lemma takeAtIndex_prependValues_singleton_of_ne_aux {ι₀ : Type} {spec
     · subst hjt; simp [QuerySeed.takeAtIndex_apply_of_ne _ _ _ _ hti]
     · simp [QuerySeed.prependValues_of_ne _ _ hjt, QuerySeed.takeAtIndex_apply_of_ne _ _ _ _ hji]
 
-private lemma takeAtIndex_zero_prependValues_singleton_aux {ι₀ : Type} {spec₀ : OracleSpec ι₀}
-    [DecidableEq ι₀] (t : ι₀) (u₀ : spec₀.Range t) (s' : QuerySeed spec₀) :
+private lemma takeAtIndex_zero_prependValues_singleton_aux {spec₀ : OracleSpec}
+    [DecidableEq spec₀.Domain] (t : spec₀.Domain) (u₀ : spec₀.Range t) (s' : QuerySeed spec₀) :
     (s'.prependValues [u₀]).takeAtIndex t 0 = s'.takeAtIndex t 0 := by
   funext j; by_cases hj : j = t
   · subst hj; simp [QuerySeed.takeAtIndex_apply_self]
@@ -396,8 +396,8 @@ private lemma takeAtIndex_zero_prependValues_singleton_aux {ι₀ : Type} {spec�
 /-- Truncating a uniformly generated seed after the `k`-th answer at `i₀` does not change the joint
 distribution of that prefix and the seeded run's output: the discarded answers are fresh uniform
 values, exactly as the oracle would answer after the truncated seed runs out. -/
-theorem evalDistEq_liftComp_generateSeed_takeAtIndex_run' (qc : ι₀ → ℕ) (js : List ι₀)
-    (i₀ : ι₀) (k : ℕ) {α : Type} (oa : OracleComp spec₀ α) :
+theorem evalDistEq_liftComp_generateSeed_takeAtIndex_run' (qc : spec₀.Domain → ℕ) (js : List spec₀.Domain)
+    (i₀ : spec₀.Domain) (k : ℕ) {α : Type} (oa : OracleComp spec₀ α) :
     letI : MeasurableSpace (QuerySeed spec₀ × α) := ⊤
     𝒟[(do
       let σ ← liftComp (generateSeed spec₀ qc js) spec₀
@@ -497,7 +497,7 @@ This theorem is the core replay-cost statement for seeded simulations: a large e
 most oracle interactions into deterministic table lookups, leaving only the uncovered suffix of
 the computation as genuine oracle queries. -/
 theorem isPerIndexQueryBound_run'_of_seedCoverage
-    {oa : OracleComp spec α} {qb residual : ι → ℕ} {seed : QuerySeed spec}
+    {oa : OracleComp spec α} {qb residual : spec.Domain → ℕ} {seed : QuerySeed spec}
     (hqb : IsPerIndexQueryBound oa qb)
     (hcover : ∀ t, qb t - residual t ≤ (seed t).length) :
     IsPerIndexQueryBound ((simulateQ seededOracle oa).run' seed) residual := by
@@ -558,7 +558,7 @@ theorem isPerIndexQueryBound_run'_of_seedCoverage
 
 /-- A seed that covers the full structural query bound eliminates all live oracle queries. -/
 theorem isPerIndexQueryBound_run'_zero
-    {oa : OracleComp spec α} {qb : ι → ℕ} {seed : QuerySeed spec}
+    {oa : OracleComp spec α} {qb : spec.Domain → ℕ} {seed : QuerySeed spec}
     (hqb : IsPerIndexQueryBound oa qb)
     (hcover : ∀ t, qb t ≤ (seed t).length) :
     IsPerIndexQueryBound ((simulateQ seededOracle oa).run' seed) 0 :=
@@ -572,7 +572,7 @@ This is the structural query-bound form of the usual forking-lemma intuition: af
 the `k`-th query to oracle `i`, every earlier answer is fixed by the prefix seed, so only the
 suffix after the fork point can still hit the live oracle. -/
 theorem isPerIndexQueryBound_run'_takeAtIndex
-    {oa : OracleComp spec α} {qb : ι → ℕ} {seed : QuerySeed spec} {i : ι} {k : ℕ}
+    {oa : OracleComp spec α} {qb : spec.Domain → ℕ} {seed : QuerySeed spec} {i : spec.Domain} {k : ℕ}
     (hqb : IsPerIndexQueryBound oa qb)
     (hcover : ∀ t, qb t ≤ (seed t).length)
     (hk : k ≤ qb i) :
@@ -589,7 +589,7 @@ theorem isPerIndexQueryBound_run'_takeAtIndex
 /-- After rewinding to query index `s` and appending one fresh answer at oracle `i`, the replayed
 run can still make live queries only to `i`, with at most `qb i - (s + 1)` such queries left. -/
 theorem isPerIndexQueryBound_run'_takeAtIndex_addValue
-    {oa : OracleComp spec α} {qb : ι → ℕ} {seed : QuerySeed spec} {i : ι}
+    {oa : OracleComp spec α} {qb : spec.Domain → ℕ} {seed : QuerySeed spec} {i : spec.Domain}
     (hqb : IsPerIndexQueryBound oa qb)
     (hcover : ∀ t, qb t ≤ (seed t).length)
     (s : Fin (qb i + 1)) (u : spec.Range i) :
@@ -613,7 +613,7 @@ end queryBounds
 
 Forward only — the reverse fails because pregenerated values strictly reduce the count. -/
 
-theorem isTotalQueryBound_run_simulateQ {ι₀ : Type} [DecidableEq ι₀] {spec₀ : OracleSpec ι₀}
+theorem isTotalQueryBound_run_simulateQ [DecidableEq spec₀.Domain] {spec₀ : OracleSpec}
     {α : Type} {oa : OracleComp spec₀ α} {n : ℕ}
     (h : OracleComp.IsTotalQueryBound oa n) (seed : QuerySeed spec₀) :
     OracleComp.IsTotalQueryBound ((simulateQ spec₀.seededOracle oa).run seed) n := by
@@ -621,9 +621,9 @@ theorem isTotalQueryBound_run_simulateQ {ι₀ : Type} [DecidableEq ι₀] {spec
   exact OracleComp.IsTotalQueryBound.simulateQ_run_withPregen _ h
     (fun t => (OracleComp.isQueryBound_query_iff t 1 _ _).mpr Nat.one_pos) seed
 
-theorem isQueryBoundP_run_simulateQ {ι₀ : Type} [DecidableEq ι₀] {spec₀ : OracleSpec ι₀}
+theorem isQueryBoundP_run_simulateQ [DecidableEq spec₀.Domain] {spec₀ : OracleSpec}
     {α : Type} {oa : OracleComp spec₀ α}
-    {p : ι₀ → Prop} [DecidablePred p] {n : ℕ}
+    {p : spec₀.Domain → Prop} [DecidablePred p] {n : ℕ}
     (h : OracleComp.IsQueryBoundP oa p n) (seed : QuerySeed spec₀) :
     OracleComp.IsQueryBoundP ((simulateQ spec₀.seededOracle oa).run seed) p n := by
   rw [eq_withPregen]
@@ -632,8 +632,8 @@ theorem isQueryBoundP_run_simulateQ {ι₀ : Type} [DecidableEq ι₀] {spec₀ 
     (fun t hnp => (OracleComp.isQueryBoundP_query_iff p t 0).mpr (fun hpt => absurd hpt hnp))
     seed
 
-theorem isPerIndexQueryBound_run_simulateQ {ι₀ : Type} [DecidableEq ι₀] {spec₀ : OracleSpec ι₀}
-    {α : Type} {oa : OracleComp spec₀ α} {qb : ι₀ → ℕ}
+theorem isPerIndexQueryBound_run_simulateQ [DecidableEq spec₀.Domain] {spec₀ : OracleSpec}
+    {α : Type} {oa : OracleComp spec₀ α} {qb : spec₀.Domain → ℕ}
     (h : OracleComp.IsPerIndexQueryBound oa qb) (seed : QuerySeed spec₀) :
     OracleComp.IsPerIndexQueryBound ((simulateQ spec₀.seededOracle oa).run seed) qb := by
   rw [eq_withPregen]
@@ -646,9 +646,9 @@ theorem isPerIndexQueryBound_run_simulateQ {ι₀ : Type} [DecidableEq ι₀] {s
 /-- State-preserving variant of `isPerIndexQueryBound_run'_zero`: when the seed covers `qb`
 at every index, the simulation makes zero further queries even with the seed in scope. -/
 theorem isPerIndexQueryBound_run_simulateQ_zero
-    {ι₀ : Type} [DecidableEq ι₀] {spec₀ : OracleSpec ι₀}
+    [DecidableEq spec₀.Domain] {spec₀ : OracleSpec}
     {α : Type}
-    {oa : OracleComp spec₀ α} {qb : ι₀ → ℕ} {seed : QuerySeed spec₀}
+    {oa : OracleComp spec₀ α} {qb : spec₀.Domain → ℕ} {seed : QuerySeed spec₀}
     (hqb : OracleComp.IsPerIndexQueryBound oa qb)
     (hseed : ∀ t, qb t ≤ (seed t).length) :
     OracleComp.IsPerIndexQueryBound ((simulateQ spec₀.seededOracle oa).run seed) 0 := by
@@ -659,9 +659,9 @@ theorem isPerIndexQueryBound_run_simulateQ_zero
 /-- State-preserving variant of `isPerIndexQueryBound_run'_of_seedCoverage`: any uncovered
 suffix of the seed becomes the residual budget in the result spec. -/
 theorem isPerIndexQueryBound_run_simulateQ_of_seedCoverage
-    {ι₀ : Type} [DecidableEq ι₀] {spec₀ : OracleSpec ι₀}
+    [DecidableEq spec₀.Domain] {spec₀ : OracleSpec}
     {α : Type}
-    {oa : OracleComp spec₀ α} {qb residual : ι₀ → ℕ} {seed : QuerySeed spec₀}
+    {oa : OracleComp spec₀ α} {qb residual : spec₀.Domain → ℕ} {seed : QuerySeed spec₀}
     (hqb : OracleComp.IsPerIndexQueryBound oa qb)
     (hcover : ∀ t, qb t - residual t ≤ (seed t).length) :
     OracleComp.IsPerIndexQueryBound ((simulateQ spec₀.seededOracle oa).run seed) residual := by

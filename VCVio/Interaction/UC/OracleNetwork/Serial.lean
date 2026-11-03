@@ -31,7 +31,7 @@ export RequestNetwork (serialSchedule serialSchedule_length loggedRun loggedRun_
 
 open OracleComp PFunctor
 
-variable {Client ι α S : Type} {spec : OracleSpec ι}
+variable {Client spec.Domain α S : Type} {spec : OracleSpec}
   {m : Type → Type} [Monad m] [LawfulMonad m]
 
 /-- Erasing the standard trace instrumentation recovers the original stateful oracle game. -/
@@ -42,7 +42,7 @@ theorem map_loggedRun (impl : QueryImpl spec (StateT S m))
   simpa only [simulateQ_def, FreeM.liftMHom_toFun_eq] using
     RequestNetwork.map_loggedRun impl id program service
 
-variable [DecidableEq ι]
+variable [DecidableEq spec.Domain]
 
 /-- The result and private state of a completed FIFO run are those of the original oracle game. -/
 theorem map_serialObservation (impl : QueryImpl spec (StateT S m))

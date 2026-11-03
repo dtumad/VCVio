@@ -80,7 +80,7 @@ theorem support_correctnessExperiment_composeWithDEM
 response positive mass: a KEM and an externally keyed DEM that each succeed with probability `1`
 give a composed scheme that succeeds with probability `1`. Uniform answer measures supply the
 full-support hypothesis through `OracleSpec.UniformAnswerMeasure.toMeasure_singleton_pos`. -/
-theorem perfectlyCorrect_composeWithDEM {ι : Type} {spec : OracleSpec ι}
+theorem perfectlyCorrect_composeWithDEM {spec : OracleSpec}
     [OracleSpec.AnswerMeasure spec]
     (hfull : ∀ t (u : spec.Range t), 0 < OracleSpec.AnswerMeasure.toMeasure t {u})
     (kem : KEMScheme (OracleComp spec) K PK SK CKEM) (dem : DEMScheme (OracleComp spec) K M CDEM)
@@ -98,7 +98,7 @@ end Correct
 
 section IND_CPA
 
-variable {ι : Type} {spec : OracleSpec ι} [SampleableType K]
+variable {spec : OracleSpec} [SampleableType K]
 
 /-- Left KEM reduction from a one-time IND-CPA adversary against the composed KEM+DEM PKE. -/
 def composeWithDEM_toKEMLeftReduction

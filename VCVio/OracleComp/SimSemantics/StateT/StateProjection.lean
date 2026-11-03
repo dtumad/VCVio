@@ -56,7 +56,7 @@ variable {α : Type u}
 If each oracle call under `impl₁` becomes the corresponding `impl₂` call after mapping the state
 with `proj`, then the full simulated runs agree under the same projection. -/
 theorem map_run_simulateQ_eq_of_query_map_eq
-    {ι : Type u} {spec : OracleSpec ι}
+    {spec : OracleSpec}
     {m : Type u → Type v} [Monad m] [LawfulMonad m]
     {σ₁ σ₂ : Type _}
     (impl₁ : QueryImpl spec (StateT σ₁ m))
@@ -78,7 +78,7 @@ theorem map_run_simulateQ_eq_of_query_map_eq
 
 /-- `run'` projection corollary of `map_run_simulateQ_eq_of_query_map_eq`. -/
 theorem run'_simulateQ_eq_of_query_map_eq
-    {ι : Type u} {spec : OracleSpec ι}
+    {spec : OracleSpec}
     {m : Type u → Type v} [Monad m] [LawfulMonad m]
     {σ₁ σ₂ : Type _}
     (impl₁ : QueryImpl spec (StateT σ₁ m))
@@ -100,7 +100,7 @@ commutes with the full simulation starting from any state satisfying `inv`. This
 is the natural strengthening of `map_run_simulateQ_eq_of_query_map_eq` for
 projections that only agree on a reachable subset of states. -/
 theorem map_run_simulateQ_eq_of_query_map_eq_inv'
-    {ι ι' : Type} {spec : OracleSpec ι} {spec' : OracleSpec ι'}
+    {spec : OracleSpec} {spec' : OracleSpec}
     {σ₁ σ₂ : Type _}
     (impl₁ : QueryImpl spec (StateT σ₁ (OracleComp spec')))
     (impl₂ : QueryImpl spec (StateT σ₂ (OracleComp spec')))
@@ -125,7 +125,7 @@ theorem map_run_simulateQ_eq_of_query_map_eq_inv'
 support-preservation half of `map_run_simulateQ_eq_of_query_map_eq_inv'`,
 exposed separately for projected continuations after a simulated prefix. -/
 theorem simulateQ_run_preserves_inv_of_query
-    {ι ι' : Type} {spec : OracleSpec ι} {spec' : OracleSpec ι'}
+    {spec : OracleSpec} {spec' : OracleSpec}
     {σ : Type _}
     (impl : QueryImpl spec (StateT σ (OracleComp spec')))
     (inv : σ → Prop)
@@ -145,7 +145,7 @@ theorem simulateQ_run_preserves_inv_of_query
 /-- Invariant-gated state-projection theorem for a simulated prefix followed by
 a stateful continuation. -/
 theorem map_run_simulateQ_bind_eq_of_query_map_eq_inv'
-    {ι ι' : Type} {spec : OracleSpec ι} {spec' : OracleSpec ι'}
+    {spec : OracleSpec} {spec' : OracleSpec}
     {σ₁ σ₂ : Type _} {β : Type u}
     (impl₁ : QueryImpl spec (StateT σ₁ (OracleComp spec')))
     (impl₂ : QueryImpl spec (StateT σ₂ (OracleComp spec')))
@@ -170,7 +170,7 @@ theorem map_run_simulateQ_bind_eq_of_query_map_eq_inv'
 
 /-- `run'` projection corollary of `map_run_simulateQ_eq_of_query_map_eq_inv'`. -/
 theorem run'_simulateQ_eq_of_query_map_eq_inv'
-    {ι ι' : Type} {spec : OracleSpec ι} {spec' : OracleSpec ι'}
+    {spec : OracleSpec} {spec' : OracleSpec}
     {σ₁ σ₂ : Type _}
     (impl₁ : QueryImpl spec (StateT σ₁ (OracleComp spec')))
     (impl₂ : QueryImpl spec (StateT σ₂ (OracleComp spec')))
@@ -196,7 +196,7 @@ The decorated implementation may carry extra bookkeeping state. The projection
 only needs to commute with each query on states satisfying `inv`, and `inv` must
 be preserved by each query step. -/
 structure StateOrnament
-    {ι ι' : Type} {spec : OracleSpec ι} {spec' : OracleSpec ι'}
+    {spec : OracleSpec} {spec' : OracleSpec}
     {σ τ : Type _}
     (decorated : QueryImpl spec (StateT σ (OracleComp spec')))
     (base : QueryImpl spec (StateT τ (OracleComp spec'))) where
@@ -213,7 +213,7 @@ structure StateOrnament
 
 namespace StateOrnament
 
-variable {ι ι' : Type} {spec : OracleSpec ι} {spec' : OracleSpec ι'}
+variable {spec : OracleSpec} {spec' : OracleSpec}
 variable {σ τ : Type _}
 variable {decorated : QueryImpl spec (StateT σ (OracleComp spec'))}
 variable {base : QueryImpl spec (StateT τ (OracleComp spec'))}
@@ -247,7 +247,7 @@ namespace QueryImpl
 
 /-- Given a `StateT (σ × Q) ProbComp` query implementation, fix the second state component
 at `q₀` and project to `StateT σ ProbComp`. -/
-def fixSndStateT {ι : Type} {spec : OracleSpec ι} {σ Q : Type}
+def fixSndStateT {spec : OracleSpec} {σ Q : Type}
     (impl : QueryImpl spec (StateT (σ × Q) ProbComp)) (q₀ : Q) :
     QueryImpl spec (StateT σ ProbComp) :=
   fun t => StateT.mk fun s => Prod.map id Prod.fst <$> (impl t).run (s, q₀)
@@ -266,7 +266,7 @@ appended back.
 This generalizes `map_run_simulateQ_eq_of_query_map_eq` from all-states commutativity to
 support-based invariance. -/
 theorem simulateQ_run_eq_of_snd_invariant
-    {ι : Type} {spec : OracleSpec ι} {σ Q : Type}
+    {spec : OracleSpec} {σ Q : Type}
     (impl : QueryImpl spec (StateT (σ × Q) ProbComp))
     (q₀ : Q)
     (h_inv : ∀ (t : spec.Domain) (s : σ) (x : _ × (σ × Q)),
@@ -288,7 +288,7 @@ theorem simulateQ_run_eq_of_snd_invariant
 
 /-- `run'` projection corollary of `simulateQ_run_eq_of_snd_invariant`. -/
 theorem simulateQ_run'_eq_of_snd_invariant
-    {ι : Type} {spec : OracleSpec ι} {σ Q : Type}
+    {spec : OracleSpec} {σ Q : Type}
     (impl : QueryImpl spec (StateT (σ × Q) ProbComp))
     (q₀ : Q)
     (h_inv : ∀ (t : spec.Domain) (s : σ) (x : _ × (σ × Q)),
@@ -314,7 +314,7 @@ Inverse direction of `QueryImpl.fixSndStateT`: `extendState` adds a passive auxi
 `fixSndStateT` projects one away. Together they witness the universal property of the product
 state space. -/
 def extendState
-    {ι : Type u} {spec : OracleSpec ι} {σ Q : Type u} {m : Type u → Type v} [Monad m]
+    {spec : OracleSpec} {σ Q : Type u} {m : Type u → Type v} [Monad m]
     (so : QueryImpl spec (StateT σ m))
     (aux : (t : spec.Domain) → σ → spec.Range t → σ → Q → Q) :
     QueryImpl spec (StateT (σ × Q) m) :=
@@ -323,7 +323,7 @@ def extendState
     pure (u, (s', aux t s.1 u s' s.2))
 
 @[simp] lemma extendState_apply
-    {ι : Type u} {spec : OracleSpec ι} {σ Q : Type u} {m : Type u → Type v} [Monad m]
+    {spec : OracleSpec} {σ Q : Type u} {m : Type u → Type v} [Monad m]
     (so : QueryImpl spec (StateT σ m))
     (aux : (t : spec.Domain) → σ → spec.Range t → σ → Q → Q)
     (t : spec.Domain) (s : σ × Q) :
@@ -334,7 +334,7 @@ def extendState
 beside the auxiliary value `aux` computes from the states before and after the step and its
 answer. -/
 lemma mem_support_extendState_run_iff
-    {ι : Type u} {spec : OracleSpec ι} {σ Q : Type u} {m : Type u → Type v} [Monad m]
+    {spec : OracleSpec} {σ Q : Type u} {m : Type u → Type v} [Monad m]
     [LawfulMonad m] [MonadAttach m] [ExactMonadAttach m]
     (so : QueryImpl spec (StateT σ m))
     (aux : (t : spec.Domain) → σ → spec.Range t → σ → Q → Q)
@@ -354,7 +354,7 @@ lemma mem_support_extendState_run_iff
 left of the product state. This is the same construction as `extendState`, but
 it matches handlers whose state is ordered as `(auxiliary, baseState)`. -/
 def extendStateLeft
-    {ι : Type u} {spec : OracleSpec ι} {σ Q : Type u} {m : Type u → Type v} [Monad m]
+    {spec : OracleSpec} {σ Q : Type u} {m : Type u → Type v} [Monad m]
     (so : QueryImpl spec (StateT σ m))
     (aux : (t : spec.Domain) → σ → spec.Range t → σ → Q → Q) :
     QueryImpl spec (StateT (Q × σ) m) :=
@@ -363,7 +363,7 @@ def extendStateLeft
     pure (u, (aux t s.2 u s' s.1, s'))
 
 @[simp] lemma extendStateLeft_apply
-    {ι : Type u} {spec : OracleSpec ι} {σ Q : Type u} {m : Type u → Type v} [Monad m]
+    {spec : OracleSpec} {σ Q : Type u} {m : Type u → Type v} [Monad m]
     (so : QueryImpl spec (StateT σ m))
     (aux : (t : spec.Domain) → σ → spec.Range t → σ → Q → Q)
     (t : spec.Domain) (s : Q × σ) :
@@ -383,7 +383,7 @@ directly on the `σ` component, irrespective of the initial `Q` value or the aux
 This is the universal-property statement: the `Q` component is genuinely *passive* in the sense
 that it does not influence the `σ`-side of the simulation. -/
 theorem extendState_run_proj_eq
-    {ι : Type u} {spec : OracleSpec ι} {σ Q : Type u}
+    {spec : OracleSpec} {σ Q : Type u}
     {m : Type u → Type v} [Monad m] [LawfulMonad m]
     (so : QueryImpl spec (StateT σ m))
     (aux : (t : spec.Domain) → σ → spec.Range t → σ → Q → Q)
@@ -400,7 +400,7 @@ theorem extendState_run_proj_eq
 and the `σ` state of the extended simulation gives the same output distribution as the base
 simulation. -/
 theorem extendState_run'_eq
-    {ι : Type u} {spec : OracleSpec ι} {σ Q : Type u}
+    {spec : OracleSpec} {σ Q : Type u}
     {m : Type u → Type v} [Monad m] [LawfulMonad m]
     (so : QueryImpl spec (StateT σ m))
     (aux : (t : spec.Domain) → σ → spec.Range t → σ → Q → Q)
@@ -413,7 +413,7 @@ theorem extendState_run'_eq
 /-- Forgetting the left auxiliary `Q` component commutes with the full
 simulation. This is the left-product analogue of `extendState_run_proj_eq`. -/
 theorem extendStateLeft_run_proj_eq
-    {ι : Type u} {spec : OracleSpec ι} {σ Q : Type u}
+    {spec : OracleSpec} {σ Q : Type u}
     {m : Type u → Type v} [Monad m] [LawfulMonad m]
     (so : QueryImpl spec (StateT σ m))
     (aux : (t : spec.Domain) → σ → spec.Range t → σ → Q → Q)
@@ -428,7 +428,7 @@ theorem extendStateLeft_run_proj_eq
 
 /-- `run'` projection corollary of `extendStateLeft_run_proj_eq`. -/
 theorem extendStateLeft_run'_eq
-    {ι : Type u} {spec : OracleSpec ι} {σ Q : Type u}
+    {spec : OracleSpec} {σ Q : Type u}
     {m : Type u → Type v} [Monad m] [LawfulMonad m]
     (so : QueryImpl spec (StateT σ m))
     (aux : (t : spec.Domain) → σ → spec.Range t → σ → Q → Q)

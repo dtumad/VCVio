@@ -25,7 +25,7 @@ open scoped OracleSpec.PrimitiveQuery
 
 namespace OracleComp
 
-variable {ι : Type} {spec : OracleSpec.{0, 0} ι}
+variable {spec : OracleSpec.{0, 0}}
 
 section logCollision
 
@@ -90,7 +90,7 @@ is minimal across all oracle indices.
 This is a corollary of `prEvent_log_entry_eq_le` (which gives `1/|Range entry.1|`) combined
 with the `hrange` monotonicity hypothesis. -/
 theorem prEvent_log_output_heq_le {α : Type}
-    [Inhabited ι]
+    [Inhabited spec.Domain]
     (hrange : ∀ t, Fintype.card (spec.Range default) ≤ Fintype.card (spec.Range t))
     (oa : OracleComp spec α)
     (k : ℕ) (entry : (t : spec.Domain) × spec.Range t) :
@@ -103,7 +103,7 @@ theorem prEvent_log_output_heq_le {α : Type}
 Unlike `prEvent_log_entry_eq_le` which matches the full sigma entry, this only constrains
 the output component. The bound uses `hrange` to get `1/|Range default|`. -/
 theorem prEvent_log_output_match_le {α : Type}
-    [Inhabited ι]
+    [Inhabited spec.Domain]
     (hrange : ∀ t, Fintype.card (spec.Range default) ≤ Fintype.card (spec.Range t))
     (oa : OracleComp spec α)
     (k : ℕ) (t₀ : spec.Domain) (u₀ : spec.Range t₀) :
@@ -150,7 +150,7 @@ This is the core ROM property: distinct oracle inputs yield independent uniform 
 The `hrange` hypothesis ensures `|Range default|` is minimal across all oracle indices,
 so the bound holds uniformly with `|C| = |Range default|`. -/
 theorem prEvent_pair_collision_le {α : Type}
-    [Inhabited ι]
+    [Inhabited spec.Domain]
     (oa : OracleComp spec α)
     (n : ℕ)
     (hrange : ∀ t, Fintype.card (spec.Range default) ≤ Fintype.card (spec.Range t))
@@ -221,7 +221,7 @@ Collision = ∃ pair with collision. Union bound over C(n,2) pairs gives n²/(2|
 The probability of a collision in the query log is ≤ `C(n,2)/|C|`, where `C(n,2)`
 is the exact number of unordered pairs of query positions. -/
 theorem prEvent_logCollision_le_birthday_total_tight {α : Type}
-    [Inhabited ι]
+    [Inhabited spec.Domain]
     (oa : OracleComp spec α)
     (n : ℕ)
     (hbound : IsTotalQueryBound oa n)
@@ -264,7 +264,7 @@ The probability of a collision in the query log is ≤ n²/(2|C|).
 
 A loose corollary of `prEvent_logCollision_le_birthday_total_tight`. -/
 theorem prEvent_logCollision_le_birthday_total {α : Type}
-    [Inhabited ι]
+    [Inhabited spec.Domain]
     (oa : OracleComp spec α)
     (n : ℕ)
     (hbound : IsTotalQueryBound oa n)
@@ -288,7 +288,7 @@ end logCollision
 
 section cacheCollision
 
-variable [DecidableEq ι]
+variable [DecidableEq spec.Domain]
 
 open Classical in
 /-- At a fresh query, the number of responses that would create a cache collision is at most
@@ -376,7 +376,7 @@ fresh query: a cache miss enlarges the support set by one and shifts the per-ste
 `k` to `k + 1`. The `hrange` hypothesis ensures `|Range default|` is minimal across oracle
 indices, so the uniform per-query bound `1/|Range t|` is dominated by `1/|Range default|`.
 This is the inductive engine behind `prEvent_cacheCollision_le_birthday_total_tight`. -/
-private lemma prEvent_cacheCollision_run_le_sum_aux [Inhabited ι]
+private lemma prEvent_cacheCollision_run_le_sum_aux [Inhabited spec.Domain]
     (hrange : ∀ t, Fintype.card (spec.Range default) ≤ Fintype.card (spec.Range t))
     {β : Type} (ob : OracleComp spec β) (m k : ℕ)
     (hm : IsTotalQueryBound ob m)
@@ -457,7 +457,7 @@ private lemma prEvent_cacheCollision_run_le_sum_aux [Inhabited ι]
 /-- **Tight birthday bound for `cachingOracle`** (total query bound):
 The probability of a collision in the cache is ≤ n*(n-1)/(2|C|). -/
 theorem prEvent_cacheCollision_le_birthday_total_tight {α : Type}
-    [Inhabited ι]
+    [Inhabited spec.Domain]
     (oa : OracleComp spec α)
     (n : ℕ)
     (hbound : IsTotalQueryBound oa n)
@@ -478,7 +478,7 @@ The probability of a collision in the cache is ≤ n²/(2|C|).
 
 A loose corollary of `prEvent_cacheCollision_le_birthday_total_tight`. -/
 theorem prEvent_cacheCollision_le_birthday_total {α : Type}
-    [Inhabited ι]
+    [Inhabited spec.Domain]
     (oa : OracleComp spec α)
     (n : ℕ)
     (hbound : IsTotalQueryBound oa n)
@@ -495,12 +495,12 @@ theorem prEvent_cacheCollision_le_birthday_total {α : Type}
 
 /-- Birthday bound for `cachingOracle` with per-index query bound. -/
 theorem prEvent_cacheCollision_le_birthday {α : Type} {t : ℕ}
-    [Inhabited ι] [Fintype ι]
+    [Inhabited spec.Domain] [Fintype spec.Domain]
     (oa : OracleComp spec α)
     (hbound : IsPerIndexQueryBound oa (fun _ => t))
     (hrange : ∀ t, Fintype.card (spec.Range default) ≤ Fintype.card (spec.Range t)) :
     Pr{let z ← (simulateQ cachingOracle oa).run ∅}[CacheHasCollision z.2] ≤
-      ((Fintype.card ι * t) ^ 2 : ℝ≥0∞) / (2 * Fintype.card (spec.Range default)) := by
+      ((Fintype.card spec.Domain * t) ^ 2 : ℝ≥0∞) / (2 * Fintype.card (spec.Range default)) := by
   have htotal := IsTotalQueryBound.of_perIndex hbound
   simp only [Finset.sum_const, Finset.card_univ, smul_eq_mul] at htotal
   exact_mod_cast prEvent_cacheCollision_le_birthday_total oa _ htotal hrange

@@ -24,7 +24,7 @@ open OracleSpec OracleComp ProbComp ENNReal
 
 namespace QueryImpl.Stateful
 
-variable {ιₑ : Type uₑ} {E : OracleSpec.{uₑ, 0} ιₑ} {σ : Type}
+variable {E : OracleSpec.{uₑ, 0}} {σ : Type}
 
 /-! ## Bridging to `ProbComp` -/
 

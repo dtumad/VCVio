@@ -56,7 +56,7 @@ open OracleSpec OracleComp QueryImpl
 
 namespace SignatureAlg
 
-variable {ι ι' : Type} {spec : OracleSpec ι} {spec' : OracleSpec ι'} {M PK SK S : Type}
+variable {spec : OracleSpec} {spec' : OracleSpec} {M PK SK S : Type}
 
 /-! ## Query budgets through the signing oracle -/
 
@@ -65,8 +65,8 @@ signing oracle of `sigAlg`. If `G` and signing each spend at most one `q`-query 
 and none on any other query, the run is `q`-bounded by `n`. -/
 theorem isQueryBoundP_runWithSigningOracle_simulateQ_addLift
     (sigAlg : SignatureAlg (OracleComp spec') M PK SK S) (pk : PK) (sk : SK)
-    (G : QueryImpl spec (OracleComp spec')) {p : ι ⊕ M → Prop} [DecidablePred p]
-    {q : ι' → Prop} [DecidablePred q] {α : Type} {oa : OracleComp (spec + (M →ₒ S)) α} {n : ℕ}
+    (G : QueryImpl spec (OracleComp spec')) {p : spec.Domain ⊕ M → Prop} [DecidablePred p]
+    {q : spec'.Domain → Prop} [DecidablePred q] {α : Type} {oa : OracleComp (spec + (M →ₒ S)) α} {n : ℕ}
     (h : IsQueryBoundP oa p n)
     (hG_p : ∀ t, p (.inl t) → IsQueryBoundP (G t) q 1)
     (hG_np : ∀ t, ¬ p (.inl t) → IsQueryBoundP (G t) q 0)
@@ -97,8 +97,8 @@ theorem isQueryBoundP_runWithSigningOracle_simulateQ_addLift
 section MapOracles
 
 variable {SK' : Type} {sigAlg' : SignatureAlg (OracleComp spec') M PK SK' S}
-  (G : QueryImpl spec (OracleComp spec')) {p : ι ⊕ M → Prop} [DecidablePred p]
-  {q : ι' → Prop} [DecidablePred q] {n : ℕ}
+  (G : QueryImpl spec (OracleComp spec')) {p : spec.Domain ⊕ M → Prop} [DecidablePred p]
+  {q : spec'.Domain → Prop} [DecidablePred q] {n : ℕ}
 
 /-- Let `G` spend at most one `q`-query on each ambient `p`-query and none on any other ambient
 query, let signing of `sigAlg'` spend at most one `q`-query on each `p`-signing query and none on
@@ -193,7 +193,7 @@ theorem isQueryBoundP_unforgeableTranscriptExperiment_mapOracles_sign
 /-- An adversary whose ambient oracles are interpreted through `G` makes only `allowed` ambient
 queries when every interpretation `G t` does: its signing queries are passed on unchanged. -/
 theorem allQueriesSatisfy_mapOracles {sigAlg : SignatureAlg (OracleComp spec) M PK SK S}
-    (adv : UnforgeableAdversary sigAlg) {allowed : ι' → Prop}
+    (adv : UnforgeableAdversary sigAlg) {allowed : spec'.Domain → Prop}
     (hG : ∀ t, AllQueriesSatisfy (G t) allowed) (pk : PK) :
     AllQueriesSatisfy ((adv.mapOracles G (sigAlg' := sigAlg')).main pk)
       (Sum.elim allowed fun _ ↦ True) := by
@@ -250,8 +250,8 @@ theorem simulateQ_untag_unforgeableExperiment_tagWith (k₀ k₁ : K)
 /-- A budget `n` of the adversary for `p` is a budget `n` of the tagged experiment for every
 predicate `q` that no `k₀`-tagged query satisfies and whose `k₁`-tagged queries are ambient
 `p`-queries. -/
-theorem isQueryBoundP_unforgeableExperiment_tagWith {k₀ k₁ : K} {p : ι ⊕ M → Prop}
-    [DecidablePred p] {q : K × ι → Prop} [DecidablePred q] (hq₀ : ∀ t, ¬ q (k₀, t))
+theorem isQueryBoundP_unforgeableExperiment_tagWith {k₀ k₁ : K} {p : spec.Domain ⊕ M → Prop}
+    [DecidablePred p] {q : K × spec.Domain → Prop} [DecidablePred q] (hq₀ : ∀ t, ¬ q (k₀, t))
     (hq₁ : ∀ t, q (k₁, t) → p (.inl t)) {adv : UnforgeableAdversary sigAlg} {n : ℕ}
     (hadv : ∀ pk, IsQueryBoundP (adv.main pk) p n) :
     IsQueryBoundP (unforgeableExperiment (sigAlg := sigAlg.map (simulateQ' (tagWith k₀)))

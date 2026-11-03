@@ -53,8 +53,7 @@ universe u
 
 namespace OracleComp.ProgramLogic
 
-variable {ι₁ : Type u}
-variable {spec₁ : OracleSpec.{u, 0} ι₁}
+variable variable {spec₁ : OracleSpec.{u, 0}}
   [AnswerMeasure spec₁]
 variable {α β : Type}
 
@@ -118,7 +117,7 @@ lemma Relational.RelPost.indicator_eq_propInd {α β : Type}
 
 /-- Almost-sure correctness: `Triple 𝟙⟦True⟧ c (fun x => 𝟙⟦p x⟧)` iff
 `Pr{let x ← c}[p x] = 1`. -/
-lemma triple_propInd_iff_prEvent_eq_one {ι : Type u} {spec : OracleSpec ι}
+lemma triple_propInd_iff_prEvent_eq_one {spec : OracleSpec}
     [OracleSpec.AnswerMeasure spec] {α : Type}
     (oa : OracleComp spec α) (p : α → Prop) :
     Triple (𝟙⟦True⟧ : ℝ≥0∞) oa (fun x => 𝟙⟦p x⟧) ↔
@@ -129,7 +128,7 @@ lemma triple_propInd_iff_prEvent_eq_one {ι : Type u} {spec : OracleSpec ι}
       (evalDist_apply_univ_le_one (p <$> oa))) h, fun h ↦ h.ge⟩
 
 /-- Lower-bound event goals are exactly quantitative triples with indicator postconditions. -/
-lemma triple_propInd_iff_le_prEvent {ι : Type u} {spec : OracleSpec ι}
+lemma triple_propInd_iff_le_prEvent {spec : OracleSpec}
     [OracleSpec.AnswerMeasure spec] {α : Type}
     (oa : OracleComp spec α) (p : α → Prop) (r : ℝ≥0∞) :
     Triple r oa (fun x => 𝟙⟦p x⟧) ↔ r ≤ Pr{let x ← oa}[p x] := by
@@ -137,14 +136,14 @@ lemma triple_propInd_iff_le_prEvent {ι : Type u} {spec : OracleSpec ι}
 
 /-- Almost-sure correctness of a proposition-valued computation, such as the computation of an
 event over several draws, as a triple with the indicator of its result. -/
-lemma triple_propInd_self_iff_prEvent_eq_one {ι : Type u} {spec : OracleSpec ι}
+lemma triple_propInd_self_iff_prEvent_eq_one {spec : OracleSpec}
     [OracleSpec.AnswerMeasure spec] (mx : OracleComp spec Prop) :
     Triple (𝟙⟦True⟧ : ℝ≥0∞) mx (fun P => 𝟙⟦P⟧) ↔ prEvent mx = 1 := by
   simpa using triple_propInd_iff_prEvent_eq_one mx id
 
 /-- Lower bounds on the probability of a proposition-valued computation are triples with the
 indicator of its result. -/
-lemma triple_propInd_self_iff_le_prEvent {ι : Type u} {spec : OracleSpec ι}
+lemma triple_propInd_self_iff_le_prEvent {spec : OracleSpec}
     [OracleSpec.AnswerMeasure spec] (mx : OracleComp spec Prop) (r : ℝ≥0∞) :
     Triple r mx (fun P => 𝟙⟦P⟧) ↔ r ≤ prEvent mx := by
   simpa using triple_propInd_iff_le_prEvent mx id r
@@ -152,7 +151,7 @@ lemma triple_propInd_self_iff_le_prEvent {ι : Type u} {spec : OracleSpec ι}
 /-! ## Expectation-level bridge lemmas -/
 
 /-- WP of a disjunction indicator is bounded by the sum of individual WP indicators. -/
-theorem wp_propInd_or_le {ι : Type u} {spec : OracleSpec ι}
+theorem wp_propInd_or_le {spec : OracleSpec}
     [OracleSpec.AnswerMeasure spec] {α : Type}
     (oa : OracleComp spec α) (p q : α → Prop) :
     wp oa (fun x => 𝟙⟦p x ∨ q x⟧) ≤
@@ -164,7 +163,7 @@ theorem wp_propInd_or_le {ι : Type u} {spec : OracleSpec ι}
   by_cases hp : p x <;> by_cases hq : q x <;> simp [propInd, hp, hq]
 
 /-- Markov inequality: if `a ≤ f x` whenever `p x`, then `a * Pr{let x ← oa}[p x] ≤ E[f | oa]`. -/
-theorem markov_bound {ι : Type u} {spec : OracleSpec ι}
+theorem markov_bound {spec : OracleSpec}
     [OracleSpec.AnswerMeasure spec] {α : Type}
     (oa : OracleComp spec α) (f : α → ℝ≥0∞) (a : ℝ≥0∞) (p : α → Prop)
     (hf : ∀ x, p x → a ≤ f x) :
@@ -177,7 +176,7 @@ theorem markov_bound {ι : Type u} {spec : OracleSpec ι}
   · simp
 
 /-- `Triple` with precondition `1` and indicator postcondition when the event is almost sure. -/
-theorem triple_propInd_of_support {ι : Type u} {spec : OracleSpec ι}
+theorem triple_propInd_of_support {spec : OracleSpec}
     [OracleSpec.AnswerMeasure spec] {α : Type}
     (oa : OracleComp spec α) (p : α → Prop) (h : ∀ x ∈ support oa, p x) :
     Triple (1 : ℝ≥0∞) oa (fun x => 𝟙⟦p x⟧) := by

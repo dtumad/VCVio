@@ -26,7 +26,7 @@ namespace PFunctor.Wiring
 
 attribute [local implicit_reducible] PFunctor.sigma
 
-variable {ι Boxes : Type} {spec : OracleSpec.{0, uB} ι} {Arity : Boxes → Type}
+variable {spec.Domain Boxes : Type} {spec : OracleSpec.{0, uB}} {Arity : Boxes → Type}
   {Dom : (b : Boxes) → Arity b → PFunctor.{0, uB}} {Cod : Boxes → PFunctor.{0, uB}}
 
 /-- Compile a recursively wired handler to its single shared oracle boundary. -/
@@ -44,7 +44,7 @@ variable {ι Boxes : Type} {spec : OracleSpec.{0, uB} ι} {Arity : Boxes → Typ
 @[simp]
 theorem oracleProgram_input
     (implementation : (b : Boxes) → (a : (Cod b).A) →
-      FreeM (PFunctor.sigma (Dom b)) ((Cod b).B a)) (a : ι) :
+      FreeM (PFunctor.sigma (Dom b)) ((Cod b).B a)) (a : spec.Domain) :
     oracleProgram (spec := spec) implementation (.input ()) a =
       FreeM.lift (P := spec.toPFunctor) a := by
   simp only [oracleProgram, eval_input]

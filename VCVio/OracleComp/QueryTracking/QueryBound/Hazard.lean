@@ -33,7 +33,7 @@ open OracleSpec ENNReal
 
 namespace OracleComp
 
-variable {ι : Type} {spec : OracleSpec ι} {σ : Type}
+variable {spec : OracleSpec} {σ : Type}
 
 /-- **The hazard bound.** Let `impl` be a stateful handler with an invariant `inv`, a counter
 `cnt` and a bad event `bad`. From a good state satisfying the invariant, suppose a step at an
@@ -42,7 +42,7 @@ raises the counter by at most one and leads to a bad state with probability at m
 counter, where `w` is monotone. Then a run of a computation with at most `q` charged queries from
 such a state `s` ends in a bad state with probability at most `∑ i < q, w (cnt s + i)`. -/
 theorem prEvent_simulateQ_run_le_sum_of_isQueryBoundP
-    (impl : QueryImpl spec (StateT σ ProbComp)) (charged : ι → Prop) [DecidablePred charged]
+    (impl : QueryImpl spec (StateT σ ProbComp)) (charged : spec.Domain → Prop) [DecidablePred charged]
     (cnt : σ → ℕ) (inv bad : σ → Prop) (w : ℕ → ℝ≥0∞) (hw : Monotone w)
     (hinv : QueryImpl.PreservesInv impl inv)
     (h_free : ∀ t s, ¬ charged t → inv s → ¬ bad s →

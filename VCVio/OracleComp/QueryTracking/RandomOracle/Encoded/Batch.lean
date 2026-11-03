@@ -51,7 +51,7 @@ open OracleSpec OracleComp
 
 namespace OracleComp.RandomOracleEncoding
 
-variable {ι D M : Type} {spec : OracleSpec.{0, 0} ι} [SampleableType M]
+variable {spec.Domain D M : Type} {spec : OracleSpec.{0, 0}} [SampleableType M]
   [∀ t, SampleableType (spec.Range t)] (E : RandomOracleEncoding spec D M)
 
 /-! ## Reassembling a raw round -/
@@ -84,7 +84,7 @@ lemma assemble_cons_none {x : D} {xs : List D} (hx : E.route x = none)
   · rename_i heq
     simp [hx] at heq
 
-lemma assemble_cons_some {x : D} {xs : List D} {q : ι} (hx : E.route x = some q)
+lemma assemble_cons_some {x : D} {xs : List D} {q : spec.Domain} (hx : E.route x = some q)
     (ps : (D →ₒ M).batch.Range (x :: xs)) (us : spec.batch.Range (q :: xs.filterMap E.route)) :
     E.assemble (x :: xs) ps (cast (by rw [List.filterMap_cons_some hx]) us) =
       batchCons (E.complete q (us ⟨0, by simp⟩) (ps ⟨0, by simp⟩))
@@ -106,13 +106,13 @@ variable [DecidableEq D]
 /-- The private lazy random oracle of the adapter at a raw input, flipping local coins of the
 typed program. -/
 @[expose]
-def privateDraw {τ : Type} {spec' : OracleSpec.{0, 0} τ} [MonadLiftT ProbComp (OracleComp spec')]
+def privateDraw {spec' : OracleSpec.{0, 0}} [MonadLiftT ProbComp (OracleComp spec')]
     (x : D) : StateT (D →ₒ M).QueryCache (OracleComp spec') M :=
   StateT.mk fun pv => liftM (((D →ₒ M).randomOracle x).run pv)
 
 /-- The private lazy random oracle of the adapter at every raw input of a round, in order. -/
 @[expose]
-def privateDraws {τ : Type} {spec' : OracleSpec.{0, 0} τ} [MonadLiftT ProbComp (OracleComp spec')]
+def privateDraws {spec' : OracleSpec.{0, 0}} [MonadLiftT ProbComp (OracleComp spec')]
     (xs : List D) : StateT (D →ₒ M).QueryCache (OracleComp spec') ((D →ₒ M).batch.Range xs) :=
   StateT.mk fun pv => liftM (((D →ₒ M).randomOracle.batch xs).run pv)
 
@@ -203,11 +203,11 @@ def typedLift : QueryImpl (unifSpec + spec) (OracleComp (unifSpec + (spec + (D �
 
 /-- The typed answers to a round read off the raw answers at the encodings of its points. -/
 @[expose]
-def truncRound (ts : List ι) (us : (D →ₒ M).batch.Range (ts.map E.encode)) :
+def truncRound (ts : List spec.Domain) (us : (D →ₒ M).batch.Range (ts.map E.encode)) :
     spec.batch.Range ts :=
   fun j => E.trunc ts[j] (us ⟨j, by simp⟩)
 
-lemma truncRound_cons (t : ι) (ts : List ι) (u : M)
+lemma truncRound_cons (t : spec.Domain) (ts : List spec.Domain) (u : M)
     (us : (D →ₒ M).batch.Range (ts.map E.encode)) :
     E.truncRound (t :: ts) (batchCons (t := E.encode t) u us) =
       batchCons (E.trunc t u) (E.truncRound ts us) := by
@@ -228,7 +228,7 @@ lemma simulateQ_encodeImpl_rawLift {α : Type} (oa : OracleComp (unifSpec + (D �
     simulateQ_id']
   rcases t with n | x <;> simp [rawLift, encodeImpl]
 
-lemma batch_encodeImpl_typedLift (ts : List ι) :
+lemma batch_encodeImpl_typedLift (ts : List spec.Domain) :
     QueryImpl.batch (fun t => simulateQ E.encodeImpl (typedLift (.inr t))) ts =
       E.truncRound ts <$> QueryImpl.batch (spec := D →ₒ M)
         (fun x => liftM ((unifSpec + (D →ₒ M)).query (.inr x))) (ts.map E.encode) := by
@@ -254,7 +254,7 @@ lemma encodeImpl_compose_typedLift_batch' :
 
 section typedWorld
 
-variable [DecidableEq ι] [DecidableEq D]
+variable [DecidableEq spec.Domain] [DecidableEq D]
 
 lemma preprocessImpl_run_step (t : (unifSpec + (D →ₒ M)).Domain) (pv : (D →ₒ M).QueryCache)
     (c : spec.QueryCache) :

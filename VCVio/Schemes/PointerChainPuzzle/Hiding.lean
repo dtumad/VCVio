@@ -180,7 +180,7 @@ def BadK (key : S) (c : (sealSpec n S L Salt Ctx N K).QueryCache) : Prop :=
   ∃ x : S × N ⊕ S × N, (c (.inr x)).isSome ∧ Sum.elim Prod.fst Prod.fst x = key
 
 /-- A program of local coins, lifted to the free summand, submits no round. -/
-private lemma isOnlineQueryBound_liftM_probComp {ι : Type} {spec : OracleSpec.{0, 0} ι}
+private lemma isOnlineQueryBound_liftM_probComp {spec : OracleSpec.{0, 0}}
     {α : Type} (oa : ProbComp α) (b : ℕ × ℕ) :
     IsOnlineQueryBound (liftM oa : OracleComp (unifSpec + spec.batch) α) b := by
   rw [← liftComp_eq_liftM]

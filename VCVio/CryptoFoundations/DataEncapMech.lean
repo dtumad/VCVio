@@ -98,7 +98,7 @@ end comap
 
 section IND_CPA_OneTime
 
-variable {ι : Type} {spec : OracleSpec ι} [SampleableType K]
+variable {spec : OracleSpec} [SampleableType K]
 
 /-- Two-phase one-time IND-CPA adversary for a DEM. The key is hidden, so the message-selection
 phase receives no public input. -/
@@ -149,7 +149,7 @@ end IND_CPA_OneTime
 
 section IND_CPA
 
-variable {ι : Type} {spec : OracleSpec ι}
+variable {spec : OracleSpec}
 
 /-- Multi-query IND-CPA adversary for a DEM: a computation with the DEM's own oracles `spec` and
 the left-or-right challenge oracle `LeftOrRight.spec M C`, returning a guess of the hidden bit.
@@ -203,7 +203,7 @@ end IND_CPA
 
 section OneTimeToMultiQuery
 
-variable {ι : Type} {spec : OracleSpec ι} {dem : DEMScheme (OracleComp spec) K M C}
+variable {spec : OracleSpec} {dem : DEMScheme (OracleComp spec) K M C}
 
 /-- The multi-query adversary that runs a one-time adversary: it chooses the two messages, makes
 one challenge query on them, and distinguishes on the answer. A `none` answer, which the

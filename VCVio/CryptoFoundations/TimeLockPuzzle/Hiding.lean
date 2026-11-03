@@ -90,7 +90,7 @@ open OracleSpec OracleComp ENNReal MeasureTheory
 
 namespace TimeLockPuzzle
 
-variable {ι : Type} {spec : OracleSpec.{0, 0} ι} {Puzzle Key M C : Type}
+variable {spec : OracleSpec.{0, 0}} {Puzzle Key M C : Type}
 
 /-! ## The hiding adversary -/
 
@@ -99,7 +99,7 @@ coins and the left-or-right challenge oracle `LeftOrRight.spec M C` beside its r
 a guess of the hidden bit. Its preprocessing and online budgets are
 `TwoPhaseAdversary.IsQueryBound`, under which challenge queries cost no round and no point; its
 encryption budget is `HidingAdversary.MakesAtMostQueries`. -/
-abbrev HidingAdversary (spec : OracleSpec.{0, 0} ι) (Puzzle M C : Type) : Type 1 :=
+abbrev HidingAdversary (spec : OracleSpec.{0, 0}) (Puzzle M C : Type) : Type 1 :=
   TwoPhaseAdversary (unifSpec + LeftOrRight.spec M C) spec Puzzle Bool
 
 /-- A hiding adversary `MakesAtMostQueries q` when, on every state and puzzle, its online phase
@@ -153,7 +153,7 @@ def hidingExperiment (tlp : TimeLockPuzzle spec Puzzle Key)
 
 section advantage
 
-variable [DecidableEq ι] [∀ t, SampleableType (spec.Range t)]
+variable [DecidableEq spec.Domain] [∀ t, SampleableType (spec.Range t)]
 
 /-- The hiding advantage of `adv`: the distance between the probabilities that the hiding
 experiment returns `true` at hidden bits `true` and `false`, against one lazily sampled random
@@ -217,7 +217,7 @@ theorem hidingExperiment_eq_of_makesAtMostQueries_zero (tlp : TimeLockPuzzle spe
 
 /-- An adversary that makes no challenge query has hiding advantage `0`, for every puzzle, DEM
 and leakage function. -/
-theorem hidingAdvantage_eq_zero_of_makesAtMostQueries_zero [DecidableEq ι]
+theorem hidingAdvantage_eq_zero_of_makesAtMostQueries_zero [DecidableEq spec.Domain]
     [∀ t, SampleableType (spec.Range t)] (tlp : TimeLockPuzzle spec Puzzle Key)
     (dem : DEMScheme (OracleComp (unifSpec + spec)) (Puzzle × Key) M C) (leak : M → Λ)
     {adv : HidingAdversary spec Puzzle M C} (h : adv.MakesAtMostQueries 0) :
@@ -249,7 +249,7 @@ def cappedHidingExperiment (tlp : TimeLockPuzzle spec Puzzle Key)
 
 section advantage
 
-variable [DecidableEq ι] [∀ t, SampleableType (spec.Range t)]
+variable [DecidableEq spec.Domain] [∀ t, SampleableType (spec.Range t)]
 
 /-- The hiding advantage of `adv` against the capped challenger: the distance between the
 probabilities that the capped hiding experiment returns `true` at hidden bits `true` and `false`,
@@ -398,7 +398,7 @@ theorem hidingExperiment_capChallenges (tlp : TimeLockPuzzle spec Puzzle Key)
 /-- **Branchwise bridge in the random oracle model.** At each hidden bit, the hiding experiment of
 the adapted adversary and the capped hiding experiment of `adv` have the same law against one
 lazily sampled random oracle. -/
-theorem evalDist_hidingExperiment_capChallenges [DecidableEq ι]
+theorem evalDist_hidingExperiment_capChallenges [DecidableEq spec.Domain]
     [∀ t, SampleableType (spec.Range t)] (tlp : TimeLockPuzzle spec Puzzle Key)
     (dem : DEMScheme (OracleComp (unifSpec + spec)) (Puzzle × Key) M C) (leak : M → Λ)
     (qEnc : ℕ) (adv : HidingAdversary spec Puzzle M C) (b : Bool) :
@@ -409,7 +409,7 @@ theorem evalDist_hidingExperiment_capChallenges [DecidableEq ι]
 
 /-- The capped hiding advantage of `adv` is the hiding advantage of the adapted adversary
 `adv.capChallenges leak qEnc`, which is within the encryption budget `qEnc`. -/
-theorem cappedHidingAdvantage_eq_hidingAdvantage_capChallenges [DecidableEq ι]
+theorem cappedHidingAdvantage_eq_hidingAdvantage_capChallenges [DecidableEq spec.Domain]
     [∀ t, SampleableType (spec.Range t)] (tlp : TimeLockPuzzle spec Puzzle Key)
     (dem : DEMScheme (OracleComp (unifSpec + spec)) (Puzzle × Key) M C) (leak : M → Λ)
     (qEnc : ℕ) (adv : HidingAdversary spec Puzzle M C) :
@@ -423,7 +423,7 @@ end TimeLockPuzzle
 
 namespace OracleComp.RandomOracleEncoding
 
-variable {ι : Type} {spec : OracleSpec.{0, 0} ι} {Msg C : Type}
+variable {spec : OracleSpec.{0, 0}} {Msg C : Type}
 
 /-- Local coins lifted into the hiding adversary's interface make no challenge query. -/
 lemma isQueryBoundP_liftComp_challenge {α : Type} (oa : ProbComp α) :

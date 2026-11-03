@@ -43,7 +43,7 @@ attribute [spec] ProbComp.uniformFin
 
 namespace OracleComp.Necessary
 
-variable {ι : Type u} {spec : OracleSpec ι} {α : Type}
+variable {spec : OracleSpec} {α : Type}
 
 open scoped OracleComp.Necessary
 
@@ -73,7 +73,7 @@ theorem Spec.replicate (n : ℕ) (oa : OracleComp spec α) (post : List α → P
 /-- Lifting to a larger oracle world keeps the possible outputs. The precondition is the
 necessary weakest precondition of the lifted program, so `vcgen` continues into it. -/
 @[spec]
-theorem Spec.liftComp {τ : Type u'} {superSpec : OracleSpec τ}
+theorem Spec.liftComp {superSpec : OracleSpec}
     [spec ⊂ₒ superSpec] [spec ˡ⊂ₒ superSpec] (oa : OracleComp spec α) (post : α → Prop)
     {epost : EStack⟨⟩} :
     ⦃ wp oa post epost ⦄ liftComp oa superSpec ⦃ post; epost ⦄ :=
@@ -82,7 +82,7 @@ theorem Spec.liftComp {τ : Type u'} {superSpec : OracleSpec τ}
 /-- `Spec.liftComp` for the lift written as `liftM oa`, the form a `do` block produces when it
 uses `oa` in the larger oracle world. -/
 @[spec]
-theorem Spec.monadLift_liftComp {τ : Type u'} {superSpec : OracleSpec τ}
+theorem Spec.monadLift_liftComp {superSpec : OracleSpec}
     [spec ⊂ₒ superSpec] [spec ˡ⊂ₒ superSpec] (oa : OracleComp spec α) (post : α → Prop)
     {epost : EStack⟨⟩} :
     ⦃ wp oa post epost ⦄ (MonadLift.monadLift oa : OracleComp superSpec α) ⦃ post; epost ⦄ :=

@@ -28,7 +28,7 @@ universe u v w
 
 open scoped OracleSpec.PrimitiveQuery
 
-variable {ι : Type u} [DecidableEq ι] {spec : OracleSpec ι}
+variable [DecidableEq spec.Domain] {spec : OracleSpec}
 
 /-- The eager random oracle: serves answers from a pre-generated `QuerySeed`, consuming
 seed values sequentially and falling back to fresh uniform sampling when exhausted.
@@ -42,7 +42,7 @@ unlike `randomOracle` which gives CONSISTENT samples (same input → same output
 The two models agree when no oracle index is queried more than once.
 
 This is definitionally equal to `uniformSampleImpl.withPregen` (from `SeededOracle.lean`). -/
-@[inline, reducible] def eagerRandomOracle {ι} [DecidableEq ι] {spec : OracleSpec ι}
+@[inline, reducible] def eagerRandomOracle [DecidableEq spec.Domain] {spec : OracleSpec}
     [∀ t : spec.Domain, SampleableType (spec.Range t)] :
     QueryImpl spec (StateT (QuerySeed spec) ProbComp) :=
   fun t => StateT.mk fun seed =>
@@ -52,7 +52,7 @@ This is definitionally equal to `uniformSampleImpl.withPregen` (from `SeededOrac
 
 namespace eagerRandomOracle
 
-variable {ι₀ : Type} [DecidableEq ι₀] {spec₀ : OracleSpec.{0, 0} ι₀}
+variable [DecidableEq spec₀.Domain] {spec₀ : OracleSpec.{0, 0}}
   [∀ t : spec₀.Domain, SampleableType (spec₀.Range t)]
 
 lemma apply_eq (t : spec₀.Domain) :
@@ -99,8 +99,8 @@ end eagerRandomOracle
 
 /-- Helper: the `run'` of the eager oracle bind reduces to uniform sampling
 when `seed t = []`. -/
-private lemma eagerRandomOracle_run'_nil {ι₀ : Type} [DecidableEq ι₀]
-    {spec₀ : OracleSpec.{0, 0} ι₀} [∀ t : spec₀.Domain, SampleableType (spec₀.Range t)]
+private lemma eagerRandomOracle_run'_nil [DecidableEq spec₀.Domain]
+    {spec₀ : OracleSpec.{0, 0}} [∀ t : spec₀.Domain, SampleableType (spec₀.Range t)]
     {α : Type} (t : spec₀.Domain) (f : spec₀.Range t → OracleComp spec₀ α)
     (seed : QuerySeed spec₀) (ht : seed t = []) :
     (eagerRandomOracle t >>= fun u => simulateQ eagerRandomOracle (f u)).run' seed =
@@ -114,8 +114,8 @@ private lemma eagerRandomOracle_run'_nil {ι₀ : Type} [DecidableEq ι₀]
 
 /-- Helper: the `run'` of the eager oracle bind consumes the head
 when `seed t = u :: us`. -/
-private lemma eagerRandomOracle_run'_cons {ι₀ : Type} [DecidableEq ι₀]
-    {spec₀ : OracleSpec.{0, 0} ι₀} [∀ t : spec₀.Domain, SampleableType (spec₀.Range t)]
+private lemma eagerRandomOracle_run'_cons [DecidableEq spec₀.Domain]
+    {spec₀ : OracleSpec.{0, 0}} [∀ t : spec₀.Domain, SampleableType (spec₀.Range t)]
     {α : Type} (t : spec₀.Domain) (f : spec₀.Range t → OracleComp spec₀ α)
     (seed : QuerySeed spec₀) (u : spec₀.Range t) (us : List (spec₀.Range t))
     (ht : seed t = u :: us) :
@@ -135,11 +135,11 @@ answers, exactly matching fresh oracle queries.
 
 This is the analog of `seededOracle.evalDist_liftComp_generateSeed_bind_simulateQ_run'` for
 `eagerRandomOracle`, which falls back to `ProbComp` rather than `OracleComp spec`. -/
-theorem eagerRandomOracle_evalDist_generateSeed_bind {ι₀ : Type} [DecidableEq ι₀]
-    {spec₀ : OracleSpec.{0, 0} ι₀}
+theorem eagerRandomOracle_evalDist_generateSeed_bind [DecidableEq spec₀.Domain]
+    {spec₀ : OracleSpec.{0, 0}}
     [∀ t : spec₀.Domain, SampleableType (spec₀.Range t)]
     [OracleSpec.UniformAnswerMeasure spec₀]
-    {α : Type} [MeasurableSpace α] (oa : OracleComp spec₀ α) (qc : ι₀ → ℕ) (js : List ι₀) :
+    {α : Type} [MeasurableSpace α] (oa : OracleComp spec₀ α) (qc : spec₀.Domain → ℕ) (js : List spec₀.Domain) :
     𝒟[do
       let seed ← generateSeed spec₀ qc js
       (simulateQ (eagerRandomOracle (spec := spec₀)) oa).run' seed] = 𝒟[oa] := by

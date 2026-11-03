@@ -48,7 +48,7 @@ namespace CanonicalGraph
 
 open OracleComp
 
-variable {ι : Type} {pub : OracleSpec ι} {X K R : Type} (G : CanonicalGraph pub X K R)
+variable {pub : OracleSpec} {X K R : Type} (G : CanonicalGraph pub X K R)
 
 /-- The queries that draw, in the deferred game, no cell outside `D`: a sampling query, a touch,
 a derivation or a read of a cell of `D`, and a public query at a point that is the point of no
@@ -88,7 +88,7 @@ end Read
 
 /-! ## Frames of the deferred game -/
 
-variable [DecidableEq ι] [DecidableEq X] [DecidableEq K] [SampleableType R]
+variable [DecidableEq pub.Domain] [DecidableEq X] [DecidableEq K] [SampleableType R]
   [∀ t, SampleableType (pub.Range t)]
 
 /-- A step of the deferred game changes a cell only by drawing it: as the label of a node whose

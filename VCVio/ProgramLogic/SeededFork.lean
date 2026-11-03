@@ -22,12 +22,12 @@ open OracleSpec OracleComp ENNReal
 
 namespace OracleComp.ProgramLogic
 
-variable {ι : Type} [DecidableEq ι] {spec : OracleSpec ι}
+variable [DecidableEq spec.Domain] {spec : OracleSpec}
   [∀ i, SampleableType (spec.Range i)] [∀ i, DecidableEq (spec.Range i)] [unifSpec ⊂ₒ spec]
   {α : Type}
 
-variable (main : OracleComp spec α) (qb : ι → ℕ)
-    (js : List ι) (i : ι) (cf : α → Option (Fin (qb i + 1)))
+variable (main : OracleComp spec α) (qb : spec.Domain → ℕ)
+    (js : List spec.Domain) (i : spec.Domain) (cf : α → Option (Fin (qb i + 1)))
     [unifSpec ˡ⊂ₒ spec]
     [OracleSpec.UniformAnswerMeasure spec]
 

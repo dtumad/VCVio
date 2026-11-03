@@ -30,8 +30,7 @@ universe u
 
 namespace OracleComp.Rel.Quantitative
 
-variable {ι₁ ι₂ : Type u}
-variable {spec₁ : OracleSpec.{u, 0} ι₁} {spec₂ : OracleSpec.{u, 0} ι₂}
+variable variable {spec₁ : OracleSpec.{u, 0}} {spec₂ : OracleSpec.{u, 0}}
 variable [∀ t, Finite (spec₁.Range t)] [∀ t, Finite (spec₂.Range t)]
 variable {α β γ δ : Type}
 

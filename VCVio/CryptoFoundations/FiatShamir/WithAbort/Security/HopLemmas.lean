@@ -250,14 +250,14 @@ lemma unforgeableAdvantage_eq_hybridExpAtKey_real :
 state, so the `expectedQuerySlack` bridge of `ProgramLogic/Relational/SimulateQ.lean`
 applies. The flag is preserved on every step, hence stays `false` along any run started
 from `false`. -/
-@[expose] noncomputable def flagLift {ι : Type} {spec : OracleSpec ι} {σ : Type}
+@[expose] noncomputable def flagLift {spec : OracleSpec} {σ : Type}
     (impl : QueryImpl spec (StateT σ ProbComp)) :
     QueryImpl spec (StateT (σ × Bool) ProbComp) :=
   fun t => StateT.mk fun p =>
     (fun us : spec.Range t × σ => (us.1, (us.2, p.2))) <$> (impl t).run p.1
 
 omit [DecidableEq Commit] [SampleableType Chal] [DecidableEq M] in
-lemma flagLift_run {ι : Type} {spec : OracleSpec ι} {σ : Type}
+lemma flagLift_run {spec : OracleSpec} {σ : Type}
     (impl : QueryImpl spec (StateT σ ProbComp)) (t : spec.Domain) (s : σ) (b : Bool) :
     ((flagLift impl t).run (s, b)) =
       (fun us : spec.Range t × σ => (us.1, (us.2, b))) <$> (impl t).run s := rfl
@@ -267,7 +267,7 @@ omit [DecidableEq Commit] [SampleableType Chal] [DecidableEq M] in
 predicate and `DecidablePred` instance. The predicate is allowed to differ by its match
 auxiliary (which arises when the same matches-notation is elaborated in different
 modules), and the decidability instance is a subsingleton. -/
-lemma isQueryBoundP_cast_pred {ι : Type} {spec : OracleSpec ι} {α : Type}
+lemma isQueryBoundP_cast_pred {spec : OracleSpec} {α : Type}
     {oa : OracleComp spec α} {p₁ p₂ : spec.Domain → Prop}
     {i₁ : DecidablePred p₁} {i₂ : DecidablePred p₂} {n : ℕ} (hp : p₁ = p₂)
     (h : @OracleComp.IsQueryBoundP _ spec α oa p₁ i₁ n) :

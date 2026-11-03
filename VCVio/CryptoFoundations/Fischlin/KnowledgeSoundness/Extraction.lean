@@ -335,26 +335,26 @@ end extraction
 
 /-- The lifted `unifSpec` forwarder on the logging stack, exactly as in
 `knowledgeSoundnessExperiment`. -/
-private def idImplW {ι : Type} (hashSpec : OracleSpec ι) :
+private def idImplW (hashSpec : OracleSpec) :
     QueryImpl unifSpec (WriterT (QueryLog hashSpec) (StateT hashSpec.QueryCache ProbComp)) :=
   unifSpec.passthrough
 
 /-- The logged random oracle, exactly as in `knowledgeSoundnessExperiment`. -/
-private def loggedROW {ι : Type} (hashSpec : OracleSpec ι) [DecidableEq ι]
+private def loggedROW (hashSpec : OracleSpec) [DecidableEq hashSpec.Domain]
      [∀ t : hashSpec.Domain, SampleableType (hashSpec.Range t)] :
     QueryImpl hashSpec (WriterT (QueryLog hashSpec) (StateT hashSpec.QueryCache ProbComp)) :=
   (hashSpec.randomOracle).withLogging
 
 /-- The combined logging implementation, exactly the `unifSpec.passthrough + loggedRO` of
 `knowledgeSoundnessExperiment` and `ksSample`. -/
-private def compositeW {ι : Type} (hashSpec : OracleSpec ι) [DecidableEq ι]
+private def compositeW (hashSpec : OracleSpec) [DecidableEq hashSpec.Domain]
      [∀ t : hashSpec.Domain, SampleableType (hashSpec.Range t)] :
     QueryImpl (unifSpec + hashSpec)
       (WriterT (QueryLog hashSpec) (StateT hashSpec.QueryCache ProbComp)) :=
   idImplW hashSpec + loggedROW hashSpec
 
 /-- The lifted unifSpec forwarder neither logs nor touches the cache. -/
-private lemma idImplW_run_run {ι : Type} (hashSpec : OracleSpec ι)
+private lemma idImplW_run_run (hashSpec : OracleSpec)
     (i : unifSpec.Domain) (c : hashSpec.QueryCache) :
     ((idImplW hashSpec i).run).run c =
       (fun u => ((u, (∅ : QueryLog hashSpec)), c)) <$>
@@ -362,7 +362,7 @@ private lemma idImplW_run_run {ι : Type} (hashSpec : OracleSpec ι)
   rfl
 
 /-- Cache hit: the logged random oracle returns the cached value, logs it, leaves the cache. -/
-private lemma loggedROW_run_run_some {ι : Type} {hashSpec : OracleSpec ι} [DecidableEq ι]
+private lemma loggedROW_run_run_some {hashSpec : OracleSpec} [DecidableEq hashSpec.Domain]
      [∀ t : hashSpec.Domain, SampleableType (hashSpec.Range t)]
     {t : hashSpec.Domain} {c : hashSpec.QueryCache} {u : hashSpec.Range t}
     (h : c t = some u) :
@@ -373,7 +373,7 @@ private lemma loggedROW_run_run_some {ι : Type} {hashSpec : OracleSpec ι} [Dec
   rfl
 
 /-- Cache miss: the logged random oracle samples, caches the value, and logs it. -/
-private lemma loggedROW_run_run_none {ι : Type} {hashSpec : OracleSpec ι} [DecidableEq ι]
+private lemma loggedROW_run_run_none {hashSpec : OracleSpec} [DecidableEq hashSpec.Domain]
      [∀ t : hashSpec.Domain, SampleableType (hashSpec.Range t)]
     {t : hashSpec.Domain} {c : hashSpec.QueryCache} (h : c t = none) :
     ((loggedROW hashSpec t).run).run c =
@@ -391,8 +391,8 @@ private lemma loggedROW_run_run_none {ι : Type} {hashSpec : OracleSpec ι} [Dec
 from cache `cache₀` (and an empty ambient log), every support outcome `((a, log), cache')`
 satisfies: the cache only grows, every logged entry is in the final cache with the same value,
 and every final cache entry was either logged or already present in `cache₀`. -/
-private theorem mem_support_run_correspondence {ι : Type} {hashSpec : OracleSpec ι}
-    [DecidableEq ι]
+private theorem mem_support_run_correspondence {hashSpec : OracleSpec}
+    [DecidableEq hashSpec.Domain]
     [∀ t : hashSpec.Domain, SampleableType (hashSpec.Range t)] {α : Type}
     (oa : OracleComp (unifSpec + hashSpec) α)
     (cache₀ : hashSpec.QueryCache)
@@ -474,7 +474,7 @@ private theorem mem_support_run_correspondence {ι : Type} {hashSpec : OracleSpe
                     exact Or.inr h
 
 /-- Every logged entry is in the final cache with the same value (run from `∅`). -/
-private theorem log_subset_cache {ι : Type} {hashSpec : OracleSpec ι} [DecidableEq ι]
+private theorem log_subset_cache {hashSpec : OracleSpec} [DecidableEq hashSpec.Domain]
     [∀ t : hashSpec.Domain, SampleableType (hashSpec.Range t)]
     {α : Type} (oa : OracleComp (unifSpec + hashSpec) α)
     {z : (α × QueryLog hashSpec) × hashSpec.QueryCache}
@@ -483,7 +483,7 @@ private theorem log_subset_cache {ι : Type} {hashSpec : OracleSpec ι} [Decidab
   (mem_support_run_correspondence oa ∅ z hz).2.1
 
 /-- Every final cache entry was logged (run from `∅`). -/
-private theorem cache_subset_log {ι : Type} {hashSpec : OracleSpec ι} [DecidableEq ι]
+private theorem cache_subset_log {hashSpec : OracleSpec} [DecidableEq hashSpec.Domain]
     [∀ t : hashSpec.Domain, SampleableType (hashSpec.Range t)]
     {α : Type} (oa : OracleComp (unifSpec + hashSpec) α)
     {z : (α × QueryLog hashSpec) × hashSpec.QueryCache}
@@ -493,7 +493,7 @@ private theorem cache_subset_log {ι : Type} {hashSpec : OracleSpec ι} [Decidab
   ((mem_support_run_correspondence oa ∅ z hz).2.2 t u hu).resolve_right (by simp)
 
 /-- Each domain point has a unique logged value (run from `∅`). -/
-private theorem log_unique {ι : Type} {hashSpec : OracleSpec ι} [DecidableEq ι]
+private theorem log_unique {hashSpec : OracleSpec} [DecidableEq hashSpec.Domain]
     [∀ t : hashSpec.Domain, SampleableType (hashSpec.Range t)]
     {α : Type} (oa : OracleComp (unifSpec + hashSpec) α)
     {z : (α × QueryLog hashSpec) × hashSpec.QueryCache}

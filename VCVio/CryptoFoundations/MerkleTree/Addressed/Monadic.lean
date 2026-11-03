@@ -140,7 +140,7 @@ theorem idRun_getPutativeRootAddressedM :
 end PureInterpretation
 
 /-- Simulation applies the oracle handler to each callback of the shared builder. -/
-theorem simulateQ_buildMerkleTreeAddressedM_with {ι : Type u} {spec : OracleSpec.{u, v} ι}
+theorem simulateQ_buildMerkleTreeAddressedM_with {spec : OracleSpec.{u, v}}
     {m : Type v → Type*} [Monad m] [LawfulMonad m] (impl : QueryImpl spec m)
     {s : Skeleton} (leaf : SkeletonLeafIndex s → OracleComp spec Y)
     (nodeHash : SkeletonInternalIndex s → Y → Y → OracleComp spec Y) :
@@ -166,7 +166,7 @@ theorem buildMerkleTreeAddressedM_pure {m : Type v → Type*} [Monad m] [LawfulM
 
 section DeterministicInterpretation
 
-variable {ι : Type u} {spec : OracleSpec.{u, v} ι}
+variable {spec : OracleSpec.{u, v}}
 
 /-- Interpreting effectful addressed-tree construction through a deterministic handler recovers
 the canonical pure addressed tree with pointwise interpreted leaves and node hashes. -/

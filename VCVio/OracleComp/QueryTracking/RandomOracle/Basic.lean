@@ -30,14 +30,14 @@ private-sampling summand in front of the pair
 open OracleComp OracleSpec
 
 /-- The (lazy) random oracle: uniform sampling with caching. -/
-@[inline, reducible] def OracleSpec.randomOracle {ι} [DecidableEq ι] {spec : OracleSpec ι}
+@[inline, reducible] def OracleSpec.randomOracle [DecidableEq spec.Domain] {spec : OracleSpec}
     [∀ t : spec.Domain, SampleableType (spec.Range t)] :
     QueryImpl spec (StateT spec.QueryCache ProbComp) :=
   uniformSampleImpl.withCaching
 
 namespace randomOracle
 
-variable {ι₀ : Type} [DecidableEq ι₀] {spec₀ : OracleSpec.{0, 0} ι₀}
+variable [DecidableEq spec₀.Domain] {spec₀ : OracleSpec.{0, 0}}
   [∀ t : spec₀.Domain, SampleableType (spec₀.Range t)]
 
 lemma apply_eq (t : spec₀.Domain) :
@@ -65,8 +65,8 @@ end randomOracle
 
 namespace QueryImpl
 
-variable {ι₁ ι₂ : Type} {spec₁ : OracleSpec.{0, 0} ι₁} {spec₂ : OracleSpec.{0, 0} ι₂}
-  [DecidableEq ι₁] [DecidableEq ι₂]
+variable {spec₁ : OracleSpec.{0, 0}} {spec₂ : OracleSpec.{0, 0}}
+  [DecidableEq spec₁.Domain] [DecidableEq spec₂.Domain]
   [∀ t : spec₁.Domain, SampleableType (spec₁.Range t)]
   [∀ t : spec₂.Domain, SampleableType (spec₂.Range t)]
 
@@ -90,9 +90,9 @@ end QueryImpl
 
 namespace OracleComp
 
-variable {ι₀ ι₁ ι₂ : Type} {spec₀ : OracleSpec.{0, 0} ι₀}
-  {spec₁ : OracleSpec.{0, 0} ι₁} {spec₂ : OracleSpec.{0, 0} ι₂}
-  [DecidableEq ι₁] [DecidableEq ι₂]
+variable {spec₀ : OracleSpec.{0, 0}}
+  {spec₁ : OracleSpec.{0, 0}} {spec₂ : OracleSpec.{0, 0}}
+  [DecidableEq spec₁.Domain] [DecidableEq spec₂.Domain]
   [∀ t : spec₁.Domain, SampleableType (spec₁.Range t)]
   [∀ t : spec₂.Domain, SampleableType (spec₂.Range t)]
 

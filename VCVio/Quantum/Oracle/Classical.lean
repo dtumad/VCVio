@@ -570,7 +570,7 @@ open Quantum
 
 section toQuantumAt
 
-variable {ι : Type u} {ospec : OracleSpec.{u, v} ι} {α : Type v}
+variable {ospec : OracleSpec.{u, v}} {α : Type v}
   {spec : QuantumOracleSpec.{u₁, v₁}} {B : QReg}
 
 /-- **A classical algorithm run from inside an experiment.** Run the classical oracle algorithm
@@ -613,7 +613,7 @@ end toQuantumAt
 
 /-- A classical algorithm making at most `n` queries, each answered by a program within the
 budget `b`, runs to a program within the budget `n • b`. -/
-theorem isQueryBound_toQuantumAt {ι : Type u} {ospec : OracleSpec.{u, u} ι} {α : Type u}
+theorem isQueryBound_toQuantumAt {ospec : OracleSpec.{u, u}} {α : Type u}
     {spec : QuantumOracleSpec.{u₁, v₁}} {B : QReg} {q : QueryImpl ospec (QComp spec B B)}
     {b : spec.Port → ℕ} (hq : ∀ t, (q t).IsQueryBound b) {oa : OracleComp ospec α} {n : ℕ}
     (h : IsTotalQueryBound oa n) : (oa.toQuantumAt q).IsQueryBound (n • b) := by

@@ -29,7 +29,7 @@ universe u v
 
 namespace OracleSpec
 
-variable {ι : Type u} {spec : OracleSpec.{u, v} ι}
+variable {spec : OracleSpec.{u, v}}
 
 /-- A probability measure on the answers to each query of an oracle specification.
 
@@ -37,7 +37,7 @@ Oracle answers carry the discrete measurable structure, so a chosen measure is d
 mass of single answers and no measurable-space arguments appear on answer types. Answer types
 with another measurable structure are modeled by `PFunctor.AnswerMeasure` on the underlying
 polynomial functor. -/
-abbrev AnswerMeasure (spec : OracleSpec.{u, v} ι) :=
+abbrev AnswerMeasure (spec : OracleSpec.{u, v}) :=
   @PFunctor.AnswerMeasure spec.toPFunctor fun _ ↦ ⊤
 
 namespace AnswerMeasure
@@ -57,7 +57,7 @@ end AnswerMeasure
 
 /-- Combining specifications combines their answer measures. -/
 @[reducible]
-noncomputable instance AnswerMeasure.add {ι' : Type*} (spec' : OracleSpec.{_, v} ι')
+noncomputable instance AnswerMeasure.add (spec' : OracleSpec.{_, v})
     [AnswerMeasure spec] [AnswerMeasure spec'] : AnswerMeasure (spec + spec') :=
   @PFunctor.AnswerMeasure.mk (spec + spec').toPFunctor (fun _ ↦ ⊤)
     (fun
@@ -75,7 +75,7 @@ probability measure exactly on a finite, nonempty type, which
 `AnswerMeasure.isProbabilityMeasure` records, so `UniformAnswerMeasure.finite_range` and
 `UniformAnswerMeasure.nonempty_range` recover both facts. Statements about cardinalities take
 `[Fintype (spec.Range t)]` for the queries they mention. -/
-class UniformAnswerMeasure (spec : OracleSpec.{u, v} ι) extends AnswerMeasure spec where
+class UniformAnswerMeasure (spec : OracleSpec.{u, v}) extends AnswerMeasure spec where
   /-- Each query uses the uniform probability measure on its answer type. -/
   toMeasure_eq_uniform : ∀ t, toMeasure t = @uniformOn (spec.Range t) ⊤ Set.univ
 
@@ -89,7 +89,7 @@ theorem AnswerMeasure.toMeasure_eq_uniformOn [UniformAnswerMeasure spec] (t : sp
 /-- Select uniform measure semantics for an oracle specification whose answer types are finite
 and nonempty. -/
 @[expose, reducible]
-noncomputable def UniformAnswerMeasure.ofFiniteNonempty (spec : OracleSpec.{u, v} ι)
+noncomputable def UniformAnswerMeasure.ofFiniteNonempty (spec : OracleSpec.{u, v})
     [∀ t, Finite (spec.Range t)] [∀ t, Nonempty (spec.Range t)] : UniformAnswerMeasure spec where
   toMeasure _ := @uniformOn _ ⊤ Set.univ
   isProbabilityMeasure t :=
@@ -165,7 +165,7 @@ end UniformAnswerMeasure
 
 /-- Combining uniform specifications preserves each configured answer measure. -/
 @[reducible]
-noncomputable instance UniformAnswerMeasure.add {ι' : Type*} (spec' : OracleSpec.{_, v} ι')
+noncomputable instance UniformAnswerMeasure.add (spec' : OracleSpec.{_, v})
     [UniformAnswerMeasure spec] [UniformAnswerMeasure spec'] :
     UniformAnswerMeasure (spec + spec') where
   toAnswerMeasure := AnswerMeasure.add spec'
@@ -177,7 +177,7 @@ end OracleSpec
 
 namespace OracleComp
 
-variable {ι : Type u} {spec : OracleSpec.{u, v} ι}
+variable {spec : OracleSpec.{u, v}}
 
 /-- Oracle computations denote the measure fold of their chosen answer measures. -/
 noncomputable instance (priority := 30) instEvalDistSemantics [OracleSpec.AnswerMeasure spec] :

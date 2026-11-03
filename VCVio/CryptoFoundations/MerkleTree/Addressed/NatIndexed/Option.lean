@@ -136,7 +136,7 @@ end Monadic
 
 section Option
 
-variable {ι : Type u} {spec : OracleSpec.{u, v} ι} {Y : Type v} (impl : QueryImpl spec Option)
+variable {spec : OracleSpec.{u, v}} {Y : Type v} (impl : QueryImpl spec Option)
 
 /-- A climb along the empty path is settled exactly at its starting node. -/
 theorem simulateQ_climbM_nil_eq_some_iff (nodeHash : ℕ → ℕ → Y → Y → OracleComp spec Y)

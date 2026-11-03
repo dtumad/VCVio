@@ -20,7 +20,7 @@ This interface uses small types, as do the sequential query-logging laws.
 public section
 
 /-- An explicitly initialized, persistent interpretation of a surface oracle. -/
-structure OracleRuntime {ι κ : Type} (Import : OracleSpec ι) (Surface : OracleSpec κ) where
+structure OracleRuntime (Import : OracleSpec) (Surface : OracleSpec) where
   /-- Private world state retained between completed execution phases. -/
   State : Type
   /-- Initialization, performed once by `run` before interpreting the program. -/
@@ -30,7 +30,7 @@ structure OracleRuntime {ι κ : Type} (Import : OracleSpec ι) (Surface : Oracl
 
 /-- Paired runner output. Construction is controlled by the runtime API; sampling provenance
 is a separate support-membership obligation. -/
-structure RunResult {ι κ : Type} {Import : OracleSpec ι} {Surface : OracleSpec κ}
+structure RunResult {Import : OracleSpec} {Surface : OracleSpec}
     (Γ : OracleRuntime Import Surface) (α : Type) where
   private mk ::
   /-- Returned value of the completed phase. -/
@@ -41,8 +41,8 @@ structure RunResult {ι κ : Type} {Import : OracleSpec ι} {Surface : OracleSpe
   trace : OracleSpec.QueryLog Surface
 
 /-- Run results agree when all three paired observations agree. -/
-@[ext] theorem RunResult.ext {ι κ : Type} {Import : OracleSpec ι}
-    {Surface : OracleSpec κ} {Γ : OracleRuntime Import Surface} {α : Type}
+@[ext] theorem RunResult.ext {Import : OracleSpec}
+    {Surface : OracleSpec} {Γ : OracleRuntime Import Surface} {α : Type}
     {a b : RunResult Γ α} (output : a.output = b.output)
     (state : a.state = b.state) (trace : a.trace = b.trace) : a = b := by
   cases a
@@ -51,7 +51,7 @@ structure RunResult {ι κ : Type} {Import : OracleSpec ι} {Surface : OracleSpe
 
 namespace OracleRuntime
 
-variable {ι κ : Type} {Import : OracleSpec ι} {Surface : OracleSpec κ}
+variable {Import : OracleSpec} {Surface : OracleSpec}
     (Γ : OracleRuntime Import Surface) {α β : Type}
 
 /-- Run from a supplied state, recording only the surface query/answer sequence. -/

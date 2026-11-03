@@ -74,7 +74,7 @@ end signingOracle
 
 section runWithSigningOracle
 
-variable {ι : Type u} {spec : OracleSpec ι} {M PK SK S : Type}
+variable {spec : OracleSpec} {M PK SK S : Type}
 
 /-- Run `oa` against the scheme's ambient oracles `spec` and a signing oracle for `sigAlg` under
 the key pair `(pk, sk)`. Ambient queries are forwarded unchanged and signing queries are answered
@@ -197,7 +197,7 @@ end correctness
 
 section unforgeable
 
-variable {ι : Type u} {spec : OracleSpec ι} {M PK SK S : Type}
+variable {spec : OracleSpec} {M PK SK S : Type}
 
 /-- An EUF-CMA (existential unforgeability under chosen-message attack) adversary for
 `sigAlg`. Given the public key, it runs in the oracle family `spec + (M →ₒ S)` — the
@@ -288,7 +288,7 @@ end unforgeable
 
 section strongUnforgeable
 
-variable {ι : Type u} {spec : OracleSpec ι} {M PK SK S : Type}
+variable {spec : OracleSpec} {M PK SK S : Type}
 
 section signingLogContains
 
@@ -496,7 +496,7 @@ end strongUnforgeable
 
 section eufNma
 
-variable {ι : Type u} {spec : OracleSpec ι} {M PK SK S : Type}
+variable {spec : OracleSpec} {M PK SK S : Type}
 
 /-- An EUF-NMA (existential unforgeability under no-message attack) adversary for a
 signature scheme. Unlike a CMA adversary (`UnforgeableAdversary`), the NMA adversary has NO
@@ -526,7 +526,7 @@ end eufNma
 
 section managedRoNma
 
-variable {ι : Type} [DecidableEq ι] {spec : OracleSpec ι} {M PK SK S : Type}
+variable [DecidableEq spec.Domain] {spec : OracleSpec} {M PK SK S : Type}
 
 /-- An EUF-NMA adversary with managed random oracle: the adversary returns a `QueryCache`
 alongside its forgery. The experiment verifies using `withCacheOverlay`, which resolves

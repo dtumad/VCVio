@@ -26,7 +26,7 @@ namespace QueryImpl
 section compose
 
 variable {m : Type u → Type v} [Monad m]
-    {ι ι' : Type*} {spec : OracleSpec ι} {spec' : OracleSpec ι'}
+    {spec : OracleSpec} {spec' : OracleSpec}
     {α β γ : Type u}
 
 /-- Given an implementation of `spec` in terms of a new set of oracles `spec'`,

@@ -189,8 +189,8 @@ namespace OracleComp
 
 section Table
 
-variable {ι : Type} [DecidableEq ι] [Finite ι] {spec : OracleSpec.{0, 0} ι}
-  [∀ t, SampleableType (spec.Range t)] [SampleableType ((t : ι) → spec.Range t)]
+variable [DecidableEq spec.Domain] [Finite spec.Domain] {spec : OracleSpec.{0, 0}}
+  [∀ t, SampleableType (spec.Range t)] [SampleableType ((t : spec.Domain) → spec.Range t)]
 
 /-- Running `oa` in the random oracle model from the cache `c` has the output distribution of
 sampling a full answer table `g` uniformly and answering every hash query from `g`, overlaid by
@@ -198,7 +198,7 @@ sampling a full answer table `g` uniformly and answering every hash query from `
 theorem evalDist_simulateQ_romImpl_run'_eq_completeTable {α : Type} [MeasurableSpace α]
     (oa : OracleComp (unifSpec + spec) α) (c : spec.QueryCache) :
     𝒟[(simulateQ spec.romImpl oa).run' c] =
-      𝒟[$ᵗ ((t : ι) → spec.Range t) >>= fun g =>
+      𝒟[$ᵗ ((t : spec.Domain) → spec.Range t) >>= fun g =>
           simulateQ (unifFwdAnswerImpl (QueryImpl.ofFn (completeTable c g))) oa] := by
   classical
   let : ∀ t, MeasurableSpace (spec.Range t) := fun _ => ⊤
@@ -214,7 +214,7 @@ theorem evalDist_simulateQ_romImpl_run'_eq_completeTable {α : Type} [Measurable
           rw [simulateQ_bind, simulateQ_spec_query, StateT.run'_eq, StateT.run_bind,
             roSim.run_apply_inl]
           simp [StateT.run'_eq]
-        have heval : ∀ g : (t : ι) → spec.Range t,
+        have heval : ∀ g : (t : spec.Domain) → spec.Range t,
             simulateQ (unifFwdAnswerImpl (QueryImpl.ofFn (completeTable c g)))
                 (liftM ((unifSpec + spec).query (.inl n)) >>= k) =
               (unifSpec.query n : ProbComp _) >>= fun u =>
@@ -229,7 +229,7 @@ theorem evalDist_simulateQ_romImpl_run'_eq_completeTable {α : Type} [Measurable
             (spec.randomOracle t).run c >>= fun p => (simulateQ spec.romImpl (k p.1)).run' p.2 := by
           rw [simulateQ_bind, simulateQ_spec_query, StateT.run'_eq, StateT.run_bind, map_bind]
           rfl
-        have heval : ∀ g : (t : ι) → spec.Range t,
+        have heval : ∀ g : (t : spec.Domain) → spec.Range t,
             simulateQ (unifFwdAnswerImpl (QueryImpl.ofFn (completeTable c g)))
                 (liftM ((unifSpec + spec).query (.inr t)) >>= k) =
               simulateQ (unifFwdAnswerImpl (QueryImpl.ofFn (completeTable c g)))
@@ -240,10 +240,10 @@ theorem evalDist_simulateQ_romImpl_run'_eq_completeTable {α : Type} [Measurable
         rcases hc : c t with _ | u
         · rw [QueryImpl.withCaching_run_none _ hc, map_eq_bind_pure_comp]
           simp only [Function.comp, bind_assoc, pure_bind]
-          set ψ : ((t : ι) → spec.Range t) → ProbComp α := fun g =>
+          set ψ : ((t : spec.Domain) → spec.Range t) → ProbComp α := fun g =>
             simulateQ (unifFwdAnswerImpl (QueryImpl.ofFn (completeTable c g)))
               (k (completeTable c g t)) with hψ
-          have hfun : ∀ u : spec.Range t, (fun g : (t : ι) → spec.Range t =>
+          have hfun : ∀ u : spec.Range t, (fun g : (t : spec.Domain) → spec.Range t =>
                 simulateQ (unifFwdAnswerImpl (QueryImpl.ofFn (completeTable (c.cacheQuery t u) g)))
                   (k u)) = fun g => ψ (Function.update g t u) := by
             intro u
@@ -256,7 +256,7 @@ theorem evalDist_simulateQ_romImpl_run'_eq_completeTable {α : Type} [Measurable
           exact evalDist_bind_bind_update_dependent t _ _
             SampleableType.evalDist_uniformSample SampleableType.evalDist_uniformSample ψ
         · rw [QueryImpl.withCaching_run_some _ hc, pure_bind, ih u c]
-          have h : ∀ g : (t : ι) → spec.Range t, completeTable c g t = u :=
+          have h : ∀ g : (t : spec.Domain) → spec.Range t, completeTable c g t = u :=
             fun g => by simp [completeTable, hc]
           simp_rw [h]
 

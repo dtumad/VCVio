@@ -29,9 +29,9 @@ universe u
 
 namespace OracleComp.ProgramLogic.Relational
 
-variable {ι : Type u} {spec : OracleSpec ι}
+variable {spec : OracleSpec}
 variable {α : Type}
-variable {ι₁ ι₂ : Type u} {spec₁ : OracleSpec.{u, 0} ι₁} {spec₂ : OracleSpec.{u, 0} ι₂}
+variable {spec₁ : OracleSpec.{u, 0}} {spec₂ : OracleSpec.{u, 0}}
   [OracleSpec.AnswerMeasure spec₁] [OracleSpec.AnswerMeasure spec₂]
 
 section coupling
@@ -332,7 +332,7 @@ theorem relTriple_simulateQ_run_writerT'
 second implementation preserves `Inv`, then the full simulations have identical `(output, state)`
 distributions from any invariant-satisfying initial state. -/
 theorem relTriple_simulateQ_run_of_impl_eq_preservesInv
-    {ι : Type} {spec : OracleSpec ι} {σ : Type _}
+    {spec : OracleSpec} {σ : Type _}
     (impl₁ impl₂ : QueryImpl spec (StateT σ ProbComp))
     (Inv : σ → Prop)
     (oa : OracleComp spec α)
@@ -367,7 +367,7 @@ This weakens the stronger invariant-carrying postcondition to plain equality on 
 which is the shape consumed directly by probability-transport lemmas and theorem-driven
 `rvcgen` steps. -/
 theorem relTriple_simulateQ_run_eqRel_of_impl_eq_preservesInv
-    {ι : Type} {spec : OracleSpec ι} {σ : Type _}
+    {spec : OracleSpec} {σ : Type _}
     (impl₁ impl₂ : QueryImpl spec (StateT σ ProbComp))
     (Inv : σ → Prop)
     (oa : OracleComp spec α)
@@ -398,7 +398,7 @@ through an arbitrary state invariant plus a per-query relational triple, and
 state space. Reach for this one when the second implementation is the first one read through a
 state projection, so that `hproj` is an equality of computations rather than of distributions. -/
 theorem relTriple_simulateQ_run'_of_query_map_eq
-    {ι : Type} {spec : OracleSpec ι} {σ₁ σ₂ : Type _}
+    {spec : OracleSpec} {σ₁ σ₂ : Type _}
     (impl₁ : QueryImpl spec (StateT σ₁ ProbComp))
     (impl₂ : QueryImpl spec (StateT σ₂ ProbComp))
     (proj : σ₁ → σ₂)
@@ -419,7 +419,7 @@ implementations agree on every query that the bound permits, and the second impl
 preserves a budget-indexed invariant `Inv`, then the full simulated computations have the same
 output-state measure from any initial state satisfying `Inv`. -/
 theorem evalDistEq_simulateQ_run_of_impl_eq_queryBound
-    {ι : Type} {spec : OracleSpec ι} {σ : Type} {B : Type _}
+    {spec : OracleSpec} {σ : Type} {B : Type _}
     (impl₁ impl₂ : QueryImpl spec (StateT σ ProbComp))
     (Inv : σ → B → Prop)
     (canQuery : spec.Domain → B → Prop)

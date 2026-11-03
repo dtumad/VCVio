@@ -130,7 +130,7 @@ instance (α : Type) [Unique α] : SampleableType α where
     simp
 
 /-- A sum of oracle specs with sampleable ranges again has sampleable ranges. -/
-instance {ι ι'} {spec : OracleSpec ι} {spec' : OracleSpec ι'}
+instance {spec : OracleSpec} {spec' : OracleSpec}
     [h : ∀ t, SampleableType (spec.Range t)] [h' : ∀ t, SampleableType (spec'.Range t)] :
     ∀ t, SampleableType ((spec + spec').Range t)
   | .inl t => h t
@@ -194,7 +194,7 @@ than an `instance` to avoid overlap with `FinEnum.SampleableType`. -/
 definition rather than an instance so it cannot compete with executable samplers for particular
 dependent function types. -/
 @[reducible] noncomputable def SampleableType.piOfFintype
-    {ι : Type} [Fintype ι] (α : ι → Type)
+    [Fintype spec.Domain] (α : spec.Domain → Type)
     [∀ i, Fintype (α i)] [∀ i, Nonempty (α i)] : SampleableType (∀ i, α i) := by
   classical
   exact SampleableType.ofFintype _
@@ -293,11 +293,11 @@ instance instSampleableTypeListVector {α : Type} {n : ℕ} [SampleableType α] 
     SampleableType (List.Vector α n) :=
   SampleableType.ofEquiv (Equiv.vectorEquivFin α n).symm
 
-/-- Select a uniform element from `Matrix ι κ α` by independently selecting an entry for each
+/-- Select a uniform element from `Matrix spec.Domain κ α` by independently selecting an entry for each
 `(i, j)`. Both index types only need to be `FinEnum`. -/
-instance instSampleableTypeMatrix {α ι κ : Type} [FinEnum ι] [FinEnum κ] [SampleableType α] :
-    SampleableType (Matrix ι κ α) :=
-  inferInstanceAs (SampleableType (ι → κ → α))
+instance instSampleableTypeMatrix {α spec.Domain κ : Type} [FinEnum spec.Domain] [FinEnum κ] [SampleableType α] :
+    SampleableType (Matrix spec.Domain κ α) :=
+  inferInstanceAs (SampleableType (spec.Domain → κ → α))
 
 /-- Discoverability wrapper: `SampleableType (α ⊕ β)` follows from `FinEnum` on each side
 plus nonemptiness of the sum, via Mathlib's `FinEnum.sum` instance and
@@ -369,7 +369,7 @@ section UniformSampleImpl
 
 open OracleSpec OracleComp
 
-variable {ι : Type*} {spec : OracleSpec ι}
+variable {spec : OracleSpec}
 
 /-- Given that the output type of all oracles has a `SampleableType` instance, replace all queries
 with uniformly random responses by calling the corresponding `uniformSample` at each query. -/

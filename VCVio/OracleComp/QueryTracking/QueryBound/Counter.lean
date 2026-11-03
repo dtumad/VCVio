@@ -38,13 +38,13 @@ open OracleSpec
 
 namespace OracleComp
 
-variable {ι ι' : Type} {spec : OracleSpec ι} {spec' : OracleSpec ι'} {α : Type}
+variable {spec : OracleSpec} {spec' : OracleSpec} {α : Type}
 
 /-- Run a `p`-bounded-by-`q` computation under a stateful handler extended by a counter that
 grows by at most one on each `p`-query and does not grow on any other query. On every output of
 the run, the counter exceeds its initial value by at most `q`. -/
 theorem IsQueryBoundP.cnt_le_of_mem_support_run_extendState {σ : Type}
-    (so : QueryImpl spec (StateT σ (OracleComp spec'))) {p : ι → Prop} [DecidablePred p]
+    (so : QueryImpl spec (StateT σ (OracleComp spec'))) {p : spec.Domain → Prop} [DecidablePred p]
     {aux : (t : spec.Domain) → σ → spec.Range t → σ → ℕ → ℕ}
     (haux : ∀ t s u s' c, aux t s u s' c ≤ c + if p t then 1 else 0)
     {oa : OracleComp spec α} {q : ℕ} (h : IsQueryBoundP oa p q) {s : σ} {c : ℕ}
@@ -67,7 +67,7 @@ namespace QueryImpl
 
 open OracleComp
 
-variable {ι ι' κ : Type} {spec : OracleSpec ι} {spec' : OracleSpec ι'} {σ : Type}
+variable {κ : Type} {spec : OracleSpec} {spec' : OracleSpec} {σ : Type}
 
 /-- A stateful handler *caches only its query's point*: the cache `cached s ⊆ κ` read off its
 state grows, on each step, by at most the point `pt t` of the step's query, and by nothing on a

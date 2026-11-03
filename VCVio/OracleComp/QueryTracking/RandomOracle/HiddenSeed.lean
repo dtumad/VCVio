@@ -111,11 +111,11 @@ open scoped ENNReal
 
 namespace OracleSpec
 
-variable {ι : Type} (pub : OracleSpec ι) (X R : Type)
+variable (pub : OracleSpec) (X R : Type)
 
 /-- Programs with uniform sampling, a public random oracle `pub`, and derivation queries
 `X →ₒ R`. -/
-abbrev withDerivations : OracleSpec ((ℕ ⊕ ι) ⊕ X) := unifSpec + pub + (X →ₒ R)
+abbrev withDerivations : OracleSpec ((ℕ ⊕ pub.Domain) ⊕ X) := unifSpec + pub + (X →ₒ R)
 
 /-- The handler forwarding each sampling and public query unchanged into
 `pub.withDerivations X R`. -/
@@ -127,9 +127,9 @@ end OracleSpec
 
 /-- An injective, secret-keyed encoding of derivation inputs as public oracle inputs, each
 answered in `R`. -/
-structure SecretEncoding {ι : Type} (pub : OracleSpec ι) (S X R : Type) where
+structure SecretEncoding (pub : OracleSpec) (S X R : Type) where
   /-- The public oracle input at which the derivation of `x` under secret `s` is read. -/
-  enc : S → X → ι
+  enc : S → X → pub.Domain
   /-- The public oracle answers every encoded point in `R`. -/
   range_eq : ∀ s x, pub.Range (enc s x) = R
   /-- Distinct derivation inputs have distinct encodings. -/
@@ -137,10 +137,10 @@ structure SecretEncoding {ι : Type} (pub : OracleSpec ι) (S X R : Type) where
 
 namespace SecretEncoding
 
-variable {ι : Type} {pub : OracleSpec ι} {S X R : Type} (E : SecretEncoding pub S X R)
+variable {pub : OracleSpec} {S X R : Type} (E : SecretEncoding pub S X R)
 
 /-- Every point witnessed as an encoding is answered in `R`. -/
-theorem range_eq_of_enc_eq {s : S} {x : X} {t : ι} (h : E.enc s x = t) : pub.Range t = R :=
+theorem range_eq_of_enc_eq {s : S} {x : X} {t : pub.Domain} (h : E.enc s x = t) : pub.Range t = R :=
   h ▸ E.range_eq s x
 
 /-! ## Encoded points of a public cache -/
@@ -150,7 +150,7 @@ point encoded under the secret with probability at most `ε` times the number of
 in `D`, where `D` contains every encoded point and `ε` bounds, for every public point, the chance
 that it encodes some derivation under the secret. -/
 theorem prEvent_exists_isSome_apply_enc_le {ms : ProbComp S} {ε : ℝ≥0∞}
-    (hε : ∀ t, Pr{let s ← ms}[t ∈ Set.range (E.enc s)] ≤ ε) {D : Set ι}
+    (hε : ∀ t, Pr{let s ← ms}[t ∈ Set.range (E.enc s)] ≤ ε) {D : Set pub.Domain}
     (hD : ∀ s x, E.enc s x ∈ D) (C : pub.QueryCache) :
     Pr{let s ← ms}[∃ x, (C (E.enc s x)).isSome] ≤
       ε * ((D ∩ {t | (C t).isSome}).encard : ℝ≥0∞) :=
@@ -160,7 +160,7 @@ theorem prEvent_exists_isSome_apply_enc_le {ms : ProbComp S} {ε : ℝ≥0∞}
 /-! ## Split state: public cache, derivation table, flag -/
 
 /-- The public cache off the encoded points, paired with the derivation table. -/
-abbrev SplitCache (pub : OracleSpec ι) (X R : Type) := pub.QueryCache × (X →ₒ R).QueryCache
+abbrev SplitCache (pub : OracleSpec) (X R : Type) := pub.QueryCache × (X →ₒ R).QueryCache
 
 open Classical in
 /-- Rebuild the real public cache from a split state: an encoded point `E.enc s x` reads the
@@ -170,7 +170,7 @@ noncomputable def merge (s : S) (st : SplitCache pub X R) : pub.QueryCache :=
     (st.2 h.choose).map (cast (E.range_eq_of_enc_eq h.choose_spec).symm) else st.1 t
 
 /-- The merged cache at an encoded point reads the table at any witness of the encoding. -/
-theorem merge_apply_of_enc_eq (s : S) (st : SplitCache pub X R) {x : X} {t : ι}
+theorem merge_apply_of_enc_eq (s : S) (st : SplitCache pub X R) {x : X} {t : pub.Domain}
     (hx : E.enc s x = t) :
     (E.merge s st) t = (st.2 x).map (cast (E.range_eq_of_enc_eq hx).symm) := by
   have key : ∀ y (hy : E.enc s y = t),
@@ -192,7 +192,7 @@ theorem merge_apply_enc (s : S) (st : SplitCache pub X R) (x : X) :
   E.merge_apply_of_enc_eq s st rfl
 
 /-- The merged cache at a point that encodes nothing reads the public cache. -/
-theorem merge_apply_of_not_exists (s : S) (st : SplitCache pub X R) {t : ι}
+theorem merge_apply_of_not_exists (s : S) (st : SplitCache pub X R) {t : pub.Domain}
     (ht : ¬∃ x, E.enc s x = t) : (E.merge s st) t = st.1 t := by
   simp only [merge, QueryCache.ofFn_apply, ht, ↓reduceDIte]
 
@@ -229,7 +229,7 @@ theorem encodedQuery_eq_true_iff (s : S) (t : (pub.withDerivations X R).Domain) 
   · simp only [encodedQuery, decide_eq_true_eq, Sum.inl.injEq, Sum.inr.injEq]
   · simp only [encodedQuery, Bool.false_eq_true, reduceCtorEq, exists_false]
 
-variable [DecidableEq ι]
+variable [DecidableEq pub.Domain]
 
 /-- Filling the table at `x` fills the merged cache at `E.enc s x`. -/
 theorem merge_cacheQuery_table [DecidableEq X] (s : S) (st : SplitCache pub X R) (x : X)
@@ -250,7 +250,7 @@ theorem merge_cacheQuery_table [DecidableEq X] (s : S) (st : SplitCache pub X R)
       QueryCache.cacheQuery_of_ne _ _ fun h ↦ ht ⟨x, h.symm⟩, E.merge_apply_of_not_exists s _ ht]
 
 /-- Filling the public cache at a point that encodes nothing fills the merged cache there. -/
-theorem merge_cacheQuery_public (s : S) (st : SplitCache pub X R) {t : ι}
+theorem merge_cacheQuery_public (s : S) (st : SplitCache pub X R) {t : pub.Domain}
     (ht : ¬∃ x, E.enc s x = t) (u : pub.Range t) :
     E.merge s (st.1.cacheQuery t u, st.2) = (E.merge s st).cacheQuery t u := by
   refine QueryCache.ext fun t' ↦ ?_
@@ -273,7 +273,7 @@ variable [∀ t, SampleableType (pub.Range t)]
   | .inl t => (unifSpec + pub).query t
   | .inr x => cast (E.range_eq s x) <$> (unifSpec + pub).query (.inr (E.enc s x))
 
-omit [DecidableEq ι] [∀ t, SampleableType (pub.Range t)] in
+omit [DecidableEq pub.Domain] [∀ t, SampleableType (pub.Range t)] in
 /-- Lifting sampling and public queries into the derivation world and then answering through
 `E.deriveImpl s` is the identity handler: a lifted program makes no derivation query. -/
 theorem deriveImpl_comp_withDerivationsLift (s : S) :
@@ -281,7 +281,7 @@ theorem deriveImpl_comp_withDerivationsLift (s : S) :
   funext t
   rcases t with n | t <;> rfl
 
-omit [DecidableEq ι] [∀ t, SampleableType (pub.Range t)] in
+omit [DecidableEq pub.Domain] [∀ t, SampleableType (pub.Range t)] in
 /-- Answering a lifted probabilistic computation through `E.deriveImpl s` gives the same
 computation, lifted into sampling and public queries. -/
 theorem simulateQ_deriveImpl_liftM (s : S) {α : Type} (oa : ProbComp α) :
@@ -304,7 +304,7 @@ theorem realImpl_run_unif (s : S) (n : ℕ) (C : pub.QueryCache) :
   simp [realImpl, deriveImpl, unifFwdImpl, bind_pure_comp]
 
 /-- The real game answers a public query from its random oracle. -/
-theorem realImpl_run_pub (s : S) (t : ι) (C : pub.QueryCache) :
+theorem realImpl_run_pub (s : S) (t : pub.Domain) (C : pub.QueryCache) :
     (E.realImpl s (.inl (.inr t))).run C = (pub.randomOracle t).run C := by
   simp only [realImpl, deriveImpl, QueryImpl.apply_compose, simulateQ_spec_query]
   rfl
@@ -323,7 +323,7 @@ variable [DecidableEq X]
 
 /-- A public query at the encoded point `t = E.enc s x` in the coupled real game: read or
 fill the derivation table at `x`, and raise the flag. -/
-noncomputable def encodedStep (s : S) {t : ι} (x : X) (hx : E.enc s x = t)
+noncomputable def encodedStep (s : S) {t : pub.Domain} (x : X) (hx : E.enc s x = t)
     (st : SplitCache pub X R × Bool) : ProbComp (pub.Range t × (SplitCache pub X R × Bool)) :=
   match st.1.2 x with
   | some v => pure (cast (E.range_eq_of_enc_eq hx).symm v, (st.1, true))
@@ -350,7 +350,7 @@ noncomputable def coupledImpl (s : S) :
             ((st.1.1, st.1.2.cacheQuery x (cast (E.range_eq s x) u)), st.2))
 
 /-- A public query of the coupled real game at a point `E.enc s x` is the encoded step at `x`. -/
-theorem coupledImpl_run_of_enc_eq (s : S) {x : X} {t : ι} (hx : E.enc s x = t)
+theorem coupledImpl_run_of_enc_eq (s : S) {x : X} {t : pub.Domain} (hx : E.enc s x = t)
     (st : SplitCache pub X R × Bool) :
     (E.coupledImpl s (.inl (.inr t))).run st = E.encodedStep s x hx st := by
   simp only [coupledImpl, StateT.run_mk]
@@ -365,7 +365,7 @@ theorem coupledImpl_run_of_enc_eq (s : S) {x : X} {t : ι} (hx : E.enc s x = t)
 
 /-- A public query of the coupled real game at a point that encodes nothing is answered from the
 public cache. -/
-theorem coupledImpl_run_of_not_exists (s : S) {t : ι} (ht : ¬∃ x, E.enc s x = t)
+theorem coupledImpl_run_of_not_exists (s : S) {t : pub.Domain} (ht : ¬∃ x, E.enc s x = t)
     (st : SplitCache pub X R × Bool) :
     (E.coupledImpl s (.inl (.inr t))).run st =
       (fun z => (z.1, ((z.2, st.1.2), st.2))) <$> (pub.randomOracle t).run st.1.1 := by
@@ -442,12 +442,12 @@ theorem idealImpl_run_derive_none {x : X} {st : SplitCache pub X R} (h : st.2 x 
   simp [idealImpl, h]
 
 /-- The ideal game reads a cached public answer from its public cache. -/
-theorem idealImpl_run_pub_some {t : ι} {st : SplitCache pub X R} {v : pub.Range t}
+theorem idealImpl_run_pub_some {t : pub.Domain} {st : SplitCache pub X R} {v : pub.Range t}
     (h : st.1 t = some v) : (idealImpl pub X R (.inl (.inr t))).run st = pure (v, st) := by
   simp [idealImpl, h]
 
 /-- The ideal game draws an uncached public answer uniformly and caches it. -/
-theorem idealImpl_run_pub_none {t : ι} {st : SplitCache pub X R} (h : st.1 t = none) :
+theorem idealImpl_run_pub_none {t : pub.Domain} {st : SplitCache pub X R} (h : st.1 t = none) :
     (idealImpl pub X R (.inl (.inr t))).run st =
       (fun u ↦ (u, (st.1.cacheQuery t u, st.2))) <$> ($ᵗ pub.Range t) := by
   simp [idealImpl, h]
@@ -558,7 +558,7 @@ theorem prEvent_realImpl_le_add (s : S) {α : Type} (oa : OracleComp (pub.withDe
 step or is the point of a public query. -/
 theorem isSome_fst_apply_iff_of_mem_support_idealImpl {t : (pub.withDerivations X R).Domain}
     {st : SplitCache pub X R} {w : (pub.withDerivations X R).Range t × SplitCache pub X R}
-    (hw : w ∈ support ((idealImpl pub X R t).run st)) (t' : ι) :
+    (hw : w ∈ support ((idealImpl pub X R t).run st)) (t' : pub.Domain) :
     (w.2.1 t').isSome ↔ (st.1 t').isSome ∨ .inl (.inr t') = t := by
   rcases t with (n | t) | x
   · simp only [idealImpl, StateT.run_mk, support_map, Set.mem_image] at hw
@@ -634,7 +634,7 @@ theorem idealImpl_cachesOnlyQueryPoint :
 
 /-- A step of the ideal game caches at most one new point of a set `D`, and none unless the step is
 a query of a predicate `p` holding at every public query at a point of `D`. -/
-theorem encard_inter_setOf_isSome_le_add_of_mem_support_idealImpl {D : Set ι}
+theorem encard_inter_setOf_isSome_le_add_of_mem_support_idealImpl {D : Set pub.Domain}
     {p : (pub.withDerivations X R).Domain → Prop} [DecidablePred p]
     (hp : ∀ t ∈ D, p (.inl (.inr t))) {t : (pub.withDerivations X R).Domain}
     {st : SplitCache pub X R} {w : (pub.withDerivations X R).Range t × SplitCache pub X R}
@@ -647,7 +647,7 @@ theorem encard_inter_setOf_isSome_le_add_of_mem_support_idealImpl {D : Set ι}
 /-- Under a charged predicate holding at every public query at a point of a set `D`, the expected
 number of points of `D` in the final public cache of the ideal game, run from empty states, is at
 most the expected number of charged queries of that run. -/
-theorem lintegral_encard_inter_setOf_isSome_le_expectedSimulatedQueryCount {D : Set ι}
+theorem lintegral_encard_inter_setOf_isSome_le_expectedSimulatedQueryCount {D : Set pub.Domain}
     {p : (pub.withDerivations X R).Domain → Prop} [DecidablePred p]
     (hp : ∀ t ∈ D, p (.inl (.inr t))) {α : Type} (oa : OracleComp (pub.withDerivations X R) α) :
     ∫⁻ r, r ∂𝒟[(fun z : α × SplitCache pub X R ↦ ((D ∩ {t | (z.2.1 t).isSome}).encard : ℝ≥0∞)) <$>
@@ -715,7 +715,7 @@ theorem prEvent_flaggedIdealImpl_le_mul_expectedSimulatedQueryCount {ms : ProbCo
       let s ← ms
       let z ← (simulateQ (E.flaggedIdealImpl s) oa).run ((∅, ∅), false)}[z.2.2 = true] ≤
       ε * expectedSimulatedQueryCount (idealImpl pub X R) p oa (∅, ∅) := by
-  let D : Set ι := ⋃ s, Set.range (E.enc s)
+  let D : Set pub.Domain := ⋃ s, Set.range (E.enc s)
   have hD : ∀ t ∈ D, p (.inl (.inr t)) := fun t ht ↦ by
     obtain ⟨s, x, rfl⟩ := Set.mem_iUnion.1 ht
     exact hp s x
@@ -864,7 +864,7 @@ namespace OracleComp
 
 /-- A probabilistic computation lifted into `pub.withDerivations X R` makes no `p`-query when no
 uniform-sampling query satisfies `p`. -/
-theorem isQueryBoundP_liftM_withDerivations {ι : Type} {pub : OracleSpec ι} {X R : Type}
+theorem isQueryBoundP_liftM_withDerivations {pub : OracleSpec} {X R : Type}
     {p : (pub.withDerivations X R).Domain → Prop} [DecidablePred p]
     (hp : ∀ n, ¬ p (.inl (.inl n))) {α : Type} (oa : ProbComp α) :
     IsQueryBoundP (liftM oa : OracleComp (pub.withDerivations X R) α) p 0 := by

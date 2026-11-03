@@ -61,13 +61,13 @@ open OracleSpec PFunctor PFunctor.DynSystem
 
 namespace OracleComp
 
-variable {ι : Type u} {spec : OracleSpec.{u, u} ι}
+variable {spec : OracleSpec.{u, u}}
 
 /-- An **oracle machine** with oracle interface `spec`, inputs `α`, and results `β`: a hidden
 state, an initialization, and a step map that either returns a `β` or issues a `spec`-query.
 This is PolyFun's `DynComputation` at the polynomial `spec.toPFunctor`; every generic notion
 (`Implements`, `ImplementsWithin`, `runWith`, `seqComp`, `wrap`, simulations) applies directly. -/
-abbrev OracleMachine (spec : OracleSpec.{u, u} ι) (α : Type u) (β : Type u) : Type _ :=
+abbrev OracleMachine (spec : OracleSpec.{u, u}) (α : Type u) (β : Type u) : Type _ :=
   DynComputation spec.toPFunctor α β
 
 namespace OracleMachine
@@ -122,7 +122,7 @@ upstream namespace so that dot notation on `h : M.ImplementsWithin program k` fi
 
 open OracleComp OracleSpec
 
-variable {ι : Type u} {spec : OracleSpec.{u, u} ι} {α β : Type u}
+variable {spec : OracleSpec.{u, u}} {α β : Type u}
   {m : Type u → Type v} [Monad m]
 
 /-- An implementing machine computes the program through every lawful query implementation:
@@ -144,7 +144,7 @@ theorem runWithInput_ofFn_eq {M : OracleMachine spec α β}
 
 /-- Probabilistic reading: an implementing machine puts no probability mass on fuel
 exhaustion — the `none` branch of the fuelled run through a probabilistic handler is null. -/
-theorem prEvent_none_runWithInput {ι : Type} {spec : OracleSpec.{0, 0} ι} {α β : Type}
+theorem prEvent_none_runWithInput {spec : OracleSpec.{0, 0}} {α β : Type}
     {M : OracleMachine spec α β} {program : α → OracleComp spec β} {k : ℕ}
     (h : M.ImplementsWithin program k) (impl : ProbHandler spec) (x : α) :
     Pr{let y ← M.runWithInput impl k x}[y = none] = 0 := by

@@ -30,8 +30,7 @@ namespace QueryImpl
 /-- Push an outer oracle interpretation through the base monad of a
 `StateT`-valued query implementation. -/
 @[expose]
-def mapStateTBase {ι₀ ι₁ : Type _}
-    {spec₀ : OracleSpec ι₀} {spec₁ : OracleSpec ι₁}
+def mapStateTBase {spec₀ : OracleSpec} {spec₁ : OracleSpec}
     {m : Type u → Type v} [Monad m] {σ : Type u}
     (outer : QueryImpl spec₁ m)
     (inner : QueryImpl spec₀ (StateT σ (OracleComp spec₁))) :
@@ -41,8 +40,7 @@ def mapStateTBase {ι₀ ι₁ : Type _}
 /-- Running a `StateT` handler and then interpreting its base oracle
 computations is the same as first mapping the handler's base through the
 outer interpreter. -/
-theorem simulateQ_mapStateTBase_run {ι₀ ι₁ : Type _}
-    {spec₀ : OracleSpec ι₀} {spec₁ : OracleSpec ι₁}
+theorem simulateQ_mapStateTBase_run {spec₀ : OracleSpec} {spec₁ : OracleSpec}
     {m : Type u → Type v} [Monad m] [LawfulMonad m] {σ : Type u}
     (outer : QueryImpl spec₁ m)
     (inner : QueryImpl spec₀ (StateT σ (OracleComp spec₁)))
@@ -52,8 +50,7 @@ theorem simulateQ_mapStateTBase_run {ι₀ ι₁ : Type _}
   simulateQ_StateT_compose inner outer (outer.mapStateTBase inner) (fun _ _ => rfl) oa s
 
 /-- Output-only corollary of `simulateQ_mapStateTBase_run`. -/
-theorem simulateQ_mapStateTBase_run' {ι₀ ι₁ : Type _}
-    {spec₀ : OracleSpec ι₀} {spec₁ : OracleSpec ι₁}
+theorem simulateQ_mapStateTBase_run' {spec₀ : OracleSpec} {spec₁ : OracleSpec}
     {m : Type u → Type v} [Monad m] [LawfulMonad m] {σ : Type u}
     (outer : QueryImpl spec₁ m)
     (inner : QueryImpl spec₀ (StateT σ (OracleComp spec₁)))
@@ -65,9 +62,8 @@ theorem simulateQ_mapStateTBase_run' {ι₀ ι₁ : Type _}
 /-- Interpreting the base oracle of a stateful query implementation preserves every
 state invariant already preserved by the inner implementation, provided the outer
 interpreter preserves support. -/
-theorem mapStateTBase_preserves_inv {ι₀ ι₁ ι₂ : Type u}
-    {spec₀ : OracleSpec ι₀} {spec₁ : OracleSpec ι₁}
-    {spec₂ : OracleSpec ι₂} {σ : Type u}
+theorem mapStateTBase_preserves_inv {spec₀ : OracleSpec} {spec₁ : OracleSpec}
+    {spec₂ : OracleSpec} {σ : Type u}
     (outer : QueryImpl spec₁ (OracleComp spec₂))
     (inner : QueryImpl spec₀ (StateT σ (OracleComp spec₁)))
     (inv : σ → Prop)
@@ -85,8 +81,7 @@ theorem mapStateTBase_preserves_inv {ι₀ ι₁ ι₂ : Type u}
 two different contexts `σ₁` and `σ₂`, implement the combined set `spec₁ + spec₂` in terms
 of a combined `σ₁ × σ₂` state. -/
 @[expose]
-def parallelStateT {ι₁ : Type u} {ι₂ : Type v}
-    {spec₁ : OracleSpec.{u, w} ι₁} {spec₂ : OracleSpec.{v, w} ι₂}
+def parallelStateT {spec₁ : OracleSpec.{u, w}} {spec₂ : OracleSpec.{v, w}}
     {m : Type w → Type x} [Functor m] {σ₁ σ₂ : Type w}
     (impl₁ : QueryImpl spec₁ (StateT σ₁ m))
     (impl₂ : QueryImpl spec₂ (StateT σ₂ m)) :
@@ -100,14 +95,14 @@ The outer state is the first component of the product; the inner/base state is
 the second component. This is the state-transformer analogue of reassociating
 handler stacks into an explicit joint state before applying projection lemmas. -/
 @[expose]
-def flattenStateT {ι : Type _} {spec : OracleSpec ι}
+def flattenStateT {spec : OracleSpec}
     {m : Type u → Type v} [Monad m] {σ τ : Type u}
     (impl : QueryImpl spec (StateT σ (StateT τ m))) :
     QueryImpl spec (StateT (σ × τ) m) := fun t =>
   StateT.mk fun (s, q) =>
     (fun ((u, s'), q') => (u, (s', q'))) <$> ((impl t).run s |>.run q)
 
-@[simp, grind =] theorem flattenStateT_liftTarget_apply_run {ι : Type _} {spec : OracleSpec ι}
+@[simp, grind =] theorem flattenStateT_liftTarget_apply_run {spec : OracleSpec}
     {m : Type u → Type v} [Monad m] [LawfulMonad m] {σ τ : Type u}
     (impl : QueryImpl spec (StateT τ m)) (t : spec.Domain) (s : σ) (q : τ) :
     ((impl.liftTarget (StateT σ (StateT τ m))).flattenStateT t).run (s, q) =
@@ -117,7 +112,7 @@ def flattenStateT {ι : Type _} {spec : OracleSpec ι}
 /-- Push a `StateT`-valued handler into a deeper `StateT` stack, leaving the new inner state
 untouched: each query runs in the original stack and its result is lifted. -/
 @[expose]
-def liftBase {ι : Type _} {spec : OracleSpec ι}
+def liftBase {spec : OracleSpec}
     {m : Type u → Type v} [Monad m] {σ τ : Type u}
     (impl : QueryImpl spec (StateT σ m)) :
     QueryImpl spec (StateT σ (StateT τ m)) := fun t =>
@@ -125,7 +120,7 @@ def liftBase {ι : Type _} {spec : OracleSpec ι}
 
 /-- Flattening a base-lifted handler leaves the new inner state untouched: the query runs in the
 original stack and the inner state is reattached unchanged. -/
-theorem flattenStateT_liftBase_apply_run {ι : Type _} {spec : OracleSpec ι}
+theorem flattenStateT_liftBase_apply_run {spec : OracleSpec}
     {m : Type u → Type v} [Monad m] [LawfulMonad m] {σ τ : Type u}
     (impl : QueryImpl spec (StateT σ m)) (t : spec.Domain) (s : σ) (q : τ) :
     ((liftBase (τ := τ) impl).flattenStateT t).run (s, q) =
@@ -134,7 +129,7 @@ theorem flattenStateT_liftBase_apply_run {ι : Type _} {spec : OracleSpec ι}
 
 /-- Flattening a stateless handler lifted into a two-level `StateT` stack gives the same handler
 lifted into the flattened stack. -/
-theorem flattenStateT_liftTarget_base {ι : Type _} {spec : OracleSpec ι}
+theorem flattenStateT_liftTarget_base {spec : OracleSpec}
     {m : Type u → Type v} [Monad m] [LawfulMonad m] {σ τ : Type u}
     (impl : QueryImpl spec m) :
     (impl.liftTarget (StateT σ (StateT τ m))).flattenStateT =
@@ -145,14 +140,14 @@ theorem flattenStateT_liftTarget_base {ι : Type _} {spec : OracleSpec ι}
   simp [flattenStateT, StateT.run_monadLift, Functor.map_map]
 
 /-- A stateless handler lifted into `StateT` runs the handler and keeps the state. -/
-theorem liftTarget_apply_run {ι : Type _} {spec : OracleSpec ι}
+theorem liftTarget_apply_run {spec : OracleSpec}
     {m : Type u → Type v} [Monad m] [LawfulMonad m] {σ : Type u}
     (impl : QueryImpl spec m) (t : spec.Domain) (s : σ) :
     ((impl.liftTarget (StateT σ m)) t).run s = (fun u ↦ (u, s)) <$> impl t := by
   simp
 
 /-- A stateless forwarding handler commutes with any change of the state it carries. -/
-theorem run_liftTarget_map_eq {ι : Type _} {spec : OracleSpec ι}
+theorem run_liftTarget_map_eq {spec : OracleSpec}
     {m : Type u → Type v} [Monad m] [LawfulMonad m] {σ₁ σ₂ : Type u}
     (impl : QueryImpl spec m) (f : σ₁ → σ₂) (t : spec.Domain) (s : σ₁) :
     Prod.map id f <$> ((impl.liftTarget (StateT σ₁ m)) t).run s =
@@ -162,8 +157,7 @@ theorem run_liftTarget_map_eq {ι : Type _} {spec : OracleSpec ι}
 /-- Running `(outer.mapStateTBase inner).flattenStateT t` from `(s, q)` simulates
 `(inner t).run s` with `outer` from state `q`, then maps
 `((u, s'), q')` to `(u, (s', q'))`. -/
-@[simp, grind =] theorem flattenStateT_mapStateTBase_apply_run {ι₀ ι₁ : Type _}
-    {spec₀ : OracleSpec ι₀} {spec₁ : OracleSpec ι₁}
+@[simp, grind =] theorem flattenStateT_mapStateTBase_apply_run {spec₀ : OracleSpec} {spec₁ : OracleSpec}
     {m : Type u → Type v} [Monad m] {σ τ : Type u}
     (outer : QueryImpl spec₁ (StateT τ m))
     (inner : QueryImpl spec₀ (StateT σ (OracleComp spec₁)))
@@ -176,8 +170,8 @@ theorem run_liftTarget_map_eq {ι : Type _} {spec : OracleSpec ι}
 /-- Indexed version of `QueryImpl.parallelStateT`. Note that `m` cannot vary with `t`.
 dtumad: The `Function.update` thing is nice but forces `DecidableEq`. -/
 @[expose]
-def piStateT {τ : Type} [DecidableEq τ] {ι : τ → Type v}
-    {spec : (t : τ) → OracleSpec.{v, w} (ι t)}
+def piStateT {τ : Type} [DecidableEq τ] {spec.Domain : τ → Type v}
+    {spec : (t : τ) → OracleSpec.{v, w} (spec.Domain t)}
     {m : Type w → Type x} [Monad m] {σ : τ → Type w}
     (impl : (t : τ) → QueryImpl (spec t) (StateT (σ t) m)) :
     QueryImpl (OracleSpec.sigma spec) (StateT ((t : τ) → σ t) m)
@@ -187,7 +181,7 @@ def piStateT {τ : Type} [DecidableEq τ] {ι : τ → Type v}
 the boolean (bad) flag unchanged. The output value and updated state come from the
 underlying `impl`; the second `Bool` component is preserved verbatim across each query. -/
 @[expose]
-def withBadFlag {ι : Type u} {spec : OracleSpec.{u, v} ι}
+def withBadFlag {spec : OracleSpec.{u, v}}
     {m : Type v → Type w} [Functor m] {σ : Type v}
     (impl : QueryImpl spec (StateT σ m)) :
     QueryImpl spec (StateT (σ × Bool) m) := fun t =>
@@ -197,7 +191,7 @@ def withBadFlag {ι : Type u} {spec : OracleSpec.{u, v} ι}
 the boolean (bad) flag with a predicate `f` evaluated on the pre-state and produced output.
 The flag is monotone: if it was already `true`, it stays `true`. -/
 @[expose]
-def withBadUpdate {ι : Type u} {spec : OracleSpec.{u, v} ι}
+def withBadUpdate {spec : OracleSpec.{u, v}}
     {m : Type v → Type w} [Functor m] {σ : Type v}
     (impl : QueryImpl spec (StateT σ m))
     (f : (t : spec.Domain) → σ → spec.Range t → Bool) :
@@ -206,7 +200,7 @@ def withBadUpdate {ι : Type u} {spec : OracleSpec.{u, v} ι}
 
 /-- Run-shape of `withBadFlag`: the lifted implementation maps the underlying run by tagging
 each `(value, state)` pair with the unchanged bad flag `b`. -/
-@[simp, grind =] lemma withBadFlag_apply_run {ι : Type u} {spec : OracleSpec.{u, v} ι}
+@[simp, grind =] lemma withBadFlag_apply_run {spec : OracleSpec.{u, v}}
     {m : Type v → Type w} [Functor m] {σ : Type v}
     (impl : QueryImpl spec (StateT σ m)) (t : spec.Domain) (s : σ) (b : Bool) :
     (impl.withBadFlag t).run (s, b) =
@@ -214,7 +208,7 @@ each `(value, state)` pair with the unchanged bad flag `b`. -/
 
 /-- Run-shape of `withBadUpdate`: the lifted implementation maps the underlying run by
 appending the OR-updated bad flag `b || f t s vs.1`. -/
-@[simp, grind =] lemma withBadUpdate_apply_run {ι : Type u} {spec : OracleSpec.{u, v} ι}
+@[simp, grind =] lemma withBadUpdate_apply_run {spec : OracleSpec.{u, v}}
     {m : Type v → Type w} [Functor m] {σ : Type v}
     (impl : QueryImpl spec (StateT σ m))
     (f : (t : spec.Domain) → σ → spec.Range t → Bool)
@@ -227,7 +221,7 @@ end QueryImpl
 
 namespace OracleComp
 
-variable {ι : Type*} {spec : OracleSpec ι} {m : Type u → Type v} [Monad m] {σ : Type u}
+variable {spec : OracleSpec} {m : Type u → Type v} [Monad m] {σ : Type u}
 
 /-- Running a base-monad action lifted into `StateT σ m` threads the state `s` through
 unchanged, pairing it with the produced value. -/
@@ -298,7 +292,7 @@ interpreter produces the same distribution as the flattened product-state
 handler, up to reassociating `((output, localState), outerState)` and
 `(output, (localState, outerState))`. -/
 theorem simulateQ_mapStateTBase_run_eq_map_flattenStateT
-    {ι₀ ι₁ : Type _} {spec₀ : OracleSpec ι₀} {spec₁ : OracleSpec ι₁}
+    {spec₀ : OracleSpec} {spec₁ : OracleSpec}
     {m : Type u → Type v} [Monad m] [LawfulMonad m] {σ τ : Type u}
     (outer : QueryImpl spec₁ (StateT τ m))
     (inner : QueryImpl spec₀ (StateT σ (OracleComp spec₁)))
@@ -312,7 +306,7 @@ end OracleComp
 
 namespace OracleComp
 
-variable {ι : Type*} {spec : OracleSpec ι}
+variable {spec : OracleSpec}
 
 section support_simulateQ_StateT
 
@@ -365,7 +359,7 @@ open OracleComp
 under `simulateQ` up to a pure post-map `f`, then so do the `run'`s of the simulated binds from
 any initial state. -/
 lemma StateT.run'_simulateQ_bind_map_eq_of_body
-    {ι : Type} {σ α β γ : Type} {spec : OracleSpec ι}
+    {σ α β γ : Type} {spec : OracleSpec}
     {n : Type → Type} [Monad n] [LawfulMonad n]
     (impl : QueryImpl spec (StateT σ n))
     (oa : OracleComp spec α) (body₁ : α → OracleComp spec β)
@@ -380,7 +374,7 @@ lemma StateT.run'_simulateQ_bind_map_eq_of_body
 /-- Properties of `Option`-valued outputs of an underlying `OracleComp` propagate to elements
 in the support of the simulated, run, and `OptionT`-wrapped version. -/
 lemma OptionT.aux_mem_support_simulateQ_run'
-    {ι σ α : Type} {spec : OracleSpec ι}
+    {spec.Domain σ α : Type} {spec : OracleSpec}
     (impl : QueryImpl spec (StateT σ ProbComp))
     (oa : OracleComp spec (Option α)) (s₀ : σ) (P : α → Prop)
     (h : ∀ x ∈ support oa, ∀ a, x = some a → P a)
@@ -393,7 +387,7 @@ lemma OptionT.aux_mem_support_simulateQ_run'
 namespace OracleComp
 
 /-- Running a bind through a stateful handler runs the continuation from the reached state. -/
-lemma run_simulateQ_bind {ι σ α β : Type} {spec : OracleSpec.{0, 0} ι}
+lemma run_simulateQ_bind {spec.Domain σ α β : Type} {spec : OracleSpec.{0, 0}}
     (impl : QueryImpl spec (StateT σ ProbComp)) (oa : OracleComp spec α)
     (f : α → OracleComp spec β) (s : σ) :
     (simulateQ impl (oa >>= f)).run s =
@@ -401,7 +395,7 @@ lemma run_simulateQ_bind {ι σ α β : Type} {spec : OracleSpec.{0, 0} ι}
   rw [simulateQ_bind, StateT.run_bind]
 
 /-- `run_simulateQ_bind` for the output alone. -/
-lemma run'_simulateQ_bind {ι σ α β : Type} {spec : OracleSpec.{0, 0} ι}
+lemma run'_simulateQ_bind {spec.Domain σ α β : Type} {spec : OracleSpec.{0, 0}}
     (impl : QueryImpl spec (StateT σ ProbComp)) (oa : OracleComp spec α)
     (f : α → OracleComp spec β) (s : σ) :
     (simulateQ impl (oa >>= f)).run' s =

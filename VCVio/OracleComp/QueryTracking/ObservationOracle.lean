@@ -49,7 +49,7 @@ open OracleSpec OracleComp
 
 universe u
 
-variable {ι : Type u} {spec : OracleSpec ι} {Ev : Type u} {ω : Type u} {α β : Type u}
+variable {spec : OracleSpec} {Ev : Type u} {ω : Type u} {α β : Type u}
 
 /-! ### Observation Spec -/
 
@@ -100,7 +100,7 @@ def eraseObsImpl (base : QueryImpl spec m) : QueryImpl (spec + ObsSpec Ev) m
   | .inr _ => pure PUnit.unit
 
 @[simp, grind =]
-lemma eraseObsImpl_inl (base : QueryImpl spec m) (t : ι) :
+lemma eraseObsImpl_inl (base : QueryImpl spec m) (t : spec.Domain) :
     eraseObsImpl (Ev := Ev) base (.inl t) = base t := rfl
 
 @[simp, grind =]

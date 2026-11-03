@@ -25,21 +25,21 @@ open MeasureTheory OracleComp OracleSpec ENNReal Polynomial Prod
 where the bound must be shown to satisfy `IsQueryBound`.
 We also require an explicit list of all oracles used in the computation,
 which is necessary in order to make certain reductions computable. -/
-structure BoundedAdversary {ι : Type u} [DecidableEq ι]
-    (spec : OracleSpec ι) (α β : Type u) where
+structure BoundedAdversary [DecidableEq spec.Domain]
+    (spec : OracleSpec) (α β : Type u) where
   /-- The adversary's computation on an input, with access to the oracles of `spec`. -/
   run : α → OracleComp spec β
   /-- The per-oracle query bound: on every input, `run` queries oracle `i` at most `qb i`
   times. -/
-  qb : ι → ℕ
+  qb : spec.Domain → ℕ
   qb_isQueryBound (x : α) : IsPerIndexQueryBound (run x) (qb)
   /-- The oracles the adversary may query, listed explicitly: exactly those with a nonzero query
   bound. -/
-  activeOracles : List ι
-  mem_activeOracles_iff (i : ι) : i ∈ activeOracles ↔ qb i ≠ 0
+  activeOracles : List spec.Domain
+  mem_activeOracles_iff (i : spec.Domain) : i ∈ activeOracles ↔ qb i ≠ 0
 
 namespace BoundedAdversary
 
-variable {ι : Type u} {spec : OracleSpec ι} {α β : Type u}
+variable {spec : OracleSpec} {α β : Type u}
 
 end BoundedAdversary

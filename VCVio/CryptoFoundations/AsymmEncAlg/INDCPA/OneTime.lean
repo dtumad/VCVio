@@ -27,7 +27,7 @@ variable {m : Type → Type v} [Monad m] {M PK SK C : Type}
 
 section IND_CPA_TwoPhase
 
-variable {ι : Type} {spec : OracleSpec ι}
+variable {spec : OracleSpec}
 
 /-- Two-phase adversary for IND-CPA security. -/
 structure IND_CPA_OneTime_Adversary (encAlg : AsymmEncAlg m M PK SK C) where

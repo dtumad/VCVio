@@ -49,7 +49,7 @@ open OracleSpec
 
 namespace OracleComp
 
-variable {τ ι : Type} {free : OracleSpec.{0, 0} τ} {spec : OracleSpec.{0, 0} ι} {α : Type}
+variable {free : OracleSpec.{0, 0}} {spec : OracleSpec.{0, 0}} {α : Type}
 
 /-! ## The truncation -/
 
@@ -68,18 +68,18 @@ variable (r : ℕ) (k₀ : α)
     truncate (free := free) (spec := spec) r k₀ (pure x) = pure x := by
   rfl
 
-@[simp] lemma truncate_query_bind_inl (n : τ)
+@[simp] lemma truncate_query_bind_inl (n : free.Domain)
     (k : (free + spec.batch).Range (.inl n) → OracleComp (free + spec.batch) α) :
     truncate r k₀ (liftM ((free + spec.batch).query (.inl n)) >>= k) =
       liftM ((free + spec.batch).query (.inl n)) >>= fun u => truncate r k₀ (k u) := by
   rfl
 
-@[simp] lemma truncate_zero_query_bind_inr (ts : List ι)
+@[simp] lemma truncate_zero_query_bind_inr (ts : List spec.Domain)
     (k : (free + spec.batch).Range (.inr ts) → OracleComp (free + spec.batch) α) :
     truncate 0 k₀ (liftM ((free + spec.batch).query (.inr ts)) >>= k) = pure k₀ := by
   rfl
 
-@[simp] lemma truncate_succ_query_bind_inr (ts : List ι)
+@[simp] lemma truncate_succ_query_bind_inr (ts : List spec.Domain)
     (k : (free + spec.batch).Range (.inr ts) → OracleComp (free + spec.batch) α) :
     truncate (r + 1) k₀ (liftM ((free + spec.batch).query (.inr ts)) >>= k) =
       liftM ((free + spec.batch).query (.inr ts)) >>= fun u => truncate r k₀ (k u) := by
@@ -130,13 +130,13 @@ theorem truncate_eq_self_of_isOnlineQueryBound {oa : OracleComp (free + spec.bat
 /-- The rounds a single query submits: none for a query to the free summand, and one for a
 round. -/
 @[expose]
-def roundCount : τ ⊕ List ι → ℕ
+def roundCount : free.Domain ⊕ List spec.Domain → ℕ
   | .inl _ => 0
   | .inr _ => 1
 
-@[simp] lemma roundCount_inl (n : τ) : roundCount (ι := ι) (.inl n) = 0 := rfl
+@[simp] lemma roundCount_inl (n : free.Domain) : roundCount (spec.Domain := spec.Domain) (.inl n) = 0 := rfl
 
-@[simp] lemma roundCount_inr (ts : List ι) : roundCount (τ := τ) (.inr ts) = 1 := rfl
+@[simp] lemma roundCount_inr (ts : List spec.Domain) : roundCount (free.Domain := free.Domain) (.inr ts) = 1 := rfl
 
 variable {m : Type → Type*} [Monad m]
 
@@ -158,7 +158,7 @@ lemma fst_map_runCountingRounds (oa : OracleComp (free + spec.batch) α) :
     runCountingRounds (free := free) (spec := spec) impl (pure x) = pure (x, 0) := by
   simp [runCountingRounds]
 
-lemma runCountingRounds_query_bind (t : τ ⊕ List ι)
+lemma runCountingRounds_query_bind (t : free.Domain ⊕ List spec.Domain)
     (k : (free + spec.batch).Range t → OracleComp (free + spec.batch) α) :
     runCountingRounds impl (liftM ((free + spec.batch).query t) >>= k) =
       impl t >>= fun u =>
@@ -221,11 +221,11 @@ end OracleComp
 
 namespace OracleComp
 
-variable {τ ι : Type} {free : OracleSpec.{0, 0} τ} {spec : OracleSpec.{0, 0} ι} {α : Type}
+variable {free : OracleSpec.{0, 0}} {spec : OracleSpec.{0, 0}} {α : Type}
 
 /-- Simulating the round-counting run of `oa` under `impl` through `so` is the round-counting run
 of `oa` under any handler that answers each query as `so` simulates `impl`'s answer. -/
-lemma simulateQ_runCountingRounds {ι' : Type} {spec' : OracleSpec.{0, 0} ι'}
+lemma simulateQ_runCountingRounds {spec' : OracleSpec.{0, 0}}
     {m : Type → Type*} [Monad m] [LawfulMonad m] (so : QueryImpl spec' m)
     (impl : QueryImpl (free + spec.batch) (OracleComp spec'))
     (impl' : QueryImpl (free + spec.batch) m) (h : ∀ t, simulateQ so (impl t) = impl' t)

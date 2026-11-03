@@ -63,8 +63,8 @@ namespace OracleComp
 /-! ## Preliminaries independent of index decidability -/
 
 /-- The standard forking-lemma precondition is itself a valid probability bound. -/
-theorem seededFork_precondition_le_one {ι : Type} {spec : OracleSpec ι}
-    [OracleSpec.AnswerMeasure spec] {α : Type} (main : OracleComp spec α) (qb : ι → ℕ) (i : ι)
+theorem seededFork_precondition_le_one {spec : OracleSpec}
+    [OracleSpec.AnswerMeasure spec] {α : Type} (main : OracleComp spec α) (qb : spec.Domain → ℕ) (i : spec.Domain)
     [Fintype (spec.Range i)] (cf : α → Option (Fin (qb i + 1))) :
     (let acc : ℝ≥0∞ := ∑ s, Pr{let x ← main}[cf x = some s]
      let h : ℝ≥0∞ := Fintype.card (spec.Range i)
@@ -74,9 +74,9 @@ theorem seededFork_precondition_le_one {ι : Type} {spec : OracleSpec ι}
 
 /-- Guessing a seeded answer with a fresh uniform answer succeeds with probability at most
 `|spec.Range i|⁻¹`. -/
-private lemma prEvent_seedSlot_le_inv {ι : Type} {spec : OracleSpec ι}
+private lemma prEvent_seedSlot_le_inv {spec : OracleSpec}
     [∀ i, SampleableType (spec.Range i)] [unifSpec ⊂ₒ spec] [unifSpec ˡ⊂ₒ spec]
-    [OracleSpec.UniformAnswerMeasure spec] (qb : ι → ℕ) (i : ι) [Fintype (spec.Range i)]
+    [OracleSpec.UniformAnswerMeasure spec] (qb : spec.Domain → ℕ) (i : spec.Domain) [Fintype (spec.Range i)]
     (s : Fin (qb i + 1)) (seed : QuerySeed spec) :
     Pr{let u ← liftComp ($ᵗ spec.Range i) spec}[(seed i)[s]? = some u] ≤
       (Fintype.card (spec.Range i) : ℝ≥0∞)⁻¹ := by
@@ -86,7 +86,7 @@ private lemma prEvent_seedSlot_le_inv {ι : Type} {spec : OracleSpec ι}
   · rw [prEvent_congr _ _ (· = u₀) fun u => by simp [eq_comm]]
     exact (SampleableType.prEvent_uniformSample_eq_singleton u₀).le
 
-variable {ι : Type} [DecidableEq ι] {spec : OracleSpec ι} {α β γ : Type}
+variable [DecidableEq spec.Domain] {spec : OracleSpec} {α β γ : Type}
 
 section forkDef
 
@@ -100,7 +100,7 @@ Returns `none` (failure) when:
 - `cf x₁ = none` (adversary did not choose a fork point)
 - the re-sampled oracle response equals the original (no useful fork)
 - `cf x₂ ≠ cf x₁` (the second run chose a different fork point) -/
-def seededFork (main : OracleComp spec α) (qb : ι → ℕ) (js : List ι) (i : ι)
+def seededFork (main : OracleComp spec α) (qb : spec.Domain → ℕ) (js : List spec.Domain) (i : spec.Domain)
     (cf : α → Option (Fin (qb i + 1))) : OracleComp spec (Option (α × α)) := do
   let seed ← liftComp (generateSeed spec qb js) spec
   let x₁ ← (simulateQ seededOracle main).run' seed
@@ -128,7 +128,7 @@ by `u`. Returns the pair `(x₁, x₂)` when both runs agree on the fork index.
 
 The only remaining randomness comes from `main`'s own oracle queries that fall outside the
 seed (i.e. queries beyond the budget `qb`). -/
-def seededForkWithSeedValue (main : OracleComp spec α) (qb : ι → ℕ) (i : ι)
+def seededForkWithSeedValue (main : OracleComp spec α) (qb : spec.Domain → ℕ) (i : spec.Domain)
     (cf : α → Option (Fin (qb i + 1))) (seed : QuerySeed spec) (u : spec.Range i) :
     OracleComp spec (Option (α × α)) := do
   let x₁ ← (simulateQ seededOracle main).run' seed
@@ -149,7 +149,7 @@ end forkDef
 
 /-- When the seed has at least `qb t` pre-generated answers for each oracle `t`, running `main`
 against the seed makes zero live oracle queries (every query is answered from the seed). -/
-theorem isPerIndexQueryBound_seededOracle_run'_zero (main : OracleComp spec α) (qb : ι → ℕ)
+theorem isPerIndexQueryBound_seededOracle_run'_zero (main : OracleComp spec α) (qb : spec.Domain → ℕ)
     {seed : QuerySeed spec} (hmain : IsPerIndexQueryBound main qb)
     (hseed : ∀ t, qb t ≤ (seed t).length) :
     IsPerIndexQueryBound ((simulateQ seededOracle main).run' seed) 0 :=
@@ -159,7 +159,7 @@ theorem isPerIndexQueryBound_seededOracle_run'_zero (main : OracleComp spec α) 
 the replayed run can make at most `qb i - (s + 1)` live queries, all to oracle `i`.
 All other oracle families remain fully covered by the seed. -/
 theorem isPerIndexQueryBound_seededOracle_run'_takeAtIndex_addValue
-    (main : OracleComp spec α) (qb : ι → ℕ) (i : ι)
+    (main : OracleComp spec α) (qb : spec.Domain → ℕ) (i : spec.Domain)
     {seed : QuerySeed spec} {u : spec.Range i} (hmain : IsPerIndexQueryBound main qb)
     (hseed : ∀ t, qb t ≤ (seed t).length) (s : Fin (qb i + 1)) :
     IsPerIndexQueryBound
@@ -168,13 +168,13 @@ theorem isPerIndexQueryBound_seededOracle_run'_takeAtIndex_addValue
   seededOracle.isPerIndexQueryBound_run'_takeAtIndex_addValue hmain hseed s u
 
 private lemma isPerIndexQueryBound_if_pure {p : Prop} [Decidable p] {oa : OracleComp spec α}
-    {qb : ι → ℕ} {x : α} (h : IsPerIndexQueryBound oa qb) :
+    {qb : spec.Domain → ℕ} {x : α} (h : IsPerIndexQueryBound oa qb) :
     IsPerIndexQueryBound (if p then pure x else oa) qb := by
   split <;> simp [h]
 
 private lemma isPerIndexQueryBound_seededForkWithSeedValue_replayGuard
     [∀ i, DecidableEq (spec.Range i)]
-    (main : OracleComp spec α) (qb : ι → ℕ) (i : ι) (cf : α → Option (Fin (qb i + 1)))
+    (main : OracleComp spec α) (qb : spec.Domain → ℕ) (i : spec.Domain) (cf : α → Option (Fin (qb i + 1)))
     {seed : QuerySeed spec} {u : spec.Range i} (hmain : IsPerIndexQueryBound main qb)
     (hseed : ∀ t, qb t ≤ (seed t).length) (x₁ : α) (s : Fin (qb i + 1)) :
     IsPerIndexQueryBound
@@ -204,7 +204,7 @@ private lemma isPerIndexQueryBound_seededForkWithSeedValue_replayGuard
 The first seeded run is query-free (covered by the seed); the replay after the fork point uses
 at most the remaining `i`-budget. The bound holds regardless of which fork index `cf` returns. -/
 theorem isPerIndexQueryBound_seededForkWithSeedValue
-    [∀ i, DecidableEq (spec.Range i)] (main : OracleComp spec α) (qb : ι → ℕ) (i : ι)
+    [∀ i, DecidableEq (spec.Range i)] (main : OracleComp spec α) (qb : spec.Domain → ℕ) (i : spec.Domain)
     (cf : α → Option (Fin (qb i + 1))) {seed : QuerySeed spec} {u : spec.Range i}
     (hmain : IsPerIndexQueryBound main qb) (hseed : ∀ t, qb t ≤ (seed t).length) :
     IsPerIndexQueryBound (seededForkWithSeedValue main qb i cf seed u)
@@ -212,7 +212,7 @@ theorem isPerIndexQueryBound_seededForkWithSeedValue
   have hfirst :
       IsPerIndexQueryBound ((simulateQ seededOracle main).run' seed) 0 :=
     isPerIndexQueryBound_seededOracle_run'_zero (main := main) (qb := qb) hmain hseed
-  rw [seededForkWithSeedValue, ← zero_add (Function.update (0 : QueryCount ι) i (qb i))]
+  rw [seededForkWithSeedValue, ← zero_add (Function.update (0 : QueryCount spec.Domain) i (qb i))]
   refine isPerIndexQueryBound_bind hfirst fun x₁ => ?_
   cases hcf : cf x₁ with
   | none => exact isPerIndexQueryBound_pure _ _
@@ -226,13 +226,13 @@ variable [∀ i, SampleableType (spec.Range i)]
 variable [OracleSpec.AnswerMeasure spec]
 
 private lemma expectedQueryCount_seededForkWithSeedValue_le_aux
-    [∀ i, DecidableEq (spec.Range i)] [Finite ι]
-    (main : OracleComp spec α) (qb : ι → ℕ) (i : ι)
+    [∀ i, DecidableEq (spec.Range i)] [Finite spec.Domain]
+    (main : OracleComp spec α) (qb : spec.Domain → ℕ) (i : spec.Domain)
     (cf : α → Option (Fin (qb i + 1))) {seed : QuerySeed spec}
     (hmain : IsPerIndexQueryBound main qb) (hseed : ∀ t, qb t ≤ (seed t).length) :
     wp ($ᵗ spec.Range i) (fun u => expectedCost (seededForkWithSeedValue main qb i cf seed u)
       CostModel.unit (fun n : ℕ => (n : ENNReal))) ≤ qb i := by
-  let : Fintype ι := Fintype.ofFinite ι
+  let : Fintype spec.Domain := Fintype.ofFinite spec.Domain
   rw [← wp_const ($ᵗ spec.Range i) (qb i : ENNReal)]
   refine wp_mono _ fun u => ?_
   have hbound := isPerIndexQueryBound_seededForkWithSeedValue
@@ -245,8 +245,8 @@ private lemma expectedQueryCount_seededForkWithSeedValue_le_aux
 /-- The expected unit-cost query count of `seededForkWithSeedValue`, averaged over the randomly
 sampled seed and replacement value, is at most `qb i`. -/
 theorem expectedQueryCount_seededForkWithSeedValue_le
-    [∀ i, DecidableEq (spec.Range i)] [Finite ι]
-    (main : OracleComp spec α) (qb : ι → ℕ) (js : List ι) (i : ι)
+    [∀ i, DecidableEq (spec.Range i)] [Finite spec.Domain]
+    (main : OracleComp spec α) (qb : spec.Domain → ℕ) (js : List spec.Domain) (i : spec.Domain)
     (cf : α → Option (Fin (qb i + 1)))
     (hmain : IsPerIndexQueryBound main qb) (hjs : SeedListCovers qb js) :
     wp (generateSeed spec qb js) (fun seed => wp ($ᵗ spec.Range i)
@@ -263,7 +263,7 @@ theorem expectedQueryCount_seededForkWithSeedValue_le
 section forkRuntime
 
 variable [∀ i, DecidableEq (spec.Range i)]
-variable [Finite ι]
+variable [Finite spec.Domain]
 
 /-- Total expected query work of one fork attempt. The LHS decomposes as three terms:
 
@@ -273,9 +273,9 @@ variable [Finite ι]
 
 The RHS is their sum: `(∑ j in js, qb j * sampleCost j) + sampleCost i + qb i`. -/
 theorem seededForkExpectedQueryWork_le
-    (main : OracleComp spec α) (qb : ι → ℕ) (js : List ι) (i : ι)
+    (main : OracleComp spec α) (qb : spec.Domain → ℕ) (js : List spec.Domain) (i : spec.Domain)
     (cf : α → Option (Fin (qb i + 1)))
-    (sampleCost : ι → ℕ)
+    (sampleCost : spec.Domain → ℕ)
     (hSample :
       ∀ j, AddWriterT.QueryCostExactly
         (probCompUnitQueryRun ($ᵗ spec.Range j : ProbComp (spec.Range j)))
@@ -309,8 +309,8 @@ end generateSeedCoverage
 
 /-! ## The forking bound -/
 
-variable (main : OracleComp spec α) (qb : ι → ℕ)
-    (js : List ι) (i : ι) (cf : α → Option (Fin (qb i + 1)))
+variable (main : OracleComp spec α) (qb : spec.Domain → ℕ)
+    (js : List spec.Domain) (i : spec.Domain) (cf : α → Option (Fin (qb i + 1)))
     [∀ i, SampleableType (spec.Range i)] [unifSpec ⊂ₒ spec]
 
 /-- If `seededFork` succeeds (returns `some`), both runs agree on the fork index. -/

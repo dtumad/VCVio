@@ -37,7 +37,7 @@ open OracleSpec
 
 namespace OracleComp
 
-variable {ι : Type} {pub : OracleSpec ι} {X K R : Type}
+variable {pub : OracleSpec} {X K R : Type}
 
 /-- Touch a cell, if there is one. -/
 @[expose] def touchCell : Option (X ⊕ K) → OracleComp (pub.withLabels X K R) Unit
@@ -106,8 +106,8 @@ namespace CanonicalGraph
 
 open OracleComp
 
-variable {ι : Type} {pub : OracleSpec ι} {X K R : Type} (G : CanonicalGraph pub X K R)
-  [DecidableEq ι] [DecidableEq X] [DecidableEq K] [SampleableType R]
+variable {pub : OracleSpec} {X K R : Type} (G : CanonicalGraph pub X K R)
+  [DecidableEq pub.Domain] [DecidableEq X] [DecidableEq K] [SampleableType R]
   [∀ t, SampleableType (pub.Range t)]
 
 /-- In the eager game a read draws its cell. -/

@@ -351,8 +351,8 @@ lemma gpvVerifyKont_no_sign (pk : PK) (out : M × (Salt × Domain)) :
 message is fresh iff it is not among the logged signing inputs. This is the pointwise identity that
 lets the WriterT-log-keyed mask of the unforgeability experiment be read off the `Finset M`
 signed-set carried by `gpvRealImplFlagFresh`. -/
-lemma not_wasQueried_eq_decide_not_mem_toFinset {κ : Type} {spec : OracleSpec κ}
-    [DecidableEq κ] (log : QueryLog spec) (t : spec.Domain) :
+lemma not_wasQueried_eq_decide_not_mem_toFinset {spec : OracleSpec}
+    [DecidableEq spec.Domain] (log : QueryLog spec) (t : spec.Domain) :
     (!log.wasQueried t) = decide (t ∉ (log.map (fun e => e.1)).toFinset) := by
   rw [QueryLog.wasQueried_eq_decide_mem_map_fst]
   simp only [List.mem_toFinset, decide_not]
@@ -464,7 +464,7 @@ simulated by the lifted identity implementation (`QueryImpl.simulateQ_add_liftCo
 `hashImpl` summand on the lifted sub-computation, `simulateQ_ofLift_liftTarget_run` runs it as
 `(·, ∅) <$> oa`), so its draws commute straight out of the bundle. This is the GPV-runtime keygen
 peel of the game identification. -/
-theorem withStateOracle_run'_liftM_bind {ι : Type} {hashSpec : OracleSpec ι}
+theorem withStateOracle_run'_liftM_bind {hashSpec : OracleSpec}
     (hashImpl : QueryImpl hashSpec (StateT hashSpec.QueryCache ProbComp))
     {α β : Type} (oa : ProbComp α)
     (rest : α → OracleComp (unifSpec + hashSpec) β) :

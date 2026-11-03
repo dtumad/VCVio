@@ -27,7 +27,7 @@ universe u v
 
 namespace FinRatPMF
 
-variable {ι : Type u} {spec : OracleSpec ι}
+variable {spec : OracleSpec}
 
 /-- Computable query implementation using the executable `FinRatPMF.Raw` monad. -/
 def finRatImpl [∀ t, Inhabited (spec.Range t)] [∀ t : spec.Domain, FinEnum (spec.Range t)] :
@@ -84,7 +84,7 @@ end finRatImpl
 namespace finRatImpl
 
 /-- Final event checks have the same probability under executable and oracle evaluation. -/
-lemma prEvent_simulateQ {ι : Type u} {spec : OracleSpec.{u, 0} ι}
+lemma prEvent_simulateQ {spec : OracleSpec.{u, 0}}
     [UniformAnswerMeasure spec] [∀ t, Inhabited (spec.Range t)]
     [∀ t : spec.Domain, FinEnum (spec.Range t)]
     {α : Type} (oa : OracleComp spec α) (p : α → Prop) :

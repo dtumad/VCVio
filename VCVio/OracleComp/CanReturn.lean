@@ -23,7 +23,7 @@ universe u v
 
 namespace OracleComp
 
-variable {ι : Type u} {α : Type v} {spec : OracleSpec.{u, v} ι}
+variable {α : Type v} {spec : OracleSpec.{u, v}}
 
 /-- Generic exact return reachability agrees with the oracle support interpretation. -/
 theorem canReturn_iff_mem_support (program : OracleComp spec α) (value : α) :

@@ -41,7 +41,7 @@ open scoped ENNReal
 
 namespace CanonicalGraph
 
-variable {ι : Type} {pub : OracleSpec ι} {X K R : Type}
+variable {pub : OracleSpec} {X K R : Type}
 
 /-! ## Projected hits -/
 
@@ -54,9 +54,9 @@ it is read, and reads an answer at a point in `R`; at a point at a node's key th
 uniform answer takes any value with probability at most `1 / |R|`. -/
 structure ProjKeys (G : CanonicalGraph pub X K R) where
   /-- The node at whose key a public point is read, if any. -/
-  node : ι → Option K
+  node : pub.Domain → Option K
   /-- The reading of an answer in `R`. -/
-  proj : (t : ι) → pub.Range t → R
+  proj : (t : pub.Domain) → pub.Range t → R
   /-- At a point at a node's key, the reading of a uniform answer is at most uniform. -/
   prEvent_proj_le : ∀ t k, node t = some k → ∀ ℓ : R,
     Pr{let u ← $ᵗ pub.Range t}[proj t u = ℓ] ≤ (Nat.card R : ℝ≥0∞)⁻¹
@@ -71,11 +71,11 @@ whose reading is the drawn label of `k`. -/
   ∃ t k ℓ v, pk.node t = some k ∧ st.2 (.inr k) = some ℓ ∧ st.1 t = some v ∧ pk.proj t v = ℓ
 
 /-- The public entries at the key of a node whose label is drawn. -/
-def labelledEntries (st : RelabelState pub X K R) : Set ι :=
+def labelledEntries (st : RelabelState pub X K R) : Set pub.Domain :=
   {t | (st.1 t).isSome ∧ ∃ k, pk.node t = some k ∧ (st.2 (.inr k)).isSome}
 
 /-- The public entries at the key of some node. -/
-@[expose] def keyEntries (C : pub.QueryCache) : Set ι :=
+@[expose] def keyEntries (C : pub.QueryCache) : Set pub.Domain :=
   {t | (C t).isSome ∧ (pk.node t).isSome}
 
 /-- The projected potential: the public entries at the key of a node whose label is drawn, over
@@ -149,8 +149,8 @@ private theorem exists_cell_charge [SampleableType R] [DecidableEq X] [Decidable
 /-- A fresh public answer out of a state with no projected hit fires one with probability at
 most the weight it adds to the potential: `1 / |R|` if its point is at the key of a node whose
 label is drawn, and `0` otherwise. -/
-private theorem exists_pub_charge [DecidableEq ι] {st : RelabelState pub X K R}
-    (hst : ¬pk.ProjHazard st) {t : ι} (ht : st.1 t = none) :
+private theorem exists_pub_charge [DecidableEq pub.Domain] {st : RelabelState pub X K R}
+    (hst : ¬pk.ProjHazard st) {t : pub.Domain} (ht : st.1 t = none) :
     ∃ w : ℝ≥0∞, Pr{let u ← $ᵗ pub.Range t}[pk.ProjHazard (st.1.cacheQuery t u, st.2)] ≤ w ∧
       ∀ u, w + pk.potential st ≤ pk.potential (st.1.cacheQuery t u, st.2) := by
   have hle : ∀ u : pub.Range t, st ≤ (st.1.cacheQuery t u, st.2) :=
@@ -193,7 +193,7 @@ private theorem exists_pub_charge [DecidableEq ι] {st : RelabelState pub X K R}
 variable (pk) in
 /-- **Projected hits are charged to the projected potential**, once per entry: at the label's
 draw if the entry is older, at the answer if it is newer. -/
-theorem isCharged [SampleableType R] [DecidableEq ι] [DecidableEq X] [DecidableEq K] :
+theorem isCharged [SampleableType R] [DecidableEq pub.Domain] [DecidableEq X] [DecidableEq K] :
     G.IsCharged pk.ProjHazard pk.potential where
   mono := potential_mono
   cell _ _ hst hc := exists_cell_charge hst hc
@@ -270,7 +270,7 @@ private theorem exists_pair_charge (hne : c₁ ≠ c₂) {st : RelabelState pub 
 
 variable [∀ t, SampleableType (pub.Range t)] (G : CanonicalGraph pub X K R) in
 /-- **Two distinct cells drawn equal are charged `1 / |R|`**, when the second of them is drawn. -/
-theorem isCharged_pairHazard [DecidableEq ι] (hne : c₁ ≠ c₂) :
+theorem isCharged_pairHazard [DecidableEq pub.Domain] (hne : c₁ ≠ c₂) :
     G.IsCharged (PairHazard X K R c₁ c₂) (pairPotential c₁ c₂) where
   mono := pairPotential_mono
   cell st c hst hc := by

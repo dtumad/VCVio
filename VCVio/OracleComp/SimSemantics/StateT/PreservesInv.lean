@@ -68,41 +68,41 @@ namespace QueryImpl
 /-- `PreservesInv impl Inv` means every oracle query implementation step preserves `Inv`
 on all reachable post-states (support-based): each `impl t` is a `StateT.PreservesInv`
 computation. -/
-def PreservesInv {ι : Type} {spec : OracleSpec ι} {σ : Type}
+def PreservesInv {spec : OracleSpec} {σ : Type}
     (impl : QueryImpl spec (StateT σ ProbComp)) (Inv : σ → Prop) : Prop :=
   ∀ t, StateT.PreservesInv (impl t) Inv
 
-lemma preservesInv_iff {ι : Type} {spec : OracleSpec ι} {σ : Type}
+lemma preservesInv_iff {spec : OracleSpec} {σ : Type}
     (impl : QueryImpl spec (StateT σ ProbComp)) (Inv : σ → Prop) :
     PreservesInv impl Inv ↔ ∀ t, StateT.PreservesInv (impl t) Inv :=
   Iff.rfl
 
-lemma PreservesInv.trivial {ι : Type} {spec : OracleSpec ι} {σ : Type}
+lemma PreservesInv.trivial {spec : OracleSpec} {σ : Type}
     (impl : QueryImpl spec (StateT σ ProbComp)) :
     PreservesInv impl (fun _ => True) :=
   fun _ _ _ _ _ => True.intro
 
-lemma PreservesInv.and {ι : Type} {spec : OracleSpec ι} {σ : Type}
+lemma PreservesInv.and {spec : OracleSpec} {σ : Type}
     {impl : QueryImpl spec (StateT σ ProbComp)} {P Q : σ → Prop}
     (hP : PreservesInv impl P) (hQ : PreservesInv impl Q) :
     PreservesInv impl (fun s => P s ∧ Q s) :=
   fun t σ0 ⟨hp, hq⟩ z hz => ⟨hP t σ0 hp z hz, hQ t σ0 hq z hz⟩
 
-lemma PreservesInv.of_forall {ι : Type} {spec : OracleSpec ι} {σ : Type}
+lemma PreservesInv.of_forall {spec : OracleSpec} {σ : Type}
     {impl : QueryImpl spec (StateT σ ProbComp)} {Inv : σ → Prop}
     (h : ∀ t σ0 z, z ∈ support ((impl t).run σ0) → Inv z.2) :
     PreservesInv impl Inv :=
   fun t σ0 _ z hz => h t σ0 z hz
 
 /-- A sum of implementations preserves `Inv` when both summands do. -/
-lemma PreservesInv.add {ι₁ ι₂ : Type} {spec₁ : OracleSpec ι₁} {spec₂ : OracleSpec ι₂} {σ : Type}
+lemma PreservesInv.add {spec₁ : OracleSpec} {spec₂ : OracleSpec} {σ : Type}
     {impl₁ : QueryImpl spec₁ (StateT σ ProbComp)} {impl₂ : QueryImpl spec₂ (StateT σ ProbComp)}
     {Inv : σ → Prop} (h₁ : PreservesInv impl₁ Inv) (h₂ : PreservesInv impl₂ Inv) :
     PreservesInv (impl₁ + impl₂) Inv
   | .inl t => by rw [add_apply_inl]; exact h₁ t
   | .inr t => by rw [add_apply_inr]; exact h₂ t
 
-lemma preservesInv_add_iff {ι₁ ι₂ : Type} {spec₁ : OracleSpec ι₁} {spec₂ : OracleSpec ι₂}
+lemma preservesInv_add_iff {spec₁ : OracleSpec} {spec₂ : OracleSpec}
     {σ : Type} (impl₁ : QueryImpl spec₁ (StateT σ ProbComp))
     (impl₂ : QueryImpl spec₂ (StateT σ ProbComp)) (Inv : σ → Prop) :
     PreservesInv (impl₁ + impl₂) Inv ↔ PreservesInv impl₁ Inv ∧ PreservesInv impl₂ Inv :=
@@ -111,7 +111,7 @@ lemma preservesInv_add_iff {ι₁ ι₂ : Type} {spec₁ : OracleSpec ι₁} {sp
 
 /-- A handler preserving an invariant still preserves it, read on the base state, after being
 extended by a passive auxiliary state. -/
-theorem PreservesInv.extendState {ι : Type} {spec : OracleSpec ι} {σ Q : Type}
+theorem PreservesInv.extendState {spec : OracleSpec} {σ Q : Type}
     {impl : QueryImpl spec (StateT σ ProbComp)} {Inv : σ → Prop} (h : PreservesInv impl Inv)
     (aux : (t : spec.Domain) → σ → spec.Range t → σ → Q → Q) :
     PreservesInv (impl.extendState aux) fun st ↦ Inv st.1 := by
@@ -130,7 +130,7 @@ open QueryImpl
 /-- If `impl` preserves `Inv`, then simulating *any* oracle computation with `simulateQ impl`
 preserves `Inv` on the final state (support-wise). -/
 theorem simulateQ_run_preservesInv
-    {ι : Type} {spec : OracleSpec ι} {σ α : Type}
+    {spec : OracleSpec} {σ α : Type}
     (impl : QueryImpl spec (StateT σ ProbComp)) (Inv : σ → Prop)
     (himpl : QueryImpl.PreservesInv impl Inv) :
     ∀ oa : OracleComp spec α,
@@ -157,8 +157,8 @@ theorem simulateQ_run_preservesInv
 /-- A relation `Inv` between the state of an inner handler and the state of an outer handler is
 preserved by running a computation through the inner handler and then the result through the
 outer one, when it is preserved by running each inner step through the outer handler. -/
-theorem simulateQ_run_simulateQ_run_preservesInv {ι₀ ι₁ ι₂ : Type} {spec₀ : OracleSpec ι₀}
-    {spec₁ : OracleSpec ι₁} {spec₂ : OracleSpec ι₂} {σ τ α : Type}
+theorem simulateQ_run_simulateQ_run_preservesInv {spec₀ : OracleSpec}
+    {spec₁ : OracleSpec} {spec₂ : OracleSpec} {σ τ α : Type}
     (outer : QueryImpl spec₁ (StateT τ (OracleComp spec₂)))
     (inner : QueryImpl spec₀ (StateT σ (OracleComp spec₁))) (Inv : σ → τ → Prop)
     (hstep : ∀ t s q, Inv s q →
@@ -181,7 +181,7 @@ end OracleComp
 namespace QueryImpl
 
 /-- If `so'` preserves `Inv`, then `so' ∘ₛ so` also preserves `Inv` for any `so`. -/
-lemma PreservesInv.compose {ι ι' : Type} {spec : OracleSpec ι} {spec' : OracleSpec ι'}
+lemma PreservesInv.compose {spec : OracleSpec} {spec' : OracleSpec}
     {σ : Type} {so' : QueryImpl spec' (StateT σ ProbComp)}
     {so : QueryImpl spec (OracleComp spec')} {Inv : σ → Prop}
     (h : PreservesInv so' Inv) :

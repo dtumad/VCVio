@@ -26,7 +26,7 @@ namespace OracleComp
 
 /-- A repeated computation denotes a measure-valued bind of its first result and the
 remaining list. -/
-theorem evalDist_replicate_succ {ι : Type} {spec : OracleSpec ι} {α : Type}
+theorem evalDist_replicate_succ {spec : OracleSpec} {α : Type}
     [EvalDistSemantics (OracleComp spec)] [LawfulEvalDistSemantics (OracleComp spec)]
     [MeasurableSpace α] [DiscreteMeasurableSpace α] [MeasurableSpace (List α)]
     (oa : OracleComp spec α) (n : ℕ)
@@ -40,7 +40,7 @@ theorem evalDist_replicate_succ {ι : Type} {spec : OracleSpec ι} {α : Type}
     (evalDist_map (oa.replicate n) (hcons x))
 
 /-- The success mass of `n` repetitions is the `n`th power of one run's success mass. -/
-theorem evalDist_replicate_apply_univ {ι : Type} {spec : OracleSpec ι} {α : Type}
+theorem evalDist_replicate_apply_univ {spec : OracleSpec} {α : Type}
     [EvalDistSemantics (OracleComp spec)] [LawfulEvalDistSemantics (OracleComp spec)]
     [MeasurableSpace α] [DiscreteMeasurableSpace α] [MeasurableSpace (List α)]
     (oa : OracleComp spec α) (n : ℕ)
@@ -58,7 +58,7 @@ theorem evalDist_replicate_apply_univ {ι : Type} {spec : OracleSpec ι} {α : T
 /-- Discrete list outputs make the success-mass power law available to `simp`. -/
 @[simp high, grind =]
 theorem evalDist_replicate_apply_univ_of_discrete
-    {ι : Type} {spec : OracleSpec ι} {α : Type}
+    {spec : OracleSpec} {α : Type}
     [EvalDistSemantics (OracleComp spec)] [LawfulEvalDistSemantics (OracleComp spec)]
     [MeasurableSpace α] [DiscreteMeasurableSpace α]
     [MeasurableSpace (List α)] [DiscreteMeasurableSpace (List α)]

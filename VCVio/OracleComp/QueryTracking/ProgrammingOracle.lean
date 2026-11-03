@@ -56,7 +56,7 @@ universe u v
 
 open OracleComp OracleSpec
 
-variable {ι : Type u} {spec : OracleSpec ι}
+variable {spec : OracleSpec}
 
 namespace OracleSpec
 
@@ -64,7 +64,7 @@ namespace OracleSpec
 
 `policy t = some v` means "force the oracle to return `v` when queried at `t`".
 `policy t = none` means "leave the oracle unchanged at `t`". -/
-def ProgrammingPolicy (spec : OracleSpec ι) : Type _ :=
+def ProgrammingPolicy (spec : OracleSpec) : Type _ :=
   (t : spec.Domain) → Option (spec.Range t)
 
 namespace ProgrammingPolicy
@@ -103,7 +103,7 @@ def withRedirect (_so : QueryImpl spec m)
     (redirect : (t : spec.Domain) → m (spec.Range t)) (t : spec.Domain) :
     so.withRedirect redirect t = redirect t := rfl
 
-variable [DecidableEq ι] [Monad m]
+variable [DecidableEq spec.Domain] [Monad m]
 
 /-! ## Programming -/
 
@@ -202,7 +202,7 @@ lemma withProgramming_bad_monotone
 
 /-- `PreservesInv` packaging of `withProgramming_bad_monotone` for `ProbComp`. -/
 lemma PreservesInv.withProgramming_bad
-    {ι₀ : Type} {spec₀ : OracleSpec.{0, 0} ι₀} [DecidableEq ι₀]
+    {spec₀ : OracleSpec.{0, 0}} [DecidableEq spec₀.Domain]
     (so : QueryImpl spec₀ ProbComp) (policy : ProgrammingPolicy spec₀) :
     QueryImpl.PreservesInv (so.withProgramming policy)
       (fun (s : spec₀.QueryCache × Bool) => s.2 = true) := by
@@ -232,7 +232,7 @@ lemma withCachingTrackingPolicy_bad_monotone
 
 /-- `PreservesInv` packaging of `withCachingTrackingPolicy_bad_monotone` for `ProbComp`. -/
 lemma PreservesInv.withCachingTrackingPolicy_bad
-    {ι₀ : Type} {spec₀ : OracleSpec.{0, 0} ι₀} [DecidableEq ι₀]
+    {spec₀ : OracleSpec.{0, 0}} [DecidableEq spec₀.Domain]
     (so : QueryImpl spec₀ ProbComp) (policy : ProgrammingPolicy spec₀) :
     QueryImpl.PreservesInv (so.withCachingTrackingPolicy policy)
       (fun (s : spec₀.QueryCache × Bool) => s.2 = true) := by
@@ -241,7 +241,7 @@ lemma PreservesInv.withCachingTrackingPolicy_bad
 
 end QueryImpl
 
-variable [DecidableEq ι]
+variable [DecidableEq spec.Domain]
 
 /-! ## `withProgramming empty` ≡ `withCaching` (cache-side projection) -/
 
@@ -255,7 +255,7 @@ gives the same distribution as running `so.withCaching` directly.
 This is the "specializes to caching" sanity check for `withProgramming`, witnessing that the
 empty policy adds no observable behavior beyond `withCaching` plus a trivial bookkeeping flag. -/
 theorem withProgramming_empty_run_proj_eq
-    {ι : Type} [DecidableEq ι] {spec : OracleSpec ι} (so : QueryImpl spec ProbComp)
+    [DecidableEq spec.Domain] {spec : OracleSpec} (so : QueryImpl spec ProbComp)
     (oa : OracleComp spec α) (cache : spec.QueryCache) (bad : Bool) :
     Prod.map id Prod.fst <$>
         (simulateQ (so.withProgramming ProgrammingPolicy.empty) oa).run (cache, bad) =
@@ -271,7 +271,7 @@ theorem withProgramming_empty_run_proj_eq
 
 /-- `run'` projection corollary of `withProgramming_empty_run_proj_eq`. -/
 theorem withProgramming_empty_run'_eq
-    {ι : Type} [DecidableEq ι] {spec : OracleSpec ι} (so : QueryImpl spec ProbComp)
+    [DecidableEq spec.Domain] {spec : OracleSpec} (so : QueryImpl spec ProbComp)
     (oa : OracleComp spec α) (cache : spec.QueryCache) (bad : Bool) :
     (simulateQ (so.withProgramming ProgrammingPolicy.empty) oa).run' (cache, bad) =
       (simulateQ so.withCaching oa).run' cache := by
@@ -285,7 +285,7 @@ theorem withProgramming_empty_run'_eq
 projecting away the bad flag gives the same distribution as running `so.withCaching` directly,
 irrespective of the initial bad value or the policy used to compute the (discarded) tracking. -/
 theorem withCachingTrackingPolicy_run_proj_eq'
-    {ι ι' : Type} [DecidableEq ι] {spec : OracleSpec ι} {spec' : OracleSpec ι'}
+    [DecidableEq spec.Domain] {spec : OracleSpec} {spec' : OracleSpec}
     (so : QueryImpl spec (OracleComp spec')) (policy : ProgrammingPolicy spec)
     (oa : OracleComp spec α) (cache : spec.QueryCache) (bad : Bool) :
     Prod.map id Prod.fst <$>
@@ -302,7 +302,7 @@ theorem withCachingTrackingPolicy_run_proj_eq'
 
 /-- `run'` projection corollary of `withCachingTrackingPolicy_run_proj_eq'`. -/
 theorem withCachingTrackingPolicy_run'_eq'
-    {ι ι' : Type} [DecidableEq ι] {spec : OracleSpec ι} {spec' : OracleSpec ι'}
+    [DecidableEq spec.Domain] {spec : OracleSpec} {spec' : OracleSpec}
     (so : QueryImpl spec (OracleComp spec')) (policy : ProgrammingPolicy spec)
     (oa : OracleComp spec α) (cache : spec.QueryCache) (bad : Bool) :
     (simulateQ (so.withCachingTrackingPolicy policy) oa).run' (cache, bad) =
@@ -313,7 +313,7 @@ theorem withCachingTrackingPolicy_run'_eq'
 
 /-- `ProbComp` specialization of `withCachingTrackingPolicy_run_proj_eq'`. -/
 theorem withCachingTrackingPolicy_run_proj_eq
-    {ι : Type} [DecidableEq ι] {spec : OracleSpec ι}
+    [DecidableEq spec.Domain] {spec : OracleSpec}
     (so : QueryImpl spec ProbComp) (policy : ProgrammingPolicy spec)
     (oa : OracleComp spec α) (cache : spec.QueryCache) (bad : Bool) :
     Prod.map id Prod.fst <$>
@@ -323,7 +323,7 @@ theorem withCachingTrackingPolicy_run_proj_eq
 
 /-- `ProbComp` specialization of `withCachingTrackingPolicy_run'_eq'`. -/
 theorem withCachingTrackingPolicy_run'_eq
-    {ι : Type} [DecidableEq ι] {spec : OracleSpec ι}
+    [DecidableEq spec.Domain] {spec : OracleSpec}
     (so : QueryImpl spec ProbComp) (policy : ProgrammingPolicy spec)
     (oa : OracleComp spec α) (cache : spec.QueryCache) (bad : Bool) :
     (simulateQ (so.withCachingTrackingPolicy policy) oa).run' (cache, bad) =
@@ -336,7 +336,7 @@ The bad-flag overlay projects away to `withCaching` (via `withCachingTrackingPol
 and makes no underlying queries, so the `withCaching` bounds transfer directly. -/
 
 theorem isTotalQueryBound_run_simulateQ_withCachingTrackingPolicy
-    {ι ι' : Type} [DecidableEq ι] {spec : OracleSpec ι} {spec' : OracleSpec ι'}
+    [DecidableEq spec.Domain] {spec : OracleSpec} {spec' : OracleSpec}
     (so : QueryImpl spec (OracleComp spec')) (policy : ProgrammingPolicy spec)
     {oa : OracleComp spec α} {n : ℕ}
     (h : OracleComp.IsTotalQueryBound oa n)
@@ -350,10 +350,10 @@ theorem isTotalQueryBound_run_simulateQ_withCachingTrackingPolicy
       (spec := spec) (spec' := spec') so h hstep cache)
 
 theorem isQueryBoundP_run_simulateQ_withCachingTrackingPolicy
-    {ι ι' : Type} [DecidableEq ι] {spec : OracleSpec ι} {spec' : OracleSpec ι'}
+    [DecidableEq spec.Domain] {spec : OracleSpec} {spec' : OracleSpec}
     (so : QueryImpl spec (OracleComp spec')) (policy : ProgrammingPolicy spec)
     {oa : OracleComp spec α}
-    {p : ι → Prop} [DecidablePred p] {q : ι' → Prop} [DecidablePred q] {n : ℕ}
+    {p : spec.Domain → Prop} [DecidablePred p] {q : spec'.Domain → Prop} [DecidablePred q] {n : ℕ}
     (h : OracleComp.IsQueryBoundP oa p n)
     (hstep_p : ∀ t, p t → OracleComp.IsQueryBoundP (so t) q 1)
     (hstep_np : ∀ t, ¬ p t → OracleComp.IsQueryBoundP (so t) q 0)
@@ -365,9 +365,9 @@ theorem isQueryBoundP_run_simulateQ_withCachingTrackingPolicy
     (OracleComp.IsQueryBoundP.simulateQ_run_withCaching so h hstep_p hstep_np cache)
 
 theorem isPerIndexQueryBound_run_simulateQ_withCachingTrackingPolicy
-    {ι : Type} [DecidableEq ι] {spec : OracleSpec ι}
+    [DecidableEq spec.Domain] {spec : OracleSpec}
     (so : QueryImpl spec (OracleComp spec)) (policy : ProgrammingPolicy spec)
-    {oa : OracleComp spec α} {qb : ι → ℕ}
+    {oa : OracleComp spec α} {qb : spec.Domain → ℕ}
     (h : OracleComp.IsPerIndexQueryBound oa qb)
     (hstep : ∀ t, OracleComp.IsPerIndexQueryBound (so t) (Function.update 0 t 1))
     (cache : spec.QueryCache) (bad : Bool) :
@@ -386,7 +386,7 @@ projection. -/
 
 section WithProgrammingBounds
 
-variable {ι ι' : Type} [DecidableEq ι] {spec : OracleSpec ι} {spec' : OracleSpec ι'}
+variable [DecidableEq spec.Domain] {spec : OracleSpec} {spec' : OracleSpec}
 
 private lemma isTotalQueryBound_run_withProgramming
     (so : QueryImpl spec (OracleComp spec')) (policy : ProgrammingPolicy spec)
@@ -406,7 +406,7 @@ private lemma isTotalQueryBound_run_withProgramming
 
 private lemma isQueryBoundP_run_withProgramming
     (so : QueryImpl spec (OracleComp spec')) (policy : ProgrammingPolicy spec)
-    (t : spec.Domain) {q : ι' → Prop} [DecidablePred q] {n : ℕ}
+    (t : spec.Domain) {q : spec'.Domain → Prop} [DecidablePred q] {n : ℕ}
     (h : OracleComp.IsQueryBoundP (so t) q n) (s : spec.QueryCache × Bool) :
     OracleComp.IsQueryBoundP ((so.withProgramming policy t).run s) q n := by
   obtain ⟨cache, _⟩ := s
@@ -422,7 +422,7 @@ private lemma isQueryBoundP_run_withProgramming
 
 private lemma isPerIndexQueryBound_run_withProgramming
     (so : QueryImpl spec (OracleComp spec)) (policy : ProgrammingPolicy spec) (t : spec.Domain)
-    {qb : ι → ℕ} (h : OracleComp.IsPerIndexQueryBound (so t) qb) (s : spec.QueryCache × Bool) :
+    {qb : spec.Domain → ℕ} (h : OracleComp.IsPerIndexQueryBound (so t) qb) (s : spec.QueryCache × Bool) :
     OracleComp.IsPerIndexQueryBound ((so.withProgramming policy t).run s) qb := by
   obtain ⟨cache, _⟩ := s
   simp only [QueryImpl.withProgramming_apply, StateT.run_mk]
@@ -449,7 +449,7 @@ theorem isTotalQueryBound_run_simulateQ_withProgramming
 theorem isQueryBoundP_run_simulateQ_withProgramming
     (so : QueryImpl spec (OracleComp spec')) (policy : ProgrammingPolicy spec)
     {oa : OracleComp spec α}
-    {p : ι → Prop} [DecidablePred p] {q : ι' → Prop} [DecidablePred q] {n : ℕ}
+    {p : spec.Domain → Prop} [DecidablePred p] {q : spec'.Domain → Prop} [DecidablePred q] {n : ℕ}
     (h : OracleComp.IsQueryBoundP oa p n)
     (hstep_p : ∀ t, p t → OracleComp.IsQueryBoundP (so t) q 1)
     (hstep_np : ∀ t, ¬ p t → OracleComp.IsQueryBoundP (so t) q 0)
@@ -463,7 +463,7 @@ theorem isQueryBoundP_run_simulateQ_withProgramming
 
 theorem isPerIndexQueryBound_run_simulateQ_withProgramming
     (so : QueryImpl spec (OracleComp spec)) (policy : ProgrammingPolicy spec)
-    {oa : OracleComp spec α} {qb : ι → ℕ}
+    {oa : OracleComp spec α} {qb : spec.Domain → ℕ}
     (h : OracleComp.IsPerIndexQueryBound oa qb)
     (hstep : ∀ t, OracleComp.IsPerIndexQueryBound (so t) (Function.update 0 t 1))
     (cache : spec.QueryCache) (bad : Bool) :

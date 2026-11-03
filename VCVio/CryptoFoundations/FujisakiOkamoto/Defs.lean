@@ -105,7 +105,7 @@ end AsymmEncAlg.ExplicitCoins
 
 section OW_PCVA
 
-variable {ι : Type u} {spec : OracleSpec ι} {M PK SK C : Type}
+variable {spec : OracleSpec} {M PK SK C : Type}
 
 /-- Oracle interface for the one-way under plaintext-checking and validity attacks
 (OW-PCVA) experiment.

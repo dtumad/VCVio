@@ -20,7 +20,7 @@ universe u v w
 
 namespace QueryImpl
 
-variable {ι₁ ι₂} {spec₁ : OracleSpec ι₁} {spec₂ : OracleSpec ι₂} {m n r : Type u → Type*}
+variable {spec₁ : OracleSpec} {spec₂ : OracleSpec} {m n r : Type u → Type*}
 
 /-- Simplest version of adding queries when all implementations are in the same monad.
 The actual add notation for `QueryImpl` uses `QueryImpl.addLift` which adds monad lifting
@@ -49,12 +49,12 @@ lemma add_apply (impl₁ : QueryImpl spec₁ m) (impl₂ : QueryImpl spec₂ m)
     (t : spec₂.Domain) : (impl₁ + impl₂) (.inr t) = impl₂ t := rfl
 
 /-- Version of `QueryImpl.add` that also lifts the two implementations to a shared lift monad. -/
-@[expose] def addLift {ι₁ ι₂} {spec₁ : OracleSpec ι₁} {spec₂ : OracleSpec ι₂}
+@[expose] def addLift {spec₁ : OracleSpec} {spec₂ : OracleSpec}
     {m n r : Type u → Type*} [MonadLiftT m r] [MonadLiftT n r]
     (impl₁ : QueryImpl spec₁ m) (impl₂ : QueryImpl spec₂ n) : QueryImpl (spec₁ + spec₂) r :=
   (impl₁.liftTarget r) + (impl₂.liftTarget r)
 
-@[simp, grind =] lemma addLift_def {ι₁ ι₂} {spec₁ : OracleSpec ι₁} {spec₂ : OracleSpec ι₂}
+@[simp, grind =] lemma addLift_def {spec₁ : OracleSpec} {spec₂ : OracleSpec}
     {m n r : Type u → Type*} [MonadLiftT m r] [MonadLiftT n r]
     (impl₁ : QueryImpl spec₁ m) (impl₂ : QueryImpl spec₂ n) :
     (impl₁.addLift impl₂ : QueryImpl (spec₁ + spec₂) r) =
@@ -66,31 +66,30 @@ lemma add_apply (impl₁ : QueryImpl spec₁ m) (impl₂ : QueryImpl spec₂ m)
 oracles, written `spec.passthrough`. It carries no data: in `spec.passthrough + impl` the target
 monad is read off `impl`, and on its own it coerces to `(QueryImpl.id' spec).liftTarget m` for
 whichever `m` the context expects. -/
-structure Passthrough {ι : Type*} (spec : OracleSpec.{_, u} ι) : Type where
+structure Passthrough (spec : OracleSpec.{_, u}) : Type where
   mk ::
 
 /-- Extend `impl` to `spec₁ + spec₂` by passing the `spec₁` queries through unchanged. The
 target monad comes from `impl`, so it never has to be written out. -/
-instance {ι₁ ι₂ : Type*} {spec₁ : OracleSpec.{_, u} ι₁} {spec₂ : OracleSpec.{_, u} ι₂}
+instance {spec₁ : OracleSpec.{_, u}} {spec₂ : OracleSpec.{_, u}}
     {m : Type u → Type v} [MonadLiftT (OracleComp spec₁) m] :
     HAdd (Passthrough spec₁) (QueryImpl spec₂ m) (QueryImpl (spec₁ + spec₂) m) where
   hAdd _ impl := (QueryImpl.id' spec₁).liftTarget m + impl
 
-instance {ι : Type*} {spec : OracleSpec.{_, u} ι} {m : Type u → Type v}
+instance {spec : OracleSpec.{_, u}} {m : Type u → Type v}
     [MonadLiftT (OracleComp spec) m] : CoeTail (Passthrough spec) (QueryImpl spec m) where
   coe _ := (QueryImpl.id' spec).liftTarget m
 
 /-- `spec.passthrough + impl` is the sum of `impl` with the identity handler lifted to the target
 monad, so the lemmas about `+`, `liftTarget` and `QueryImpl.id'` apply to it. -/
-@[simp] lemma passthrough_add {ι₁ ι₂ : Type*} {spec₁ : OracleSpec.{_, u} ι₁}
-    {spec₂ : OracleSpec.{_, u} ι₂} {m : Type u → Type v} [MonadLiftT (OracleComp spec₁) m]
+@[simp] lemma passthrough_add {spec₁ : OracleSpec.{_, u}}
+    {spec₂ : OracleSpec.{_, u}} {m : Type u → Type v} [MonadLiftT (OracleComp spec₁) m]
     (p : Passthrough spec₁) (impl : QueryImpl spec₂ m) :
     p + impl = (QueryImpl.id' spec₁).liftTarget m + impl := rfl
 
 section simulateQ_add_liftComp
 
-variable {ι₁' ι₂'}
-  {spec₁' : OracleSpec ι₁'} {spec₂' : OracleSpec ι₂'}
+variable {spec₁' : OracleSpec} {spec₂' : OracleSpec}
   {α : Type u} {m' : Type u → Type v} [Monad m'] [LawfulMonad m']
   (impl₁' : QueryImpl spec₁' m') (impl₂' : QueryImpl spec₂' m')
 
@@ -250,15 +249,14 @@ induction-hypothesis rewrite and diverge. Pass it explicitly to `simp` (alongsid
 opaque handler definition) to discharge a lifted-in computation, e.g.
 `simp [myHandler, simulateQ_toQueryImpl]`; the `simulateQ_add_liftM_left`/`_right` and
 `simulateQ_liftTarget` rungs are `@[simp]` and fire on their own. -/
-lemma simulateQ_toQueryImpl {ι : Type*} {spec : OracleSpec ι} {α : Type u}
+lemma simulateQ_toQueryImpl {spec : OracleSpec} {α : Type u}
     (mx : OracleComp spec α) :
     simulateQ (HasQuery.toQueryImpl : QueryImpl spec (OracleComp spec)) mx = mx := by
   rw [HasQuery.toQueryImpl_eq_id', simulateQ_id']
 
 section simulateQ_liftM
 
-variable {ι₁' ι₂'}
-  {spec₁' : OracleSpec ι₁'} {spec₂' : OracleSpec ι₂'}
+variable {spec₁' : OracleSpec} {spec₂' : OracleSpec}
   {α : Type u} {m' : Type u → Type v} [Monad m'] [LawfulMonad m']
   [MonadLiftT (OracleComp spec₁') (OracleComp spec₂')]
   [LawfulMonadLiftT (OracleComp spec₁') (OracleComp spec₂')]
@@ -297,8 +295,8 @@ lets these fire by `simp` on goals produced by elaborated protocol definitions. 
 reduce through `simulateQ_spec_query` after the component lift is re-expressed as the
 canonical embedded query at its routed index. -/
 
-variable {ι' ι₁' ι₂'} {spec : OracleSpec ι'} {spec₁ : OracleSpec ι₁'}
-  {spec₂ : OracleSpec ι₂'} {m' : Type u → Type v} [Monad m'] [LawfulMonad m']
+variable {spec₁'.Domain spec₂'.Domain} {spec : OracleSpec} {spec₁ : OracleSpec}
+  {spec₂ : OracleSpec} {m' : Type u → Type v} [Monad m'] [LawfulMonad m']
   (implA : QueryImpl spec m') (implB : QueryImpl (spec₁ + spec₂) m')
 
 @[simp]
@@ -372,7 +370,7 @@ implementation by `simp` alone, via the `simulateQ_add_add_liftM_*` routing lemm
 The shape `spec + (spec₁ + spec₂)` with an `addLift`ed pair is the `simOracle2`
 layout used by oracle-reduction verifiers downstream. -/
 
-variable {ι} {spec : OracleSpec ι} [Monad m] [LawfulMonad m]
+variable {spec : OracleSpec} [Monad m] [LawfulMonad m]
 
 example (impl : QueryImpl spec m) (impl₁ : QueryImpl spec₁ m) (impl₂ : QueryImpl spec₂ m)
     (t : spec₁.Domain) :
@@ -458,7 +456,7 @@ section simulateQ_addLift_add_liftM
 
 open OracleSpec
 
-variable {ι} {spec : OracleSpec ι}
+variable {spec : OracleSpec}
   {target : Type u → Type*} [Monad target] [LawfulMonad target]
   {source₀ : Type u → Type*} [MonadLiftT source₀ target]
   {source : Type u → Type*} [Monad source] [LawfulMonad source]
@@ -524,7 +522,7 @@ The key step is the `OptionT.run_lift` law, which collapses the `OptionT` lift c
 plain `OracleComp` lift; the chain-agnostic `QueryImpl.simulateQ_liftM_eq_of_query` then
 resolves it. -/
 lemma simulateQ_optionT_liftM_run_eq_of_query
-    {ι₁' ι₂'} {spec₁' : OracleSpec ι₁'} {spec₂' : OracleSpec ι₂'}
+    {spec₁' : OracleSpec} {spec₂' : OracleSpec}
     {α : Type u} {m' : Type u → Type*} [Monad m'] [LawfulMonad m']
     [MonadLiftT (OracleComp spec₁') (OracleComp spec₂')]
     [LawfulMonadLiftT (OracleComp spec₁') (OracleComp spec₂')]
@@ -550,6 +548,6 @@ namespace OracleSpec
 /-- The oracles of `spec`, answered by passing each query through to the ambient oracles
 unchanged. Write `spec.passthrough + impl` to give a computation over `spec + spec'` its
 original `spec` oracles alongside the handler `impl` for `spec'`. -/
-abbrev passthrough {ι : Type*} (spec : OracleSpec.{_, u} ι) : QueryImpl.Passthrough spec := ⟨⟩
+abbrev passthrough (spec : OracleSpec.{_, u}) : QueryImpl.Passthrough spec := ⟨⟩
 
 end OracleSpec

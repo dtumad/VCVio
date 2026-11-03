@@ -87,7 +87,7 @@ structure VCGenTimingData where
   deriving Inhabited
 
 /-- Mutable timing counters shared by the unary and relational planners. -/
-initialize vcGenTimingRef : IO.Ref VCGenTimingData ← IO.mkRef {}
+initialize vcGenTimingRef : IO.Ref VCGenTimingData ← IO.mkRef 
 
 /-- Run an action and return its result with the elapsed monotonic time in nanoseconds. -/
 def timeNs {m : Type → Type} {α : Type} [Monad m] [MonadLiftT BaseIO m]
@@ -187,7 +187,7 @@ def withVCGenFinishTiming {α : Type} (k : TacticM α) : TacticM α :=
 /-- Clear the accumulated counters at the start of a timed VCGen run. -/
 def resetVCGenTimingIfEnabled : TacticM Unit := do
   if vcvio.vcgen.time.get (← getOptions) then
-    vcGenTimingRef.set {}
+    vcGenTimingRef.set 
 
 private def formatNsMs (ns : UInt64) : String :=
   s!"{ns / 1000000}ms"

@@ -26,7 +26,7 @@ open BinaryTree OracleComp OracleSpec
 
 universe u
 
-variable {ι Y : Type u} {spec : OracleSpec.{u, u} ι}
+variable {spec.Domain Y : Type u} {spec : OracleSpec.{u, u}}
 
 /-- Root recovery invokes its internal-node callback once per authentication-path entry. -/
 theorem isTotalQueryBound_getPutativeRootAddressedM

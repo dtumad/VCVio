@@ -58,7 +58,7 @@ end taggingOracle
 
 section runWithTaggingOracle
 
-variable {ι : Type u} {spec : OracleSpec ι} {M K T : Type}
+variable {spec : OracleSpec} {M K T : Type}
 
 /-- Run `oa` against the ambient oracles `spec` and a tagging oracle for `macAlg` under the key
 `k`. Ambient queries are forwarded unchanged and tagging queries are answered by
@@ -90,7 +90,7 @@ end sound
 
 section unforgeable
 
-variable {ι : Type u} {spec : OracleSpec ι} {M K T : Type}
+variable {spec : OracleSpec} {M K T : Type}
   [DecidableEq M] [DecidableEq T]
 
 /-- Chosen-message forger for a MAC: it has oracle access to `spec` and to the tagging oracle,
@@ -120,7 +120,7 @@ end unforgeable
 
 section strongUnforgeable
 
-variable {ι : Type u} {spec : OracleSpec ι} {M K T : Type}
+variable {spec : OracleSpec} {M K T : Type}
   [DecidableEq M] [DecidableEq T]
 
 /-- Whether the tagging-oracle log contains the exact returned pair `(msg, τ)`. Unlike

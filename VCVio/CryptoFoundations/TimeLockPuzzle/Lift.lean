@@ -60,7 +60,7 @@ open OracleSpec OracleComp
 
 namespace TimeLockPuzzle
 
-variable {ι ι' : Type} {spec : OracleSpec.{0, 0} ι} {Puzzle Key : Type}
+variable {spec : OracleSpec.{0, 0}} {Puzzle Key : Type}
 
 /-! ## Lifting along a `SubSpec` -/
 
@@ -68,33 +68,33 @@ variable {ι ι' : Type} {spec : OracleSpec.{0, 0} ι} {Puzzle Key : Type}
 solver lifted query by query along `spec ⊂ₒ superSpec`, each round becoming the round of its
 translated points. -/
 @[expose]
-def liftSpec (tlp : TimeLockPuzzle spec Puzzle Key) (superSpec : OracleSpec.{0, 0} ι')
+def liftSpec (tlp : TimeLockPuzzle spec Puzzle Key) (superSpec : OracleSpec.{0, 0})
     [spec ⊂ₒ superSpec] : TimeLockPuzzle superSpec Puzzle Key where
   gen := liftComp tlp.gen (unifSpec + superSpec.batch)
   solve puzzle := liftComp (tlp.solve puzzle) (unifSpec + superSpec.batch)
 
 /-- The lifted generator submits as many rounds and points as the generator. -/
 theorem IsGenQueryBound.liftSpec {tlp : TimeLockPuzzle spec Puzzle Key}
-    {superSpec : OracleSpec.{0, 0} ι'} [spec ⊂ₒ superSpec] {b : ℕ × ℕ}
+    {superSpec : OracleSpec.{0, 0}} [spec ⊂ₒ superSpec] {b : ℕ × ℕ}
     (h : tlp.IsGenQueryBound b) : (tlp.liftSpec superSpec).IsGenQueryBound b :=
   IsOnlineQueryBound.liftComp h
 
 /-- The lifted solver submits as many rounds and points as the solver. -/
 theorem IsSolveQueryBound.liftSpec {tlp : TimeLockPuzzle spec Puzzle Key}
-    {superSpec : OracleSpec.{0, 0} ι'} [spec ⊂ₒ superSpec] {b : ℕ × ℕ}
+    {superSpec : OracleSpec.{0, 0}} [spec ⊂ₒ superSpec] {b : ℕ × ℕ}
     (h : tlp.IsSolveQueryBound b) : (tlp.liftSpec superSpec).IsSolveQueryBound b :=
   fun puzzle => IsOnlineQueryBound.liftComp (h puzzle)
 
 /-! ## Mixed rounds -/
 
-variable {side : OracleSpec.{0, 0} ι'}
+variable {side : OracleSpec.{0, 0}}
 
 /-- The answers to a mixed round `ts` of `spec + side`, reassembled from the answers `us` to its
 `spec` points and the answers `vs` to its `side` points, each list in the order of `ts`: position
 by position, a `spec` point takes the next answer of `us` and a `side` point the next answer of
 `vs`. -/
 @[expose]
-def batchMerge : (ts : List (ι ⊕ ι')) → spec.batch.Range (ts.filterMap Sum.getLeft?) →
+def batchMerge : (ts : List (spec.Domain ⊕ superSpec.Domain)) → spec.batch.Range (ts.filterMap Sum.getLeft?) →
     side.batch.Range (ts.filterMap Sum.getRight?) → (spec + side).batch.Range ts
   | [], _, _ => batchNil
   | .inl _ :: ts, us, vs => batchCons (us ⟨0, by simp⟩) (batchMerge ts (fun j => us j.succ) vs)
@@ -104,20 +104,20 @@ def batchMerge : (ts : List (ι ⊕ ι')) → spec.batch.Range (ts.filterMap Sum
 
 section Side
 
-variable [DecidableEq ι'] [∀ t, SampleableType (side.Range t)]
+variable [DecidableEq superSpec.Domain] [∀ t, SampleableType (side.Range t)]
 
 /-- The private lazy random oracle for `side` at every point of a list, in order and with
 repetitions, on the private cache. Its local coins are queries to the free summand, embedded along
 `unifSpec → free`, so it submits no round (`isOnlineQueryBound_sideDraws_run`). -/
 @[expose]
-def sideDraws {τ : Type} {free : OracleSpec.{0, 0} τ}
-    [MonadLiftT (OracleQuery unifSpec) (OracleQuery free)] (ts : List ι') :
+def sideDraws {free : OracleSpec.{0, 0}}
+    [MonadLiftT (OracleQuery unifSpec) (OracleQuery free)] (ts : List superSpec.Domain) :
     StateT side.QueryCache (OracleComp (free + spec.batch)) (side.batch.Range ts) :=
   StateT.mk fun c => liftComp ((side.randomOracle.batch ts).run c) (free + spec.batch)
 
 /-- The private draws submit no round and no point, from every cache. -/
-theorem isOnlineQueryBound_sideDraws_run {τ : Type} {free : OracleSpec.{0, 0} τ}
-    [MonadLiftT (OracleQuery unifSpec) (OracleQuery free)] (ts : List ι')
+theorem isOnlineQueryBound_sideDraws_run {free : OracleSpec.{0, 0}}
+    [MonadLiftT (OracleQuery unifSpec) (OracleQuery free)] (ts : List superSpec.Domain)
     (c : side.QueryCache) (b : ℕ × ℕ) :
     IsOnlineQueryBound ((sideDraws (spec := spec) (free := free) ts).run c) b :=
   isOnlineQueryBound_liftComp _ b
@@ -136,7 +136,7 @@ def sidePreprocessImpl :
 a mixed round draws its `side` points from the private cache (`sideDraws`), submits its `spec`
 points as one round, and reassembles the answer tuple (`batchMerge`). -/
 @[expose]
-def sideOnlineImpl {τ : Type} {free : OracleSpec.{0, 0} τ}
+def sideOnlineImpl {free : OracleSpec.{0, 0}}
     [MonadLiftT (OracleQuery unifSpec) (OracleQuery free)] :
     QueryImpl (free + (spec + side).batch)
       (StateT side.QueryCache (OracleComp (free + spec.batch)))
@@ -151,7 +151,7 @@ adversary against `spec + side`, answering `side` from a private lazy random ora
 preprocessing phase starts it from the empty cache and passes the cache to the online phase in its
 state, so an answer drawn in one phase is the answer in the other. -/
 @[expose]
-def TwoPhaseAdversary.simulateSide {τ : Type} {free : OracleSpec.{0, 0} τ}
+def TwoPhaseAdversary.simulateSide {free : OracleSpec.{0, 0}}
     [MonadLiftT (OracleQuery unifSpec) (OracleQuery free)] {Out : Type}
     (adv : TwoPhaseAdversary free (spec + side) Puzzle Out) :
     TwoPhaseAdversary free spec Puzzle Out where
@@ -161,7 +161,7 @@ def TwoPhaseAdversary.simulateSide {τ : Type} {free : OracleSpec.{0, 0} τ}
 
 /-! ### Budgets -/
 
-omit [DecidableEq ι'] [∀ t, SampleableType (side.Range t)] in
+omit [DecidableEq superSpec.Domain] [∀ t, SampleableType (side.Range t)] in
 /-- Local coins lifted into the preprocessing phase make no query to `spec`. -/
 private lemma isPreprocessingQueryBound_liftComp {α : Type} (oa : ProbComp α) :
     IsPreprocessingQueryBound (liftComp oa (unifSpec + spec)) 0 := by
@@ -188,8 +188,8 @@ lemma isPreprocessingQueryBound_sidePreprocessImpl_run (t : (unifSpec + (spec + 
 
 /-- A mixed round `ts` is simulated by one round holding its `spec` points and no others: its
 `side` points cost nothing. -/
-theorem isOnlineQueryBound_sideOnlineImpl_inr_run {τ : Type} {free : OracleSpec.{0, 0} τ}
-    [MonadLiftT (OracleQuery unifSpec) (OracleQuery free)] (ts : List (ι ⊕ ι'))
+theorem isOnlineQueryBound_sideOnlineImpl_inr_run {free : OracleSpec.{0, 0}}
+    [MonadLiftT (OracleQuery unifSpec) (OracleQuery free)] (ts : List (spec.Domain ⊕ superSpec.Domain))
     (c : side.QueryCache) :
     IsOnlineQueryBound ((sideOnlineImpl (spec := spec) (free := free) (.inr ts)).run c)
       (1, (ts.filterMap Sum.getLeft?).length) := by
@@ -206,7 +206,7 @@ theorem isOnlineQueryBound_sideOnlineImpl_inr_run {τ : Type} {free : OracleSpec
 
 /-- A step of the online handler costs at most the query it answers: nothing for a query to the
 free summand, and at most one round of at most as many points for a round. -/
-theorem isOnlineQueryBound_sideOnlineImpl_run {τ : Type} {free : OracleSpec.{0, 0} τ}
+theorem isOnlineQueryBound_sideOnlineImpl_run {free : OracleSpec.{0, 0}}
     [MonadLiftT (OracleQuery unifSpec) (OracleQuery free)]
     (t : (free + (spec + side).batch).Domain) (c : side.QueryCache) :
     IsOnlineQueryBound ((sideOnlineImpl (spec := spec) t).run c) (onlineStep t) := by
@@ -221,7 +221,7 @@ theorem isOnlineQueryBound_sideOnlineImpl_run {τ : Type} {free : OracleSpec.{0,
 `adv.simulateSide` makes at most `Q` preprocessing queries to `spec` and its online phase submits at
 most `b.1` rounds holding at most `b.2` points. Queries to `side` are answered privately with local
 coins and cost nothing, and each round of `adv` becomes one round holding only its `spec` points. -/
-theorem TwoPhaseAdversary.isQueryBound_simulateSide {τ : Type} {free : OracleSpec.{0, 0} τ}
+theorem TwoPhaseAdversary.isQueryBound_simulateSide {free : OracleSpec.{0, 0}}
     [MonadLiftT (OracleQuery unifSpec) (OracleQuery free)] {Out : Type}
     {adv : TwoPhaseAdversary free (spec + side) Puzzle Out} {Q : ℕ} {b : ℕ × ℕ}
     (h : adv.IsQueryBound Q b) : adv.simulateSide.IsQueryBound Q b := by
@@ -257,7 +257,7 @@ points by `impl₂`, then its `spec` points by `impl₁`, each in order, and rea
 tuple with `batchMerge`. -/
 theorem run_batch_parallelStateT_evalDistEq {σ₁ σ₂ : Type}
     (impl₁ : QueryImpl spec (StateT σ₁ ProbComp)) (impl₂ : QueryImpl side (StateT σ₂ ProbComp))
-    (ts : List (ι ⊕ ι')) (s₁ : σ₁) (s₂ : σ₂) :
+    (ts : List (spec.Domain ⊕ superSpec.Domain)) (s₁ : σ₁) (s₂ : σ₂) :
     ((QueryImpl.parallelStateT impl₁ impl₂).batch ts).run (s₁, s₂) =ᵈ
       (impl₂.batch (ts.filterMap Sum.getRight?)).run s₂ >>= fun z =>
         (impl₁.batch (ts.filterMap Sum.getLeft?)).run s₁ >>= fun y =>
@@ -287,7 +287,7 @@ theorem run_batch_parallelStateT_evalDistEq {σ₁ σ₂ : Type}
 
 section Security
 
-variable [DecidableEq ι] [DecidableEq ι'] [∀ t, SampleableType (spec.Range t)]
+variable [DecidableEq spec.Domain] [DecidableEq superSpec.Domain] [∀ t, SampleableType (spec.Range t)]
   [∀ t, SampleableType (side.Range t)]
 
 /-- The random oracle model on `spec + side` with the caches of the two summands kept apart. -/

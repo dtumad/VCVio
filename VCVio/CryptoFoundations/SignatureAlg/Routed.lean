@@ -55,7 +55,7 @@ open OracleSpec OracleComp
 
 namespace OracleComp
 
-variable {ι ιe ιs : Type} {hs : OracleSpec ι} {ext : OracleSpec ιe} {sig : OracleSpec ιs}
+variable {hs.Domain ιe ιs : Type} {hs : OracleSpec} {ext : OracleSpec ιe} {sig : OracleSpec ιs}
   {σ τ : Type}
 
 /-! ## The common interface and the router -/
@@ -147,7 +147,7 @@ theorem isQueryBoundP_liftM_isRight {α : Type} (oa : ProbComp α) :
         simp at h) ih
 
 /-- A probabilistic computation lifted to `unifSpec + hs` makes sampling queries only. -/
-theorem allQueriesSatisfy_liftM_sum_elim {α : Type} (oa : ProbComp α) (P : ι → Prop) :
+theorem allQueriesSatisfy_liftM_sum_elim {α : Type} (oa : ProbComp α) (P : hs.Domain → Prop) :
     AllQueriesSatisfy (liftM oa : OracleComp (unifSpec + hs) α) (Sum.elim (fun _ => True) P) := by
   induction oa using OracleComp.inductionOn with
   | pure a => exact allQueriesSatisfy_pure _ _
@@ -247,7 +247,7 @@ end OracleComp
 
 namespace SignatureAlg
 
-variable {ι ιe : Type} {hs : OracleSpec ι} {ext : OracleSpec ιe} {M PK SK SK' S σ τ : Type}
+variable {hs.Domain ιe : Type} {hs : OracleSpec} {ext : OracleSpec ιe} {M PK SK SK' S σ τ : Type}
 
 /-! ## The routed adversary -/
 
@@ -409,7 +409,7 @@ the router queries the typed oracles only at points satisfying `P pk`. -/
 theorem UnforgeableAdversary.allQueriesSatisfy_route_of_raw
     {sigAlg' : SignatureAlg (OracleComp (unifSpec + (hs + ext))) M PK SK' S}
     {sigAlg : SignatureAlg (OracleComp (unifSpec + hs)) M PK SK S}
-    {R : PK → QueryImpl ext (StateT σ (OracleComp (unifSpec + hs)))} {P : PK → ι → Prop}
+    {R : PK → QueryImpl ext (StateT σ (OracleComp (unifSpec + hs)))} {P : PK → hs.Domain → Prop}
     {Raw : PK → ιe → Prop}
     (hR : ∀ pk x, Raw pk x → ∀ s,
       AllQueriesSatisfy ((R pk x).run s) (Sum.elim (fun _ => True) (P pk)))
@@ -439,7 +439,7 @@ interface queries them only at such points, then so does the adversary that hold
 theorem UnforgeableAdversary.allQueriesSatisfy_route
     {sigAlg' : SignatureAlg (OracleComp (unifSpec + (hs + ext))) M PK SK' S}
     {sigAlg : SignatureAlg (OracleComp (unifSpec + hs)) M PK SK S}
-    {R : PK → QueryImpl ext (StateT σ (OracleComp (unifSpec + hs)))} {P : PK → ι → Prop}
+    {R : PK → QueryImpl ext (StateT σ (OracleComp (unifSpec + hs)))} {P : PK → hs.Domain → Prop}
     (hR : ∀ pk x s, AllQueriesSatisfy ((R pk x).run s) (Sum.elim (fun _ => True) (P pk)))
     {adv : UnforgeableAdversary sigAlg'}
     (hadv : ∀ pk, AllQueriesSatisfy (adv.main pk)
@@ -453,7 +453,7 @@ end SignatureAlg
 
 namespace OracleComp.RandomOracleEncoding
 
-variable {ι D M : Type} {spec : OracleSpec ι} [SampleableType M]
+variable {hs.Domain D M : Type} {spec : OracleSpec} [SampleableType M]
   [∀ t, SampleableType (spec.Range t)] (E : RandomOracleEncoding spec D M)
 
 /-- The encoding passes the queries of a program over `unifSpec + (D →ₒ M)` on unchanged. -/
@@ -526,7 +526,7 @@ theorem allQueriesSatisfy_run_tableRouter (x : D) (pv : (D →ₒ M).QueryCache)
   · change E.route (E.encode t) = some t
     rw [E.encode_eq_of_route_eq_some ht, ht]
 
-variable [DecidableEq ι]
+variable [DecidableEq hs.Domain]
 
 /-- The typed world is the handler-held router of the random oracle model of `spec` and the router
 holding its table. -/
@@ -586,7 +586,7 @@ theorem allQueriesSatisfy_route_tableRouter
     (fun _ => allQueriesSatisfy_mapOracles liftRawImpl adv (by
       rintro (n | x) <;> exact (allQueriesSatisfy_query_iff _ _).2 trivial) _) pv pk
 
-variable [DecidableEq ι]
+variable [DecidableEq hs.Domain]
 
 /-- **The typed world is the random oracle model against the routed adversary.** The experiment
 of a scheme over `unifSpec + spec`, lifted to the common interface, against an adversary on the

@@ -370,7 +370,7 @@ theorem sealWith_eq_sealBy (pz : ByteArray) (nonce : N) (ks : K × K) (msg : Pla
   simp [sealBy, sealWith, keystream, List.flatMap_map]
 
 /-- Simulating the queries of `sealBy` is `sealBy` with the simulated block and tag functions. -/
-lemma simulateQ_sealBy {ι : Type} {spec : OracleSpec ι} {μ : Type → Type} [Monad μ]
+lemma simulateQ_sealBy {spec : OracleSpec} {μ : Type → Type} [Monad μ]
     [LawfulMonad μ] (impl : QueryImpl spec μ) (block tag : ByteArray → OracleComp spec (Bytes 32))
     (pz : ByteArray) (nonce : N) (msg : Plaintext) :
     simulateQ impl (sealBy codec block tag pz nonce msg) =
@@ -503,7 +503,7 @@ theorem sealBy_uniform_evalDistEq (pz : ByteArray) (nonce : N) {msg msg' : Plain
 
 section DEM
 
-variable {ι : Type} {spec : OracleSpec ι} {Puzzle Key : Type}
+variable {spec : OracleSpec} {Puzzle Key : Type}
 
 /-- Open an envelope under the puzzle bytes `pz`, deriving the subkeys from its nonce with the
 oracle program `derive`: `none` on malformed input relative to `pz` or a tag mismatch, with no
@@ -627,7 +627,7 @@ theorem dem_perfectlyCorrect_answerTable :
   rfl
 
 /-- The envelope DEM is perfectly correct in the random oracle model, from every initial cache. -/
-theorem dem_perfectlyCorrect_rom [DecidableEq ι] [∀ t, SampleableType (spec.Range t)]
+theorem dem_perfectlyCorrect_rom [DecidableEq spec.Domain] [∀ t, SampleableType (spec.Range t)]
     (cache : spec.QueryCache) :
     (dem prf codec derive encodePuzzle).PerfectlyCorrect (ProbCompRuntime.rom spec cache) := by
   intro key msg

@@ -38,8 +38,8 @@ open OracleSpec OracleComp
 
 namespace SignatureAlg
 
-variable {ι ι' ι'' : Type} {spec : OracleSpec ι} {spec' : OracleSpec ι'}
-  {spec'' : OracleSpec ι''} {M PK SK SK' SK'' S : Type}
+variable {spec : OracleSpec} {spec' : OracleSpec}
+  {spec'' : OracleSpec} {M PK SK SK' SK'' S : Type}
 
 /-! ## Mapping a scheme along composed interpretations -/
 

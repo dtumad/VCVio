@@ -32,7 +32,7 @@ open OracleComp OracleSpec
 
 namespace SecretEncoding
 
-variable {ι : Type} (pub : OracleSpec.{0, 0} ι) (X R : Type)
+variable (pub : OracleSpec.{0, 0}) (X R : Type)
 
 /-- Interpret the duplicated forwarded interface over `pub + (X →ₒ R)` in
 `pub.withDerivations X R`: a uniform draw is forwarded, and either copy of a public query or a
@@ -46,7 +46,7 @@ derivation becomes that public query or derivation. -/
   | .inr (.inl (.inr x)) | .inr (.inr (.inr x)) =>
       liftM ((pub.withDerivations X R).query (.inr x))
 
-variable {pub X R} [DecidableEq ι] [DecidableEq X] [SampleableType R]
+variable {pub X R} [DecidableEq pub.Domain] [DecidableEq X] [SampleableType R]
   [∀ t : pub.Domain, SampleableType (pub.Range t)]
 
 /-- The ideal game, read through `collapseFwd`, is the duplicated lazy random oracle on the joint

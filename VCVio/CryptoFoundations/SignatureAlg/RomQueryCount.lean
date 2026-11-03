@@ -38,7 +38,7 @@ open OracleSpec OracleComp QueryImpl
 
 namespace SignatureAlg
 
-variable {ι : Type} {hs : OracleSpec ι} {M PK SK S : Type}
+variable {hs : OracleSpec} {M PK SK S : Type}
 
 /-- A query of an unforgeability adversary in the random oracle model to the hash oracle, as
 opposed to private sampling or the signing oracle. -/
@@ -80,11 +80,11 @@ abbrev StrongUnforgeableAdversary.RomQueryBound
 instance : DecidablePred (IsForgerHashQuery (hs := hs)) := by
   rintro ⟨_ | _, _ | _⟩ <;> simp only [IsForgerHashQuery] <;> infer_instance
 
-variable [DecidableEq ι] [∀ t, SampleableType (hs.Range t)]
+variable [DecidableEq hs.Domain] [∀ t, SampleableType (hs.Range t)]
 
 /-- The random oracle model on the tagged interface, with a counter of the hash queries tagged
 `true`. Every such query adds one, whether or not its answer is cached. -/
-noncomputable def forgerCountingRomImpl (hs : OracleSpec ι) [∀ t, SampleableType (hs.Range t)] :
+noncomputable def forgerCountingRomImpl (hs : OracleSpec) [∀ t, SampleableType (hs.Range t)] :
     QueryImpl ((unifSpec + hs).tagged Bool) (StateT (hs.QueryCache × ℕ) ProbComp) :=
   ((romImpl hs) ∘ₛ untag).extendState fun kt _ _ _ c =>
     c + if IsForgerHashQuery (hs := hs) kt then 1 else 0

@@ -35,8 +35,8 @@ namespace OracleSpec
 
 /-- The specification `spec` with every query carrying a tag `k : K` beside its input. The answer
 to the query `(k, t)` is an answer to `t`, whatever the tag. -/
-@[expose, reducible] def tagged {ι : Type u} (spec : OracleSpec.{u, v} ι) (K : Type w) :
-    OracleSpec.{max w u, v} (K × ι) :=
+@[expose, reducible] def tagged (spec : OracleSpec.{u, v}) (K : Type w) :
+    OracleSpec.{max w u, v} (K × spec.Domain) :=
   fun kt => spec kt.2
 
 end OracleSpec
@@ -45,7 +45,7 @@ namespace QueryImpl
 
 open OracleSpec OracleComp
 
-variable {ι : Type u} {spec : OracleSpec.{u, v} ι} {K : Type w}
+variable {spec : OracleSpec.{u, v}} {K : Type w}
 
 /-- The handler answering each query `t` of `spec` by the query `(k, t)` of `spec.tagged K`. -/
 def tagWith (k : K) : QueryImpl spec (OracleComp (spec.tagged K)) :=
@@ -78,7 +78,7 @@ namespace OracleComp
 
 open OracleSpec QueryImpl
 
-variable {ι : Type u} {spec : OracleSpec.{u, v} ι} {K : Type w}
+variable {spec : OracleSpec.{u, v}} {K : Type w}
 
 /-- Tagging every query of a computation with `k` and then forgetting the tags gives back the
 computation. -/

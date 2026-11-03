@@ -36,7 +36,7 @@ open OracleSpec OracleComp
 
 /-- Running a program lifted into `spec + sig` with the queries of `spec` passed through and
 those of `sig` answered by a logging implementation runs the program and logs nothing. -/
-theorem OracleComp.run_simulateQ_passthrough_add_liftComp {ι ιs : Type} {spec : OracleSpec ι}
+theorem OracleComp.run_simulateQ_passthrough_add_liftComp {spec.Domain ιs : Type} {spec : OracleSpec}
     {sig : OracleSpec ιs} (so : QueryImpl sig (WriterT (QueryLog sig) (OracleComp spec)))
     {β : Type} (P : OracleComp spec β) :
     (simulateQ (spec.passthrough + so) (liftComp P (spec + sig))).run =
@@ -52,11 +52,11 @@ theorem OracleComp.run_simulateQ_passthrough_add_liftComp {ι ιs : Type} {spec 
 
 namespace SignatureAlg
 
-variable {ι : Type} {M PK SK S : Type}
+variable {M PK SK S : Type}
 
 /-- The adversary that runs `adv` and then the program `post pk out` on its public key `pk` and
 its output `out`, as its own queries to the ambient oracles; its output is that of `adv`. -/
-@[expose] def UnforgeableAdversary.withPost {spec : OracleSpec ι}
+@[expose] def UnforgeableAdversary.withPost {spec : OracleSpec}
     {sigAlg : SignatureAlg (OracleComp spec) M PK SK S} (adv : UnforgeableAdversary sigAlg)
     {β : Type} (post : PK → M × S → OracleComp spec β) : UnforgeableAdversary sigAlg where
   main pk := do
@@ -66,7 +66,7 @@ its output `out`, as its own queries to the ambient oracles; its output is that 
 
 /-- Running an adversary followed by `post` with the signing oracle is running the adversary with
 the signing oracle, then `post` on its output; `post` adds nothing to the log. -/
-theorem runWithSigningOracle_withPost {spec : OracleSpec ι}
+theorem runWithSigningOracle_withPost {spec : OracleSpec}
     (sigAlg : SignatureAlg (OracleComp spec) M PK SK S) (adv : UnforgeableAdversary sigAlg)
     {β : Type} (post : PK → M × S → OracleComp spec β) (pk : PK) (sk : SK) :
     sigAlg.runWithSigningOracle pk sk ((adv.withPost post).main pk) =
@@ -82,7 +82,7 @@ theorem runWithSigningOracle_withPost {spec : OracleSpec ι}
 state never decreases, the program `post` of a transcript of the experiment against `adv`
 followed by `post` runs on the transcript's public key and forgery from some state to some state
 whose key is at most that of the final one. -/
-theorem exists_mem_support_run_post_of_mem_support_run_withPost {spec : OracleSpec ι}
+theorem exists_mem_support_run_post_of_mem_support_run_withPost {spec : OracleSpec}
     {σ τ : Type} [Preorder τ] (key : σ → τ) {sigAlg : SignatureAlg (OracleComp spec) M PK SK S}
     (so : QueryImpl spec (StateT σ ProbComp))
     (hmono : ∀ {γ : Type} (ob : OracleComp spec γ) (s : σ),
@@ -106,7 +106,7 @@ theorem exists_mem_support_run_post_of_mem_support_run_withPost {spec : OracleSp
 /-- **An adversary followed by a verification of its forgery.** The experiment against `adv`
 followed by `post` is the experiment of the scheme verifying by `post` against `adv`, followed by
 the scheme's own verification of the forgery, whose verdict replaces the transcript's. -/
-theorem unforgeableTranscriptExperiment_withPost {spec : OracleSpec ι}
+theorem unforgeableTranscriptExperiment_withPost {spec : OracleSpec}
     (sigAlg : SignatureAlg (OracleComp spec) M PK SK S) (adv : UnforgeableAdversary sigAlg)
     (post : PK → M × S → OracleComp spec Bool) :
     unforgeableTranscriptExperiment (adv.withPost post) =
@@ -123,7 +123,7 @@ the experiment of the scheme verifying by `post` against `adv`, each of whose re
 occurrences leads, along every run of the scheme's own verification of the forgery, to the event
 `Q` with the new verdict, has probability at most that of `Q` in the run of the experiment against
 `adv` followed by `post`. -/
-theorem prEvent_run_withVerify_le_prEvent_run_withPost {spec : OracleSpec ι} {σ : Type}
+theorem prEvent_run_withVerify_le_prEvent_run_withPost {spec : OracleSpec} {σ : Type}
     (so : QueryImpl spec (StateT σ ProbComp)) (sigAlg : SignatureAlg (OracleComp spec) M PK SK S)
     (adv : UnforgeableAdversary sigAlg) (post : PK → M × S → OracleComp spec Bool) (s : σ)
     (P Q : UnforgeableTranscript M PK SK S × σ → Prop)
@@ -146,7 +146,7 @@ theorem prEvent_run_withVerify_le_prEvent_run_withPost {spec : OracleSpec ι} {�
 /-- **The budget of an adversary followed by a program.** If `adv` makes at most `qh` hash and
 `qs` signing queries and every `post pk out` at most `v` hash queries, then `adv` followed by
 `post` makes at most `qh + v` hash and `qs` signing queries. -/
-theorem UnforgeableAdversary.RomQueryBound.withPost {hs : OracleSpec ι}
+theorem UnforgeableAdversary.RomQueryBound.withPost {hs : OracleSpec}
     {sigAlg : SignatureAlg (OracleComp (unifSpec + hs)) M PK SK S}
     {adv : UnforgeableAdversary sigAlg} {qh qs v : ℕ} (hadv : adv.RomQueryBound qh qs)
     {β : Type} {post : PK → M × S → OracleComp (unifSpec + hs) β}

@@ -30,7 +30,7 @@ open OracleComp OracleSpec
 
 namespace QueryImpl
 
-variable {ι : Type} {spec : OracleSpec ι} {σ α β : Type}
+variable {spec : OracleSpec} {σ α β : Type}
 
 /-- The programs `oa` and `ob` over `spec`, each run under the stateful interpretation `so`, form
 an equal-distribution triple: from every state satisfying `P` their simulations have equal

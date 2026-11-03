@@ -25,7 +25,7 @@ namespace OracleComp
 
 /-- Run the computation `oa` repeatedly `n` times to get a list of `n` results. -/
 @[expose]
-def replicate {ι} {spec : OracleSpec ι} {α : Type v}
+def replicate {spec : OracleSpec} {α : Type v}
     (n : ℕ) (oa : OracleComp spec α) : OracleComp spec (List α) :=
   match n with
   | 0 => pure []
@@ -37,11 +37,11 @@ def replicate {ι} {spec : OracleSpec ι} {α : Type v}
 /-- Tail-recursive variant of `replicate`, running `oa` for each entry of a length-`n` list
 built by `List.replicateTR`. Agrees with `replicate` via `replicateTR_eq_replicate`. -/
 @[expose]
-def replicateTR {ι} {spec : OracleSpec ι} {α : Type v}
+def replicateTR {spec : OracleSpec} {α : Type v}
     (n : ℕ) (oa : OracleComp spec α) : OracleComp spec (List α) :=
   (List.replicateTR n ()).mapM fun () => oa
 
-variable {ι} {spec : OracleSpec ι} {α β : Type v}
+variable {spec : OracleSpec} {α β : Type v}
   (oa : OracleComp spec α) (n : ℕ)
 
 @[simp, grind =]

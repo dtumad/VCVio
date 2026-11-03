@@ -37,7 +37,7 @@ open scoped ENNReal
 
 namespace QueryImpl
 
-variable {ι κ : Type} {spec : OracleSpec.{0, 0} ι} {sigSpec : OracleSpec.{0, 0} κ} {σ : Type}
+variable {spec : OracleSpec.{0, 0}} {sigSpec : OracleSpec.{0, 0}} {σ : Type}
 
 /-- **A hazard raised only by the logged handler.** Let `bad` be a predicate on an outer state
 that no outer step at an `allowed` ambient query raises, and that every outer run of the logged
@@ -46,7 +46,7 @@ all `allowed` and which makes at most `q` queries of a predicate `p` holding at 
 query, run through the logged handler under the outer simulation from a state outside `bad`, ends
 in `bad` with probability at most `q * ε`. -/
 theorem prEvent_run_add_withLogging_le (outer : QueryImpl spec (StateT σ ProbComp))
-    (sign : QueryImpl sigSpec (OracleComp spec)) {allowed : ι → Prop} (bad : σ → Prop)
+    (sign : QueryImpl sigSpec (OracleComp spec)) {allowed : spec.Domain → Prop} (bad : σ → Prop)
     {ε : ℝ≥0∞} (hamb : ∀ t, allowed t → ∀ s, ¬bad s → ∀ z ∈ support ((outer t).run s), ¬bad z.2)
     (hsign : ∀ t s, ¬bad s → Pr{let z ← (simulateQ outer (sign t)).run s}[bad z.2] ≤ ε)
     {p : (spec + sigSpec).Domain → Prop} [DecidablePred p] (hp : ∀ t, p (.inr t))
@@ -99,7 +99,7 @@ end QueryImpl
 
 namespace SignatureAlg
 
-variable {ι : Type} {spec : OracleSpec.{0, 0} ι} {M PK SK S σ : Type}
+variable {spec : OracleSpec.{0, 0}} {M PK SK S σ : Type}
 
 /-- **A hazard raised only by signing, over the unforgeability experiment.** Let `bad` be a
 predicate on the state of a stateful interpretation of the ambient oracles. Suppose that no run of
@@ -109,7 +109,7 @@ verification enters `bad`, and that every run of signing enters `bad` with proba
 queries of a predicate `p` holding at every signing query, the experiment run from `s₀` ends in
 `bad` with probability at most `q * ε`. -/
 theorem prEvent_run_unforgeableTranscriptExperiment_le (so : QueryImpl spec (StateT σ ProbComp))
-    {sigAlg : SignatureAlg (OracleComp spec) M PK SK S} {allowed : ι → Prop} (bad : σ → Prop)
+    {sigAlg : SignatureAlg (OracleComp spec) M PK SK S} {allowed : spec.Domain → Prop} (bad : σ → Prop)
     {ε : ℝ≥0∞} {s₀ : σ} (hkeygen : ∀ z ∈ support ((simulateQ so sigAlg.keygen).run s₀), ¬bad z.2)
     (hamb : ∀ t, allowed t → ∀ s, ¬bad s → ∀ z ∈ support ((so t).run s), ¬bad z.2)
     (hsign : ∀ pk sk msg s, ¬bad s →

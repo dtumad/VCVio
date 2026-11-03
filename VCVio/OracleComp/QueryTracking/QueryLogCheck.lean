@@ -35,13 +35,11 @@ universe u v
 
 namespace OracleSpec.QueryLog
 
-variable {ι : Type u}
-
-/-! ## Consistent logs -/
+variable /-! ## Consistent logs -/
 
 section Consistent
 
-variable {spec : OracleSpec.{u, v} ι}
+variable {spec : OracleSpec.{u, v}}
 
 /-- A query log is consistent when any two entries with the same query are equal: no query is
 logged with two different answers. -/
@@ -76,7 +74,7 @@ end Consistent
 
 section agreesWith
 
-variable {spec : OracleSpec.{u, v} ι} [∀ t, DecidableEq (spec.Range t)]
+variable {spec : OracleSpec.{u, v}} [∀ t, DecidableEq (spec.Range t)]
 
 /-- Check a log against a partial answer table: accept when every logged answer is the answer
 stored in `cache` at its query; a query with no cached answer rejects (the paper's `CheckIO^D`,
@@ -91,7 +89,7 @@ theorem agreesWith_eq_true_iff (cache : QueryCache spec) (log : QueryLog spec) :
   simp [agreesWith]
 
 /-- Repeating a check is idempotent: removing duplicate entries does not change acceptance. -/
-theorem agreesWith_dedup [DecidableEq ι] (cache : QueryCache spec) (log : QueryLog spec) :
+theorem agreesWith_dedup [DecidableEq spec.Domain] (cache : QueryCache spec) (log : QueryLog spec) :
     agreesWith cache log.dedup = agreesWith cache log := by
   rw [Bool.eq_iff_iff, agreesWith_eq_true_iff, agreesWith_eq_true_iff]
   simp [List.mem_dedup]
@@ -102,7 +100,7 @@ end agreesWith
 
 section recheck
 
-variable {spec : OracleSpec.{u, 0} ι} [∀ t, DecidableEq (spec.Range t)]
+variable {spec : OracleSpec.{u, 0}} [∀ t, DecidableEq (spec.Range t)]
 
 /-- One step of `recheck`: query `p.1`, compare the answer with `p.2`, and conjoin the result
 with the running verdict `acc`. -/
@@ -148,7 +146,7 @@ theorem agreesWith_ofFn_some (H : (t : spec.Domain) → spec.Range t) (log : Que
 
 /-- Removing duplicate entries does not change the acceptance of `recheck` against any fixed
 function. -/
-theorem evalWithAnswerFn_recheck_dedup [DecidableEq ι] (H : (t : spec.Domain) → spec.Range t)
+theorem evalWithAnswerFn_recheck_dedup [DecidableEq spec.Domain] (H : (t : spec.Domain) → spec.Range t)
     (log : QueryLog spec) :
     evalWithAnswerFn (QueryImpl.ofFn H) (recheck log.dedup) =
       evalWithAnswerFn (QueryImpl.ofFn H) (recheck log) := by

@@ -73,7 +73,7 @@ open OracleComp OracleSpec MeasureTheory
 
 namespace RelabelState
 
-variable {ι : Type} {pub : OracleSpec ι} {X K R : Type} [DecidableEq X] [DecidableEq K]
+variable {pub : OracleSpec} {X K R : Type} [DecidableEq X] [DecidableEq K]
 
 /-- A state read with a set of hidden cells undrawn. -/
 def mask (s : RelabelState pub X K R × Finset (X ⊕ K)) : RelabelState pub X K R :=
@@ -216,8 +216,8 @@ end RelabelState
 
 namespace CanonicalGraph
 
-variable {ι : Type} {pub : OracleSpec ι} {X K R : Type} (G : CanonicalGraph pub X K R)
-  [DecidableEq ι] [DecidableEq X] [DecidableEq K] [SampleableType R]
+variable {pub : OracleSpec} {X K R : Type} (G : CanonicalGraph pub X K R)
+  [DecidableEq pub.Domain] [DecidableEq X] [DecidableEq K] [SampleableType R]
   [∀ t, SampleableType (pub.Range t)]
 
 /-- **The deferred game.** The relabelled game, with the label of a node read by drawing it; a
@@ -297,7 +297,7 @@ theorem maskedImpl_run_pt {s : RelabelState pub X K R × Finset (X ⊕ K)} {k : 
 
 /-- A public query at a point of no node whose children are drawn and not hidden is answered by
 the public cache. -/
-theorem maskedImpl_run_pub_of_not_exists {s : RelabelState pub X K R × Finset (X ⊕ K)} {t : ι}
+theorem maskedImpl_run_pub_of_not_exists {s : RelabelState pub X K R × Finset (X ⊕ K)} {t : pub.Domain}
     (ht : ¬∃ k vs, G.childVals (RelabelState.mask s) k = some vs ∧ G.pt k vs = t) :
     (G.maskedImpl (.inl (.inl (.inr t)))).run s =
       (fun z ↦ (z.1, ((z.2, s.1.2), s.2))) <$> (pub.randomOracle t).run s.1.1 := by
@@ -399,7 +399,7 @@ theorem deferredImpl_cachesOnlyQueryPoint :
 
 /-- Under a query budget charging every public query at a point of a set `D`, a run of the
 deferred game adds at most `q` points of `D` to the public cache. -/
-theorem encard_inter_setOf_isSome_le_add_of_mem_support_simulateQ_deferredImpl {D : Set ι}
+theorem encard_inter_setOf_isSome_le_add_of_mem_support_simulateQ_deferredImpl {D : Set pub.Domain}
     {p : (pub.withLabels X K R).Domain → Prop} [DecidablePred p]
     (hp : ∀ t ∈ D, p (.inl (.inl (.inr t)))) {α : Type} {oa : OracleComp (pub.withLabels X K R) α}
     {q : ℕ} (h : IsQueryBoundP oa p q) {s : RelabelState pub X K R × List (X ⊕ K)}

@@ -24,8 +24,7 @@ universe u
 
 namespace OracleComp
 
-variable {ι τ : Type u}
-variable {spec : OracleSpec ι} {superSpec : OracleSpec τ}
+variable variable {spec : OracleSpec} {superSpec : OracleSpec}
 variable {α : Type u}
 
 /-- Predicate-targeted query bounds are preserved by lifting along a `SubSpec`

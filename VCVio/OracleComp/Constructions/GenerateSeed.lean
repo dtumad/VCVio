@@ -28,9 +28,9 @@ namespace OracleComp
 
 /-- Generate a `QuerySeed` uniformly at random. For each oracle `j ∈ js`, generates `qc j`
 uniform random values of type `spec.Range j` using `SampleableType`. -/
-def generateSeed {ι} [DecidableEq ι] (spec : OracleSpec ι)
+def generateSeed [DecidableEq spec.Domain] (spec : OracleSpec)
     [∀ t : spec.Domain, SampleableType (spec.Range t)]
-    (qc : ι → ℕ) : List ι → ProbComp (OracleSpec.QuerySeed spec)
+    (qc : spec.Domain → ℕ) : List spec.Domain → ProbComp (OracleSpec.QuerySeed spec)
   | [] => return ∅
   | j :: js => do
     let xs ← replicate (qc j) ($ᵗ spec.Range j)
@@ -42,14 +42,14 @@ section lemmas
 /-- The product-of-inverses identity assembling the `j :: js` answer from the `j` and `js`
 parts: `(c ^ qc j)⁻¹ * (∏ js)⁻¹ = (∏ (j :: js))⁻¹` over `ℝ≥0∞`, valid because every factor is
 a finite natural-number cast. -/
-private lemma inv_natCast_pow_mul_inv_list_prod {ι : Type} (qc : ι → ℕ) (j : ι) (js : List ι)
-    (f : ι → ℕ) :
+private lemma inv_natCast_pow_mul_inv_list_prod (qc : spec.Domain → ℕ) (j : spec.Domain) (js : List spec.Domain)
+    (f : spec.Domain → ℕ) :
     ((↑(f j ^ qc j) : ENNReal))⁻¹ * (↑(js.map (fun j => f j ^ qc j)).prod)⁻¹ =
       (↑((j :: js).map (fun j => f j ^ qc j)).prod)⁻¹ := by
   rw [List.map_cons, List.prod_cons, Nat.cast_mul,
     ENNReal.mul_inv (Or.inr (ENNReal.natCast_ne_top _)) (Or.inl (ENNReal.natCast_ne_top _))]
 
-variable {ι} [DecidableEq ι] (spec : OracleSpec ι) (qc : ι → ℕ) (j : ι) (js : List ι)
+variable [DecidableEq spec.Domain] (spec : OracleSpec) (qc : spec.Domain → ℕ) (j : spec.Domain) (js : List spec.Domain)
 
 /-- Split a seed whose lengths match the budget for `j :: js` into its leading `qc j` answers at
 `j` and the remaining seed for `js`. The leading block has length `qc j`, the remainder matches
@@ -103,7 +103,7 @@ lemma generateSeed_zero :
       exact ⟨xs, ⟨hxs_len, fun x _ => by simp⟩, rest, hrest_len, rfl⟩
 
 lemma length_eq_of_mem_support_generateSeed
-    (seed : QuerySeed spec) (i : ι)
+    (seed : QuerySeed spec) (i : spec.Domain)
     (hseed : seed ∈ support (generateSeed spec qc js)) :
     (seed i).length = qc i * js.count i :=
   (support_generateSeed spec qc js ▸ hseed) i
@@ -115,7 +115,7 @@ This is the support-level coverage property needed by seeded replay arguments: o
 `i` in `js` already contributes `qc i` pre-generated answers to the seed at `i`, and additional
 occurrences only increase that supply. -/
 lemma le_length_of_mem_support_generateSeed_of_covers
-    (seed : QuerySeed spec) (i : ι)
+    (seed : QuerySeed spec) (i : spec.Domain)
     (hseed : seed ∈ support (generateSeed spec qc js))
     (hcover : ∀ j, 0 < qc j → j ∈ js) :
     qc i ≤ (seed i).length := by
@@ -125,7 +125,7 @@ lemma le_length_of_mem_support_generateSeed_of_covers
   · exact Nat.le_mul_of_pos_right _ (List.count_pos_iff.mpr (hcover i hqpos))
 
 lemma eq_nil_of_mem_support_generateSeed
-    (seed : QuerySeed spec) (i : ι)
+    (seed : QuerySeed spec) (i : spec.Domain)
     (hseed : seed ∈ support (generateSeed spec qc js))
     (hlen0 : qc i * js.count i = 0) :
     seed i = [] :=
@@ -133,7 +133,7 @@ lemma eq_nil_of_mem_support_generateSeed
     ((length_eq_of_mem_support_generateSeed spec qc js seed i hseed).trans hlen0)
 
 lemma ne_nil_of_mem_support_generateSeed
-    (seed : QuerySeed spec) (i : ι)
+    (seed : QuerySeed spec) (i : spec.Domain)
     (hseed : seed ∈ support (generateSeed spec qc js))
     (hlenPos : 0 < qc i * js.count i) :
     seed i ≠ [] := by
@@ -143,7 +143,7 @@ lemma ne_nil_of_mem_support_generateSeed
   omega
 
 lemma exists_cons_of_mem_support_generateSeed
-    (seed : QuerySeed spec) (i : ι)
+    (seed : QuerySeed spec) (i : spec.Domain)
     (hseed : seed ∈ support (generateSeed spec qc js))
     (hlenPos : 0 < qc i * js.count i) :
     ∃ u us, seed i = u :: us :=
@@ -151,7 +151,7 @@ lemma exists_cons_of_mem_support_generateSeed
     (ne_nil_of_mem_support_generateSeed spec qc js seed i hseed hlenPos)
 
 lemma tail_length_of_mem_support_generateSeed
-    (seed : QuerySeed spec) (i : ι)
+    (seed : QuerySeed spec) (i : spec.Domain)
     (hseed : seed ∈ support (generateSeed spec qc js))
     (hlenPos : 0 < qc i * js.count i) :
     (seed i).tail.length = qc i * js.count i - 1 := by
@@ -215,7 +215,7 @@ lemma prEvent_generateSeed [∀ t, Fintype (spec.Range t)] (seed : QuerySeed spe
 
 /-- The seed distribution depends only on the per-oracle answer counts `qc i * js.count i`. -/
 lemma evalDistEq_generateSeed_of_countEq
-    (qc' : ι → ℕ) (js' : List ι)
+    (qc' : spec.Domain → ℕ) (js' : List spec.Domain)
     (hcount : ∀ i, qc i * js.count i = qc' i * js'.count i) :
     generateSeed spec qc js =ᵈ generateSeed spec qc' js' := by
   classical
@@ -223,7 +223,7 @@ lemma evalDistEq_generateSeed_of_countEq
   have hsupp : support (generateSeed spec qc js) = support (generateSeed spec qc' js') := by
     simp only [support_generateSeed, hcount]
   -- The number of seeds is a product over any finite set of oracles containing the list.
-  have hprod : ∀ (q : ι → ℕ) (l : List ι) (U : Finset ι), l.toFinset ⊆ U →
+  have hprod : ∀ (q : spec.Domain → ℕ) (l : List spec.Domain) (U : Finset spec.Domain), l.toFinset ⊆ U →
       (l.map fun j => Fintype.card (spec.Range j) ^ q j).prod =
         ∏ i ∈ U, Fintype.card (spec.Range i) ^ (q i * l.count i) := by
     intro q l U hU
@@ -247,7 +247,7 @@ lemma evalDistEq_generateSeed_of_countEq
 bijection: the seed `s'.prependValues [u]` lies in the support of `generateSeed spec qc js` exactly
 when `s'` lies in the support of the count-reduced generator on `js.dedup`. Membership in either
 support is the per-oracle length condition, and the two conditions match coordinatewise. -/
-private lemma support_prependValues_iff_of_count_pos {t : ι} (u : spec.Range t)
+private lemma support_prependValues_iff_of_count_pos {t : spec.Domain} (u : spec.Range t)
     (s' : QuerySeed spec) (hpos : 0 < qc t * js.count t) :
     s'.prependValues [u] ∈ support (generateSeed spec qc js) ↔
       s' ∈ support (generateSeed spec
@@ -273,8 +273,8 @@ private lemma support_prependValues_iff_of_count_pos {t : ι} (u : spec.Range t)
 `ℕ`-valued weights `f`, `g` that agree on `l.erase t` with `f t = c * g t`, the inverse products
 satisfy `(∏ l.map f)⁻¹ = c⁻¹ * (∏ l.map g)⁻¹`. Splitting off the `t` factor turns the
 shared remaining product into the common cofactor, leaving the `c⁻¹` from the `t` block. -/
-private lemma inv_natCast_list_prod_map_eq_inv_mul {ι : Type*} [DecidableEq ι]
-    (l : List ι) {t : ι} (ht : t ∈ l) (c : ℕ) (f g : ι → ℕ)
+private lemma inv_natCast_list_prod_map_eq_inv_mul [DecidableEq spec.Domain]
+    (l : List spec.Domain) {t : spec.Domain} (ht : t ∈ l) (c : ℕ) (f g : spec.Domain → ℕ)
     (hft : f t = c * g t) (hfg : ∀ j ∈ l.erase t, f j = g j) :
     ((↑(l.map f).prod : ENNReal))⁻¹ = (↑c)⁻¹ * (↑(l.map g).prod)⁻¹ := by
   have hrest : (l.erase t).map g = (l.erase t).map f :=
@@ -286,14 +286,14 @@ private lemma inv_natCast_list_prod_map_eq_inv_mul {ι : Type*} [DecidableEq ι]
 /-- Prepending one answer `u` at `t` to a seed multiplies its probability by `|spec.Range t|⁻¹`
 against the seed distribution with the answer count at `t` decremented. -/
 lemma prEvent_generateSeed_prependValues [∀ t, Fintype (spec.Range t)]
-    {t : ι} (u : spec.Range t) (s' : QuerySeed spec)
+    {t : spec.Domain} (u : spec.Range t) (s' : QuerySeed spec)
     (hpos : 0 < qc t * js.count t) :
     Pr{let s ← generateSeed spec qc js}[s = s'.prependValues [u]] =
       (↑(Fintype.card (spec.Range t)))⁻¹ *
         Pr{let s ← (generateSeed spec
           (Function.update (fun i => qc i * js.count i) t (qc t * js.count t - 1))
           js.dedup)}[s = s'] := by
-  set N : ι → ℕ := fun i => qc i * js.count i
+  set N : spec.Domain → ℕ := fun i => qc i * js.count i
   set qc_red := Function.update N t (N t - 1)
   have ht_mem : t ∈ js := List.count_pos_iff.mp (Nat.pos_of_mul_pos_left hpos)
   have supp_iff := support_prependValues_iff_of_count_pos spec qc js u s' hpos
@@ -318,7 +318,7 @@ lemma prEvent_generateSeed_prependValues [∀ t, Fintype (spec.Range t)]
 
 /-- When oracle `t` has a positive answer count, a generated seed is a uniform head answer at `t`
 prepended to an independently generated seed whose count at `t` is decremented. -/
-lemma evalDistEq_generateSeed_prependValues {t : ι}
+lemma evalDistEq_generateSeed_prependValues {t : spec.Domain}
     (hpos : 0 < qc t * js.count t) :
     generateSeed spec qc js =ᵈ (do
       let u ← $ᵗ spec.Range t
@@ -352,7 +352,7 @@ end lemmas
 
 section coverage
 
-variable {ι : Type} [DecidableEq ι] {spec : OracleSpec ι}
+variable [DecidableEq spec.Domain] {spec : OracleSpec}
   [∀ t : spec.Domain, SampleableType (spec.Range t)]
 
 /-- `SeedListCovers qb js` means that every oracle family with positive query budget appears in
@@ -360,13 +360,13 @@ the seed-generation list `js`.
 
 When this holds, any seed sampled from `generateSeed spec qb js` supplies enough pre-generated
 answers to cover one full execution of a computation satisfying the structural bound `qb`. -/
-def SeedListCovers (qb : ι → ℕ) (js : List ι) : Prop :=
+def SeedListCovers (qb : spec.Domain → ℕ) (js : List spec.Domain) : Prop :=
   ∀ t, 0 < qb t → t ∈ js
 
 /-- Any seed sampled from `generateSeed spec qb js` has at least `qb t` entries for each
 oracle `t`, provided `js` lists every oracle family with positive budget. -/
 lemma generateSeed_covers_queryBound
-    (qb : ι → ℕ) (js : List ι) {seed : QuerySeed spec}
+    (qb : spec.Domain → ℕ) (js : List spec.Domain) {seed : QuerySeed spec}
     (hjs : SeedListCovers qb js)
     (hseed : seed ∈ support (generateSeed spec qb js)) :
     ∀ t, qb t ≤ (seed t).length :=
@@ -378,7 +378,7 @@ end coverage
 
 section unitCost
 
-variable {ι : Type} [DecidableEq ι] {spec : OracleSpec ι}
+variable [DecidableEq spec.Domain] {spec : OracleSpec}
   [∀ t : spec.Domain, SampleableType (spec.Range t)]
 
 private theorem queryCostExactly_replicate_probComp
@@ -401,7 +401,7 @@ private theorem queryCostExactly_replicate_probComp
 `(js.map fun j => qc j * sampleCost j).sum`, with each of the `qc j` samples at oracle
 `j` costing `sampleCost j`. -/
 theorem generateSeed_queryCostExactly
-    (qc : ι → ℕ) (js : List ι) (sampleCost : ι → ℕ)
+    (qc : spec.Domain → ℕ) (js : List spec.Domain) (sampleCost : spec.Domain → ℕ)
     (hSample :
       ∀ j, AddWriterT.QueryCostExactly
         (probCompUnitQueryRun ($ᵗ spec.Range j : ProbComp (spec.Range j)))
@@ -432,7 +432,7 @@ open ENNReal in
 `∑ j in js, qc j * sampleCost j`, i.e. each of the `qc j` samples at oracle `j` costs
 `sampleCost j`. -/
 theorem generateSeed_expectedQueryCount_eq
-    (qc : ι → ℕ) (js : List ι) (sampleCost : ι → ℕ)
+    (qc : spec.Domain → ℕ) (js : List spec.Domain) (sampleCost : spec.Domain → ℕ)
     (hSample :
       ∀ j, AddWriterT.QueryCostExactly
         (probCompUnitQueryRun ($ᵗ spec.Range j : ProbComp (spec.Range j)))

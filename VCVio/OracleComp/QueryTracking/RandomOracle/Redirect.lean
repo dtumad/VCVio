@@ -48,7 +48,7 @@ namespace OracleSpec.QueryCache
 
 section Filter
 
-variable {ι : Type u} {spec : OracleSpec.{u, v} ι}
+variable {spec : OracleSpec.{u, v}}
 
 /-- The restriction of `c` to the points satisfying `p`: the entries of `c` there, and no entry
 elsewhere. -/
@@ -77,7 +77,7 @@ end Filter
 
 section FilterReplay
 
-variable {ι : Type} {spec : OracleSpec ι} {α : Type} {p : spec.Domain → Prop} [DecidablePred p]
+variable {spec : OracleSpec} {α : Type} {p : spec.Domain → Prop} [DecidablePred p]
 
 /-- A replay whose every query satisfies `p` reads the restriction of a cache to `p` as the cache
 itself. -/
@@ -115,7 +115,7 @@ end FilterReplay
 
 section ViewBy
 
-variable {ι ι' : Type u} {spec : OracleSpec.{u, u} ι} {spec' : OracleSpec.{u, u} ι'}
+variable {spec : OracleSpec.{u, u}} {spec' : OracleSpec.{u, u}}
   {α : Type u}
 
 /-- The cache `c` of `spec'` read through the redirect `ρ`: its entry at `t` is the partial
@@ -161,15 +161,15 @@ end OracleSpec.QueryCache
 
 namespace OracleComp
 
-variable {ι₁ ι₂ : Type} [DecidableEq ι₁] [DecidableEq ι₂] {spec₁ : OracleSpec ι₁}
-  {spec₂ : OracleSpec ι₂} [∀ t, SampleableType ((spec₁ + spec₂).Range t)] {α : Type}
+variable [DecidableEq spec₁.Domain] [DecidableEq spec₂.Domain] {spec₁ : OracleSpec}
+  {spec₂ : OracleSpec} [∀ t, SampleableType ((spec₁ + spec₂).Range t)] {α : Type}
 
 /-- **A run whose replay settles on a restriction adds only points of it.** A `spec₁`-only program
 issued through its query capability and run in the random oracle model over `spec₁ + spec₂`, whose
 replay settles on the restriction to `p` of the `spec₁` part of its final cache, adds to the
 `spec₁` part of the cache only points satisfying `p`. -/
 theorem forall_of_simulateQ_toPartialImpl_filter_fst_of_mem_support_run_romImpl
-    (oa : OracleComp spec₁ α) {p : ι₁ → Prop} [DecidablePred p]
+    (oa : OracleComp spec₁ α) {p : spec₁.Domain → Prop} [DecidablePred p]
     {cache : (spec₁ + spec₂).QueryCache} {z : α × (spec₁ + spec₂).QueryCache}
     (hz : z ∈ support ((simulateQ (spec₁ + spec₂).romImpl (simulateQ (HasQuery.toQueryImpl
       (spec := spec₁) (m := OracleComp (unifSpec + (spec₁ + spec₂)))) oa)).run cache))

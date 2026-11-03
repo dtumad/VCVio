@@ -110,7 +110,7 @@ namespace OracleSpec.QueryCache
 
 /-- A database with fewer than `t` entries has its populated keys inside a finite set of fewer
 than `t` points. -/
-lemma exists_finset_card_lt_of_encard_lt {ι : Type u} {spec : OracleSpec.{u, v} ι}
+lemma exists_finset_card_lt_of_encard_lt {spec : OracleSpec.{u, v}}
     {D : QueryCache spec} {t : ℕ} (h : D.toSet.encard < t) :
     ∃ S : Finset spec.Domain, S.card < t ∧ ∀ x, D x ≠ none → x ∈ S := by
   classical
@@ -121,7 +121,7 @@ lemma exists_finset_card_lt_of_encard_lt {ι : Type u} {spec : OracleSpec.{u, v}
   · obtain ⟨u, hu⟩ := Option.ne_none_iff_exists'.mp hx
     exact Finset.mem_image.mpr ⟨⟨x, u⟩, hfin.mem_toFinset.mpr hu, rfl⟩
 
-variable {ι : Type u} {spec : OracleSpec.{u, v} ι} [DecidableEq ι] [AnswerMeasure spec]
+variable {spec : OracleSpec.{u, v}} [DecidableEq spec.Domain] [AnswerMeasure spec]
   {S S' T T' P Q : Set (QueryCache spec)} {D : QueryCache spec} {x : spec.Domain} {t t' : ℕ}
 
 /-! ## One-step update probability -/
@@ -136,7 +136,7 @@ one-entry extension, which is the case `flip` uses. -/
   AnswerMeasure.toMeasure x {u | D.cacheQuery x u ∈ T}
 
 /-- For answers in `Type`, the update measure equals the event probability of a single query. -/
-lemma updateProb_eq_prEvent {ι : Type u} {spec : OracleSpec.{u, 0} ι} [DecidableEq ι]
+lemma updateProb_eq_prEvent {spec : OracleSpec.{u, 0}} [DecidableEq spec.Domain]
     [AnswerMeasure spec] (D : QueryCache spec) (x : spec.Domain)
     (T : Set (QueryCache spec)) :
     D.updateProb x T =
@@ -168,7 +168,7 @@ lemma updateProb_le_one (D : QueryCache spec) (x : spec.Domain) (T : Set (QueryC
 
 /-- Under uniform answers, the update probability is the proportion of answers that land in
 the target property. -/
-lemma updateProb_eq_card_div {ι : Type u} {spec : OracleSpec.{u, v} ι} [DecidableEq ι]
+lemma updateProb_eq_card_div {spec : OracleSpec.{u, v}} [DecidableEq spec.Domain]
     [UniformAnswerMeasure spec] (D : QueryCache spec) (x : spec.Domain)
     [Fintype (spec.Range x)] (T : Set (QueryCache spec))
     [DecidablePred fun u : spec.Range x => D.cacheQuery x u ∈ T] :

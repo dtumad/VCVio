@@ -31,7 +31,7 @@ open OracleSpec
 
 namespace QueryImpl
 
-variable {ι : Type} {spec : OracleSpec ι} {m : Type → Type*}
+variable {spec : OracleSpec} {m : Type → Type*}
 
 section addCost
 
@@ -52,7 +52,7 @@ lemma withAddCost_apply {ω : Type} [AddMonoid ω]
   simp [withAddCost, AddWriterT.addTell, QueryImpl.withCost]
 
 /-- Cost instrumentation on a left-summand query, with the component response type exposed. -/
-lemma withAddCost_apply_inl {ι₁ ι₂ : Type} {spec₁ : OracleSpec ι₁} {spec₂ : OracleSpec ι₂}
+lemma withAddCost_apply_inl {spec₁ : OracleSpec} {spec₂ : OracleSpec}
     {ω : Type} [AddMonoid ω] (impl : QueryImpl (spec₁ + spec₂) m)
     (costFn : (spec₁ + spec₂).Domain → ω) (t : spec₁.Domain) :
     impl.withAddCost costFn (Sum.inl t) = (do
@@ -61,7 +61,7 @@ lemma withAddCost_apply_inl {ι₁ ι₂ : Type} {spec₁ : OracleSpec ι₁} {s
   rw [withAddCost_apply, restrictLeft_apply]
 
 /-- Cost instrumentation on a right-summand query, with the component response type exposed. -/
-lemma withAddCost_apply_inr {ι₁ ι₂ : Type} {spec₁ : OracleSpec ι₁} {spec₂ : OracleSpec ι₂}
+lemma withAddCost_apply_inr {spec₁ : OracleSpec} {spec₂ : OracleSpec}
     {ω : Type} [AddMonoid ω] (impl : QueryImpl (spec₁ + spec₂) m)
     (costFn : (spec₁ + spec₂).Domain → ω) (t : spec₂.Domain) :
     impl.withAddCost costFn (Sum.inr t) = (do

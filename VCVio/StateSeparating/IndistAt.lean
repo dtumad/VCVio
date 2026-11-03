@@ -23,7 +23,7 @@ open OracleSpec OracleComp ENNReal
 
 namespace QueryImpl.Stateful
 
-variable {ιₑ : Type uₑ} {E : OracleSpec.{uₑ, 0} ιₑ}
+variable {E : OracleSpec.{uₑ, 0}}
 
 /-- ε-bounded indistinguishability of two stateful handlers from explicit
 initial states. -/
@@ -118,7 +118,7 @@ theorem hybrid {n : ℕ} {σ : ℕ → Type} {ε : ℕ → ℝ≥0∞}
 
 section LinkCongr
 
-variable {ιₘ : Type uₘ} {M : OracleSpec.{uₘ, 0} ιₘ}
+variable {M.Domainₘ : Type uₘ} {M : OracleSpec.{uₘ, 0}ₘ}
 variable {σ_P : Type}
 
 theorem link_inner_congr (outer : QueryImpl.Stateful M E σ_P) (sP : σ_P)

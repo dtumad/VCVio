@@ -52,7 +52,7 @@ open OracleSpec OracleComp
 
 namespace SignatureAlg
 
-variable {ι ι' : Type} {spec : OracleSpec ι} {spec' : OracleSpec ι'} {M PK SK SK' S Sec : Type}
+variable {spec : OracleSpec} {spec' : OracleSpec} {M PK SK SK' S Sec : Type}
 
 /-- The transcript of one execution of the unforgeability experiment: the key pair, the signing
 oracle's log of queried messages and returned signatures, the forgery, and whether it verifies. -/
@@ -293,7 +293,7 @@ A program whose ambient queries are all `allowed`, run with the signing oracle f
 satisfying `I` with the empty log, ends with its log in a state satisfying `I`. -/
 theorem holds_of_mem_support_run_runWithSigningOracle {σ : Type}
     (so : QueryImpl spec (StateT σ ProbComp)) (sigAlg : SignatureAlg (OracleComp spec) M PK SK S)
-    (pk : PK) (sk : SK) {allowed : ι → Prop} (I : QueryLog (M →ₒ S) → σ → Prop)
+    (pk : PK) (sk : SK) {allowed : spec.Domain → Prop} (I : QueryLog (M →ₒ S) → σ → Prop)
     (hamb : ∀ t, allowed t → ∀ log s, I log s → ∀ z ∈ support ((so t).run s), I log z.2)
     (hsign : ∀ msg log s, I log s →
       ∀ z ∈ support ((simulateQ so (sigAlg.sign pk sk msg)).run s), I (log ++ [⟨msg, z.1⟩]) z.2)
@@ -313,7 +313,7 @@ to the log. Against an adversary whose ambient queries are all `allowed`, every 
 the experiment satisfies `I` with its key pair and log in the final state. -/
 theorem holds_of_mem_support_run_unforgeableTranscriptExperiment {σ : Type}
     (so : QueryImpl spec (StateT σ ProbComp)) {sigAlg : SignatureAlg (OracleComp spec) M PK SK S}
-    {allowed : ι → Prop} (I : PK → SK → QueryLog (M →ₒ S) → σ → Prop) {s₀ : σ}
+    {allowed : spec.Domain → Prop} (I : PK → SK → QueryLog (M →ₒ S) → σ → Prop) {s₀ : σ}
     (hkeygen : ∀ z ∈ support ((simulateQ so sigAlg.keygen).run s₀), I z.1.1 z.1.2 [] z.2)
     (hamb : ∀ t, allowed t → ∀ pk sk log s, I pk sk log s →
       ∀ z ∈ support ((so t).run s), I pk sk log z.2)

@@ -22,7 +22,7 @@ universe u
 
 namespace OracleComp.ProgramLogic.StdDo
 
-variable {ι : Type u} {spec : OracleSpec ι}
+variable {spec : OracleSpec}
 variable [OracleSpec.UniformAnswerMeasure spec]
 variable {α : Type}
 

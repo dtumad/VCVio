@@ -49,7 +49,7 @@ universe u
 
 namespace OracleComp.ProgramLogic.Relational
 
-variable {ι : Type} [DecidableEq ι] {spec : OracleSpec ι} {ι' : Type} {spec' : OracleSpec ι'}
+variable [DecidableEq spec.Domain] {spec : OracleSpec} {spec' : OracleSpec}
   {α : Type}
 
 /-! ## Bad-input monotonicity wrappers (`σ × Bool` shape) -/

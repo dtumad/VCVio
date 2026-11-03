@@ -49,7 +49,7 @@ response needs a measurable structure. -/
 theorem evalDistEq_simulateQ_run
     {m : Type → Type v} [Monad m] [LawfulMonad m]
     [EvalDistSemantics m] [LawfulEvalDistSemantics m]
-    {ι : Type u} {S α : Type} {spec : OracleSpec.{u, 0} ι}
+    {S α : Type} {spec : OracleSpec.{u, 0}}
     (left right : QueryImpl spec (StateT S m))
     (h : ∀ operation state, (left operation).run state =ᵈ (right operation).run state)
     (program : OracleComp spec α) (state : S) :
@@ -68,7 +68,7 @@ measures of the complete result and retained state. -/
 theorem evalDist_simulateQ_run_congr
     {m : Type → Type v} [Monad m] [LawfulMonad m]
     [EvalDistSemantics m] [LawfulEvalDistSemantics m]
-    {ι : Type u} {S α : Type} {spec : OracleSpec.{u, 0} ι} [MeasurableSpace (α × S)]
+    {S α : Type} {spec : OracleSpec.{u, 0}} [MeasurableSpace (α × S)]
     (left right : QueryImpl spec (StateT S m))
     (h : ∀ operation state, (left operation).run state =ᵈ (right operation).run state)
     (program : OracleComp spec α) (state : S) :
@@ -78,8 +78,8 @@ theorem evalDist_simulateQ_run_congr
 /-- Running a computation through a stateful handler into a second interface, then through a
 stateful handler of that interface, is equal in distribution to running it through one handler on
 the pair of states, if this holds for every query. -/
-theorem simulateQ_run_simulateQ_run_evalDistEq {ι₀ ι₁ σ τ α : Type}
-    {spec₀ : OracleSpec.{0, 0} ι₀} {spec₁ : OracleSpec.{0, 0} ι₁}
+theorem simulateQ_run_simulateQ_run_evalDistEq {spec₀.Domain spec₁.Domain σ τ α : Type}
+    {spec₀ : OracleSpec.{0, 0}} {spec₁ : OracleSpec.{0, 0}}
     (outer : QueryImpl spec₁ (StateT τ ProbComp))
     (inner : QueryImpl spec₀ (StateT σ (OracleComp spec₁)))
     (impl : QueryImpl spec₀ (StateT (τ × σ) ProbComp))
@@ -104,7 +104,7 @@ does not satisfy the hypothesis. -/
 theorem evalDist_simulateQ_run'_eq_of_forall
     {m : Type → Type v} [Monad m] [LawfulMonad m]
     [EvalDistSemantics m] [LawfulEvalDistSemantics m]
-    {ι : Type u} {S α : Type} {spec : OracleSpec.{u, 0} ι}
+    {S α : Type} {spec : OracleSpec.{u, 0}}
     [OracleSpec.AnswerMeasure spec] [MeasurableSpace α]
     (impl : QueryImpl spec (StateT S m))
     (h : ∀ t state,
@@ -131,7 +131,7 @@ namespace QueryImpl
 
 open OracleComp
 
-variable {ι : Type} {spec : OracleSpec ι} {σ₁ σ₂ : Type}
+variable {spec : OracleSpec} {σ₁ σ₂ : Type}
 
 /-- A probabilistic state map `fill` intertwines `impl₁` with `impl₂`: from every state, a step
 of `impl₁` followed by `fill` of its post-state has, before any continuation, the distribution of
@@ -196,7 +196,7 @@ section simulateQ
 
 open OracleComp
 
-variable {ι σ α : Type} {spec : OracleSpec ι}
+variable {spec.Domain σ α : Type} {spec : OracleSpec}
 
 /-- Simulating with a stateful implementation from a sampled initial state satisfies an event
 with probability one whenever every possible output of the original computation is a present

@@ -26,8 +26,7 @@ universe u u' v v' w w'
 
 open scoped OracleSpec.PrimitiveQuery
 
-variable {ι : Type u} {τ : Type v}
-  {spec : OracleSpec ι} {superSpec : OracleSpec τ} {α β γ : Type w}
+variable {spec : OracleSpec} {superSpec : OracleSpec} {α β γ : Type w}
 
 namespace OracleSpec
 
@@ -45,7 +44,7 @@ Informally, `spec ⊂ₒ superSpec` says that any query to an oracle of `spec`
 can be perfectly simulated by a query to an oracle of `superSpec`. We avoid
 the built-in `Subset` notation because we care about the actual data of the
 mapping (it is needed when defining type coercions), not just its existence. -/
-class SubSpec (spec : OracleSpec.{u, w} ι) (superSpec : OracleSpec.{v, w} τ)
+class SubSpec (spec : OracleSpec.{u, w}) (superSpec : OracleSpec.{v, w})
     extends MonadLift (OracleQuery spec) (OracleQuery superSpec) where
   /-- Forward translation on query inputs (oracle indices). -/
   onQuery : spec.Domain → superSpec.Domain
@@ -62,7 +61,7 @@ class SubSpec (spec : OracleSpec.{u, w} ι) (superSpec : OracleSpec.{v, w} τ)
 
 namespace SubSpec
 
-variable {κ : Type w'} {spec₃ : OracleSpec κ}
+variable {spec₃ : OracleSpec}
 
 /-- The lens action on a single query: forward on the input, post-compose the
 backward fiber on the continuation. Used as the canonical reduced form of
@@ -119,7 +118,7 @@ and these embeddings are essential to the API.
 Cartesianness preserves operational possibilities and permits transport of uniform measures.
 Preservation of arbitrary weighted measures is a separate semantic contract. The public
 `LawfulSubSpec.toLens_isCartesian` equation exposes the polynomial lens certificate. -/
-class LawfulSubSpec (spec : OracleSpec.{u, w} ι) (superSpec : OracleSpec.{v, w} τ)
+class LawfulSubSpec (spec : OracleSpec.{u, w}) (superSpec : OracleSpec.{v, w})
     [h : SubSpec spec superSpec] : Prop where
   /-- The backward translation is bijective on every fiber. -/
   onResponse_bijective (t : spec.Domain) :
@@ -131,7 +130,7 @@ macro:50 lhs:term " ˡ⊂ₒ " rhs:term : term => `(LawfulSubSpec $lhs $rhs)
 
 namespace LawfulSubSpec
 
-variable {ι : Type u} {τ : Type v} {spec : OracleSpec ι} {superSpec : OracleSpec τ}
+variable {spec : OracleSpec} {superSpec : OracleSpec}
     [h : spec ⊂ₒ superSpec] [spec ˡ⊂ₒ superSpec]
 
 /-- The lens-level statement of `LawfulSubSpec`: the underlying
@@ -149,9 +148,8 @@ images.
 Lawfulness concerns bijective response translations, while disjointness says the two lifted
 query namespaces do not overlap inside the ambient interface. -/
 class DisjointSubSpec
-    {ι₁ : Type u} {ι₂ : Type v} {τ : Type w'}
-    (spec₁ : OracleSpec.{u, w} ι₁) (spec₂ : OracleSpec.{v, w} ι₂)
-    (superSpec : OracleSpec.{w', w} τ)
+    (spec₁ : OracleSpec.{u, w}) (spec₂ : OracleSpec.{v, w})
+    (superSpec : OracleSpec.{w', w})
     [h₁ : SubSpec spec₁ superSpec] [h₂ : SubSpec spec₂ superSpec] : Prop where
   /-- The two forward query maps have disjoint images. -/
   disjoint_onQuery (t₁ : spec₁.Domain) (t₂ : spec₂.Domain) :
@@ -178,12 +176,12 @@ section liftComp
 /-- Lift a computation from `spec` to `superSpec` using a `SubSpec` instance on queries.
 Usually `liftM` should be preferred but this can allow more explicit annotation. -/
 @[expose]
-def liftComp (mx : OracleComp spec α) (superSpec : OracleSpec τ)
+def liftComp (mx : OracleComp spec α) (superSpec : OracleSpec)
     [h : MonadLiftT (OracleQuery spec) (OracleQuery superSpec)] :
     OracleComp superSpec α :=
     simulateQ (fun t => liftM (spec.query t)) mx
 
-variable (superSpec : OracleSpec τ)
+variable (superSpec : OracleSpec)
     [h : MonadLiftT (OracleQuery spec) (OracleQuery superSpec)]
 
 @[grind =, aesop unsafe norm]
@@ -272,8 +270,7 @@ end liftComp
 
 section liftComp_support
 
-variable {ι : Type u} {τ : Type v}
-  {spec : OracleSpec ι} {superSpec : OracleSpec τ} {α : Type w}
+variable {spec : OracleSpec} {superSpec : OracleSpec} {α : Type w}
   [h : spec ⊂ₒ superSpec] [spec ˡ⊂ₒ superSpec]
 
 /-- Support is preserved by `liftComp`: lifting a computation to a larger oracle spec
@@ -345,7 +342,7 @@ can engage such a chain directly, since their statements bake in the one-step in
 Not `@[simp]`: with `spec = superSpec` the remaining chain can be `MonadLiftT.refl`, and the
 right-hand side would then re-match the left-hand side. Use via explicit `rw`, then rewrite
 the inner lift with `← liftComp_eq_liftM` and proceed with the `liftComp` API. -/
-lemma liftM_eq_liftComp_liftM {κ : Type*} {spec₃ : OracleSpec κ}
+lemma liftM_eq_liftComp_liftM {spec₃ : OracleSpec}
     [MonadLift (OracleQuery superSpec) (OracleQuery spec₃)]
     [MonadLiftT (OracleComp spec) (OracleComp superSpec)]
     (mx : OracleComp spec α) :

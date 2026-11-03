@@ -70,7 +70,7 @@ universe u v
 
 open OracleSpec
 
-variable {ι : Type u} {spec : OracleSpec.{u, u} ι} {S : Type u}
+variable {spec : OracleSpec.{u, u}} {S : Type u}
 
 /-! ## Probabilistic stateful responders -/
 
@@ -80,7 +80,7 @@ query yields a joint subprobability measure over the answer and the successor st
 The joint draw matters:
 a lazy random oracle's stored cache entry must be the very answer it returned, which no
 answer-then-state factorization expresses. -/
-structure ProbResponder {ι : Type u} (spec : OracleSpec.{u, u} ι) where
+structure ProbResponder (spec : OracleSpec.{u, u}) where
   /-- The responder's internal state (the challenger's memory). -/
   State : Type u
   /-- The measurable structure on the responder's private state. -/
@@ -113,7 +113,7 @@ instance answerKernel.instIsSubprobabilityKernel (R : ProbResponder spec)
 
 section Executable
 
-variable {ι : Type} {spec : OracleSpec.{0, 0} ι}
+variable {spec : OracleSpec.{0, 0}}
 
 /-- A coherent executable realization of a kernel responder: a `ProbComp` program for each state
 and query whose output measure is the stored kernel. This separate typeclass lets kernel-native
@@ -206,7 +206,7 @@ installing an adversary forward along a lens (`OracleStrategy.reduce`).
 Reducible so that `(pullback w R).State` unfolds to `R.State` during unification:
 statements freely mix the two spellings, and keeping them interchangeable at
 reducible transparency is what lets `rw`/`simp` traverse such goals. -/
-@[reducible] noncomputable def pullback {ι' : Type u} {spec' : OracleSpec.{u, u} ι'}
+@[reducible] noncomputable def pullback {spec' : OracleSpec.{u, u}}
     (w : PFunctor.Lens spec.toPFunctor spec'.toPFunctor) (R : ProbResponder spec') :
     ProbResponder spec where
   State := R.State
@@ -222,8 +222,7 @@ reducible transparency is what lets `rw`/`simp` traverse such goals. -/
 
 /-- The answer/state map used by kernel pullback is measurable for the transported
 answer measurable space. -/
-theorem measurable_pullback_answerMap {ι' : Type u}
-    {spec' : OracleSpec.{u, u} ι'}
+theorem measurable_pullback_answerMap {spec' : OracleSpec.{u, u}}
     (w : PFunctor.Lens spec.toPFunctor spec'.toPFunctor) (R : ProbResponder spec')
     (t : spec.Domain) :
     letI := R.instMeasurableSpaceRange (w.toFunA t)
@@ -239,13 +238,12 @@ theorem measurable_pullback_answerMap {ι' : Type u}
 
 section Executable
 
-variable {ι : Type} {spec : OracleSpec.{0, 0} ι}
+variable {spec : OracleSpec.{0, 0}}
 
 /-- Executability is preserved by semantic responder pullback. The executable handler
 maps the same answer/state pair as the kernel, and `evalDist_map` proves that the two
 readings still agree. -/
-noncomputable instance pullback.instIsExecutable {ι' : Type}
-    {spec' : OracleSpec.{0, 0} ι'}
+noncomputable instance pullback.instIsExecutable {spec' : OracleSpec.{0, 0}}
     (w : PFunctor.Lens spec.toPFunctor spec'.toPFunctor) (R : ProbResponder spec')
     [R.IsExecutable] : (pullback w R).IsExecutable where
   answerComp s t :=
@@ -261,8 +259,7 @@ noncomputable instance pullback.instIsExecutable {ι' : Type}
 
 /-- The executable pulled-back responder's handler translates each query forward and
 maps the target responder's answer back through the lens. -/
-@[simp] theorem toQueryImpl_pullback {ι' : Type}
-    {spec' : OracleSpec.{0, 0} ι'}
+@[simp] theorem toQueryImpl_pullback {spec' : OracleSpec.{0, 0}}
     (w : PFunctor.Lens spec.toPFunctor spec'.toPFunctor) (R : ProbResponder spec')
     [R.IsExecutable] (t : spec.toPFunctor.A) :
     (pullback w R).toQueryImpl t =
@@ -278,7 +275,7 @@ maps the target responder's answer back through the lens. -/
 program through a responder's handler is interpreting the original program through the
 pulled-back responder. The handler-level content of the interface-wrapping adjunction —
 machine-free, so run-level wrapping laws follow from it by pure congruence. -/
-theorem liftM_mapLens_pullback {ι' : Type} {spec' : OracleSpec.{0, 0} ι'}
+theorem liftM_mapLens_pullback {spec' : OracleSpec.{0, 0}}
     (w : PFunctor.Lens spec.toPFunctor spec'.toPFunctor) (R : ProbResponder spec')
     [R.IsExecutable] {γ : Type} : ∀ oa : OracleComp spec γ,
     PFunctor.FreeM.liftM R.toQueryImpl (PFunctor.FreeM.mapLens w oa) =
@@ -301,8 +298,8 @@ end ProbResponder
 and each fresh query jointly draws a uniform answer and the cache extended by it. The
 canonical example of a challenger whose answer and successor state must be drawn
 jointly. -/
-noncomputable def randomOracleResponder {ι₀ : Type} [DecidableEq ι₀]
-    {spec₀ : OracleSpec.{0, 0} ι₀} [∀ t : spec₀.Domain, SampleableType (spec₀.Range t)] :
+noncomputable def randomOracleResponder [DecidableEq spec₀.Domain]
+    {spec₀ : OracleSpec.{0, 0}} [∀ t : spec₀.Domain, SampleableType (spec₀.Range t)] :
     ProbResponder spec₀ :=
   .ofQueryImpl spec₀.randomOracle
 
@@ -401,7 +398,7 @@ instance iterateAgainstKernel.instIsSubprobabilityKernel [MeasurableSpace S]
 
 section Executable
 
-variable {ι : Type} {spec : OracleSpec.{0, 0} ι} {S : Type}
+variable {spec : OracleSpec.{0, 0}} {S : Type}
 
 example (H : ProbHandler spec) (A : OracleStrategy S spec) (s : S) :
     kleisliStep H A s = PFunctor.DynSystem.kleisliStep H A s := rfl

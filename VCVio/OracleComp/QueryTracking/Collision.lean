@@ -44,7 +44,7 @@ universe u
 
 namespace OracleComp
 
-variable {ι : Type u} {spec : OracleSpec.{u, u} ι}
+variable {spec : OracleSpec.{u, u}}
 
 /-! ## Collision Predicates -/
 
@@ -57,7 +57,7 @@ def LogHasCollision (log : QueryLog spec) : Prop :=
 `HEq`-equal outputs (note: distinctness forces distinct inputs when outputs match) witness
 a collision. -/
 lemma LogHasCollision.of_mem {log : QueryLog spec}
-    {q1 q2 : (i : ι) × spec.Range i}
+    {q1 q2 : (i : spec.Domain) × spec.Range i}
     (hne : q1 ≠ q2) (hm1 : q1 ∈ log) (hm2 : q2 ∈ log) (hresp : HEq q1.2 q2.2) :
     LogHasCollision log := by
   rcases List.mem_iff_getElem.mp hm1 with ⟨i, hi, hgi⟩
@@ -90,7 +90,7 @@ lemma cache_lookup_eq_of_noCollision
     t₀ = t₁ := by
   grind [CacheHasCollision]
 
-variable [DecidableEq ι]
+variable [DecidableEq spec.Domain]
 
 /-! ## Log entries are cached after logging inside caching -/
 

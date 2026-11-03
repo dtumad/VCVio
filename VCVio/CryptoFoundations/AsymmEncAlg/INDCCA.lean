@@ -40,7 +40,7 @@ def decryptionOracle (sk : SK) : QueryImpl (C →ₒ M) (OptionT m) :=
 
 section IND_CCA
 
-variable {ι : Type} {spec : OracleSpec ι} [DecidableEq C]
+variable {spec : OracleSpec} [DecidableEq C]
 
 /-- IND-CCA adversaries get access to the base oracle set `spec` plus a decryption oracle.
 Challenge generation is handled explicitly between the two phases of the game. -/
