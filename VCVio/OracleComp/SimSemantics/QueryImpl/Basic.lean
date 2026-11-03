@@ -33,12 +33,12 @@ Concretely, this maps every oracle input `x` to a computation returning an
 answer of type `spec.Range x`. It extends first to `OracleQuery spec` by
 applying the continuation, then to `OracleComp spec` by preserving `pure` and
 `bind`; see `QueryImpl.mapQuery` and `simulateQ`. -/
-@[reducible] def QueryImpl {ι} (spec : OracleSpec ι) (m : Type u → Type v) :=
+@[reducible] def QueryImpl (spec : OracleSpec) (m : Type u → Type v) :=
   (x : spec.Domain) → m (spec.Range x)
 
 namespace QueryImpl
 
-variable {ι} {spec : OracleSpec ι} {m : Type u → Type v} {n : Type u → Type w}
+variable {spec : OracleSpec} {m : Type u → Type v} {n : Type u → Type w}
 
 /-- `QueryImpl` is definitionally PolyFun's generic monadic handler for the
 polynomial interface induced by an oracle specification. -/
@@ -52,22 +52,22 @@ instance [∀ t, Inhabited (spec.Range t)] [Pure m] : Inhabited (QueryImpl spec 
     (h : ∀ x : spec.Domain, so x = so' x) : so = so' := funext h
 
 /-- Restrict an implementation of a sum specification to its left component. -/
-def restrictLeft {ι₁ ι₂ : Type} {spec₁ : OracleSpec ι₁} {spec₂ : OracleSpec ι₂}
+def restrictLeft {spec₁ : OracleSpec} {spec₂ : OracleSpec}
     (impl : QueryImpl (spec₁ + spec₂) m) : QueryImpl spec₁ m :=
   fun t ↦ impl (Sum.inl t)
 
 /-- Restrict an implementation of a sum specification to its right component. -/
-def restrictRight {ι₁ ι₂ : Type} {spec₁ : OracleSpec ι₁} {spec₂ : OracleSpec ι₂}
+def restrictRight {spec₁ : OracleSpec} {spec₂ : OracleSpec}
     (impl : QueryImpl (spec₁ + spec₂) m) : QueryImpl spec₂ m :=
   fun t ↦ impl (Sum.inr t)
 
 /-- Applying a left restriction is the original implementation on a left input. -/
-lemma restrictLeft_apply {ι₁ ι₂ : Type} {spec₁ : OracleSpec ι₁} {spec₂ : OracleSpec ι₂}
+lemma restrictLeft_apply {spec₁ : OracleSpec} {spec₂ : OracleSpec}
     (impl : QueryImpl (spec₁ + spec₂) m) (t : spec₁.Domain) :
     impl.restrictLeft t = impl (Sum.inl t) := rfl
 
 /-- Applying a right restriction is the original implementation on a right input. -/
-lemma restrictRight_apply {ι₁ ι₂ : Type} {spec₁ : OracleSpec ι₁} {spec₂ : OracleSpec ι₂}
+lemma restrictRight_apply {spec₁ : OracleSpec} {spec₂ : OracleSpec}
     (impl : QueryImpl (spec₁ + spec₂) m) (t : spec₂.Domain) :
     impl.restrictRight t = impl (Sum.inr t) := rfl
 
@@ -124,25 +124,25 @@ end liftTarget
 section id
 
 /-- Identity implementation for queries, sending `q : OracleQuery spec α` to itself. -/
-protected def id (spec : OracleSpec ι) :
+protected def id (spec : OracleSpec) :
     QueryImpl spec (OracleQuery spec) := query
 
-@[simp] lemma id_apply {spec : OracleSpec ι} (t : spec.Domain) :
+@[simp] lemma id_apply {spec : OracleSpec} (t : spec.Domain) :
     QueryImpl.id spec t = query t := rfl
 
-@[simp] lemma mapQuery_id {α} {spec : OracleSpec ι} (q : OracleQuery spec α) :
+@[simp] lemma mapQuery_id {α} {spec : OracleSpec} (q : OracleQuery spec α) :
     (QueryImpl.id spec).mapQuery q = q := rfl
 
 /-- Version of `QueryImpl.id` that automatically lifts into `OracleComp spec` rather than
 just implementing queries in the lower level `OracleQuery spec` monad -/
-protected def id' {ι} (spec : OracleSpec ι) :
+protected def id' (spec : OracleSpec) :
     QueryImpl spec (OracleComp spec) := QueryImpl.liftTarget _ (QueryImpl.id spec)
 
-@[simp] lemma id'_apply {spec : OracleSpec ι} (t : spec.Domain) :
+@[simp] lemma id'_apply {spec : OracleSpec} (t : spec.Domain) :
     QueryImpl.id' spec t = liftM (query t) := by
   simp [QueryImpl.id']
 
-@[simp] lemma mapQuery_id' {α} {spec : OracleSpec ι} (q : OracleQuery spec α) :
+@[simp] lemma mapQuery_id' {α} {spec : OracleSpec} (q : OracleQuery spec α) :
     (QueryImpl.id' spec).mapQuery q = q := by
   simp only [mapQuery, id'_apply]
   rw [← OracleComp.liftM_map]
@@ -153,14 +153,14 @@ end id
 section ofLift
 
 /-- Given that queries in `spec` lift to the monad `m` we get an implementation via lifting. -/
-def ofLift (spec : OracleSpec ι) (m : Type u → Type v)
+def ofLift (spec : OracleSpec) (m : Type u → Type v)
     [MonadLiftT (OracleQuery spec) m] : QueryImpl spec m :=
   fun t : spec.Domain => liftM (query t)
 
-@[simp] lemma ofLift_apply (spec : OracleSpec ι) (m : Type u → Type v)
+@[simp] lemma ofLift_apply (spec : OracleSpec) (m : Type u → Type v)
     [MonadLiftT (OracleQuery spec) m] (t : spec.Domain) : ofLift spec m t = liftM (query t) := rfl
 
-@[simp] lemma mapQuery_ofLift {α} (spec : OracleSpec ι) (m : Type u → Type v)
+@[simp] lemma mapQuery_ofLift {α} (spec : OracleSpec) (m : Type u → Type v)
     [Functor m] [MonadLiftT (OracleQuery spec) m] (q : OracleQuery spec α) :
     (ofLift spec m).mapQuery q = q.cont <$> liftM (query q.input) := by
   simp [mapQuery]
@@ -226,7 +226,7 @@ end QueryImpl
 
 namespace HasQuery
 
-variable {ι} {spec : OracleSpec ι} {m : Type u → Type v}
+variable {spec : OracleSpec} {m : Type u → Type v}
 
 /-- Repackage `HasQuery` as a `QueryImpl`, for APIs that still consume explicit oracle
 implementations. -/
