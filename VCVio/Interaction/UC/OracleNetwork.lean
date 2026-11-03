@@ -26,7 +26,7 @@ namespace Interaction.UC.OracleNetwork
 
 open Interaction.Execution
 
-variable /-- Residual oracle code or a continuation awaiting a ticketed response. -/
+/-- Residual oracle code or a continuation awaiting a ticketed response. -/
 abbrev ClientState (spec : OracleSpec) (α : Type) :=
   RequestNetwork.ClientState spec.toPFunctor α
 

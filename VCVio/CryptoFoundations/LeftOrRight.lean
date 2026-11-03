@@ -67,7 +67,7 @@ namespace LeftOrRight
 
 /-- The challenge interface of a left-or-right game: a query is a pair of messages and its answer
 is a ciphertext, or `none` when the pair is not admissible. -/
-abbrev spec (M : Type u) (C : Type v) : OracleSpec (M × M) :=
+abbrev spec (M : Type u) (C : Type v) : OracleSpec :=
   M × M →ₒ Option C
 
 variable {M : Type u} {C : Type v} {Λ : Type x} {m : Type v → Type w} [Monad m]

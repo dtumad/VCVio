@@ -67,7 +67,7 @@ protected lemma ext {c₁ c₂ : QueryCache spec} (h : ∀ t, c₁ t = c₂ t) :
   exact funext h
 
 /-- Cache lookup is injective. -/
-theorem toFn_injective : Function.Injective (@toFn spec.Domain spec) :=
+theorem toFn_injective : Function.Injective (@toFn spec) :=
   fun _ _ h => QueryCache.ext (congrFun h)
 
 /-- A cache and its dependent optional lookup table contain the same data. -/
@@ -534,17 +534,19 @@ end sum
 end QueryCache
 
 /-- Per-index natural counts with the ordinary pointwise additive algebra.
-Additive writer instrumentation uses `Multiplicative (QueryCount spec.Domain)` as its
+Additive writer instrumentation uses `Multiplicative (QueryCount ι)` as its
 monoidal payload; query counts themselves retain the standard function instances. -/
-@[reducible] def QueryCount := spec.Domain → ℕ
+@[reducible] def QueryCount (ι : Type*) := ι → ℕ
 
 namespace QueryCount
 
+variable {ι : Type*}
+
 /-- The query count recording one query at index `i` and none elsewhere. -/
-def single [DecidableEq spec.Domain] (i : spec.Domain) : QueryCount spec.Domain := Pi.single i 1
+def single [DecidableEq ι] (i : ι) : QueryCount ι := Pi.single i 1
 
 @[simp]
-lemma single_le_iff_pos [DecidableEq spec.Domain] (i : spec.Domain) (qc : QueryCount spec.Domain) :
+lemma single_le_iff_pos [DecidableEq ι] (i : ι) (qc : QueryCount ι) :
     single i ≤ qc ↔ 0 < qc i := by
   simp [single, Pi.single, update_le_iff, Nat.lt_iff_add_one_le]
 

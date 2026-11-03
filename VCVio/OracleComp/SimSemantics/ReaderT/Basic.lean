@@ -26,7 +26,7 @@ namespace QueryImpl
 /-- Given implementations for oracles in `spec₁` and `spec₂` in terms of reader monads for
 two different contexts `ρ₁` and `ρ₂`, implement the combined set `spec₁ + spec₂` in terms
 of a combined `ρ₁ × ρ₂` state. The binary analogue of `QueryImpl.sigmaReaderT`. -/
-def addReaderT {spec₁ : OracleSpec.{u, w}} {spec₂ : OracleSpec.{v, w}}
+def addReaderT {spec₁ spec₂ : OracleSpec.{u, w}}
     {m : Type w → Type x} {ρ₁ ρ₂ : Type w}
     (impl₁ : QueryImpl spec₁ (ReaderT ρ₁ m))
     (impl₂ : QueryImpl spec₂ (ReaderT ρ₂ m)) :
@@ -36,8 +36,8 @@ def addReaderT {spec₁ : OracleSpec.{u, w}} {spec₂ : OracleSpec.{v, w}}
 
 /-- Indexed version of `QueryImpl.addReaderT`. Each query for index `t` reads from the
 `t`-th component of the pi-product `(t : τ) → ρ t`. Note that `m` cannot vary with `t`. -/
-def sigmaReaderT {τ : Type} {spec.Domain : τ → Type _}
-    {spec : (t : τ) → OracleSpec (spec.Domain t)}
+def sigmaReaderT {τ : Type}
+    {spec : (t : τ) → OracleSpec}
     {m : Type _ → Type _} {ρ : τ → Type _}
     (impl : (t : τ) → QueryImpl (spec t) (ReaderT (ρ t) m)) :
     QueryImpl (OracleSpec.sigma spec) (ReaderT ((t : τ) → ρ t) m)

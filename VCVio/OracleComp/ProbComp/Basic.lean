@@ -53,7 +53,8 @@ lemma uniformFin_def (n : ℕ) : $[0..n] = unifSpec.query n := rfl
 
 @[simp]
 lemma support_uniformFin (n : ℕ) :
-    support (do $[0..n]) = Set.univ := by simp [uniformFin_def]
+    support (do $[0..n]) = Set.univ :=
+  support_query (spec := unifSpec) n
 
 /-- Nicer induction rule for `ProbComp` that uses monad notation.
 Allows inductive definitions on computations by considering the two cases:

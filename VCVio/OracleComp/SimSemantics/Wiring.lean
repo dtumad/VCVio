@@ -26,7 +26,7 @@ namespace PFunctor.Wiring
 
 attribute [local implicit_reducible] PFunctor.sigma
 
-variable {spec.Domain Boxes : Type} {spec : OracleSpec.{0, uB}} {Arity : Boxes → Type}
+variable {Boxes : Type} {spec : OracleSpec.{0, uB}} {Arity : Boxes → Type}
   {Dom : (b : Boxes) → Arity b → PFunctor.{0, uB}} {Cod : Boxes → PFunctor.{0, uB}}
 
 /-- Compile a recursively wired handler to its single shared oracle boundary. -/

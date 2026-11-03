@@ -36,8 +36,8 @@ namespace OracleSpec
 /-- The specification `spec` with every query carrying a tag `k : K` beside its input. The answer
 to the query `(k, t)` is an answer to `t`, whatever the tag. -/
 @[expose, reducible] def tagged (spec : OracleSpec.{u, v}) (K : Type w) :
-    OracleSpec.{max w u, v} (K × spec.Domain) :=
-  fun kt => spec kt.2
+    OracleSpec.{max w u, v} :=
+  ⟨K × spec.Domain, fun kt => spec.B kt.2⟩
 
 end OracleSpec
 

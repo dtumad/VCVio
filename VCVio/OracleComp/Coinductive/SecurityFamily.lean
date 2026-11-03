@@ -41,17 +41,16 @@ abbrev Input (α : Nat → Type w) := (n : Nat) × α n
 abbrev Output (β : Nat → Type w') := (n : Nat) × β n
 
 /-- All interfaces in a security-parameter family, with every query tagged by its parameter. -/
-abbrev Spec {ι : Nat → Type u} (spec : (n : Nat) → OracleSpec.{u, v} (ι n)) :
-    OracleSpec ((n : Nat) × (spec n).Domain) :=
+abbrev Spec (spec : (n : Nat) → OracleSpec.{u, v}) : OracleSpec :=
   OracleSpec.sigma spec
 
-variable {ι : Nat → Type u} {spec : (n : Nat) → OracleSpec.{u, v} (ι n)}
+variable {spec : (n : Nat) → OracleSpec.{u, v}}
   {α : Nat → Type w} {β : Nat → Type w'}
 
 /-- Lift one member of an oracle family into the aggregate, parameter-tagged interface. -/
 def packComp (n : Nat) (oa : OracleComp (spec n) (β n)) :
     OracleComp (Spec spec) (Output β) :=
-  OracleComp.ofFreeM <| (OracleSpec.toPFunctor_sigma spec).symm ▸
+  OracleComp.ofFreeM <|
     PFunctor.FreeM.sigmaInj (P := fun n ↦ (spec n).toPFunctor) (X := β) n oa.toFreeM
 
 /-- Package a security-indexed program family as one program over the aggregate interface.
@@ -61,7 +60,6 @@ of `program n` do not by themselves give a realization of `packProgram program`.
 def packProgram (program : (n : Nat) → α n → OracleComp (spec n) (β n)) :
     Input α → OracleComp (Spec spec) (Output β) :=
   fun input ↦ OracleComp.ofFreeM <|
-    (OracleSpec.toPFunctor_sigma spec).symm ▸
       PFunctor.FreeM.packFamily (P := fun n ↦ (spec n).toPFunctor)
         (fun n value ↦ (program n value).toFreeM) input
 

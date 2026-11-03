@@ -96,13 +96,12 @@ theorem Explained.valid_ofVectors {F Data : Type} {G : Tag → Type}
   | cons v vs ih => exact .cons ⟨by simp, rfl⟩ ih
 
 /-- Plain game oracles may depend on the request's data and receive its actual group arguments. -/
-abbrev plainSpec (G : Tag → Type) (Query : Type) (Reply : Query → Type) : OracleSpec
-    (Message Query G) :=
-  fun q => Message (Reply q.data) G
+abbrev plainSpec (G : Tag → Type) (Query : Type) (Reply : Query → Type) : OracleSpec :=
+  OracleSpec.ofFn fun q : Message Query G => Message (Reply q.data) G
 
 /-- Adversarial requests carry explanations; oracle replies deliberately do not. -/
 abbrev explainedSpec (F : Type) (G : Tag → Type) (Query : Type) (Reply : Query → Type) :
-    OracleSpec (Explained F Query G) := fun q => Message (Reply q.value.data) G
+    OracleSpec := OracleSpec.ofFn fun q : Explained F Query G => Message (Reply q.value.data) G
 
 variable {F Query Result : Type} {G : Tag → Type} {Reply : Query → Type}
 
@@ -148,7 +147,7 @@ structure Adversary (F : Type) (G : Tag → Type) (Input Query : Type) (Reply : 
     pure (reply, extend basis reply.groups)) (A.main input)).run input.groups
 
 /-- Certified execution produces valid final explanations over the actual received inputs. -/
-theorem Adversary.run_valid {Input I : Type} {ambient : OracleSpec I}
+theorem Adversary.run_valid {Input : Type} {ambient : OracleSpec}
     (A : Adversary F G Input Query Reply Result)
     (impl : QueryImpl (plainSpec G Query Reply) (OracleComp ambient)) (input : Message Input G)
     (z : Explained F Result G × Groups G) (hz : z ∈ support (A.run impl input)) :

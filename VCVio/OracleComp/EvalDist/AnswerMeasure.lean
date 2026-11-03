@@ -246,14 +246,14 @@ concrete answer type, so it applies where the answer type appears reduced. -/
 theorem evalDist_liftM_unifSpec_query (n : ℕ) {_ : MeasurableSpace (Fin (n + 1))} :
     𝒟[(liftM (OracleSpec.query (spec := unifSpec) n) : OracleComp unifSpec (Fin (n + 1)))] =
       uniformOn Set.univ :=
-  evalDist_liftM_query_uniform n
+  evalDist_liftM_query_uniform (spec := unifSpec) n
 
 /-- A fair-coin query has the uniform answer measure on `Bool`. -/
 @[simp]
 theorem evalDist_liftM_coinSpec_query {_ : MeasurableSpace Bool} :
     𝒟[(liftM (OracleSpec.query (spec := coinSpec) ()) : OracleComp coinSpec Bool)] =
       uniformOn Set.univ :=
-  evalDist_liftM_query_uniform ()
+  evalDist_liftM_query_uniform (spec := coinSpec) ()
 
 /-- A program over discrete, lossless oracle responses has total output mass one. -/
 theorem evalDist_apply_univ_eq_one

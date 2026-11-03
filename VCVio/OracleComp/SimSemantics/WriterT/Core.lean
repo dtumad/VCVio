@@ -30,7 +30,7 @@ namespace QueryImpl
 /-- Given implementations for oracles in `spec₁` and `spec₂` in terms of writer monads for
 two different log monoids `ω₁` and `ω₂`, implement the combined set `spec₁ + spec₂` in terms
 of the product monoid `ω₁ × ω₂`. Each side leaves the other component at the identity. -/
-@[expose] def parallelWriterT {spec₁ : OracleSpec.{u, w}} {spec₂ : OracleSpec.{v, w}}
+@[expose] def parallelWriterT {spec₁ spec₂ : OracleSpec.{u, w}}
     {m : Type w → Type x} [Functor m] {ω₁ ω₂ : Type w} [Monoid ω₁] [Monoid ω₂]
     (impl₁ : QueryImpl spec₁ (WriterT ω₁ m))
     (impl₂ : QueryImpl spec₂ (WriterT ω₂ m)) :
@@ -41,8 +41,8 @@ of the product monoid `ω₁ × ω₂`. Each side leaves the other component at 
 /-- Indexed version of `QueryImpl.parallelWriterT`. Each query for index `t` writes into the
 `t`-th component of the pi-product `(t : τ) → ω t`, leaving every other component at the
 identity. Note that `m` cannot vary with `t`. -/
-@[expose] def sigmaWriterT {τ : Type} [DecidableEq τ] {spec.Domain : τ → Type v}
-    {spec : (t : τ) → OracleSpec.{v, w} (spec.Domain t)}
+@[expose] def sigmaWriterT {τ : Type} [DecidableEq τ] 
+    {spec : (t : τ) → OracleSpec.{v, w}}
     {m : Type w → Type x} [Functor m] {ω : τ → Type w} [(t : τ) → Monoid (ω t)]
     (impl : (t : τ) → QueryImpl (spec t) (WriterT (ω t) m)) :
     QueryImpl (OracleSpec.sigma spec) (WriterT ((t : τ) → ω t) m)
