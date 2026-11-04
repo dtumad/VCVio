@@ -8,6 +8,8 @@ module
 
 public import Mathlib.Algebra.Polynomial.Eval.Defs
 public import PolyFun.PFunctor.Bound
+public import PolyFun.PFunctor.Free.Cost.Support
+public import PolyFun.PFunctor.Handler.Charge
 public import VCVio.OracleComp.Support
 public import VCVio.OracleComp.QueryTracking.CountingOracle.Core
 public import VCVio.OracleComp.SimSemantics.Append.Core
@@ -830,19 +832,9 @@ theorem isTotalQueryBound_bind_of_mem_support
     (hprefix : IsTotalQueryBound oa prefixBound)
     (hsuffix : ∀ x ∈ support oa, IsTotalQueryBound (ob x) suffixBound) :
     IsTotalQueryBound (oa >>= ob) (prefixBound + suffixBound) := by
-  induction oa using OracleComp.inductionOn generalizing prefixBound with
-  | pure x =>
-      simpa using (hsuffix x (by simp)).mono (by omega : suffixBound ≤ prefixBound + suffixBound)
-  | query_bind t next ih =>
-      rw [isTotalQueryBound_query_bind_iff] at hprefix
-      rw [bind_assoc, isTotalQueryBound_query_bind_iff]
-      refine ⟨by omega, fun response => ?_⟩
-      apply (ih response (prefixBound := prefixBound - 1) (hprefix.2 response) ?_).mono
-      · omega
-      · intro x hx
-        apply hsuffix x
-        rw [mem_support_bind_iff]
-        exact ⟨response, by simp, hx⟩
+  simp only [isTotalQueryBound_iff_isRollBound, ← PFunctor.FreeM.isTotalRollBound_iff_isRollBound,
+    ← PFunctor.FreeM.isChargeBound_one_iff_isTotalRollBound] at *
+  exact hprefix.bind_supp hsuffix
 
 /-- If `oa >>= ob` has a total query bound `n`, then `oa` alone has total query bound `n`
 (the continuation can only add queries, not remove them). -/
@@ -912,21 +904,9 @@ theorem IsTotalQueryBound.simulateQ_run_of_step {ι' : Type u} {spec' : OracleSp
     (hstep : ∀ t : spec.Domain, ∀ s : σ, IsTotalQueryBound ((impl t).run s) 1)
     (s : σ) :
     IsTotalQueryBound ((simulateQ impl oa).run s) n := by
-  induction oa using OracleComp.inductionOn generalizing n s with
-  | pure x =>
-      simpa [simulateQ_pure] using
-        (show IsTotalQueryBound (pure (x, s) : OracleComp spec' (α × σ)) n from trivial)
-  | query_bind t mx ih =>
-      rw [isTotalQueryBound_query_bind_iff] at h
-      rw [simulateQ_query_bind, StateT.run_bind]
-      have hstep' : IsTotalQueryBound
-          ((liftM (impl t) : StateT σ (OracleComp spec') (spec.Range t)).run s) 1 := by
-        simpa [OracleComp.liftM_run_StateT, MonadLift.monadLift] using hstep t s
-      have hrest : ∀ p : spec.Range t × σ,
-          IsTotalQueryBound ((simulateQ impl (mx p.1)).run p.2) (n - 1) :=
-        fun p => ih p.1 (h.2 p.1) p.2
-      have hn : 1 + (n - 1) = n := by omega
-      simpa [StateT.run_bind, hn] using isTotalQueryBound_bind hstep' hrest
+  simp only [isTotalQueryBound_iff_isRollBound, ← PFunctor.FreeM.isTotalRollBound_iff_isRollBound,
+    ← PFunctor.FreeM.isChargeBound_one_iff_isTotalRollBound] at *
+  exact h.run_liftM impl hstep s
 
 /-- Stateless analogue of `IsTotalQueryBound.simulateQ_run_of_step`: when the simulation
 target monad is `OracleComp spec'` directly (no `StateT` layer), every per-step bound
@@ -938,17 +918,9 @@ theorem IsTotalQueryBound.simulateQ_of_step {ι' : Type u} {spec' : OracleSpec �
     (h : IsTotalQueryBound oa n)
     (hstep : ∀ t : spec.Domain, IsTotalQueryBound (impl t) 1) :
     IsTotalQueryBound (simulateQ impl oa) n := by
-  induction oa using OracleComp.inductionOn generalizing n with
-  | pure x =>
-      simpa [simulateQ_pure] using
-        (show IsTotalQueryBound (pure x : OracleComp spec' α) n from trivial)
-  | query_bind t mx ih =>
-      rw [isTotalQueryBound_query_bind_iff] at h
-      simp only [simulateQ_query_bind, OracleQuery.input_query, monadLift_self]
-      have hrest : ∀ u, IsTotalQueryBound (simulateQ impl (mx u)) (n - 1) :=
-        fun u => ih u (h.2 u)
-      have hn : 1 + (n - 1) = n := by have := h.1; omega
-      simpa [hn] using isTotalQueryBound_bind (hstep t) hrest
+  simp only [isTotalQueryBound_iff_isRollBound, ← PFunctor.FreeM.isTotalRollBound_iff_isRollBound,
+    ← PFunctor.FreeM.isChargeBound_one_iff_isTotalRollBound] at *
+  exact h.liftM impl hstep
 
 /-- Generalisation of `IsTotalQueryBound.simulateQ_of_step` where each per-query handler
 makes at most `step` queries (rather than at most `1`). The bound on the simulation is
@@ -959,17 +931,10 @@ theorem IsTotalQueryBound.simulateQ_of_step_le {ι' : Type u} {spec' : OracleSpe
     (h : IsTotalQueryBound oa n)
     (hstep : ∀ t : spec.Domain, IsTotalQueryBound (impl t) step) :
     IsTotalQueryBound (simulateQ impl oa) (n * step) := by
-  induction oa using OracleComp.inductionOn generalizing n with
-  | pure x =>
-      simpa [simulateQ_pure] using
-        (show IsTotalQueryBound (pure x : OracleComp spec' α) (n * step) from trivial)
-  | query_bind t mx ih =>
-      rw [isTotalQueryBound_query_bind_iff] at h
-      simp only [simulateQ_query_bind, OracleQuery.input_query, monadLift_self]
-      have hrest : ∀ u, IsTotalQueryBound (simulateQ impl (mx u)) ((n - 1) * step) :=
-        fun u => ih u (h.2 u)
-      have hn : step + (n - 1) * step = n * step := by
-        rw [Nat.sub_one_mul, Nat.add_sub_cancel' (Nat.le_mul_of_pos_left step h.1)]
-      simpa [hn] using isTotalQueryBound_bind (hstep t) hrest
+  simp only [isTotalQueryBound_iff_isRollBound, ← PFunctor.FreeM.isTotalRollBound_iff_isRollBound,
+    ← PFunctor.FreeM.isChargeBound_one_iff_isTotalRollBound] at *
+  have h' := h.map ⟨AddMonoidHom.mulRight step, fun _ _ h => Nat.mul_le_mul_right step h⟩
+  rw [map_zero] at h'
+  exact (h'.mono_charge fun _ => (Nat.one_mul step).ge).liftM impl hstep
 
 end OracleComp

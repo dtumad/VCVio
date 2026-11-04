@@ -155,28 +155,14 @@ lemma isOnlineQueryBound_bind {oa : OracleComp (free + spec.batch) α}
     {ob : α → OracleComp (free + spec.batch) β} {b₁ b₂ : ℕ × ℕ}
     (h₁ : IsOnlineQueryBound oa b₁) (h₂ : ∀ x, IsOnlineQueryBound (ob x) b₂) :
     IsOnlineQueryBound (oa >>= ob) (b₁ + b₂) := by
-  refine isQueryBound_bind (· + ·) (fun t b₁' b₂' b hb => ?_) (fun t b₁' b₂' b hb => ?_) h₁ h₂
-  · rcases t with n | ts
-    · simp
-    · simp only [onlineCanQuery_inr, Prod.fst_add, Prod.snd_add] at hb ⊢
-      omega
-  · rcases t with n | ts
-    · simp
-    · simp only [onlineCanQuery_inr] at hb
-      refine ⟨Prod.ext ?_ ?_, Prod.ext ?_ ?_⟩ <;> simp <;> omega
+  simp only [isOnlineQueryBound_iff_isChargeBound] at *
+  exact h₁.bind h₂
 
 /-- A larger online budget, coordinatewise, is still a budget. -/
 lemma IsOnlineQueryBound.mono {oa : OracleComp (free + spec.batch) α} {b b' : ℕ × ℕ}
     (h : IsOnlineQueryBound oa b) (hb : b ≤ b') : IsOnlineQueryBound oa b' := by
-  induction oa using OracleComp.inductionOn generalizing b b' with
-  | pure _ => trivial
-  | query_bind t mx ih =>
-      rcases t with n | ts
-      · exact ⟨trivial, fun u => ih u (h.2 u) hb⟩
-      · obtain ⟨⟨h₁, h₂⟩, hk⟩ := h
-        obtain ⟨hb₁, hb₂⟩ := Prod.mk_le_mk.mp hb
-        refine ⟨⟨by omega, by omega⟩, fun u => ih u (hk u) ?_⟩
-        exact Prod.mk_le_mk.mpr ⟨by simp; omega, by simp; omega⟩
+  rw [isOnlineQueryBound_iff_isChargeBound] at *
+  exact h.mono hb
 
 /-- An online budget `(r, q)` bounds the points by `q`. -/
 lemma IsOnlineQueryBound.isPointQueryBound {oa : OracleComp (free + spec.batch) α}
@@ -252,18 +238,13 @@ making at most `q` queries to `spec`. -/
 theorem IsPointQueryBound.isQueryBoundP_simulateQ_unbatch
     {oa : OracleComp (free + spec.batch) α} {q : ℕ} (h : IsPointQueryBound oa q) :
     IsQueryBoundP (simulateQ spec.unbatch oa) (·.isRight) q := by
-  induction oa using OracleComp.inductionOn generalizing q with
-  | pure x => exact isQueryBoundP_pure _ _ _
-  | query_bind t mx ih =>
-      obtain ⟨ht, hk⟩ := (isQueryBound_query_bind_iff _ _ _ _ _).mp h
-      rw [simulateQ_bind, simulateQ_spec_query]
-      rcases t with n | ts
-      · rw [← Nat.zero_add q]
-        refine isQueryBoundP_bind ?_ fun u _ => ih u (by simpa using hk u)
-        simp
-      · have hq : q = ts.length + (q - ts.length) := by simp at ht; omega
-        rw [hq]
-        exact isQueryBoundP_bind (isQueryBoundP_batch_query ts) fun u _ => ih u (hk u)
+  rw [isPointQueryBound_iff_isChargeBound] at h
+  rw [isQueryBoundP_iff_isChargeBound]
+  refine h.liftM spec.unbatch fun t => ?_
+  rcases t with n | ts
+  · simpa [isQueryBoundP_iff_isChargeBound] using
+      (isQueryBoundP_query_iff (spec := free + spec) (·.isRight) (.inl n) 0).2 (by simp)
+  · exact (isQueryBoundP_iff_isChargeBound _ _ _).1 (isQueryBoundP_batch_query ts)
 
 /-- Rewriting the rounds of a program with online budget `(r, q)` as single queries gives a
 program making at most `q` queries to `spec`. -/
@@ -283,18 +264,8 @@ theorem IsOnlineQueryBound.simulateQ_of_step {τ' ι' : Type} {free' : OracleSpe
     {oa : OracleComp (free + spec.batch) α} {b : ℕ × ℕ}
     (h : IsOnlineQueryBound oa b) (hstep : ∀ t, IsOnlineQueryBound (so t) (onlineStep t)) :
     IsOnlineQueryBound (simulateQ so oa) b := by
-  induction oa using OracleComp.inductionOn generalizing b with
-  | pure x => trivial
-  | query_bind t mx ih =>
-      obtain ⟨ht, hk⟩ := (isQueryBound_query_bind_iff _ _ _ _ _).mp h
-      rw [simulateQ_bind, simulateQ_spec_query]
-      have hb : onlineStep t + onlineCost t b = b := by
-        rcases t with n | ts
-        · simp
-        · simp only [onlineCanQuery_inr] at ht
-          refine Prod.ext ?_ ?_ <;> simp <;> omega
-      rw [← hb]
-      exact isOnlineQueryBound_bind (hstep t) fun u => ih u (hk u)
+  simp only [isOnlineQueryBound_iff_isChargeBound] at *
+  exact h.liftM so hstep
 
 /-- Lifting a program through a `SubSpec` inclusion `spec ⊂ₒ superSpec`, which sends each round
 to the round of its translated points, preserves the online budget. -/
