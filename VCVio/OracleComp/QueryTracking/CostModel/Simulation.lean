@@ -59,23 +59,11 @@ theorem mem_support_costDist_simulateQ
     (member : result ∈ support (costDist (simulateQ route program) targetCost)) :
     ∃ charge : ω, (result.1, Multiplicative.ofAdd charge) ∈ support (costDist program sourceCost) ∧
       Multiplicative.toAdd result.2 ≤ charge := by
-  induction program using OracleComp.inductionOn generalizing result with
-  | pure value =>
-      simp only [simulateQ_pure, costDist, instrumentedRun, WriterT.run_pure,
-        support_pure, Set.mem_singleton_iff] at member
-      subst result
-      exact ⟨0, by simp [costDist, instrumentedRun], le_rfl⟩
-  | query_bind query next ih =>
-      rw [simulateQ_bind, simulateQ_spec_query, costDist_bind] at member
-      rcases (mem_support_bind_iff _ _ _).mp member with ⟨step, stepMember, restMember⟩
-      rcases (mem_support_bind_iff _ _ _).mp restMember with ⟨tail, tailMember, finalMember⟩
-      rw [mem_support_pure_iff] at finalMember
-      subst result
-      obtain ⟨charge, sourceMember, htail⟩ := ih step.1 tail tailMember
-      refine ⟨sourceCost.queryCost query + charge, ?_,
-        add_le_add (hstep query step stepMember) htail⟩
-      exact mem_support_costDist_query_bind query next step.1 sourceCost
-        (tail.1, Multiplicative.ofAdd charge) sourceMember
+  simp only [worstCaseCostBound_iff_forall_charge_le] at hstep
+  rw [support_costDist_eq_range_charge] at member
+  obtain ⟨q, rfl⟩ := member
+  obtain ⟨p, hout, hle⟩ := PFunctor.FreeM.Path.exists_path_liftM route hstep program q
+  exact ⟨_, support_costDist_eq_range_charge program sourceCost ▸ ⟨p, Prod.ext hout rfl⟩, hle⟩
 
 /-- A source weighted bound transfers through the same stateless handler programs whose costs
 are bounded. The charge of each complete handler call includes all its target queries. -/
@@ -86,9 +74,7 @@ theorem WorstCaseCostBound.simulateQ
     (route : QueryImpl source (OracleComp target))
     (hstep : ∀ query, WorstCaseCostBound (route query) targetCost (sourceCost.queryCost query)) :
     WorstCaseCostBound (simulateQ route program) targetCost budget := by
-  intro result member
-  obtain ⟨charge, sourceMember, hcharge⟩ :=
-    mem_support_costDist_simulateQ route program sourceCost targetCost hstep result member
-  exact hcharge.trans (hprogram _ sourceMember)
+  simp only [worstCaseCostBound_iff_forall_charge_le] at *
+  exact PFunctor.FreeM.Path.charge_liftM_le_of_forall route hstep hprogram
 
 end Ordered
