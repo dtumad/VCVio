@@ -70,9 +70,7 @@ dependencies in reverse declaration order, so this keeps the direct Mathlib
 requirement authoritative over their inherited pins and makes
 `lake update --keep-toolchain` idempotent.
 -/
-require PolyFun from git
-  "https://github.com/Verified-zkEVM/PolyFun" @
-  "4181c82238142d9b73403fbf4c4b13e1a801e400"
+require PolyFun from "../polyfun-interaction-cost"
 
 /-
 The Mathlib-only quantum foundation (matrix maps, instruments, registers,
