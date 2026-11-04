@@ -75,6 +75,13 @@ example {ι' : Type u} {spec' : OracleSpec.{u, u} ι'}
       simulateQ (fun t => l.toFunB t <$> impl (l.toFunA t)) mx := by
   rw [PFunctor.FreeM.liftM_mapLens]
 
+example {ι' : Type u} {spec' : OracleSpec.{u, u} ι'}
+    (l : PFunctor.Lens spec.toPFunctor spec'.toPFunctor) (impl : QueryImpl spec' m)
+    (mx : OracleComp spec α) :
+    simulateQ impl (mx.mapLens l) =
+      simulateQ (fun t => l.toFunB t <$> impl (l.toFunA t)) mx := by
+  simp only [PFunctor.FreeM.liftM_mapLens]
+
 /-! ## P5: `liftM_natural` (monad-morphism naturality) -/
 
 example {n : Type u → Type u} [Monad n] [LawfulMonad n] (φ : m →ᵐ n) (impl : QueryImpl spec m)
@@ -88,6 +95,11 @@ example {ι' : Type u} {spec' : OracleSpec.{u, u} ι'} (so' : QueryImpl spec' m)
     (so : QueryImpl spec (OracleComp spec')) (mx : OracleComp spec α) :
     simulateQ so' (simulateQ so mx) = simulateQ (fun t => simulateQ so' (so t)) mx := by
   rw [PFunctor.FreeM.liftM_comp]
+
+example {ι' : Type u} {spec' : OracleSpec.{u, u} ι'} (so' : QueryImpl spec' m)
+    (so : QueryImpl spec (OracleComp spec')) (mx : OracleComp spec α) :
+    simulateQ so' (simulateQ so mx) = simulateQ (fun t => simulateQ so' (so t)) mx := by
+  simp only [PFunctor.FreeM.liftM_comp]
 
 /-! ## P7: `wpFold_liftM` -/
 
@@ -116,6 +128,15 @@ example (oa : OracleComp spec α) (f : α → β) (b : ℕ) (canQuery : ι → �
     (cost : ι → ℕ → ℕ) :
     IsQueryBound (f <$> oa) b canQuery cost ↔ IsQueryBound oa b canQuery cost := by
   rw [PFunctor.FreeM.isRollBound_map_iff]
+
+/-! ## P9b: after a PolyFun simp step the `simulateQ` head is gone, so VCVio `rw` lemmas miss -/
+
+example (impl : QueryImpl spec m) (mx : OracleComp spec α) (my : α → OracleComp spec β)
+    (f : β → α) :
+    simulateQ impl (mx >>= fun x => f <$> my x) =
+      simulateQ impl mx >>= fun x => f <$> simulateQ impl (my x) := by
+  simp only [PFunctor.FreeM.liftM_bind]
+  rw [simulateQ_map]
 
 /-! ## P10: default `simp` still normalizes through `simulateQ` -/
 
