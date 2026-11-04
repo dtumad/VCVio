@@ -6,8 +6,10 @@ Authors: Quang Dao, Alexander Hicks
 
 module
 public import Mathlib.Algebra.Polynomial.Eval.Defs
-public import VCVio.OracleComp.QueryTracking.QueryBound.Basic
+public import VCVio.OracleComp.QueryTracking.QueryBound.Charge
 public import VCVio.OracleComp.QueryTracking.QueryCost
+public import PolyFun.PFunctor.Free.Path.Charge
+public import PolyFun.PFunctor.Free.Cost.Event
 import Mathlib.Tactic.GRewrite
 
 /-!
@@ -41,6 +43,11 @@ Uses `AddWriterT` (defined in `ToMathlib.Control.WriterT`) for additive cost acc
 - `fst_map_costDist`: Cost instrumentation doesn't change the output distribution.
 - `costDist_pure`, `costDist_bind`, `costDist_query`, `costDist_map`: Instrumentation equations.
 - `worstCaseCostBound_map_iff`: Pure observations preserve and reflect query-cost bounds.
+- `support_costDist_eq_range_charge`: the support of the cost distribution is the output and the
+  PolyFun path charge `PFunctor.FreeM.Path.charge` of each completed path, so
+  `WorstCaseCostBound` bounds the charge of every completed path
+  (`worstCaseCostBound_iff_forall_charge_le`) and is implied by a charge budget
+  (`worstCaseCostBound_of_isChargeBound`).
 - `expectedCost_pure`: Expected cost of a pure computation is `0`.
 - `prEvent_costDist_gt_le_expectedCost_div`: Markov's inequality for cost distributions.
 -/
@@ -269,6 +276,56 @@ theorem WorstCaseCostBound.bind [AddCommMonoid ω] [Preorder ω] [IsOrderedAddMo
   unfold WorstCaseCostBound instrumentedRun at *
   rw [simulateQ_bind]
   exact AddWriterT.pathwiseCostAtMost_bind ha hb
+
+
+/-! ## Worst-case bounds as path charges -/
+
+/-- The support of the cost distribution is, for each completed path, its output together with the
+path's charge under the cost model. -/
+theorem support_costDist_eq_range_charge [AddCommMonoid ω] (oa : OracleComp spec α)
+    (cm : CostModel spec ω) :
+    support (costDist oa cm) = Set.range fun p : PFunctor.FreeM.Path oa =>
+      (PFunctor.FreeM.output oa p,
+        Multiplicative.ofAdd (PFunctor.FreeM.Path.charge cm.queryCost oa p)) := by
+  induction oa using PFunctor.FreeM.rec with
+  | pure a =>
+    ext z
+    change z ∈ support (costDist (pure a : OracleComp spec α) cm) ↔ _
+    rw [costDist_pure, support_pure, Set.mem_singleton_iff]
+    exact ⟨fun h => ⟨⟨⟩, h.symm⟩, fun ⟨_, h⟩ => h.symm⟩
+  | liftBind t k ih =>
+    change support (costDist ((spec.query t : OracleComp spec _) >>= k) cm) = _
+    rw [costDist_query_bind]
+    ext z
+    simp only [support_bind, support_query, Set.mem_iUnion, Set.mem_univ, exists_true_left,
+      support_map, ih, Set.mem_image, Set.mem_range, exists_exists_eq_and]
+    exact ⟨fun ⟨u, p, h⟩ => ⟨⟨u, p⟩, h⟩, fun ⟨⟨u, p⟩, h⟩ => ⟨u, p, h⟩⟩
+
+/-- A worst-case cost bound bounds the charge of every completed path. -/
+theorem worstCaseCostBound_iff_forall_charge_le [AddCommMonoid ω] [Preorder ω]
+    (oa : OracleComp spec α) (cm : CostModel spec ω) (B : ω) :
+    WorstCaseCostBound oa cm B ↔
+      ∀ p : PFunctor.FreeM.Path oa, PFunctor.FreeM.Path.charge cm.queryCost oa p ≤ B := by
+  rw [worstCaseCostBound_iff_support_bound, support_costDist_eq_range_charge, Set.forall_mem_range]
+  rfl
+
+/-- A charge budget gives a worst-case cost bound. -/
+theorem worstCaseCostBound_of_isChargeBound [AddCommMonoid ω] [PartialOrder ω]
+    {oa : OracleComp spec α} {cm : CostModel spec ω} {B : ω}
+    (h : PFunctor.FreeM.IsChargeBound oa cm.queryCost B) : WorstCaseCostBound oa cm B :=
+  (worstCaseCostBound_iff_forall_charge_le oa cm B).2 fun p =>
+    (zero_add _).symm.trans_le (PFunctor.FreeM.Path.charge_le_of_isChargeBound h p)
+
+/-- When every query has an answer, a worst-case cost bound in a canonically ordered cost type is
+a charge budget. -/
+theorem worstCaseCostBound_iff_isChargeBound [AddCommMonoid ω] [PartialOrder ω]
+    [CanonicallyOrderedAdd ω] [∀ t, Nonempty (spec.Range t)] (oa : OracleComp spec α)
+    (cm : CostModel spec ω) (B : ω) :
+    WorstCaseCostBound oa cm B ↔ PFunctor.FreeM.IsChargeBound oa cm.queryCost B := by
+  refine ⟨fun h => ?_, worstCaseCostBound_of_isChargeBound⟩
+  rw [worstCaseCostBound_iff_forall_charge_le] at h
+  exact PFunctor.FreeM.Path.isChargeBound_of_forall_charge_le
+    (PFunctor.FreeM.programProgress_of_nonempty oa) fun p => (zero_add _).trans_le (h p)
 
 
 /-! ## Cost Bounds -/
