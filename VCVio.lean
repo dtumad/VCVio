@@ -363,6 +363,7 @@ public import VCVio.OracleComp.QueryTracking.ListCache
 public import VCVio.OracleComp.QueryTracking.LoggingOracle.Core
 public import VCVio.OracleComp.QueryTracking.MeasuredProgram
 public import VCVio.OracleComp.QueryTracking.MeasuredProgram.Composition
+public import VCVio.OracleComp.QueryTracking.MeasuredProgram.FreeM
 public import VCVio.OracleComp.QueryTracking.ObservationOracle
 public import VCVio.OracleComp.QueryTracking.ProgrammingOracle
 public import VCVio.OracleComp.QueryTracking.QueryBound
