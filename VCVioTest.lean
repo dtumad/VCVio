@@ -76,6 +76,7 @@ public import VCVioTest.MonadProbability
 public import VCVioTest.OracleComp.AdaptiveMeasure
 public import VCVioTest.OracleComp.BudgetedPotential
 public import VCVioTest.OracleComp.CostSimulation
+public import VCVioTest.OracleComp.ElGamalChargeShape
 public import VCVioTest.OracleComp.EqDistTriple
 public import VCVioTest.OracleComp.ExpectedCharge
 public import VCVioTest.OracleComp.MeasuredProgram
