@@ -10,7 +10,6 @@ public import VCVio.OracleComp.QueryTracking.QueryBound.Charge
 public import VCVio.OracleComp.QueryTracking.QueryCost
 public import PolyFun.PFunctor.Free.Path.Charge
 public import PolyFun.PFunctor.Free.Cost.Event
-import Mathlib.Tactic.GRewrite
 
 /-!
 # Cost Models for Oracle Computations
@@ -381,68 +380,7 @@ def unit : CostModel spec ℕ where
 
 end CostModel
 
-@[simp]
-private lemma addCostOracle_unit_run_apply (t : spec.Domain) :
-    (addCostOracle CostModel.unit.queryCost t).run =
-      (fun u => (u, Multiplicative.ofAdd 1)) <$>
-        (spec.query t : OracleComp spec (spec.Range t)) := by
-  simp [CostModel.unit, addCostOracle, QueryImpl.withAddCost]
-
 section UnitCostBridge
-
-private lemma exists_mem_support_costDist_of_mem_support
-    [AddCommMonoid ω]
-    (oa : OracleComp spec α) (cm : CostModel spec ω) {x : α}
-    (hx : x ∈ support oa) :
-    ∃ c, (x, c) ∈ support (costDist oa cm) := by
-  have hx' : x ∈ support (Prod.fst <$> costDist oa cm) := by
-    simpa [fst_map_costDist] using hx
-  rw [support_map] at hx'
-  obtain ⟨⟨x', c⟩, hz, rfl⟩ := hx'
-  exact ⟨c, hz⟩
-
-private lemma mem_support_costDist_unit_query_bind_of_mem_support
-    (t : spec.Domain) (mx : spec.Range t → OracleComp spec α) (u : spec.Range t)
-    {z : α × Multiplicative ℕ} (hz : z ∈ support (costDist (mx u) CostModel.unit)) :
-    (z.1, Multiplicative.ofAdd (Multiplicative.toAdd z.2 + 1)) ∈ support
-      (costDist ((spec.query t : OracleComp spec (spec.Range t)) >>= mx) CostModel.unit) := by
-  rw [costDist, instrumentedRun, simulateQ_bind, simulateQ_query, WriterT.run_bind]
-  refine (mem_support_bind_iff _ _ _).2
-    ⟨(u, (Multiplicative.ofAdd 1 : Multiplicative ℕ)), ?_, ?_⟩
-  · simp [CostModel.unit]
-  · rw [support_map]
-    exact ⟨z, hz, by simp [Nat.add_comm]⟩
-
-private theorem isPerIndexQueryBound_of_unit_support_bound
-    [DecidableEq ι] [∀ t, Nonempty (spec.Range t)]
-    {oa : OracleComp spec α} {bound : ℕ}
-    (hSupport : ∀ z ∈ support (costDist oa CostModel.unit),
-      Multiplicative.toAdd z.2 ≤ bound) :
-    IsPerIndexQueryBound oa (fun _ => bound) := by
-  induction oa using OracleComp.inductionOn generalizing bound with
-  | pure x =>
-      exact isPerIndexQueryBound_pure x _
-  | query_bind t mx ih =>
-      rw [isPerIndexQueryBound_query_bind_iff]
-      refine ⟨?_, fun u => ?_⟩
-      · obtain ⟨u₀⟩ : Nonempty (spec.Range t) := inferInstance
-        rcases OracleComp.support_nonempty (mx u₀) with ⟨x, hx⟩
-        rcases exists_mem_support_costDist_of_mem_support (mx u₀) CostModel.unit hx with
-          ⟨c, hc⟩
-        have hle : Multiplicative.toAdd c + 1 ≤ bound := by
-          simpa using
-            hSupport _ (mem_support_costDist_unit_query_bind_of_mem_support t mx u₀ hc)
-        omega
-      · have hcontSupport :
-            ∀ z ∈ support (costDist (mx u) CostModel.unit), z.2 ≤ bound - 1 := by
-          intro z hz
-          have hle : Multiplicative.toAdd z.2 + 1 ≤ bound := by
-            simpa using hSupport _ (mem_support_costDist_unit_query_bind_of_mem_support t mx u hz)
-          change Multiplicative.toAdd z.2 ≤ bound - 1
-          omega
-        refine (ih u hcontSupport).mono fun i => ?_
-        simp only [Function.update_apply]
-        split <;> omega
 
 /-- A strict bound under the unit cost model yields a uniform per-index query bound:
 if every execution uses at most `bound` total unit-cost steps, then each oracle index
@@ -451,17 +389,14 @@ theorem WorstCaseCostBound.toIsPerIndexQueryBound_unit
     [DecidableEq ι] [∀ t, Nonempty (spec.Range t)]
     {oa : OracleComp spec α} {bound : ℕ}
     (h : WorstCaseCostBound oa CostModel.unit bound) :
-    IsPerIndexQueryBound oa (fun _ => bound) :=
-  isPerIndexQueryBound_of_unit_support_bound fun z hz => by
-    exact h z hz
-
-private lemma sum_update_pred_eq
-    [DecidableEq ι] [Fintype ι]
-    (qb : ι → ℕ) (t : ι) (ht : 0 < qb t) :
-    (∑ j, Function.update qb t (qb t - 1) j) + 1 = ∑ j, qb j := by
-  rw [Finset.sum_update_of_mem (Finset.mem_univ t), Finset.sdiff_singleton_eq_erase,
-    ← Finset.add_sum_erase _ qb (Finset.mem_univ t)]
-  omega
+    IsPerIndexQueryBound oa (fun _ => bound) := by
+  rw [worstCaseCostBound_iff_isChargeBound] at h
+  rw [isPerIndexQueryBound_iff_isChargeBound]
+  have := h.map (⟨⟨⟨fun n _ => n, rfl⟩, fun _ _ => rfl⟩, fun _ _ h _ => h⟩ : ℕ →+o (ι → ℕ))
+  refine this.mono_charge fun t i => ?_
+  by_cases hi : i = t
+  · subst hi; simp only [Pi.single_eq_same]; exact le_rfl
+  · simp [hi]
 
 /-- If `main` makes at most `qb i` queries to each oracle `i`, then its total query count
 (under the unit cost model) is at most `∑ i, qb i` on every execution path. -/
@@ -470,35 +405,17 @@ theorem IsPerIndexQueryBound.toWorstCaseCostBound_unit_sum
     {oa : OracleComp spec α} {qb : ι → ℕ}
     (h : IsPerIndexQueryBound oa qb) :
     WorstCaseCostBound oa CostModel.unit (∑ i, qb i) := by
-  have haux :
-      ∀ {oa : OracleComp spec α} {qb : ι → ℕ},
-        IsPerIndexQueryBound oa qb →
-          AddWriterT.QueryBoundedAboveBy (instrumentedRun oa CostModel.unit) (∑ i, qb i) := by
-    intro oa
-    induction oa using OracleComp.inductionOn with
-    | pure x =>
-        intro qb _
-        grw [← Nat.zero_le (∑ i, qb i)]
-        simpa [instrumentedRun] using AddWriterT.queryBoundedAboveBy_pure x
-    | query_bind t mx ih =>
-        intro qb hqb
-        rw [isPerIndexQueryBound_query_bind_iff] at hqb
-        refine AddWriterT.queryBoundedAboveBy_mono
-          (oa := instrumentedRun (liftM (query t) >>= mx) CostModel.unit)
-          (n₁ := 1 + ∑ i, Function.update qb t (qb t - 1) i) (n₂ := ∑ i, qb i) ?_ ?_
-        · have hbind := AddWriterT.queryBoundedAboveBy_bind (n₁ := 1)
-            (oa := instrumentedRun (spec.query t : OracleComp spec (spec.Range t)) CostModel.unit)
-            (f := fun u => instrumentedRun (mx u) CostModel.unit)
-            (n₂ := ∑ i, Function.update qb t (qb t - 1) i)
-            (by simpa [instrumentedRun, CostModel.unit,
-                  HasQuery.Program.withUnitCost, HasQuery.Program.withAddCost] using
-              (HasQuery.queryBoundedAboveBy_withUnitCost_query
-                (QueryImpl.ofLift spec (OracleComp spec)) t))
-            (fun u => ih u (hqb.2 u))
-          simpa [instrumentedRun, simulateQ_bind] using hbind
-        · have := sum_update_pred_eq qb t hqb.1
-          omega
-  exact haux h
+  rw [isPerIndexQueryBound_iff_isChargeBound] at h
+  rw [worstCaseCostBound_iff_forall_charge_le]
+  intro p
+  have hp := (zero_add _).symm.trans_le (PFunctor.FreeM.Path.charge_le_of_isChargeBound h p)
+  have hsum := PFunctor.FreeM.Path.charge_map_addMonoidHom
+    (∑ i, Pi.evalAddMonoidHom (fun _ : ι => ℕ) i) oa p (c := fun t => Pi.single t 1)
+  have hc : (⇑(∑ i, Pi.evalAddMonoidHom (fun _ : ι => ℕ) i) ∘ fun t => Pi.single t (1 : ℕ)) =
+      (CostModel.unit (spec := spec)).queryCost := by
+    funext t; simp [CostModel.unit]
+  rw [← hc, hsum]
+  simpa using Finset.sum_le_sum fun i _ => hp i
 
 /-- Corollary: the expected total query count is also at most `∑ i, qb i`. Follows from the
 worst-case bound `toWorstCaseCostBound_unit_sum`. -/
