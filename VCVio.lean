@@ -354,6 +354,7 @@ public import VCVio.OracleComp.QueryTracking.CostModel.Simulation
 public import VCVio.OracleComp.QueryTracking.CountingOracle.Core
 public import VCVio.OracleComp.QueryTracking.DeterminedCost
 public import VCVio.OracleComp.QueryTracking.Enforcement
+public import VCVio.OracleComp.QueryTracking.ExpectedCharge
 public import VCVio.OracleComp.QueryTracking.ExpectedQueryCount
 public import VCVio.OracleComp.QueryTracking.HandlerSimp
 public import VCVio.OracleComp.QueryTracking.Instability.Basic
