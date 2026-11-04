@@ -79,10 +79,11 @@ abbrev isLR : Unit ⊕ (ℕ ⊕ ℕ) → Prop := (· matches .inr (.inr _))
 /-- Whether a target query is a group operation. -/
 abbrev isOp' : Unit ⊕ ℕ → Prop := (· matches .inl _)
 
-/-- One group operation, then forward the answer. -/
+/-- One group operation. -/
 def groupOp : OracleComp tgtSpec Unit := tgtSpec.query (.inl ())
 
-/-- A left/right query: free on a cache hit, three operations on a miss. -/
+/-- The suffix implementation: a group operation is one target operation, a coin is forwarded,
+and a left/right query is free on a cache hit and three operations on a miss. -/
 def toyImpl : QueryImpl srcSpec (StateT (List ℕ) (OracleComp tgtSpec))
   | .inl () => fun st => do let u ← groupOp; pure (u, st)
   | .inr (.inl n) => fun st => do let u ← tgtSpec.query (.inr n); pure (u, st)
@@ -91,6 +92,7 @@ def toyImpl : QueryImpl srcSpec (StateT (List ℕ) (OracleComp tgtSpec))
         groupOp; groupOp; groupOp
         pure (m, m :: st)
 
+/-- From every cache, each call stays within its weighted charge `[op] + 3 * [left/right]`. -/
 theorem toyImpl_step (t : Unit ⊕ (ℕ ⊕ ℕ)) (st : List ℕ) :
     IsQueryBoundP ((toyImpl t).run st) isOp'
       ((if isOp t then 1 else 0) + 3 * (if isLR t then 1 else 0)) := by
