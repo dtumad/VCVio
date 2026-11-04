@@ -6,7 +6,7 @@ Authors: Quang Dao
 
 module
 
-public import VCVio.OracleComp.QueryTracking.QueryBound.Basic
+public import VCVio.OracleComp.QueryTracking.QueryBound.Charge
 public import VCVio.OracleComp.SimSemantics.Batch
 
 /-!
@@ -28,6 +28,8 @@ a hiding game local coins together with the challenger's encryption oracle.
 
 ## Main statements
 
+* `isOnlineQueryBound_iff_isChargeBound`, `isPointQueryBound_iff_isChargeBound`: the online and
+  point budgets are charge bounds, with the charges `onlineStep` and `pointCount`.
 * `IsPointQueryBound.isQueryBoundP_simulateQ_unbatch`: rewriting the rounds of a program with
   point budget `q` as single queries gives a program making at most `q` queries to `spec`.
 * `IsOnlineQueryBound.simulateQ_of_step`: a handler sending each query to `free` to a program with
@@ -116,6 +118,23 @@ def pointCount : τ ⊕ List ι → ℕ
 every path; the number of rounds and its queries to `free` are free. -/
 abbrev IsPointQueryBound (oa : OracleComp (free + spec.batch) α) (q : ℕ) : Prop :=
   IsQueryBound oa q (fun t q => pointCount t ≤ q) (fun t q => q - pointCount t)
+
+/-- An online budget is the charge bound with the pair charge `onlineStep`: one round and its
+points for a round, nothing for a query to the free summand. -/
+theorem isOnlineQueryBound_iff_isChargeBound (oa : OracleComp (free + spec.batch) α)
+    (b : ℕ × ℕ) : IsOnlineQueryBound oa b ↔ PFunctor.FreeM.IsChargeBound oa onlineStep b := by
+  rw [PFunctor.FreeM.isChargeBound_iff_isRollBound_orderedSub, tsub_zero]
+  simp only [zero_le, true_and]
+  refine PFunctor.FreeM.isRollBound_congr (fun t b => ?_) fun t b => ?_ <;> rcases t with n | ts
+  · simp [Prod.le_def]
+  · simp [Prod.le_def, Nat.one_le_iff_ne_zero, Nat.pos_iff_ne_zero]
+  · simp [Prod.ext_iff]
+  · rfl
+
+/-- A point budget is the charge bound with the point count as charge. -/
+theorem isPointQueryBound_iff_isChargeBound (oa : OracleComp (free + spec.batch) α) (q : ℕ) :
+    IsPointQueryBound oa q ↔ PFunctor.FreeM.IsChargeBound oa pointCount q :=
+  (PFunctor.FreeM.isChargeBound_iff_isRollBound_nat oa pointCount q).symm
 
 lemma isOnlineQueryBound_query_bind_inl_iff (n : τ)
     (mx : (free + spec.batch).Range (.inl n) → OracleComp (free + spec.batch) α)

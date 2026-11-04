@@ -368,6 +368,7 @@ public import VCVio.OracleComp.QueryTracking.ProgrammingOracle
 public import VCVio.OracleComp.QueryTracking.QueryBound
 public import VCVio.OracleComp.QueryTracking.QueryBound.Basic
 public import VCVio.OracleComp.QueryTracking.QueryBound.Batch
+public import VCVio.OracleComp.QueryTracking.QueryBound.Charge
 public import VCVio.OracleComp.QueryTracking.QueryBound.Counter
 public import VCVio.OracleComp.QueryTracking.QueryBound.Hazard
 public import VCVio.OracleComp.QueryTracking.QueryBound.Partition
