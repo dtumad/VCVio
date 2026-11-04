@@ -23,9 +23,9 @@ moves that budget through the implementation once each call is within its weight
 every state. `toyImpl` recreates the three branches with a list cache.
 
 The prefix pauses at the first fresh left/right query once `k` encryptions are spent, which is not
-a simulation through a handler. `runUntil` is that pausing runner, and `isChargeBound_runUntil`
-is its amortized budget with a decreasing potential; `toyPrefix` with the potential
-`3 * (k - count)` gives the prefix bound `3 * (k - count) + qₒ`.
+a simulation through a handler. PolyFun's `PFunctor.FreeM.runUntil` is that pausing runner, and
+`IsChargeBound.runUntil` is its amortized budget with a decreasing potential; `toyPrefix` with the
+potential `3 * (k - count)` gives the prefix bound `3 * (k - count) + qₒ`.
 -/
 
 public section
@@ -114,54 +114,13 @@ theorem suffix_bound {A : OracleComp srcSpec Bool} {qₒ q : ℕ} (hₒ : IsQuer
 /-! ## Pausing prefixes with a potential
 
 The prefix of the reduction pauses at the first fresh left/right query once `k` encryptions are
-spent, returning the query and the continuation. `runUntil` is that runner: each call is either
-answered, with a new state, or pauses the run. A decreasing potential `Φ` on the state pays for
-the steps: if from every state a call at `t` stays, along every prefix of its run, within what the
-caller can afford, and ends with `spent + Φ next ≤ spent₀ + Φ now + c t`, then a source budget `B`
-gives the target budget `Φ σ₀ + B`. -/
+spent, returning the query and the continuation. PolyFun's `runUntil` is that runner: each call
+is either answered, with a new state, or pauses the run. A decreasing potential `Φ` on the state
+pays for the steps: if from every state a call at `t` stays, along every prefix of its run, within
+what the caller can afford, and ends with `spent + Φ next ≤ spent₀ + Φ now + c t`, then a source
+budget `B` gives the target budget `Φ σ₀ + B`. -/
 
 section Prefix
-
-variable {ι ι' σ α : Type} {spec : OracleSpec ι} {spec' : OracleSpec ι'}
-
-/-- Run `oa`, answering each call through `h` or pausing; a pause returns the call and its
-continuation, with the state unchanged. -/
-@[expose] def runUntil (h : (t : ι) → σ → OracleComp spec' (Option (spec.Range t × σ))) :
-    OracleComp spec α → σ →
-      OracleComp spec' ((α ⊕ ((t : ι) × (spec.Range t → OracleComp spec α))) × σ)
-  | .pure a, st => pure (.inl a, st)
-  | .liftBind t k, st => h t st >>= fun
-      | none => pure (.inr ⟨t, k⟩, st)
-      | some (u, st') => runUntil h (k u) st'
-
-/-- The state after a step: the new state on an answer, the old one on a pause. -/
-@[expose] def nextState {t : ι} (st : σ) : Option (spec.Range t × σ) → σ
-  | none => st
-  | some (_, st') => st'
-
-/-- **Amortized budget for a pausing runner.** -/
-theorem isChargeBound_runUntil {h : (t : ι) → σ → OracleComp spec' (Option (spec.Range t × σ))}
-    (Φ : σ → ℕ) {c : ι → ℕ} {d : ι' → ℕ} {B T : ℕ}
-    (hstep : ∀ t st e, e + Φ st + c t ≤ T →
-      FreeM.wpFold (OpSpec.budget d T) (h t st)
-        (fun r e' => e' + Φ (nextState st r) ≤ e + Φ st + c t) e)
-    {oa : OracleComp spec α} {s : ℕ} (hoa : FreeM.IsChargeBound oa c B s) (e : ℕ) (st : σ)
-    (hT : e + Φ st + B ≤ T + s) : FreeM.IsChargeBound (runUntil h oa st) d T e := by
-  induction oa using FreeM.rec generalizing s e st with
-  | pure a =>
-    change e ≤ T
-    have : s ≤ B := hoa
-    omega
-  | liftBind t k ih =>
-    have hs : s + c t ≤ B := hoa.1
-    rw [runUntil, FreeM.IsChargeBound, FreeM.wpFold_bind]
-    refine FreeM.wpFold_mono (P := spec'.toPFunctor) (OpSpec.budget_monotone d T) (h t st)
-      (fun r e' hr => ?_) e (hstep t st e (by omega))
-    rcases r with _ | ⟨u, st'⟩
-    · change e' ≤ T
-      change e' + Φ st ≤ e + Φ st + c t at hr
-      omega
-    · exact ih u (hoa.2 u) e' st' (by change e' + Φ st' ≤ e + Φ st + c t at hr; omega)
 
 /-- A toy prefix: encrypt a fresh left/right query while fewer than `k` were encrypted, and pause
 at the first fresh one after that. The state is the number of encryptions and the cache. -/
@@ -179,25 +138,25 @@ at the first fresh one after that. The state is the number of encryptions and th
 /-- The prefix bound: `qₒ` operations run with at most `qₒ + 3 * (k - count)` operations. -/
 theorem prefix_bound (k : ℕ) {A : OracleComp srcSpec Bool} {qₒ : ℕ}
     (hₒ : IsQueryBoundP A isOp qₒ) (st : ℕ × List ℕ) :
-    FreeM.IsChargeBound (runUntil (toyPrefix k) A st) (fun t => if isOp' t then 1 else 0)
+    FreeM.IsChargeBound (FreeM.runUntil (toyPrefix k) A st) (fun t => if isOp' t then 1 else 0)
       (3 * (k - st.1) + qₒ) := by
   rw [isQueryBoundP_iff_isChargeBound] at hₒ
-  refine isChargeBound_runUntil (fun st => 3 * (k - st.1)) (fun t st e he => ?_) hₒ 0 st
+  refine hₒ.runUntil (fun st => 3 * (k - st.1)) (fun _ => Nat.zero_le _) (fun t st e he => ?_)
     (by omega)
   rcases t with _ | n | m
-  · simp [toyPrefix, groupOp, nextState, OracleComp.liftM_def, OracleSpec.query_def] at he ⊢
+  · simp [toyPrefix, groupOp, Option.elim, OracleComp.liftM_def, OracleSpec.query_def] at he ⊢
     omega
-  · simp [toyPrefix, nextState, OracleComp.liftM_def, OracleSpec.query_def, OracleQuery.mk,
+  · simp [toyPrefix, Option.elim, OracleComp.liftM_def, OracleSpec.query_def, OracleQuery.mk,
       PFunctor.Obj.mk] at he ⊢
     omega
   · simp only [isOp, reduceCtorEq, ite_false, add_zero] at he
     by_cases hm : m ∈ st.2
-    · simp [toyPrefix, hm, nextState]
+    · simp [toyPrefix, hm, Option.elim]
     by_cases hk : st.1 < k
-    · simp [toyPrefix, hm, hk, groupOp, nextState, OracleComp.liftM_def, OracleSpec.query_def,
+    · simp [toyPrefix, hm, hk, groupOp, Option.elim, OracleComp.liftM_def, OracleSpec.query_def,
         OracleQuery.mk, PFunctor.Obj.mk, FreeM.wpFold_bind]
       omega
-    · simp [toyPrefix, hm, hk, nextState]
+    · simp [toyPrefix, hm, hk, Option.elim]
 
 end Prefix
 

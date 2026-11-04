@@ -933,8 +933,7 @@ theorem IsTotalQueryBound.simulateQ_of_step_le {ι' : Type u} {spec' : OracleSpe
     IsTotalQueryBound (simulateQ impl oa) (n * step) := by
   simp only [isTotalQueryBound_iff_isRollBound, ← PFunctor.FreeM.isTotalRollBound_iff_isRollBound,
     ← PFunctor.FreeM.isChargeBound_one_iff_isTotalRollBound] at *
-  have h' := h.map ⟨AddMonoidHom.mulRight step, fun _ _ h => Nat.mul_le_mul_right step h⟩
-  rw [map_zero] at h'
-  exact (h'.mono_charge fun _ => (Nat.one_mul step).ge).liftM impl hstep
+  rw [← smul_eq_mul]
+  exact PFunctor.FreeM.IsChargeBound.liftM_nsmul impl hstep h
 
 end OracleComp

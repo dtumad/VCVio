@@ -8,8 +8,6 @@ module
 
 public import VCVio.OracleComp.QueryTracking.QueryBound.Basic
 public import PolyFun.PFunctor.Free.Cost
-public import Mathlib.Algebra.Order.Sub.Prod
-public import Mathlib.Algebra.Order.Monoid.Prod
 
 /-!
 # Query bounds as charge bounds
@@ -82,18 +80,8 @@ variable [DecidableEq ι]
 /-- A per-index query bound is the bound with the vector charge `Pi.single t 1`. -/
 theorem isPerIndexQueryBound_iff_isChargeBound (oa : OracleComp spec α) (qb : ι → ℕ) :
     IsPerIndexQueryBound oa qb ↔
-      PFunctor.FreeM.IsChargeBound oa (fun t => Pi.single t (1 : ℕ)) qb := by
-  rw [PFunctor.FreeM.isChargeBound_iff_isRollBound_orderedSub, tsub_zero]
-  simp only [zero_le, true_and]
-  refine PFunctor.FreeM.isRollBound_congr (fun t b => ⟨fun h j => ?_, fun h => ?_⟩) fun t b => ?_
-  · by_cases hj : j = t
-    · subst hj; simpa [Nat.one_le_iff_ne_zero, Nat.pos_iff_ne_zero] using h
-    · simp [hj]
-  · simpa [Nat.one_le_iff_ne_zero, Nat.pos_iff_ne_zero] using h t
-  · funext j
-    by_cases hj : j = t
-    · subst hj; simp
-    · simp [hj]
+      PFunctor.FreeM.IsChargeBound oa (fun t => Pi.single t (1 : ℕ)) qb :=
+  (PFunctor.FreeM.isChargeBound_single_iff_isRollBound oa qb).symm
 
 /-- A per-index query bound is, one index at a time, the predicate-targeted bound for that
 index. -/

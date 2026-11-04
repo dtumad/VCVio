@@ -9,7 +9,6 @@ public import Mathlib.Algebra.Polynomial.Eval.Defs
 public import VCVio.OracleComp.QueryTracking.QueryBound.Charge
 public import VCVio.OracleComp.QueryTracking.QueryCost
 public import PolyFun.PFunctor.Free.Path.Charge
-public import PolyFun.PFunctor.Free.Cost.Event
 
 /-!
 # Cost Models for Oracle Computations
@@ -406,16 +405,12 @@ theorem IsPerIndexQueryBound.toWorstCaseCostBound_unit_sum
     (h : IsPerIndexQueryBound oa qb) :
     WorstCaseCostBound oa CostModel.unit (∑ i, qb i) := by
   rw [isPerIndexQueryBound_iff_isChargeBound] at h
+  have h' := h.sum
+  simp only [Finset.sum_pi_single', Finset.mem_univ, ite_true, Pi.zero_apply,
+    Finset.sum_const_zero] at h'
   rw [worstCaseCostBound_iff_forall_charge_le]
   intro p
-  have hp := (zero_add _).symm.trans_le (PFunctor.FreeM.Path.charge_le_of_isChargeBound h p)
-  have hsum := PFunctor.FreeM.Path.charge_map_addMonoidHom
-    (∑ i, Pi.evalAddMonoidHom (fun _ : ι => ℕ) i) oa p (c := fun t => Pi.single t 1)
-  have hc : (⇑(∑ i, Pi.evalAddMonoidHom (fun _ : ι => ℕ) i) ∘ fun t => Pi.single t (1 : ℕ)) =
-      (CostModel.unit (spec := spec)).queryCost := by
-    funext t; simp [CostModel.unit]
-  rw [← hc, hsum]
-  simpa using Finset.sum_le_sum fun i _ => hp i
+  simpa [CostModel.unit] using PFunctor.FreeM.Path.charge_le_of_isChargeBound h' p
 
 /-- Corollary: the expected total query count is also at most `∑ i, qb i`. Follows from the
 worst-case bound `toWorstCaseCostBound_unit_sum`. -/

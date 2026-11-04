@@ -86,9 +86,8 @@ theorem IsQueryBoundP.simulateQ_of_step_le_total
     (hstep : ∀ t : spec.Domain, IsQueryBoundP (impl t) q step) :
     IsQueryBoundP (simulateQ impl oa) q (n * step) := by
   simp only [isTotalQueryBound_iff_isChargeBound, isQueryBoundP_iff_isChargeBound] at *
-  have h' := h.map ⟨AddMonoidHom.mulRight step, fun _ _ h => Nat.mul_le_mul_right step h⟩
-  rw [map_zero] at h'
-  exact (h'.mono_charge fun _ => (Nat.one_mul step).ge).liftM impl hstep
+  rw [← smul_eq_mul]
+  exact PFunctor.FreeM.IsChargeBound.liftM_nsmul impl hstep h
 
 theorem isQueryBoundP_simulateQ_preInsert
     {ι' : Type u} {spec' : OracleSpec ι'} {β : Type u}
@@ -329,7 +328,7 @@ theorem IsQueryBoundP.resource_le_add_of_mem_support_run_simulateQ
     {oa : OracleComp spec α} {n : ℕ} (h : IsQueryBoundP oa p n) {s : σ} {z : α × σ}
     (hz : z ∈ support ((simulateQ impl oa).run s)) :
     f z.2 ≤ f s + n := by
-  rw [isQueryBoundP_iff_isChargeBound, ← PFunctor.FreeM.isChargeBound_natCast_iff] at h
+  rw [isQueryBoundP_iff_isChargeBound, ← PFunctor.FreeM.isChargeBound_natCast_iff (R := ℕ∞)] at h
   refine (h.add_left (f s)).le_of_canReturn_run_liftM impl f (fun t s w hw => ?_)
     (add_zero (f s)).symm.le hz
   simpa [apply_ite] using hstep t s w hw
@@ -366,15 +365,9 @@ theorem IsTotalQueryBound.of_perIndex [DecidableEq ι] [Fintype ι]
     {qb : ι → ℕ}
     (h : IsPerIndexQueryBound oa qb) :
     IsTotalQueryBound oa (∑ i, qb i) := by
-  induction oa using OracleComp.inductionOn generalizing qb with
-  | pure _ => trivial
-  | query_bind t mx ih =>
-      rw [isPerIndexQueryBound_query_bind_iff] at h
-      rw [isTotalQueryBound_query_bind_iff]
-      refine ⟨Nat.lt_of_lt_of_le h.1
-        (Finset.single_le_sum (fun i _ => Nat.zero_le _) (Finset.mem_univ t)), fun u => ?_⟩
-      rw [← sum_update_pred h.1]
-      exact ih u (h.2 u)
+  rw [isPerIndexQueryBound_iff_isChargeBound] at h
+  rw [isTotalQueryBound_iff_isChargeBound]
+  simpa [Finset.sum_pi_single'] using h.sum
 
 /-! ### Conversions and soundness for `IsQueryBoundP` -/
 

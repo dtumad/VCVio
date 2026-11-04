@@ -182,8 +182,7 @@ theorem expectedQueryCount_le_of_isTotalRollBound (program : FreeM P α) {bound 
     expectedQueryCount program ≤ (bound : ℝ≥0∞) := by
   rw [expectedQueryCount_eq_expectedCharge]
   refine expectedCharge_le_of_isChargeBound ?_
-  have := (isChargeBound_comp_iff (Nat.castAddMonoidHom ℝ≥0∞) fun _ _ => Nat.cast_le).2
+  simpa using isChargeBound_natCast_iff (R := ℝ≥0∞).2
     ((isChargeBound_one_iff_isTotalRollBound program bound).2 hbound)
-  simpa [Function.comp_def] using this
 
 end PFunctor.FreeM

@@ -231,13 +231,12 @@ expected source charge under the implementation. -/
 theorem expectedCharge_run_simulateQ_le (so : QueryImpl spec (StateT σ (OracleComp spec')))
     (c : spec.Domain → ℝ≥0∞) (d : spec'.Domain → ℝ≥0∞)
     (hstep : ∀ t s, expectedCharge d ((so t).run s) ≤ c t) (oa : OracleComp spec α) (s : σ) :
-    expectedCharge d ((simulateQ so oa).run s) ≤ expectedSimulatedCharge so c oa s := by
-  induction oa using OracleComp.inductionOn generalizing s with
-  | pure x => exact le_of_eq rfl
-  | query_bind t k ih =>
-    rw [simulateQ_bind, simulateQ_spec_query, StateT.run_bind, expectedCharge_bind,
-      expectedSimulatedCharge_query_bind]
-    exact add_le_add (hstep t s) (lintegral_id_evalDist_map_mono _ fun z => ih z.1 z.2)
+    expectedCharge d ((simulateQ so oa).run s) ≤ expectedSimulatedCharge so c oa s :=
+  PFunctor.FreeM.wpFold_run_liftM_le (P := spec.toPFunctor) (Q := spec'.toPFunctor) so
+    (Ψ := expectedChargeSpec d) (Φ := simulatedChargeSpec so c)
+    (fun _ _ _ hk => add_le_add le_rfl (lintegral_id_evalDist_map_mono _ hk))
+    (fun t _ s => (wpFold_expectedChargeSpec_eq d ((so t).run s) _).trans_le
+      (add_le_add (hstep t s) le_rfl)) oa (fun _ _ => 0) s
 
 /-- The expected target charge of a run is at most a charge budget of the source program, when
 from every state each call's implementation has expected target charge at most its source
