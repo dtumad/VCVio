@@ -659,6 +659,7 @@ public import VCVio.Schemes.PointerChainPuzzle.LeanSealHidingBridge
 public import VCVio.Schemes.PointerChainPuzzle.LeanSealHidingEncoding
 public import VCVio.Schemes.PointerChainPuzzle.Path
 public import VCVio.Schemes.PointerChainPuzzle.Sequential
+public import VCVio.Schemes.Pedersen.Generic
 public import VCVio.Schemes.Schnorr.BoundedChallenges
 public import VCVio.Schemes.Schnorr.ChallengeRestriction
 public import VCVio.Schemes.Schnorr.SigmaProtocol
