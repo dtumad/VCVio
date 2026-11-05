@@ -56,6 +56,7 @@ public import VCVioTest.GroupModel.Game
 public import VCVioTest.GroupModel.Cost
 public import VCVioTest.GroupModel.GenericHardness
 public import VCVioTest.GroupModel.Decisional
+public import VCVioTest.GroupModel.GenericDDH
 public import VCVioTest.GroupModel.Instances
 public import VCVioTest.GroupModel.Interaction.Axioms
 public import VCVioTest.GroupModel.Interaction.Basic

@@ -106,6 +106,7 @@ public import VCVio.CryptoFoundations.GroupModel.Game
 public import VCVio.CryptoFoundations.GroupModel.Coins
 public import VCVio.CryptoFoundations.GroupModel.GenericHardness
 public import VCVio.CryptoFoundations.GroupModel.Decisional
+public import VCVio.CryptoFoundations.GroupModel.GenericDDH
 public import VCVio.CryptoFoundations.GroupModel.Instances
 public import VCVio.CryptoFoundations.GroupModel.OfExplained
 public import VCVio.CryptoFoundations.GroupModel.MasterBound
