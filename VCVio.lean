@@ -98,6 +98,7 @@ public import VCVio.CryptoFoundations.GPVHashAndSign.TapeFactorization
 public import VCVio.CryptoFoundations.GPVHashAndSign.TrapCount
 public import VCVio.CryptoFoundations.GPVHashAndSign.TrapProjection
 public import VCVio.CryptoFoundations.GPVHashAndSign.VerificationBridge
+public import VCVio.CryptoFoundations.GroupModel.AccessibleSpan
 public import VCVio.CryptoFoundations.GroupModel.Collision
 public import VCVio.CryptoFoundations.GroupModel.Interaction
 public import VCVio.CryptoFoundations.GroupModel.Cost
@@ -114,6 +115,8 @@ public import VCVio.CryptoFoundations.GroupModel.GenericPairing
 public import VCVio.CryptoFoundations.GroupModel.GenericRelation
 public import VCVio.CryptoFoundations.GroupModel.GenericSDH
 public import VCVio.CryptoFoundations.GroupModel.GenericSXDH
+public import VCVio.CryptoFoundations.GroupModel.GenericUber
+public import VCVio.CryptoFoundations.GroupModel.GenericUberDecisional
 public import VCVio.CryptoFoundations.GroupModel.GenericXDH
 public import VCVio.CryptoFoundations.GroupModel.Instances
 public import VCVio.CryptoFoundations.GroupModel.OfExplained
@@ -159,6 +162,7 @@ public import VCVio.CryptoFoundations.HardnessAssumptions.TweakableHash.SMDTUD
 public import VCVio.CryptoFoundations.HardnessAssumptions.TweakableHash.SMDTUDFinalValidity
 public import VCVio.CryptoFoundations.HardnessAssumptions.TweakableHash.ToFinalValidity
 public import VCVio.CryptoFoundations.HardnessAssumptions.TweakableHash.ToFinalValidity.Core
+public import VCVio.CryptoFoundations.HardnessAssumptions.Uber
 public import VCVio.CryptoFoundations.HardnessAssumptions.XDH
 public import VCVio.CryptoFoundations.HashCommitment
 public import VCVio.CryptoFoundations.IdenSchemeWithAbort
