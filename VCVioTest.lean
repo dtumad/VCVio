@@ -52,14 +52,15 @@ public import VCVioTest.Foundations
 public import VCVioTest.GrindFailFast
 public import VCVioTest.GroupModel.Basic
 public import VCVioTest.GroupModel.Collision
+public import VCVioTest.GroupModel.Game
+public import VCVioTest.GroupModel.Instances
 public import VCVioTest.GroupModel.Interaction.Axioms
 public import VCVioTest.GroupModel.Interaction.Basic
 public import VCVioTest.GroupModel.Interaction.MultiGroup
 public import VCVioTest.GroupModel.Typed
-public import VCVioTest.GroupModel.Instances
 public import VCVioTest.GroupModel.Cost
-public import VCVioTest.GroupModel.Game
 public import VCVioTest.GroupModel.OfExplained
+public import VCVioTest.GroupModel.ToExplained
 public import VCVioTest.ITSR
 public import VCVioTest.KernelSemantics
 public import VCVioTest.ListCache
