@@ -68,6 +68,7 @@ public import VCVioTest.GroupModel.GenericSDH
 public import VCVioTest.GroupModel.GenericSXDH
 public import VCVioTest.GroupModel.GenericUber
 public import VCVioTest.GroupModel.GenericXDH
+public import VCVioTest.GroupModel.HashToGroup
 public import VCVioTest.GroupModel.Instances
 public import VCVioTest.GroupModel.Interaction.Axioms
 public import VCVioTest.GroupModel.Interaction.Basic
