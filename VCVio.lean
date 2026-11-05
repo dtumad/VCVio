@@ -104,6 +104,8 @@ public import VCVio.CryptoFoundations.GroupModel.Oracle
 public import VCVio.CryptoFoundations.GroupModel.Projection
 public import VCVio.CryptoFoundations.GroupModel.Signature
 public import VCVio.CryptoFoundations.GroupModel.Typed
+public import VCVio.CryptoFoundations.GroupModel.Instances
+public import VCVio.CryptoFoundations.GroupModel.Tracking
 public import VCVio.CryptoFoundations.HardnessAssumptions.CollisionResistance
 public import VCVio.CryptoFoundations.HardnessAssumptions.DiffieHellman
 public import VCVio.CryptoFoundations.HardnessAssumptions.EntropySmoothing
