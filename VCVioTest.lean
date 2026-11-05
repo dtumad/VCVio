@@ -71,6 +71,7 @@ public import VCVioTest.GroupModel.OfExplained
 public import VCVioTest.GroupModel.ToExplained
 public import VCVioTest.GroupModel.Virtualize
 public import VCVioTest.GroupModel.MasterBound
+public import VCVioTest.GroupModel.PairingVariants
 public import VCVioTest.GroupModel.SortedMasterBound
 public import VCVioTest.ITSR
 public import VCVioTest.KernelSemantics
