@@ -61,6 +61,7 @@ public import VCVioTest.GroupModel.GenericCoCDH
 public import VCVioTest.GroupModel.GenericDDH
 public import VCVioTest.GroupModel.GenericPairing
 public import VCVioTest.GroupModel.GenericRelation
+public import VCVioTest.GroupModel.GenericSDH
 public import VCVioTest.GroupModel.Instances
 public import VCVioTest.GroupModel.Interaction.Axioms
 public import VCVioTest.GroupModel.Interaction.Basic
