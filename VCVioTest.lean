@@ -211,6 +211,7 @@ public import VCVioTest.TimeLockPuzzle.Lift
 public import VCVioTest.TimeLockPuzzle.LiftSum
 public import VCVioTest.TimeLockPuzzle.LogSide
 public import VCVioTest.TimeLockPuzzle.Truncate
+public import VCVioTest.ThresholdFinder
 public import VCVioTest.ToFinalValidity
 public import VCVioTest.ToMathlib.AbsDiff
 public import VCVioTest.UniformOn
