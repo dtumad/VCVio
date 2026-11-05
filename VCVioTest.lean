@@ -62,6 +62,7 @@ public import VCVioTest.GroupModel.Cost
 public import VCVioTest.GroupModel.OfExplained
 public import VCVioTest.GroupModel.ToExplained
 public import VCVioTest.GroupModel.Virtualize
+public import VCVioTest.GroupModel.MasterBound
 public import VCVioTest.ITSR
 public import VCVioTest.KernelSemantics
 public import VCVioTest.ListCache
