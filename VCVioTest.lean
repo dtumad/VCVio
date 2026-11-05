@@ -58,6 +58,7 @@ public import VCVioTest.GroupModel.Interaction.MultiGroup
 public import VCVioTest.GroupModel.Typed
 public import VCVioTest.GroupModel.Instances
 public import VCVioTest.GroupModel.Cost
+public import VCVioTest.GroupModel.Game
 public import VCVioTest.ITSR
 public import VCVioTest.KernelSemantics
 public import VCVioTest.ListCache
