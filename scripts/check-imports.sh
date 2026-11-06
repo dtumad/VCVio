@@ -4,10 +4,6 @@
 # Verify that every generated umbrella module lists exactly the modules of its library:
 # regenerate the umbrellas with scripts/update-lib.sh and fail if that changes any of them. The
 # umbrellas are restored on exit, so a failing check leaves the working tree as it was.
-#
-# `lake exe mk_all --check` cannot be used bare here: it would iterate the curated
-# `LatticeCryptoTest.lean`, the umbrella-less `HashSigTest`, and the axiom-sweep and
-# init-sweep fixtures.
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"

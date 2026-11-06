@@ -106,6 +106,8 @@ if grep -q 'Prose.lean:[56]:' "$FIXTURE_TMP/prose.log"; then
   echo "ERROR: prose flagged a PolyFun label, a code span or a string" >&2
   exit 1
 fi
+expect_status 0 skip-retired "${CHECK[@]}" --skip-retired --allowlist "$EMPTY_ALLOWLIST" \
+  "$FIXTURE_TMP/Prose.lean"
 
 expect_status 0 good "${CHECK[@]}" --resolve --allowlist "$EMPTY_ALLOWLIST" "$FIXTURE_TMP/good.md"
 expect_line good 'Documentation names: OK'

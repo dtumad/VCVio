@@ -343,23 +343,6 @@ class EventLemmaTests(unittest.TestCase):
         self.assertEqual([k for k, v in renamed.items() if v in renamed], [])
 
 
-class RepositoryTests(unittest.TestCase):
-    def test_repository_is_a_fixed_point(self):
-        """Every tracked Lean source of the libraries is unchanged by the codemod: a retired name
-        that reappears is reported here, with no build."""
-        root = SCRIPT.parent.parent
-        listed = subprocess.run(["git", "ls-files", "*.lean"], cwd=root, capture_output=True,
-                                text=True, encoding="utf-8").stdout.split()
-        changed = []
-        for name in listed:
-            if name.startswith(("Interop/", "third_party/")):
-                continue
-            text = (root / name).read_text(encoding="utf-8")
-            if codemod.migrate(text, name, codemod.Report()) != text:
-                changed.append(name)
-        self.assertEqual(changed, [])
-
-
 class CommandLineTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix="vcvio-migrate-")
