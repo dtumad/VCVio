@@ -29,8 +29,9 @@ workflow and `gh run rerun RUN_ID --failed` after diagnosing retryable failures.
 reruns to finish before enqueuing.
 
 The hosted Linux build, lint and downstream jobs run `scripts/free-ci-disk-space.sh` before
-restoring caches. It removes unused .NET and Android SDKs and reports disk usage; it does not
-change repository sources or Lean/build caches. It requires GitHub-hosted Linux environment flags;
+restoring caches. It reports disk usage and removes unused .NET and Android SDKs in the background,
+so a failed removal does not fail the job; it does not change repository sources or Lean/build
+caches. It requires GitHub-hosted Linux environment flags;
 the guard is an operational safeguard, not runner authentication.
 `python3 scripts/test-ci-disk-space.py` tests its guards and command boundaries using stubs.
 
