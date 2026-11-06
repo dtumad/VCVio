@@ -703,7 +703,7 @@ The program-level validation set includes, as applicable:
 - targeted module builds;
 - `HashSig` and named `HashSigTest` builds;
 - executable primitive, codec, and ACVP tests;
-- `./scripts/build-project.sh` or the equivalent full project gate;
+- `./scripts/validate.sh --test` or the equivalent full project gate;
 - `./scripts/test-axiomsweep.sh` and `lake exe axiomsweep --check`;
 - library-import registration checks after adding modules;
 - the retired-`PMF` environment linter, which admits no baseline exception;

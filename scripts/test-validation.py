@@ -17,7 +17,7 @@ class ValidationTests(unittest.TestCase):
         scripts = self.root / "scripts"
         scripts.mkdir()
         source = Path(__file__).parent
-        for name in ("validate.sh", "build-project.sh", "check-warning-log.py"):
+        for name in ("validate.sh", "check-warning-log.py"):
             shutil.copy2(source / name, scripts / name)
         for name in ("check-imports", "test-polyfun-boundary", "check-polyfun-boundary",
                      "test-expose-boundary",
@@ -51,9 +51,8 @@ fi
         path.write_text("#!/usr/bin/env bash\nset -eu\n" + body)
         path.chmod(0o755)
 
-    def validate(self, *args, wrapper=False, **env):
-        name = "build-project.sh" if wrapper else "validate.sh"
-        return subprocess.run(["bash", f"scripts/{name}", *args], cwd=self.root,
+    def validate(self, *args, **env):
+        return subprocess.run(["bash", "scripts/validate.sh", *args], cwd=self.root,
                               env=dict(self.env, **env), text=True, capture_output=True,
                               timeout=15)
 
@@ -90,8 +89,8 @@ fi
                 result = self.validate(*flags, VALIDATION_TEST_EXIT="7")
                 self.assertEqual(result.returncode, 7, result.stdout + result.stderr)
 
-    def test_ffi_wrapper_preserves_other_flags(self):
-        result = self.validate("--ffi", "--axioms", wrapper=True)
+    def test_ffi_preserves_other_flags(self):
+        result = self.validate("--test", "--ffi", "--axioms")
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         calls = (self.root / "calls").read_text().splitlines()
         self.assertIn("test -- --ffi", calls)

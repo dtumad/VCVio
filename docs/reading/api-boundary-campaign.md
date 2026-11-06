@@ -13,9 +13,9 @@ It covers the eight active production libraries and the isolated complexity adap
 Dormant Interop remains outside the migration. Tests and examples provide consumer evidence;
 a source census is not a line-by-line semantic review.
 
-`python3 scripts/api-boundary-census.py` reports source signals by module. It reuses the
-comment/literal-aware scanner from the existing exposure check. Counts identify places to
-inspect; they are not defect counts or a ban on `rfl`, `change`, or `dsimp`.
+A one-time source census reported signals by module, reusing the comment/literal-aware scanner
+from the existing exposure check. Its counts identified places to inspect; they were not defect
+counts or a ban on `rfl`, `change`, or `dsimp`.
 
 Each reviewed boundary records its intended use, concrete consumer evidence, disposition,
 and validation below. The dispositions are **intentional**, **repaired**, **pending**, and
