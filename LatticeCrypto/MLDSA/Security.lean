@@ -45,9 +45,9 @@ The argument has two steps:
    commitment-recoverable `(c̃, z, h)` signatures for ML-DSA.
 2. EUF-NMA → MLWE + SelfTargetMSIS (Lemma 7).
 
-The generic first step is `FiatShamirWithAbort.euf_cma_to_eufNma`, for the commitment-carrying
-signature `(w₁, z, h)` at the hash budget `qH`. Theorem 4 for ML-DSA, which also needs the
-commitment-recovery conversion and the composition of both steps, is open in this library.
+`LatticeCrypto.MLDSA.SecurityHeadlines` composes both steps for the commitment-carrying signature
+`(w₁, z, h)` at the hash budget `qH`, conditionally on the abort and commitment-guessing bounds. The
+commitment-recovery conversion, and with it Theorem 4 for the FIPS 204 signature format, is open.
 
 ## References
 
