@@ -21,7 +21,7 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   # Runs on `main` save the build cache that later runs start from, so a newer push waits for the
   # running one instead of cancelling it.
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/dtumad/ci-batch-rehearsal' }}
 
 jobs:
   check_imported:
@@ -447,12 +447,12 @@ jobs:
       # `Lint` uses Batteries' linter executable, which nothing above builds. This step only fills
       # the cache: `Lint` reports any failure.
       - name: Build the linter executable
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/dtumad/ci-batch-rehearsal'
         continue-on-error: true
         run: lake build @batteries/runLinter
       - name: Name the dependency outputs
         id: deps-outputs
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/dtumad/ci-batch-rehearsal'
         env:
           KEY_PREFIX: lake-deps-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain', 'lake-manifest.json') }}
         run: |
@@ -461,7 +461,7 @@ jobs:
       # Cache entries are immutable, so a changed output list needs a new key. For fixed pins the
       # list only grows, because each run starts from the newest entry, so a key never comes back.
       - name: Save dependency cache
-        if: github.ref == 'refs/heads/main' && steps.deps-outputs.outputs.key != steps.deps-cache.outputs.cache-matched-key
+        if: github.ref == 'refs/heads/dtumad/ci-batch-rehearsal' && steps.deps-outputs.outputs.key != steps.deps-cache.outputs.cache-matched-key
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
@@ -471,7 +471,7 @@ jobs:
       # Keyed by run as well as commit, so a nightly clean build of an already-cached commit still
       # lands; restores take the newest match.
       - name: Save build cache
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/dtumad/ci-batch-rehearsal'
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
