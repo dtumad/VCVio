@@ -329,9 +329,11 @@ and `VCVioWidgets`. The dormant `Interop` target remains excluded.
 Test libraries and test executables are not part of the timed build; CI only
 times the smoke module separately with `lake env lean VCVioTest/Smoke.lean`.
 
-CI keeps two caches: `.lake/packages`, keyed by `lean-toolchain` and `lake-manifest.json`, and
-the project's own `.lake/build`, which every `main` run saves and every run restores. Only `main`
-saves, so pull-request code never publishes a cache another run loads. The `Lint` job restores the
+CI keeps two caches. Every run restores the newest entry of each for the same `lean-toolchain` and
+`lake-manifest.json`. `.lake/packages` is saved when the list of dependency build outputs changes:
+new pins, or a VCVio import that first reaches a dependency module. New pins start it empty, so the
+old pins' outputs do not accumulate. The project's own `.lake/build` is saved on every `main` run.
+Only `main` saves, so pull-request code never publishes a cache another run loads. The `Lint` job restores the
 same caches and builds the changed modules itself, so it runs alongside `Build Project`. Lake
 rebuilds a module when the content hash of its source or imports
 changes, so a restored build only saves work; it never changes a verdict. Lake replays the stored
