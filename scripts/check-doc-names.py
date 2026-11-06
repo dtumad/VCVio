@@ -348,6 +348,8 @@ def main() -> int:
                         help="compiled root for resolution (repeat for optional libraries)")
     parser.add_argument("--resolve", action="store_true",
                         help="also resolve the tokens with `lake exe docnames`")
+    parser.add_argument("--skip-retired", action="store_true",
+                        help="skip the retired-name check, for a job that follows one running it")
     parser.add_argument("--emit", type=Path, metavar="FILE",
                         help="write the tokens as the resolver's input and exit")
     parser.add_argument("--allowlist", type=Path, default=ALLOWLIST,
@@ -369,7 +371,7 @@ def main() -> int:
                              encoding="utf-8")
         print(f"Documentation names: wrote {len(tokens)} tokens to {args.emit}")
         return 0
-    failures = check_retired(retired_docs, patterns)
+    failures = [] if args.skip_retired else check_retired(retired_docs, patterns)
     resolved_count = 0
     if args.resolve:
         unresolved, status = resolve(tokens, args.root)

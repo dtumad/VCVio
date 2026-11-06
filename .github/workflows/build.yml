@@ -35,16 +35,6 @@ jobs:
       - name: Check CI disk cleanup safeguards
         run: python3 scripts/test-ci-disk-space.py
 
-      - name: Set up Lean environment
-        uses: leanprover/lean-action@fe408643ea7367d8c0404a8be3975bb145f5fb64 # v1
-        with:
-          auto-config: false
-          build: false
-          test: false
-          lint: false
-          use-github-cache: false
-          use-mathlib-cache: false
-
       - name: Check PolyFun public boundary
         run: |
           bash scripts/test-polyfun-boundary.sh
@@ -407,10 +397,11 @@ jobs:
         run: lake exe initsweep --check
       # The guides cite declarations by name; `lake exe docnames` resolves every cited name
       # against the oleans the build above produced, and the fixtures show the gate can fail.
+      # The retired-name half of this check needs no build, so `Check Agent Documentation` runs it.
       - name: Test the documentation name checker
         run: bash scripts/test-docnames.sh
       - name: Check documentation names
-        run: python3 scripts/check-doc-names.py --resolve
+        run: python3 scripts/check-doc-names.py --resolve --skip-retired
       # `lake test` runs the `test` script from `lakefile.lean`: one `lake build` of the three test
       # libraries (every module reachable from `VCVioTest.lean`, the Lean-only lattice helpers
       # and vectors, the SLH-DSA canaries) and every test executable, then the smoke test and the
