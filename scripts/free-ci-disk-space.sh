@@ -10,6 +10,6 @@ fi
 
 # These preinstalled SDKs are unused by the Lean and Linux native-backend builds.
 # Keep repository sources, build caches and host C/C++ compiler/Python/Rust toolchains intact.
+# Removing them takes 80-100 s, and no step needs the space that soon, so it runs in the background.
 df -h /
-sudo rm -rf -- /usr/share/dotnet /usr/local/lib/android
-df -h /
+sudo rm -rf -- /usr/share/dotnet /usr/local/lib/android > /dev/null 2>&1 &
