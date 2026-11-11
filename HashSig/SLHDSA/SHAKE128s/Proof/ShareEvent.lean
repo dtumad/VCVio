@@ -7,7 +7,6 @@ Authors: Tom Wambsgans
 module
 
 public import HashSig.SLHDSA.SHAKE128s.Proof.ShareClaims
-public import HashSig.SLHDSA.SHAKE128s.Proof.VerificationBudget
 
 /-!
 # The real event raises the lenient flag

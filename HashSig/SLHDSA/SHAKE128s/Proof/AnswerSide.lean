@@ -7,10 +7,8 @@ Authors: Tom Wambsgans
 module
 
 public import HashSig.SLHDSA.SHAKE128s.Proof.RoutedSplit
-public import HashSig.SLHDSA.SHAKE128s.Proof.CoverageTail
 public import HashSig.SLHDSA.SHAKE128s.Proof.AddressBounds
 public import HashSig.SLHDSA.SHAKE128s.Proof.WalkDefects
-public import HashSig.SLHDSA.SHAKE128s.Proof.ClassGrowth
 public import HashSig.SLHDSA.SHAKE128s.Proof.CoverageCount
 public import HashSig.SLHDSA.SHAKE128s.Proof.SplitWitness
 

@@ -8,7 +8,6 @@ module
 
 public import HashSig.SLHDSA.Security.ByteClash
 public import HashSig.SLHDSA.Security.ByteRedirect
-public import HashSig.SLHDSA.Security.RomSchemeRun
 
 /-!
 # The single-SHAKE256 run as a prefix of the run of the verifying adversary

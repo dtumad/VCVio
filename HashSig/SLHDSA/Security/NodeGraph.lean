@@ -8,7 +8,6 @@ module
 
 public import HashSig.SLHDSA.Security.ComponentTraces
 public import HashSig.SLHDSA.Security.KeyDiscipline
-public import HashSig.SLHDSA.Security.RomDescentSecret
 public import HashSig.SLHDSA.Security.SeedCoupling
 public import VCVio.OracleComp.QueryTracking.RandomOracle.Relabel
 import HashSig.SLHDSA.Security.AddressKeys

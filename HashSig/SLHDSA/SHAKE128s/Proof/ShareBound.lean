@@ -8,7 +8,6 @@ module
 
 public import HashSig.SLHDSA.SHAKE128s.Proof.ShareBlindFacts
 public import HashSig.SLHDSA.SHAKE128s.Proof.VerifyBound
-public import HashSig.SLHDSA.SHAKE128s.Proof.BlockViews
 public import HashSig.SLHDSA.SHAKE128s.Proof.Target127
 
 /-!

@@ -6,7 +6,6 @@ Authors: Nicolas Consigny
 
 module
 public import HashSig.SLHDSA.Xmss
-public import VCVio.CryptoFoundations.MerkleTree.Addressed.NatIndexed.Monadic
 import VCVio.CryptoFoundations.MerkleTree.Addressed.NatIndexed.QueryBound
 import VCVio.OracleComp.SimSemantics.SimulateQ.Option
 

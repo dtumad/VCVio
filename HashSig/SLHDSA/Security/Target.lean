@@ -9,7 +9,6 @@ module
 public import HashSig.SLHDSA.SecretProvider
 public import HashSig.SLHDSA.GeneralSchemeQueryBound
 public import VCVio.CryptoFoundations.SignatureAlg.RomQueryCount
-public import VCVio.CryptoFoundations.SignatureAlg.Transcript
 public import VCVio.CryptoFoundations.HardnessAssumptions.KeyedHash.Covering
 
 /-!

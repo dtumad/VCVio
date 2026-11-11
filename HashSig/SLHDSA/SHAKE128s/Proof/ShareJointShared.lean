@@ -8,7 +8,6 @@ module
 
 public import HashSig.SLHDSA.SHAKE128s.Proof.ShareJointBound
 public import HashSig.SLHDSA.SHAKE128s.Proof.JointBudget
-public import HashSig.SLHDSA.SHAKE128s.Proof.BySourceShared
 
 /-!
 # The shared half on accepted forgeries

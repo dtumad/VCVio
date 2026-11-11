@@ -8,7 +8,6 @@ module
 
 public import HashSig.SLHDSA.SHAKE128s.Proof.ShareEvent
 public import HashSig.SLHDSA.SHAKE128s.Proof.AnswerFired
-public import HashSig.SLHDSA.SHAKE128s.Proof.RecordedWalkTable
 
 /-!
 # The shared half at one setup

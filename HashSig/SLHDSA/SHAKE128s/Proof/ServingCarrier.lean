@@ -7,8 +7,6 @@ Authors: Tom Wambsgans
 module
 
 public import HashSig.SLHDSA.SHAKE128s.Proof.ServedDisclosure
-public import HashSig.SLHDSA.SHAKE128s.Proof.HonestProbes
-public import HashSig.SLHDSA.SHAKE128s.Proof.HandlerCarrier
 
 /-!
 # What a handler has to carry for disclosure to be served-indexed

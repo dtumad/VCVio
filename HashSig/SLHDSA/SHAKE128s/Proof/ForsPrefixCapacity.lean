@@ -7,7 +7,6 @@ Authors: Tom Wambsgans
 module
 
 public import HashSig.SLHDSA.SHAKE128s.Proof.ForsConcentrationOccupancy
-public import Mathlib.Probability.Independence.Basic
 
 /-!
 # Disclosure tapes for FORS prefix capacity

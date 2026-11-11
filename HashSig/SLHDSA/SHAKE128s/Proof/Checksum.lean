@@ -7,9 +7,6 @@ Authors: Tom Wambsgans
 module
 
 public import HashSig.SLHDSA.SHAKE128s.Proof.Experiment
-public import Mathlib.Algebra.BigOperators.Fin
-public import Mathlib.Algebra.Order.BigOperators.Group.Finset
-public import Mathlib.Tactic.NormNum
 
 /-!
 # Checksum arithmetic

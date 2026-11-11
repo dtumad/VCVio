@@ -7,7 +7,6 @@ Authors: Alexander Hicks
 module
 
 public import HashSig.SLHDSA.Security.LabScheme
-public import HashSig.SLHDSA.Security.RomDescentSecret
 public import VCVio.OracleComp.QueryTracking.RandomOracle.ReadSet
 import HashSig.SLHDSA.Security.AddressKeys
 

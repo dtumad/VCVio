@@ -8,9 +8,6 @@ module
 
 public import HashSig.SLHDSA.SHAKE128s.Proof.ShareSigner
 public import HashSig.SLHDSA.SHAKE128s.Proof.CapComp
-public import HashSig.SLHDSA.SHAKE128s.Proof.ClaimedProbes
-public import HashSig.SLHDSA.SHAKE128s.Proof.OpenCache
-public import HashSig.SLHDSA.SHAKE128s.Proof.KeygenValue
 public import HashSig.SLHDSA.SHAKE128s.Proof.ShareCells
 
 /-!

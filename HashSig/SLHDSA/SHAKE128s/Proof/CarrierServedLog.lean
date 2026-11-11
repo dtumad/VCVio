@@ -7,7 +7,6 @@ Authors: Tom Wambsgans
 module
 
 public import HashSig.SLHDSA.SHAKE128s.Proof.CarrierCap
-public import HashSig.SLHDSA.SHAKE128s.Proof.CarrierClearFraming
 public import HashSig.SLHDSA.SHAKE128s.Proof.CarrierCover
 
 /-!

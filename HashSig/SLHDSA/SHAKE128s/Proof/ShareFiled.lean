@@ -7,7 +7,6 @@ Authors: Tom Wambsgans
 module
 
 public import HashSig.SLHDSA.SHAKE128s.Proof.ShareBound
-public import HashSig.SLHDSA.SHAKE128s.Proof.VerificationBudget
 
 /-!
 # The blind verifier's probes are filed

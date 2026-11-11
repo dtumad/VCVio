@@ -7,7 +7,6 @@ Authors: Tom Wambsgans
 module
 
 public import HashSig.SLHDSA.SHAKE128s.Proof.FaultCharge
-public import HashSig.SLHDSA.SHAKE128s.Proof.Extraction.WotsPreimage
 
 /-!
 # What the WOTS residue leaves the forgery holding

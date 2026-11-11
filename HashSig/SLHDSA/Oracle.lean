@@ -7,7 +7,6 @@ Authors: Quang Dao
 module
 public import HashSig.SLHDSA.Primitives
 public import VCVio.OracleComp.HasQuery.Morphism
-public import VCVio.OracleComp.QueryTracking.QueryBound
 public import VCVio.OracleComp.QueryTracking.RandomOracle.Basic
 
 /-!

@@ -7,7 +7,6 @@ Authors: Alexander Hicks
 module
 
 public import HashSig.SLHDSA.Security.ByteLinkedRun
-public import HashSig.SLHDSA.Security.HonestTransfer
 
 /-!
 # The bad events of the verifying run, read through the linked redirect

@@ -7,9 +7,6 @@ Authors: Tom Wambsgans
 module
 
 public import HashSig.SLHDSA.SHAKE128s.Proof.ShareBound
-public import HashSig.SLHDSA.SHAKE128s.Proof.TableTail
-public import HashSig.SLHDSA.SHAKE128s.Proof.RecordedStripping
-public import HashSig.SLHDSA.SHAKE128s.Proof.TouchedKeys
 
 /-!
 # The real game, flattened

@@ -8,9 +8,7 @@ module
 
 public import HashSig.SLHDSA.SHAKE128s.Proof.GrowthCharge
 public import HashSig.SLHDSA.SHAKE128s.Proof.ForsCoverage
-public import HashSig.SLHDSA.SHAKE128s.Proof.MessageDigest
 public import HashSig.SLHDSA.SHAKE128s.Proof.CanonicalTarget
-public import HashSig.SLHDSA.SHAKE128s.Proof.HashSeparation
 
 /-!
 # One combined answer-side charge

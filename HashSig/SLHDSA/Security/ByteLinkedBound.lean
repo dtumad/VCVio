@@ -7,8 +7,6 @@ Authors: Alexander Hicks
 module
 
 public import HashSig.SLHDSA.Security.ByteLinkedView
-public import HashSig.SLHDSA.Security.CoverageBound
-public import HashSig.SLHDSA.Security.HedgedKeyBound
 
 /-!
 # The events of the verifying run, bounded with a further charge

@@ -6,7 +6,6 @@ Authors: Alexander Hicks
 
 module
 public import HashSig.SLHDSA.Security.RomDescentSecret
-public import VCVio.CryptoFoundations.SignatureAlg.Transcript
 
 /-!
 # The run of SLH-DSA in the random oracle model, and its settled transcript

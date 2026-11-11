@@ -7,7 +7,6 @@ Authors: Tom Wambsgans
 module
 
 public import HashSig.SLHDSA.SHAKE128s.Proof.RoutedSplit
-public import HashSig.SLHDSA.SHAKE128s.Proof.CanonicalSignature
 public import HashSig.SLHDSA.SHAKE128s.Proof.RandomizerGate
 
 /-!

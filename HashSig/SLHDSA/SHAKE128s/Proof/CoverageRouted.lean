@@ -6,7 +6,6 @@ Authors: Tom Wambsgans
 
 module
 
-public import HashSig.SLHDSA.SHAKE128s.Proof.CacheAvailability
 public import HashSig.SLHDSA.SHAKE128s.Proof.SplitRouted
 public import HashSig.SLHDSA.SHAKE128s.Proof.ServedLog
 

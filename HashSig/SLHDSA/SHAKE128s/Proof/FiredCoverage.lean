@@ -7,7 +7,6 @@ Authors: Tom Wambsgans
 module
 
 public import HashSig.SLHDSA.SHAKE128s.Proof.NoticingTape
-public import HashSig.SLHDSA.SHAKE128s.Proof.BlockViews
 public import HashSig.SLHDSA.SHAKE128s.Proof.ForsConcentrationSharper
 import VCVio.OracleComp.EvalDist.Sum
 

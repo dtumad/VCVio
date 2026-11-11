@@ -7,10 +7,6 @@ Authors: Tom Wambsgans
 module
 
 public import HashSig.SLHDSA.SHAKE128s.Proof.Target
-public import HashSig.SLHDSA.SHAKE128s.Proof.RandomizerGate
-public import HashSig.SLHDSA.SHAKE128s.Proof.WarmedCharges
-public import HashSig.SLHDSA.SHAKE128s.Proof.StrippedGame
-public import HashSig.SLHDSA.SHAKE128s.Proof.HonestProbes
 
 /-!
 # The warm cache holds no randomiser input at the walk's own seed

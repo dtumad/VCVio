@@ -6,8 +6,6 @@ Authors: Tom Wambsgans
 
 module
 
-public import HashSig.SLHDSA.SHAKE128s.Proof.OpenCache
-public import HashSig.SLHDSA.SHAKE128s.Proof.StalledRun
 public import HashSig.SLHDSA.SHAKE128s.Proof.CacheAvailability
 public import HashSig.SLHDSA.SHAKE128s.Proof.LazyBridge
 

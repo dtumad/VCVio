@@ -7,7 +7,6 @@ Authors: Tom Wambsgans
 module
 
 public import HashSig.SLHDSA.SHAKE128s.Proof.HonestGrowth
-public import VCVio.OracleComp.QueryTracking.QueryBound
 
 /-!
 # What verification can cost, and what key generation must

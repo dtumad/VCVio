@@ -5,8 +5,6 @@ Authors: Nicolas Consigny, Alexander Hicks
 -/
 
 module
-public import Mathlib.Data.Nat.Log
-public import VCVio.OracleComp.Constructions.SampleableType.Basic
 public import VCVio.OracleComp.Constructions.SampleableType.Measure
 
 /-!

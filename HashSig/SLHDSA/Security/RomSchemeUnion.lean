@@ -6,7 +6,6 @@ Authors: Alexander Hicks
 
 module
 public import HashSig.SLHDSA.Security.RomSchemeBridge
-public import VCVio.EvalDist.ProbabilityBounds
 
 /-!
 # The union bound over the random-oracle bad events of SLH-DSA

@@ -6,9 +6,7 @@ Authors: Alexander Hicks
 
 module
 
-public import HashSig.SLHDSA.Security.ByteClash
 public import HashSig.SLHDSA.Security.ByteConformance
-public import HashSig.SLHDSA.Security.KeyDiscipline
 public import HashSig.SLHDSA.Security.LinkedHazards
 public import HashSig.SLHDSA.Security.WeakKeyBound
 

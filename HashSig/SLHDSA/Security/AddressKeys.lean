@@ -6,7 +6,6 @@ Authors: Alexander Hicks
 
 module
 
-public import HashSig.SLHDSA.Xmss
 public import HashSig.SLHDSA.Fors
 
 /-!

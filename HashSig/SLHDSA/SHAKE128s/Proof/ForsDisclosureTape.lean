@@ -9,7 +9,6 @@ module
 public import HashSig.SLHDSA.SHAKE128s.Proof.ForsCoverage
 public import HashSig.SLHDSA.SHAKE128s.Proof.ForsConcentrationExtended
 public import HashSig.SLHDSA.SHAKE128s.Proof.ForsPrefixCapacity
-public import VCVio.OracleComp.Constructions.SampleableType.Measure
 
 /-!
 # Disclosures from an independent digest-view tape

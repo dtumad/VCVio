@@ -6,9 +6,6 @@ Authors: Tom Wambsgans
 
 module
 
-public import HashSig.SLHDSA.SHAKE128s.Proof.Experiment
-public import Mathlib.Topology.Instances.ENNReal.Lemmas
-public import HashSig.SLHDSA.SHAKE128s.Proof.WholeGameStructural
 public import HashSig.SLHDSA.SHAKE128s.Proof.WarmedGame
 
 /-!

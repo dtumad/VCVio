@@ -7,7 +7,6 @@ Authors: Tom Wambsgans
 module
 
 public import Mathlib.Combinatorics.Enumerative.Stirling
-public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 public import Mathlib.Tactic.NormNum
 
 /-!

@@ -6,7 +6,6 @@ Authors: Quang Dao
 
 module
 public import HashSig.SLHDSA.Address
-public import HashSig.SLHDSA.Encoding
 
 /-!
 # SLH-DSA digest and hypertree positions

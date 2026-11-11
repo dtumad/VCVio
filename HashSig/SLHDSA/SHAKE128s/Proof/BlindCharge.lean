@@ -6,10 +6,7 @@ Authors: Tom Wambsgans
 
 module
 
-public import HashSig.SLHDSA.SHAKE128s.Proof.StalledRun
-public import HashSig.SLHDSA.SHAKE128s.Proof.TableBlind
 public import HashSig.SLHDSA.SHAKE128s.Proof.RedrawCell
-public import HashSig.SLHDSA.SHAKE128s.Proof.SecretGuessCharge
 public import HashSig.SLHDSA.SHAKE128s.Proof.SignedWatch
 import VCVio.OracleComp.EvalDist.Sum
 

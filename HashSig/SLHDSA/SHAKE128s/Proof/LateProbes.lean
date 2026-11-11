@@ -6,11 +6,6 @@ Authors: Tom Wambsgans
 
 module
 
-public import HashSig.SLHDSA.SHAKE128s.Proof.ClassGrowth
-public import HashSig.SLHDSA.SHAKE128s.Proof.SplitWitness
-public import HashSig.SLHDSA.SHAKE128s.Proof.RandomizerGate
-public import HashSig.SLHDSA.SHAKE128s.Proof.Experiment
-public import HashSig.SLHDSA.SHAKE128s.Proof.KeygenUniform
 public import HashSig.SLHDSA.SHAKE128s.Proof.SharedJoin
 
 /-!

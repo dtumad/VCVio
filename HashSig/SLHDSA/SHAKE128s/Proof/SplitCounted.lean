@@ -7,7 +7,6 @@ Authors: Tom Wambsgans
 module
 
 public import HashSig.SLHDSA.SHAKE128s.Proof.CarrierFiles
-public import HashSig.SLHDSA.SHAKE128s.Proof.ClassGrowth
 public import HashSig.SLHDSA.SHAKE128s.Proof.RecordInvariant
 
 /-!

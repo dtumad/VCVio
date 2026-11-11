@@ -7,9 +7,6 @@ Authors: Tom Wambsgans
 module
 
 public import HashSig.SLHDSA.SHAKE128s.Proof.FinalAssembly
-public import HashSig.SLHDSA.SHAKE128s.Proof.Target
-public import HashSig.SLHDSA.SHAKE128s.Proof.SigningFaithful
-public import HashSig.SLHDSA.SHAKE128s.Proof.AnswerSide
 
 /-!
 # The answer side's forgetting map

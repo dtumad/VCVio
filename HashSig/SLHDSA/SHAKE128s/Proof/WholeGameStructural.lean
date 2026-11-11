@@ -9,8 +9,6 @@ module
 public import HashSig.SLHDSA.SHAKE128s.Proof.StructuralTerm
 public import HashSig.SLHDSA.SHAKE128s.Proof.GrowthBudget
 public import HashSig.SLHDSA.SHAKE128s.Proof.CombinedCharge
-public import HashSig.SLHDSA.SHAKE128s.Proof.GrowthCharge
-public import HashSig.SLHDSA.SHAKE128s.Proof.Experiment
 
 /-!
 # The whole game, instrumented

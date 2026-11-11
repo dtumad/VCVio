@@ -6,7 +6,6 @@ Authors: Alexander Hicks
 
 module
 public import HashSig.SLHDSA.Security.SufResidual
-public import ToMathlib.MeasureTheory.Measure.Bool
 
 /-!
 # The SLH-DSA scheme games, and the two experiment splits

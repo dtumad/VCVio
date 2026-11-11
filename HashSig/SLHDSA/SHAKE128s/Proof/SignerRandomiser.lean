@@ -6,7 +6,6 @@ Authors: Tom Wambsgans
 
 module
 
-public import HashSig.SLHDSA.SHAKE128s.Proof.HonestProbes
 public import HashSig.SLHDSA.SHAKE128s.Proof.RandomizerGate
 
 /-!

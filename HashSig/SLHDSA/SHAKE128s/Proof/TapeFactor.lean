@@ -6,8 +6,6 @@ Authors: Tom Wambsgans
 
 module
 
-public import HashSig.SLHDSA.SHAKE128s.Proof.DigestTape
-public import HashSig.SLHDSA.SHAKE128s.Proof.SplitPrefix
 public import HashSig.SLHDSA.SHAKE128s.Proof.RecorderView
 
 /-!

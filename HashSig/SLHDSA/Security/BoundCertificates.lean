@@ -6,7 +6,6 @@ Authors: Alexander Hicks
 
 module
 
-public import HashSig.SLHDSA.Security.BoundEval
 public import HashSig.SLHDSA.Security.RangeBound
 
 /-!

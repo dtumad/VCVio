@@ -8,7 +8,6 @@ module
 
 public import HashSig.SLHDSA.SHAKE128s.Proof.WalkTable
 public import HashSig.SLHDSA.SHAKE128s.Proof.LinkedGame
-public import HashSig.SLHDSA.SHAKE128s.Proof.RecordedBudget
 public import HashSig.SLHDSA.SHAKE128s.Proof.RedrawCell
 
 /-!

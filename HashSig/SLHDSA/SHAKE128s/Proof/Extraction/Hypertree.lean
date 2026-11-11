@@ -8,7 +8,6 @@ module
 
 public import HashSig.SLHDSA.SHAKE128s.Proof.Extraction.Merkle
 public import HashSig.SLHDSA.SHAKE128s.Proof.Extraction.Wots
-public import HashSig.SLHDSA.SHAKE128s.Proof.Experiment
 
 /-!
 # Extraction from one hypertree layer

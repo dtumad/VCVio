@@ -6,7 +6,6 @@ Authors: Tom Wambsgans
 
 module
 
-public import HashSig.SLHDSA.SHAKE128s.Proof.ClaimedProbes
 public import HashSig.SLHDSA.SHAKE128s.Proof.CoverageTail
 public import HashSig.SLHDSA.SHAKE128s.Proof.OpenCache
 public import HashSig.SLHDSA.SHAKE128s.Proof.RecordedBudget

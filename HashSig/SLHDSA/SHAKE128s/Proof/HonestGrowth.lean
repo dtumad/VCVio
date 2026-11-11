@@ -8,7 +8,6 @@ module
 
 public import HashSig.SLHDSA.SHAKE128s.Proof.AdversaryQueries
 public import HashSig.SLHDSA.SHAKE128s.Proof.WarmedCharges
-public import HashSig.SLHDSA.SHAKE128s.Proof.HonestProbes
 
 /-!
 # What key generation buys with the budget it spends

@@ -7,7 +7,6 @@ Authors: Tom Wambsgans
 module
 
 public import HashSig.SLHDSA.SHAKE128s.Proof.LateProbes
-public import HashSig.SLHDSA.SHAKE128s.Proof.RandomiserRecord
 
 /-!
 # The tail the ordering term reads, and the two equations it owes

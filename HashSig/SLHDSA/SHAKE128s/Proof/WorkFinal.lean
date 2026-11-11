@@ -7,7 +7,6 @@ Authors: Tom Wambsgans
 module
 
 public import HashSig.SLHDSA.SHAKE128s.Proof.ShareJointShared
-public import HashSig.SLHDSA.SHAKE128s.Proof.ShareFiled
 public import HashSig.SLHDSA.SHAKE128s.Proof.WorkTarget
 
 /-!

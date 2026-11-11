@@ -8,7 +8,6 @@ module
 
 public import HashSig.SLHDSA.SHAKE128s.Proof.WalkTable
 public import HashSig.SLHDSA.SHAKE128s.Proof.RandomiserRecord
-public import HashSig.SLHDSA.SHAKE128s.Proof.ClassGrowth
 
 /-!
 # The recorded paired run, with its walk drawn as a table

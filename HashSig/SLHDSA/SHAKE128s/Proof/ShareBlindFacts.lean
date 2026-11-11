@@ -9,7 +9,6 @@ module
 public import HashSig.SLHDSA.SHAKE128s.Proof.ShareFlag
 public import HashSig.SLHDSA.SHAKE128s.Proof.ShareSignCongr
 public import HashSig.SLHDSA.SHAKE128s.Proof.BlindCharge
-public import HashSig.SLHDSA.SHAKE128s.Proof.ServedDisclosure
 
 /-!
 # The blind game's step, without its flag, and the facts the charge reads

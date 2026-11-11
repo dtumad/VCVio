@@ -5,10 +5,7 @@ Authors: Vitalik Buterin, Nicolas Consigny, Alexander Hicks
 -/
 
 module
-public import Mathlib.Algebra.BigOperators.Group.List.Basic
 public import Mathlib.Algebra.Order.BigOperators.Group.List
-public import Mathlib.Algebra.Order.Group.Nat
-public import Mathlib.Data.List.Forall2
 public import Mathlib.Tactic.Ring
 
 /-!

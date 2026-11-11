@@ -8,14 +8,7 @@ module
 
 public import HashSig.SLHDSA.SHAKE128s.Proof.CarrierThin
 public import HashSig.SLHDSA.SHAKE128s.Proof.SuffixCausal
-public import HashSig.SLHDSA.SHAKE128s.Proof.CarrierCover
-public import HashSig.SLHDSA.SHAKE128s.Proof.CoverageRouted
-public import HashSig.SLHDSA.SHAKE128s.Proof.BlockViews
 public import HashSig.SLHDSA.SHAKE128s.Proof.SplitCarrierTail
-public import HashSig.SLHDSA.SHAKE128s.Proof.CoverageTail
-public import HashSig.SLHDSA.SHAKE128s.Proof.AddressBounds
-public import HashSig.SLHDSA.SHAKE128s.Proof.CarrierLeftRecord
-public import HashSig.SLHDSA.SHAKE128s.Proof.CarrierCap
 
 /-!
 # The answer half at `127`: coverage with fired witnesses, charged at second order

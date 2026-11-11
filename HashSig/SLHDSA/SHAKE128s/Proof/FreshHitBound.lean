@@ -7,7 +7,6 @@ Authors: Tom Wambsgans
 module
 
 public import HashSig.SLHDSA.SHAKE128s.Proof.KeygenUniform
-public import VCVio.OracleComp.QueryTracking.QueryBound
 
 /-!
 # Linear charge for hitting a fixed digest with a hash call

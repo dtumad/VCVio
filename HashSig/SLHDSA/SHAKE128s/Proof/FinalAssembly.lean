@@ -6,17 +6,9 @@ Authors: Tom Wambsgans
 
 module
 
-public import HashSig.SLHDSA.SHAKE128s.Proof.Target
-public import HashSig.SLHDSA.SHAKE128s.Proof.SigningFaithful
-public import HashSig.SLHDSA.SHAKE128s.Proof.AnswerSide
 public import HashSig.SLHDSA.SHAKE128s.Proof.LateProvenance
-public import HashSig.SLHDSA.SHAKE128s.Proof.RedrawCell
-public import HashSig.SLHDSA.SHAKE128s.Proof.SignerRandomiser
-public import HashSig.SLHDSA.SHAKE128s.Proof.SharedJoin
 public import HashSig.SLHDSA.SHAKE128s.Proof.KeygenValue
 public import HashSig.SLHDSA.SHAKE128s.Proof.ServedBridge
-public import HashSig.SLHDSA.SHAKE128s.Proof.ServingCarrier
-public import HashSig.SLHDSA.SHAKE128s.Proof.ChargedProbe
 
 /-!
 # The fused presentation's forgetting map

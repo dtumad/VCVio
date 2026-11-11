@@ -6,14 +6,9 @@ Authors: Tom Wambsgans
 
 module
 
-public import HashSig.SLHDSA.SHAKE128s.Proof.Target
-public import HashSig.SLHDSA.SHAKE128s.Proof.SigningFaithful
 public import HashSig.SLHDSA.SHAKE128s.Proof.RandomiserRecord
-public import HashSig.SLHDSA.SHAKE128s.Proof.ClassGrowth
 public import HashSig.SLHDSA.SHAKE128s.Proof.AnswerSide
 public import HashSig.SLHDSA.SHAKE128s.Proof.RedrawCell
-public import HashSig.SLHDSA.SHAKE128s.Proof.RecordedBudget
-public import HashSig.SLHDSA.SHAKE128s.Proof.WarmedGame
 
 /-!
 # The shared side's events, on a paired run

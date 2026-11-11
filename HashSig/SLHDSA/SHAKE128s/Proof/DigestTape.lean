@@ -10,8 +10,6 @@ public import HashSig.SLHDSA.SHAKE128s.Proof.GrowthCharge
 public import HashSig.SLHDSA.SHAKE128s.Proof.ForsAdaptiveTargets
 public import HashSig.SLHDSA.SHAKE128s.Proof.ForsDisclosureTape
 public import VCVio.OracleComp.QueryTracking.RandomOracle.DeferredSampling
-public import HashSig.SLHDSA.SHAKE128s.Proof.KeygenUniform
-public import HashSig.SLHDSA.SHAKE128s.Proof.MessageDigest
 
 /-!
 # The adaptively recorded digest tape

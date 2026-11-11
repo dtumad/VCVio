@@ -6,7 +6,6 @@ Authors: Tom Wambsgans
 
 module
 
-public import HashSig.SLHDSA.SHAKE128s.Proof.CanonicalTarget
 public import HashSig.SLHDSA.SHAKE128s.Proof.Extraction.BinaryPath
 public import HashSig.SLHDSA.SHAKE128s.Proof.StructuralTerm
 public import HashSig.SLHDSA.SHAKE128s.Proof.CanonicalGraph.Evaluation

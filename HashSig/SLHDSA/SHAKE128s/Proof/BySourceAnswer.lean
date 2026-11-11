@@ -7,7 +7,6 @@ Authors: Tom Wambsgans
 module
 
 public import HashSig.SLHDSA.SHAKE128s.Proof.AnswerFired
-public import HashSig.SLHDSA.SHAKE128s.Proof.LateProvenance
 public import HashSig.SLHDSA.SHAKE128s.Proof.FreshExpectation
 public import HashSig.SLHDSA.SHAKE128s.Proof.BySourceBridge
 

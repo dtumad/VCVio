@@ -7,15 +7,8 @@ Authors: Quang Dao, Alexander Hicks
 module
 public import HashSig.SLHDSA.Security
 public import HashSig.SLHDSA.Security.TargetCounts
-public import HashSig.SLHDSA.Fors
-public import HashSig.SLHDSA.Position
 public import VCVio.CryptoFoundations.HardnessAssumptions.KeyedHash.ITSR
 public import VCVio.CryptoFoundations.HardnessAssumptions.TweakableHash.OpenPREFromTCRDSPR
-public import VCVio.CryptoFoundations.HardnessAssumptions.TweakableHash.SMDTDSPRFinalValidity
-public import VCVio.CryptoFoundations.HardnessAssumptions.TweakableHash.SMDTOpenPREFinalValidity
-public import VCVio.CryptoFoundations.HardnessAssumptions.TweakableHash.SMDTPREFinalValidity
-public import VCVio.CryptoFoundations.HardnessAssumptions.TweakableHash.SMDTTCRFinalValidity
-public import VCVio.CryptoFoundations.HardnessAssumptions.TweakableHash.SMDTUDFinalValidity
 public import VCVio.CryptoFoundations.HardnessAssumptions.TweakableHash.ToFinalValidity
 
 /-!

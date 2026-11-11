@@ -7,7 +7,6 @@ Authors: Tom Wambsgans
 module
 
 public import HashSig.SLHDSA.SHAKE128s.Proof.CollisionToDeviating
-public import HashSig.SLHDSA.SHAKE128s.Proof.CacheReplay
 public import HashSig.SLHDSA.SHAKE128s.Proof.Extraction.Fors
 public import HashSig.SLHDSA.SHAKE128s.Proof.CanonicalCells
 

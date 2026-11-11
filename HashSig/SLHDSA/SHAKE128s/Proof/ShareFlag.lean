@@ -7,7 +7,6 @@ Authors: Tom Wambsgans
 module
 
 public import HashSig.SLHDSA.SHAKE128s.Proof.ShareUntilBad
-public import HashSig.SLHDSA.SHAKE128s.Proof.SignedWatch
 
 /-!
 # What a step of the shared games does to the state

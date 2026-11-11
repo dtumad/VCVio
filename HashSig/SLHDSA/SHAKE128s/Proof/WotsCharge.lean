@@ -7,8 +7,6 @@ Authors: Tom Wambsgans
 module
 
 public import HashSig.SLHDSA.SHAKE128s.Proof.CollisionToDeviating
-public import HashSig.SLHDSA.SHAKE128s.Proof.CacheReplay
-public import HashSig.SLHDSA.SHAKE128s.Proof.Extraction.Wots
 public import HashSig.SLHDSA.SHAKE128s.Proof.Extraction.WotsPreimage
 public import HashSig.SLHDSA.SHAKE128s.Proof.CanonicalCells
 public import HashSig.SLHDSA.SHAKE128s.Proof.CanonicalGraph.Correspondence

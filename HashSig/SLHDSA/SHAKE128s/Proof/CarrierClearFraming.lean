@@ -7,7 +7,6 @@ Authors: Tom Wambsgans
 module
 
 public import HashSig.SLHDSA.SHAKE128s.Proof.CarrierTailRecordings
-public import HashSig.SLHDSA.SHAKE128s.Proof.RecordInvariant
 
 /-!
 # No request in flight, stage by stage

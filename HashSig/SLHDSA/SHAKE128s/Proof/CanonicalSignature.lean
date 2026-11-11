@@ -9,10 +9,6 @@ module
 public import HashSig.SLHDSA.SHAKE128s.Proof.ForsDispatch
 public import HashSig.SLHDSA.SHAKE128s.Proof.Extraction.HypertreeChain
 public import HashSig.SLHDSA.SHAKE128s.Proof.SignatureCanonical
-public import HashSig.SLHDSA.SHAKE128s.Proof.Experiment
-public import HashSig.SLHDSA.SHAKE128s.Proof.Signature
-public import HashSig.SLHDSA.SHAKE128s.Proof.Correctness.Fors
-public import HashSig.SLHDSA.SHAKE128s.Proof.Correctness.Merkle
 
 /-!
 # A forgery with nothing forged in it is the signer's own signature

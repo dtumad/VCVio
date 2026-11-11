@@ -7,7 +7,6 @@ Authors: Tom Wambsgans
 module
 
 public import HashSig.SLHDSA.SHAKE128s.Proof.CanonicalGraph.Nodes
-public import Mathlib.Tactic.NormNum
 
 /-!
 # Injectivity of canonical structural addresses

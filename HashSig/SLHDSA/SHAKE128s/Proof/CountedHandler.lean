@@ -8,8 +8,6 @@ module
 
 public import HashSig.SLHDSA.SHAKE128s.Proof.ServedAgreement
 public import HashSig.SLHDSA.SHAKE128s.Proof.ServingForget
-public import HashSig.SLHDSA.SHAKE128s.Proof.GrowthBudget
-public import HashSig.SLHDSA.SHAKE128s.Proof.WriterState
 
 /-!
 # A handler that counts

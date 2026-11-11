@@ -8,9 +8,7 @@ module
 
 public import HashSig.SLHDSA.SHAKE128s.Proof.CarrierTail
 public import HashSig.SLHDSA.SHAKE128s.Proof.CountedView
-public import HashSig.SLHDSA.SHAKE128s.Proof.NoticingTape
 public import HashSig.SLHDSA.SHAKE128s.Proof.FusedTape
-public import HashSig.SLHDSA.SHAKE128s.Proof.BlockViews
 
 /-!
 # The carrier tail is a three-stage recorder run, and so it pays the coverage charge

@@ -7,7 +7,6 @@ Authors: Tom Wambsgans
 module
 
 public import HashSig.SLHDSA.SHAKE128s.Proof.TableTail
-public import HashSig.SLHDSA.SHAKE128s.Proof.LinkedGame
 public import HashSig.SLHDSA.SHAKE128s.Proof.RecordedTail
 
 /-!

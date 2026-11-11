@@ -7,8 +7,6 @@ Authors: Tom Wambsgans
 module
 
 public import HashSig.SLHDSA.SHAKE128s.Proof.SecretGuessCharge
-public import HashSig.SLHDSA.SHAKE128s.Proof.GrowthCharge
-public import VCVio.OracleComp.Constructions.SampleableType.Measure
 
 /-!
 # Querying a node whose child's cell is unavailable

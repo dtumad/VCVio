@@ -7,7 +7,6 @@ Authors: Tom Wambsgans
 module
 
 public import HashSig.SLHDSA.SHAKE128s.Proof.CarrierFiles
-public import HashSig.SLHDSA.SHAKE128s.Proof.ServingForget
 
 /-!
 # The counter inside the view, so the counted handler is a recorder

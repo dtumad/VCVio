@@ -6,23 +6,10 @@ Authors: Tom Wambsgans
 
 module
 
-public import HashSig.SLHDSA.SHAKE128s.Proof.LateProvenance
-public import HashSig.SLHDSA.SHAKE128s.Proof.RedrawCell
-public import HashSig.SLHDSA.SHAKE128s.Proof.SignerRandomiser
-public import HashSig.SLHDSA.SHAKE128s.Proof.SharedJoin
-public import HashSig.SLHDSA.SHAKE128s.Proof.KeygenValue
-public import HashSig.SLHDSA.SHAKE128s.Proof.ServedBridge
-public import HashSig.SLHDSA.SHAKE128s.Proof.ServingCarrier
-public import HashSig.SLHDSA.SHAKE128s.Proof.ChargedProbe
 public import HashSig.SLHDSA.SHAKE128s.Proof.RecordedStripping
 public import HashSig.SLHDSA.SHAKE128s.Proof.RecordedWalkTable
-public import HashSig.SLHDSA.SHAKE128s.Proof.TableTail
 public import HashSig.SLHDSA.SHAKE128s.Proof.TouchedKeys
-public import HashSig.SLHDSA.SHAKE128s.Proof.CanonicalGraph.Input
-public import HashSig.SLHDSA.SHAKE128s.Proof.HashSeparation
 public import HashSig.SLHDSA.SHAKE128s.Proof.CarrierTail
-public import HashSig.SLHDSA.SHAKE128s.Proof.Target
-public import HashSig.SLHDSA.SHAKE128s.Proof.SigningFaithful
 
 /-!
 # The defect event of the `127` ledger: the seed guess and the signer's coincidence

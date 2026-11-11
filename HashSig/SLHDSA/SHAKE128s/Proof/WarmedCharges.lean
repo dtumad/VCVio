@@ -7,15 +7,7 @@ Authors: Tom Wambsgans
 module
 
 public import HashSig.SLHDSA.SHAKE128s.Proof.WarmedGame
-public import HashSig.SLHDSA.SHAKE128s.Proof.StructuralTerm
-public import HashSig.SLHDSA.SHAKE128s.Proof.GrowthBudget
-public import HashSig.SLHDSA.SHAKE128s.Proof.CombinedCharge
-public import HashSig.SLHDSA.SHAKE128s.Proof.GrowthCharge
-public import HashSig.SLHDSA.SHAKE128s.Proof.CacheReplay
-public import HashSig.SLHDSA.SHAKE128s.Proof.CanonicalGraph.Programming
-public import HashSig.SLHDSA.SHAKE128s.Proof.GraphFreshSampling
 public import HashSig.SLHDSA.SHAKE128s.Proof.SecretGuessCharge
-public import HashSig.SLHDSA.SHAKE128s.Proof.CanonicalGraph.Address
 public import HashSig.SLHDSA.SHAKE128s.Proof.GameBridge
 
 /-!

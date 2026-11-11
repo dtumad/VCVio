@@ -6,7 +6,6 @@ Authors: Tom Wambsgans
 
 module
 
-public import HashSig.SLHDSA.SHAKE128s.Proof.CanonicalGraph.Children
 public import HashSig.SLHDSA.SHAKE128s.Proof.CanonicalGraph.Correspondence
 
 /-!

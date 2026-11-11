@@ -7,7 +7,6 @@ Authors: Tom Wambsgans
 module
 
 public import HashSig.SLHDSA.SHAKE128s.Proof.FusedCoverage
-public import HashSig.SLHDSA.SHAKE128s.Proof.RandomiserProvenance
 public import HashSig.SLHDSA.SHAKE128s.Proof.PhaseRightRecord
 
 /-!

@@ -8,8 +8,6 @@ module
 
 public import HashSig.SLHDSA.SHAKE128s.Proof.BracketedRun
 public import HashSig.SLHDSA.SHAKE128s.Proof.CarrierFiles
-public import HashSig.SLHDSA.SHAKE128s.Proof.RecordedTail
-public import HashSig.SLHDSA.SHAKE128s.Proof.RandomiserRecord
 public import HashSig.SLHDSA.SHAKE128s.Proof.AnswerShape
 
 /-!

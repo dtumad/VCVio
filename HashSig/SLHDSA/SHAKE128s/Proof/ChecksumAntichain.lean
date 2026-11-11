@@ -7,7 +7,6 @@ Authors: Tom Wambsgans
 module
 
 public import HashSig.SLHDSA.SHAKE128s.Proof.Checksum
-public import Mathlib.Data.BitVec
 
 /-!
 # The WOTS+ encoding is an antichain

@@ -7,9 +7,7 @@ Authors: Tom Wambsgans
 module
 
 public import HashSig.SLHDSA.SHAKE128s.Proof.MessageDigest
-public import VCVio.OracleComp.Constructions.SampleableType
 public import VCVio.OracleComp.Constructions.SampleableType.Measure
-public import Mathlib.Algebra.Order.BigOperators.Group.Finset
 
 /-!
 # FORS coverage for an independent target

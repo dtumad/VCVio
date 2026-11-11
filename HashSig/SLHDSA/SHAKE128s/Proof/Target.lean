@@ -8,9 +8,6 @@ module
 
 public import HashSig.SLHDSA.SHAKE128s.Proof.MainTheorem
 public import HashSig.SLHDSA.SHAKE128s.Proof.WalkDefects
-public import HashSig.SLHDSA.SHAKE128s.Proof.Experiment
-public import Mathlib.Topology.Instances.ENNReal.Lemmas
-public import HashSig.SLHDSA.SHAKE128s.Proof.HonestGrowth
 
 /-!
 # The walk and the game together

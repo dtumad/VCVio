@@ -6,10 +6,7 @@ Authors: Tom Wambsgans
 
 module
 
-public import HashSig.SLHDSA.SHAKE128s.Proof.ServedLog
 public import HashSig.SLHDSA.SHAKE128s.Proof.ServingCarrier
-public import HashSig.SLHDSA.SHAKE128s.Proof.CacheProvenance
-public import HashSig.SLHDSA.SHAKE128s.Proof.RandomizerGate
 public import HashSig.SLHDSA.SHAKE128s.Proof.AddressBounds
 public import HashSig.SLHDSA.SHAKE128s.Proof.SigningFaithful
 

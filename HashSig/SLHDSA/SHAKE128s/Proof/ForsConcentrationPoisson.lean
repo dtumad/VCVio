@@ -8,7 +8,6 @@ module
 
 public import HashSig.SLHDSA.SHAKE128s.Proof.ForsMoments
 public import Mathlib.Probability.Distributions.Poisson.Basic
-public import Mathlib.Tactic.FieldSimp
 
 /-!
 # Moments of the Poisson load distribution

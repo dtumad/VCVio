@@ -6,8 +6,6 @@ Authors: Tom Wambsgans
 
 module
 
-public import HashSig.SLHDSA.SHAKE128s.Proof.SplitCounted
-public import HashSig.SLHDSA.SHAKE128s.Proof.CarrierTail
 public import HashSig.SLHDSA.SHAKE128s.Proof.AnswerCarrier
 public import HashSig.SLHDSA.SHAKE128s.Proof.SplitTail
 

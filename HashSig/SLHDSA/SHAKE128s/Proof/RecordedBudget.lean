@@ -7,9 +7,7 @@ Authors: Tom Wambsgans
 module
 
 public import HashSig.SLHDSA.SHAKE128s.Proof.RecordedQueries
-public import HashSig.SLHDSA.SHAKE128s.Proof.WarmedCharges
 public import HashSig.SLHDSA.SHAKE128s.Proof.HonestGrowth
-public import HashSig.SLHDSA.SHAKE128s.Proof.GraphStakes
 public import HashSig.SLHDSA.SHAKE128s.Proof.ClaimedProbes
 
 /-!

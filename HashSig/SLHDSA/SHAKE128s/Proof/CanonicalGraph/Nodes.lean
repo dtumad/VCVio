@@ -7,10 +7,6 @@ Authors: Tom Wambsgans
 module
 
 public import HashSig.SLHDSA.SHAKE128s.Proof.Hashing
-public import HashSig.SLHDSA.SHAKE128s.Proof.Experiment
-public import Mathlib.Basic.Finite.Prod
-public import Mathlib.Basic.Finite.Sigma
-public import Mathlib.Basic.Finite.Sum
 
 /-!
 # Finite canonical structural coordinates

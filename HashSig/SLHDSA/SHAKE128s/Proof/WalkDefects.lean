@@ -7,7 +7,6 @@ Authors: Tom Wambsgans
 module
 
 public import HashSig.SLHDSA.SHAKE128s.Proof.RandomizerGate
-public import HashSig.SLHDSA.SHAKE128s.Proof.WarmedGame
 
 /-!
 # The seeds' own coincidences, charged rather than assumed

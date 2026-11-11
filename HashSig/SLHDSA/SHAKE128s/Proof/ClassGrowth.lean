@@ -7,7 +7,6 @@ Authors: Tom Wambsgans
 module
 
 public import HashSig.SLHDSA.SHAKE128s.Proof.AdversaryQueries
-public import HashSig.SLHDSA.SHAKE128s.Proof.GrowthCharge
 
 /-!
 # The split class counter

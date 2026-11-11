@@ -8,7 +8,6 @@ module
 
 public import HashSig.SLHDSA.Security.ByteModel
 public import HashSig.SLHDSA.Security.NodeGraph
-public import HashSig.SLHDSA.Security.RomSchemeRun
 public import VCVio.CryptoFoundations.SignatureAlg.Routed
 
 /-!

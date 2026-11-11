@@ -6,8 +6,6 @@ Authors: Quang Dao, Alexander Hicks
 
 module
 public import HashSig.SLHDSA.External
-public import VCVio.Algorithms.Sha2
-public import VCVio.Algorithms.Keccak
 public import HashSig.SLHDSA.Concrete.FIPS
 
 /-!

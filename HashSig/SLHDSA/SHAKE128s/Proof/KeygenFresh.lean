@@ -6,9 +6,7 @@ Authors: Tom Wambsgans
 
 module
 
-public import HashSig.SLHDSA.SHAKE128s.Proof.Experiment
 public import HashSig.SLHDSA.SHAKE128s.Proof.HashSeparation
-public import VCVio.OracleComp.QueryTracking.QueryBound
 
 /-!
 # The top-tree root query of key generation

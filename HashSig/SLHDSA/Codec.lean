@@ -5,9 +5,6 @@ Authors: Nicolas Consigny, Quang Dao, Alexander Hicks
 -/
 
 module
-public import Mathlib.Logic.Equiv.Fin.Basic
-public import Mathlib.Logic.Equiv.Prod
-public import HashSig.SLHDSA.Encoding
 public import HashSig.SLHDSA.FipsParams
 public import HashSig.SLHDSA.Scheme
 
