@@ -167,10 +167,8 @@ def cmaRoute (M Commit Chal Resp Stmt : Type) :
 
 instance subSpec_unif_nmaSpec (M Commit Chal Stmt : Type) :
     unifSpec ⊂ₒ nmaSpec M Commit Chal Stmt where
-  monadLift q := ⟨.unif q.input, q.cont⟩
   onQuery n := .unif n
   onResponse _ := id
-  liftM_eq_lift _ := rfl
 
 instance lawfulSubSpec_unif_nmaSpec (M Commit Chal Stmt : Type) :
     unifSpec ˡ⊂ₒ nmaSpec M Commit Chal Stmt where
@@ -178,7 +176,6 @@ instance lawfulSubSpec_unif_nmaSpec (M Commit Chal Stmt : Type) :
 
 instance subSpec_unif_cmaSpec (M Commit Chal Resp Stmt : Type) :
     unifSpec ⊂ₒ cmaSpec M Commit Chal Resp Stmt where
-  monadLift q := ⟨.unif q.input, q.cont⟩
   onQuery n := .unif n
   onResponse _ := id
 
@@ -188,7 +185,6 @@ instance lawfulSubSpec_unif_cmaSpec (M Commit Chal Resp Stmt : Type) :
 
 instance subSpec_ro_cmaSpec (M Commit Chal Resp Stmt : Type) :
     roSpec M Commit Chal ⊂ₒ cmaSpec M Commit Chal Resp Stmt where
-  monadLift q := ⟨.ro q.input, q.cont⟩
   onQuery mc := .ro mc
   onResponse _ := id
 
@@ -198,7 +194,6 @@ instance lawfulSubSpec_ro_cmaSpec (M Commit Chal Resp Stmt : Type) :
 
 instance subSpec_sign_cmaSpec (M Commit Chal Resp Stmt : Type) :
     signSpec M Commit Resp ⊂ₒ cmaSpec M Commit Chal Resp Stmt where
-  monadLift q := ⟨.sign q.input, q.cont⟩
   onQuery m := .sign m
   onResponse _ := id
 
@@ -208,8 +203,6 @@ instance lawfulSubSpec_sign_cmaSpec (M Commit Chal Resp Stmt : Type) :
 
 instance subSpec_pk_cmaSpec (M Commit Chal Resp Stmt : Type) :
     pkSpec Stmt ⊂ₒ cmaSpec M Commit Chal Resp Stmt where
-  monadLift
-    | ⟨(), f⟩ => ⟨.pk, f⟩
   onQuery _ := .pk
   onResponse _ := id
 
@@ -222,16 +215,12 @@ interface by routing uniform and random-oracle queries to their named
 constructors. -/
 instance subSpec_fsRo_cmaSpec (M Commit Chal Resp Stmt : Type) :
     (unifSpec + roSpec M Commit Chal) ⊂ₒ cmaSpec M Commit Chal Resp Stmt where
-  monadLift
-    | ⟨.inl n, f⟩ => ⟨.unif n, f⟩
-    | ⟨.inr mc, f⟩ => ⟨.ro mc, f⟩
   onQuery
     | .inl n => .unif n
     | .inr mc => .ro mc
   onResponse
     | .inl _ => id
     | .inr _ => id
-  liftM_eq_lift q := by rcases q with ⟨_ | _, _⟩ <;> rfl
 
 instance lawfulSubSpec_fsRo_cmaSpec (M Commit Chal Resp Stmt : Type) :
     (unifSpec + roSpec M Commit Chal) ˡ⊂ₒ cmaSpec M Commit Chal Resp Stmt where
@@ -243,10 +232,6 @@ instance lawfulSubSpec_fsRo_cmaSpec (M Commit Chal Resp Stmt : Type) :
 instance subSpec_sourceCma_cmaSpec (M Commit Chal Resp Stmt : Type) :
     (unifSpec + roSpec M Commit Chal + signSpec M Commit Resp) ⊂ₒ
       cmaSpec M Commit Chal Resp Stmt where
-  monadLift
-    | ⟨.inl (.inl n), f⟩ => ⟨.unif n, f⟩
-    | ⟨.inl (.inr mc), f⟩ => ⟨.ro mc, f⟩
-    | ⟨.inr m, f⟩ => ⟨.sign m, f⟩
   onQuery
     | .inl (.inl n) => .unif n
     | .inl (.inr mc) => .ro mc
@@ -255,7 +240,6 @@ instance subSpec_sourceCma_cmaSpec (M Commit Chal Resp Stmt : Type) :
     | .inl (.inl _) => id
     | .inl (.inr _) => id
     | .inr _ => id
-  liftM_eq_lift q := by rcases q with ⟨(_ | _) | _, _⟩ <;> rfl
 
 instance lawfulSubSpec_sourceCma_cmaSpec (M Commit Chal Resp Stmt : Type) :
     (unifSpec + roSpec M Commit Chal + signSpec M Commit Resp) ˡ⊂ₒ

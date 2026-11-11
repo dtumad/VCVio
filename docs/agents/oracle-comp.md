@@ -120,37 +120,38 @@ induction oa using OracleComp.inductionOn with
 
 ## SubSpec (⊂ₒ)
 
-`spec ⊂ₒ superSpec` means every query in `spec` can be simulated in `superSpec` without changing the distribution.
+`spec ⊂ₒ superSpec` says that every query of `spec` can be answered by a query of `superSpec`:
+the inclusion is a polynomial lens between the two specs. It preserves the answer-dependent
+control flow of a lifted computation. Preserving its distribution needs a compatibility condition
+on answer measures (see *LawfulSubSpec* below).
 
 ```lean
-class SubSpec (spec : OracleSpec.{u, w} ι) (superSpec : OracleSpec.{v, w} τ)
-    extends MonadLift (OracleQuery spec) (OracleQuery superSpec) where
+class SubSpec (spec : OracleSpec.{u, w} ι) (superSpec : OracleSpec.{v, w} τ) where
   onQuery    : spec.Domain → superSpec.Domain
   onResponse : (t : spec.Domain) → superSpec.Range (onQuery t) → spec.Range t
-  liftM_eq_lift :
-    ∀ {β} (q : OracleQuery spec β),
-      monadLift q = ⟨onQuery q.input, q.cont ∘ onResponse q.input⟩ := by intros; rfl
 ```
 
 ### Lens semantics
 
-`onQuery` and `onResponse` together package a `PFunctor.Lens spec.toPFunctor superSpec.toPFunctor` (call it `h.toLens`):
+`onQuery` and `onResponse` are the two maps of a `PFunctor.Lens spec.toPFunctor
+superSpec.toPFunctor`, `h.toLens`, and `SubSpec.ofLens` builds an inclusion from a lens:
 
 | Class field | Lens field |
 |-------------|------------|
 | `onQuery : spec.Domain → superSpec.Domain` | `toFunA : P.A → Q.A` |
-| `onResponse t : superSpec.Range (onQuery t) → spec.Range t` | `toFunB t : Q.B (toFunA t) → P.B t` |
+| `onResponse t : superSpec.Range (onQuery t) → spec.Range t` | `toFunB : Q.B (toFunA t) → P.B t` |
 
-By the Yoneda lemma for polynomial functors this lens data is in bijection with natural transformations `OracleQuery spec ⟹ OracleQuery superSpec`. The `MonadLift` parent records that natural transformation; the `liftM_eq_lift` field is the propositional coherence axiom forcing it to agree with the lens. Concrete `SubSpec` instances spell `monadLift` out *by hand* (rather than letting it default from the lens data), so that the lifted query reduces fully under `isDefEq` — this lets pattern-matching equations about lifted queries, such as `liftComp_query`, apply through their registered automation or explicitly by name.
+By the Yoneda lemma for polynomial functors, this lens data is in bijection with natural
+transformations `OracleQuery spec ⟹ OracleQuery superSpec`. The query lift
+`MonadLift (OracleQuery spec) (OracleQuery superSpec)` is derived from the lens
+(`SubSpec.instMonadLift`, the action `SubSpec.liftQuery` of the lens on one query), so an
+inclusion stores its data once and `SubSpec.liftM_eq_lift` holds by `rfl`. `SubSpec.trans` is
+composition of the lenses; the reflexive `MonadLiftT` instance covers the identity.
 
-`SubSpec.toLens` exposes the underlying lens; `SubSpec.trans` is composition of these lenses; the reflexive `MonadLiftT` instance covers the identity.
-
-#### Why `SubSpec` extends `MonadLift` rather than `PFunctor.Lens`
-
-The fields *are* a lens. We extend `MonadLift` for two pragmatic reasons:
-
-1. **Typeclass synthesis.** Lifting `OracleComp spec α → OracleComp superSpec α` is plumbed through the `MonadLift` / `MonadLiftT` mechanism; bridging through `PFunctor.Lens` separately would require an instance of the form `PFunctor.Lens A B → MonadLift (Obj A) (Obj B)`, which Lean cannot synthesize from `OracleQuery spec` because `OracleQuery` is a `def` (and `def`-headed instance heads cannot be matched).
-2. **Reducibility under `rw` / `simp`.** A defaulted `monadLift` field becomes opaque to `isDefEq` during pattern matching. Hand-written `monadLift` per instance keeps the lifted query fully reducible.
+Write an instance's maps so that they reduce on constructors: `onQuery := Sum.inl`, or a
+`match` on the summand, as in `subSpec_left_add_left_add_of_subSpec`. Then a lifted query with a
+known input reduces fully under `isDefEq`, and pattern-matching equations about lifted queries,
+such as `liftComp_query`, apply through their registered automation or by name.
 
 ### LawfulSubSpec ↔ cartesian lens
 

@@ -31,34 +31,30 @@ variable {ι : Type u} {τ : Type v}
 
 namespace OracleSpec
 
-/-- Inclusion of one set of oracles into another, packaged as a polynomial-functor
-lens between the underlying `OracleSpec`s. Carries the forward translation
-`onQuery` on query inputs and the fiberwise backward translation `onResponse`
-on query responses, plus the resulting `MonadLift` action.
+/-- Inclusion of one set of oracles into another: a polynomial-functor lens between the
+underlying `OracleSpec`s, given by the forward translation `onQuery` on query inputs and the
+fiberwise backward translation `onResponse` on query responses. `SubSpec.toLens` is the lens.
 
-The `MonadLift` action and the lens data are related by the public coherence equation
-`liftM_eq_lift`. Concrete inclusions supply their query action alongside the query and response
-translations. `SubSpec.liftQuery` and `SubSpec.toLens` expose those constructions independently of
-any measure interpretation.
+The query lift `MonadLift (OracleQuery spec) (OracleQuery superSpec)` is derived from these two
+maps, as the action of the lens on a query (`SubSpec.liftQuery`), so an inclusion stores its data
+once and `liftM_eq_lift` holds by definition.
 
 Informally, `spec ⊂ₒ superSpec` says that any query to an oracle of `spec`
-can be perfectly simulated by a query to an oracle of `superSpec`. We avoid
+can be answered by a query to an oracle of `superSpec`. We avoid
 the built-in `Subset` notation because we care about the actual data of the
 mapping (it is needed when defining type coercions), not just its existence. -/
-class SubSpec (spec : OracleSpec.{u, w} ι) (superSpec : OracleSpec.{v, w} τ)
-    extends MonadLift (OracleQuery spec) (OracleQuery superSpec) where
+class SubSpec (spec : OracleSpec.{u, w} ι) (superSpec : OracleSpec.{v, w} τ) where
   /-- Forward translation on query inputs (oracle indices). -/
   onQuery : spec.Domain → superSpec.Domain
   /-- Fiberwise backward translation on query responses. -/
   onResponse : (t : spec.Domain) → superSpec.Range (onQuery t) → spec.Range t
-  /-- Coherence between the `MonadLift` action and the lens data: lifting a
-  query is the lens applied to that query. Concrete instances supply
-  `monadLift` directly in the lens form, making this `rfl`. -/
-  liftM_eq_lift : ∀ {β : Type w} (q : OracleQuery spec β),
-      monadLift q = ⟨onQuery q.input, q.cont ∘ onResponse q.input⟩ := by
-    intros; rfl
 
 @[inherit_doc] infix : 50 " ⊂ₒ " => SubSpec
+
+/- A lifted query with a known input reduces to `SubSpec.onQuery h t` for the concrete instance
+`h`. Unfolding the two projections under `simp` reduces such terms to the instance's maps, such as
+`Sum.inl t`; on an instance variable they stay as they are. -/
+attribute [simp] SubSpec.onQuery SubSpec.onResponse
 
 namespace SubSpec
 
@@ -71,12 +67,23 @@ backward fiber on the continuation. Used as the canonical reduced form of
     OracleQuery superSpec α :=
   ⟨h.onQuery q.input, q.cont ∘ h.onResponse q.input⟩
 
-/-- The polynomial-functor lens between the underlying `PFunctor`s carried by
-a `SubSpec` instance. This is the lens-level view of the data; concrete
-properties (like cartesianness via `LawfulSubSpec`) are stated on this lens.
+/- `MonadLift` takes its source as a `semiOutParam`, so the synthesis-order check treats `spec` as
+undetermined. Instance search solves the goal `SubSpec ?spec superSpec` by unification against the
+`SubSpec` instances, as it would for a `MonadLift` parent projection of `SubSpec`. -/
+set_option synthInstance.checkSynthOrder false in
+/-- Lifting a query along an inclusion translates it by the inclusion's lens. -/
+instance instMonadLift [h : SubSpec spec superSpec] :
+    MonadLift (OracleQuery spec) (OracleQuery superSpec) where
+  monadLift q := ⟨h.onQuery q.input, q.cont ∘ h.onResponse q.input⟩
 
-The other half of the data, `monadLift`, is fixed by `liftM_eq_lift` to be
-the standard action of this lens on `OracleQuery`. -/
+/-- Lifting a query is the lens applied to that query. -/
+lemma liftM_eq_lift (h : SubSpec spec superSpec) (q : OracleQuery spec α) :
+    (instMonadLift (h := h)).monadLift q = ⟨h.onQuery q.input, q.cont ∘ h.onResponse q.input⟩ :=
+  rfl
+
+/-- The polynomial-functor lens between the underlying `PFunctor`s carried by
+a `SubSpec` instance. Concrete properties (like cartesianness via `LawfulSubSpec`) are stated on
+this lens. -/
 @[expose]
 def toLens (h : SubSpec spec superSpec) :
     PFunctor.Lens spec.toPFunctor superSpec.toPFunctor where
@@ -89,12 +96,18 @@ def toLens (h : SubSpec spec superSpec) :
 @[simp] lemma toLens_toFunB (h : SubSpec spec superSpec) :
     h.toLens.toFunB = h.onResponse := rfl
 
+/-- The inclusion given by a lens between the underlying polynomial functors. -/
+@[expose, reducible] def ofLens (l : PFunctor.Lens spec.toPFunctor superSpec.toPFunctor) :
+    spec ⊂ₒ superSpec where
+  onQuery := l.toFunA
+  onResponse := l.toFunB
+
+@[simp] lemma ofLens_toLens (l : PFunctor.Lens spec.toPFunctor superSpec.toPFunctor) :
+    (ofLens l).toLens = l := rfl
+
 /-- Transitivity of `SubSpec`: lens composition. -/
 @[expose, reducible] def trans (h₁ : spec ⊂ₒ superSpec) (h₂ : superSpec ⊂ₒ spec₃) :
     spec ⊂ₒ spec₃ where
-  monadLift q :=
-    ⟨h₂.onQuery (h₁.onQuery q.input),
-      q.cont ∘ h₁.onResponse q.input ∘ h₂.onResponse (h₁.onQuery q.input)⟩
   onQuery t := h₂.onQuery (h₁.onQuery t)
   onResponse t r := h₁.onResponse t (h₂.onResponse (h₁.onQuery t) r)
 

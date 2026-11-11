@@ -36,10 +36,8 @@ section instances
 /-- We need `Inhabited` to prevent infinite type-class searching. -/
 instance (priority := low) {τ : Type u} [Inhabited τ] {spec : OracleSpec.{u, v} τ} :
     OracleSpec.emptySpec.{u,v} ⊂ₒ spec where
-  monadLift q := PEmpty.elim q.input
   onQuery t := t.elim
   onResponse t := t.elim
-  liftM_eq_lift q := PEmpty.elim q.input
 
 instance (priority := low) {τ : Type u} [Inhabited τ] {spec : OracleSpec.{u, v} τ} :
     OracleSpec.emptySpec ˡ⊂ₒ spec where
@@ -49,7 +47,6 @@ section add_left
 
 /-- Add additional oracles to the right side of the existing ones. -/
 instance subSpec_add_left : spec₁ ⊂ₒ (spec₁ + spec₂) where
-  monadLift q := ⟨.inl q.input, q.cont⟩
   onQuery := Sum.inl
   onResponse _ := id
 
@@ -68,7 +65,6 @@ section add_right
 
 /-- Add additional oracles to the left side of the exiting ones. -/
 instance subSpec_add_right : spec₂ ⊂ₒ (spec₁ + spec₂) where
-  monadLift q := ⟨.inr q.input, q.cont⟩
   onQuery := Sum.inr
   onResponse _ := id
 
@@ -103,16 +99,12 @@ such coercions a single `liftComp`, definitionally, instead of a stack of lifts 
 intermediate spec. -/
 instance (priority := low) subSpec_left_add_left_add_of_subSpec [h : spec₁ ⊂ₒ spec₃] :
     spec₁ + spec₂ ⊂ₒ spec₃ + spec₂ where
-  monadLift
-    | ⟨.inl t, f⟩ => ⟨.inl (h.onQuery t), f ∘ h.onResponse t⟩
-    | ⟨.inr t, f⟩ => ⟨.inr t, f⟩
   onQuery
     | .inl t => .inl (h.onQuery t)
     | .inr t => .inr t
   onResponse
     | .inl t => h.onResponse t
     | .inr _ => id
-  liftM_eq_lift q := by rcases q with ⟨_ | _, _⟩ <;> rfl
 
 @[simp] lemma liftM_left_add_left_add_def
     [h : spec₁ ⊂ₒ spec₃] (q : OracleQuery (spec₁ + spec₂) α) :
@@ -156,16 +148,12 @@ embeddings must win metavariable-headed searches so that whole-computation coerc
 single `liftComp`. -/
 instance (priority := low) subSpec_right_add_right_add_of_subSpec [h : spec₂ ⊂ₒ spec₃] :
     spec₁ + spec₂ ⊂ₒ spec₁ + spec₃ where
-  monadLift
-    | ⟨.inl t, f⟩ => ⟨.inl t, f⟩
-    | ⟨.inr t, f⟩ => ⟨.inr (h.onQuery t), f ∘ h.onResponse t⟩
   onQuery
     | .inl t => .inl t
     | .inr t => .inr (h.onQuery t)
   onResponse
     | .inl _ => id
     | .inr t => h.onResponse t
-  liftM_eq_lift q := by rcases q with ⟨_ | _, _⟩ <;> rfl
 
 @[simp] lemma liftM_right_add_right_add_def
     [h : spec₂ ⊂ₒ spec₃] (q : OracleQuery (spec₁ + spec₂) α) :
@@ -202,10 +190,6 @@ end right_add_right_add
 section add_assoc
 
 instance subSpec_add_assoc : spec₁ + (spec₂ + spec₃) ⊂ₒ spec₁ + spec₂ + spec₃ where
-  monadLift
-    | ⟨.inl t, f⟩ => ⟨.inl (.inl t), f⟩
-    | ⟨.inr (.inl t), f⟩ => ⟨.inl (.inr t), f⟩
-    | ⟨.inr (.inr t), f⟩ => ⟨.inr t, f⟩
   onQuery
     | .inl t => .inl (.inl t)
     | .inr (.inl t) => .inl (.inr t)
@@ -214,7 +198,6 @@ instance subSpec_add_assoc : spec₁ + (spec₂ + spec₃) ⊂ₒ spec₁ + spec
     | .inl _ => id
     | .inr (.inl _) => id
     | .inr (.inr _) => id
-  liftM_eq_lift q := by rcases q with ⟨_ | _ | _, _⟩ <;> rfl
 
 @[simp] lemma liftM_add_assoc_def (q : OracleQuery (spec₁ + (spec₂ + spec₃)) α) :
     (liftM q : OracleQuery (spec₁ + spec₂ + spec₃) α) =
@@ -247,7 +230,6 @@ variable {σ ι} (specs : σ → OracleSpec ι)
 
 instance subSpec_sigma {σ ι} (specs : σ → OracleSpec ι) (j : σ) :
     specs j ⊂ₒ OracleSpec.sigma specs where
-  monadLift q := ⟨⟨j, q.input⟩, q.cont⟩
   onQuery t := ⟨j, t⟩
   onResponse _ := id
 

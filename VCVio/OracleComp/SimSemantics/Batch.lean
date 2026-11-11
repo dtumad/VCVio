@@ -326,7 +326,6 @@ lemma batchOnResponse_apply (h : spec ⊂ₒ superSpec) (ts : List ι)
 points `ts.map h.onQuery`, and its answer is translated point by point. -/
 @[expose, reducible]
 def batch (h : spec ⊂ₒ superSpec) : spec.batch ⊂ₒ superSpec.batch where
-  monadLift q := ⟨q.input.map h.onQuery, q.cont ∘ batchOnResponse h q.input⟩
   onQuery ts := ts.map h.onQuery
   onResponse := batchOnResponse h
 
