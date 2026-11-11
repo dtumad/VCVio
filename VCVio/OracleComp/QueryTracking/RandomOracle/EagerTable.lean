@@ -5,14 +5,8 @@ Authors: Oleksandr Vovkotrub
 -/
 
 module
-public import VCVio.OracleComp.QueryTracking.RandomOracle.Basic
-public import VCVio.OracleComp.QueryTracking.Structures
-public import VCVio.OracleComp.SimSemantics.QueryImpl.Basic
-public import VCVio.OracleComp.EvalDist.Measure
-public import VCVio.OracleComp.Constructions.SampleableType.Basic
 public import VCVio.OracleComp.Constructions.SampleableType.Measure
 public import VCVio.OracleComp.QueryTracking.RandomOracle.DependentTable
-public import VCVio.EvalDist.Monad.UniformTable
 
 /-!
 # Lazy Random Oracle Equals Eager Full-Table Sampling

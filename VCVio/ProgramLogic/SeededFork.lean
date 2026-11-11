@@ -6,7 +6,6 @@ Authors: Quang Dao
 
 module
 public import VCVio.CryptoFoundations.SeededFork
-public import VCVio.ProgramLogic.Unary.HoareTriple
 
 /-!
 # Seed-Based Forking Lemma — Program Logic Bridge

@@ -6,7 +6,6 @@ Authors: Quang Dao
 
 module
 public import VCVio.OracleComp.QueryTracking.RandomOracle.FreshQuery
-public import VCVio.OracleComp.QueryTracking.RandomOracle.Simulation
 public import VCVio.ProgramLogic.Unary.HoareTriple
 
 /-!

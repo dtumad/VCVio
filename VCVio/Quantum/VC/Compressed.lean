@@ -6,10 +6,7 @@ Authors: Quang Dao
 
 module
 public import QuantumFoundations.ForMathlib.Algebra.Group.Conj
-public import QuantumFoundations.MatrixMap.Kraus
-public import QuantumFoundations.Oracle.Basis
 public import VCVio.Quantum.VC.MultiExtractable
-public import VCVio.Quantum.Oracle.Compressed.Equivalence
 
 /-!
 # Compressed vector-commitment oracles

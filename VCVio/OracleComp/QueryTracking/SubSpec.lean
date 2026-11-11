@@ -5,7 +5,6 @@ Authors: Quang Dao
 -/
 
 module
-public import VCVio.OracleComp.Coercions.SubSpec.Basic
 public import VCVio.OracleComp.Coercions.SubSpec.Measure
 public import VCVio.OracleComp.QueryTracking.QueryBound
 

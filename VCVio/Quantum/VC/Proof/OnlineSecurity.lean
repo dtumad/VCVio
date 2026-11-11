@@ -5,7 +5,6 @@ Authors: Quang Dao
 -/
 
 module
-public import QuantumFoundations.ForMathlib.Analysis.Matrix.Contraction
 public import VCVio.Quantum.VC.Proof.Online
 
 /-!

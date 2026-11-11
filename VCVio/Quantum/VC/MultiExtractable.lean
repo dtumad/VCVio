@@ -5,11 +5,8 @@ Authors: Quang Dao
 -/
 
 module
-public import QuantumFoundations.ForMathlib.Analysis.Matrix.PosSemidef
-public import Mathlib.Geometry.Convex.ConvexSpace.Barycenter
 public import VCVio.Quantum.VC.Emulated
 public import VCVio.Quantum.Oracle.ClassicalCalls
-public import VCVio.Quantum.Oracle.Model
 
 /-!
 # Post-quantum multi-extractable vector commitments

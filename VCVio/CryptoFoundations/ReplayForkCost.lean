@@ -7,7 +7,6 @@ Authors: Devon Tuma
 module
 
 public import VCVio.CryptoFoundations.ReplayFork
-public import VCVio.OracleComp.QueryTracking.QueryBound.Basic
 
 /-!
 # Query bounds for the actual replay fork

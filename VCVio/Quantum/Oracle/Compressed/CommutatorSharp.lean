@@ -7,8 +7,6 @@ Authors: Quang Dao
 module
 public import QuantumFoundations.MatrixMap.PinchingCompletion
 
-public import QuantumFoundations.MatrixMap.Commutant
-public import QuantumFoundations.MatrixMap.Completion
 public import VCVio.Quantum.Oracle.Compressed.CommutatorBound
 
 /-!

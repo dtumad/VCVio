@@ -7,8 +7,6 @@ Authors: Quang Dao
 module
 public import VCVio.OracleComp.QueryTracking.RandomOracle.Basic
 public import VCVio.OracleComp.Constructions.SampleableType.Measure
-public import VCVio.OracleComp.SimSemantics.StateT.Basic
-public import Mathlib.Data.Fin.Tuple.Basic
 
 /-!
 # Uniform bases from a generator oracle

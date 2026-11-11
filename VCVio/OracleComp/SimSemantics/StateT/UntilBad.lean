@@ -6,9 +6,6 @@ Authors: Alexander Hicks
 
 module
 
-public import VCVio.OracleComp.SimSemantics.StateT.PreservesInv
-public import VCVio.OracleComp.SimSemantics.StateT.StateProjection
-public import VCVio.EvalDist.ProbabilityBounds
 public import VCVio.OracleComp.SimSemantics.StateT.Measure
 
 /-!

@@ -7,8 +7,6 @@ Authors: Quang Dao
 module
 public import VCVio.OracleComp.QueryTracking.QueryBound
 public import VCVio.OracleComp.EvalDist.Measure
-public import VCVio.EvalDist.ProbabilityNotation
-public import PolyFun.PFunctor.Handler.Charge
 
 /-!
 # Enforcement Oracle

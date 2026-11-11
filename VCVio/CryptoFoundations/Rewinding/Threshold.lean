@@ -5,10 +5,8 @@ Authors: Quang Dao
 -/
 
 module
-public import VCVio.CryptoFoundations.Rewinding.Finder
 public import VCVio.CryptoFoundations.Rewinding.ThresholdRound
 public import VCVio.OracleComp.Constructions.SampleableType.Basic
-public import Mathlib.Data.Fin.Tuple.Basic
 
 /-!
 # Recursive threshold challenge trees

@@ -7,7 +7,6 @@ Authors: Matthias Meijers
 module
 public import VCVio.CryptoFoundations.HardnessAssumptions.TweakableHash.FinalValidity
 public import VCVio.OracleComp.SimSemantics.Append
-public import VCVio.OracleComp.SimSemantics.StateT.StateProjection
 
 /-!
 # The tweak-discipline bridge, over an abstract challenge oracle

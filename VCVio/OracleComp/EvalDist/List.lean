@@ -7,7 +7,6 @@ Authors: Quang Dao
 module
 public import VCVio.OracleComp.EvalDist.Measure
 public import VCVio.OracleComp.ProbComp.Basic
-public import ToMathlib.Data.List.Count
 
 /-!
 # Expectations of independently sampled lists

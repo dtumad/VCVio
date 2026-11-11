@@ -8,8 +8,6 @@ module
 
 public import VCVio.OracleComp.ProbComp.IndepProductEvents
 public import VCVio.OracleComp.QueryTracking.RandomOracle.EagerTable
-public import VCVio.OracleComp.SimSemantics.StateT.StateProjection
-public import VCVio.EvalDist.ProbabilityBounds
 
 /-!
 # The answer tape of a lazy random oracle

@@ -5,9 +5,7 @@ Authors: Quang Dao
 -/
 
 module
-public import Mathlib.Algebra.MvPolynomial.Degrees
 public import VCVio.CryptoFoundations.HardnessAssumptions.DiffieHellman
-public import VCVio.OracleComp.SimSemantics.StateT.Basic
 public import VCVio.OracleComp.SimSemantics.Append
 public import VCVio.CryptoFoundations.HardnessAssumptions.DiscreteLogRelation.Algebra
 public import VCVio.CryptoFoundations.HardnessAssumptions.DiscreteLogRelation.RandomOracle

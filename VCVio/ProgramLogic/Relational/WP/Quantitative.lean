@@ -8,7 +8,6 @@ module
 
 public import ToMathlib.Control.Monad.RelWP
 public import VCVio.ProgramLogic.Relational.Quantitative
-public import VCVio.ProgramLogic.Unary.WP.Lower
 
 /-!
 # Quantitative relational weakest preconditions

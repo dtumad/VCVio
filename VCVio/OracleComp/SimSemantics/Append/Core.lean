@@ -5,8 +5,6 @@ Authors: Devon Tuma
 -/
 
 module
-public import VCVio.OracleComp.SimSemantics.QueryImpl.Basic
-public import VCVio.OracleComp.SimSemantics.SimulateQ
 public import VCVio.OracleComp.SimSemantics.QueryImpl.Constructions.Core
 public import VCVio.OracleComp.Coercions.Add.Basic
 

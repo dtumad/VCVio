@@ -6,8 +6,6 @@ Authors: Quang Dao
 
 module
 public import VCVio.EvalDist.MeasureTVDist.Basic
-public import VCVio.EvalDist.EvalDistEq
-public import VCVio.OracleComp.EvalDist.Measure
 public import VCVio.OracleComp.Constructions.SampleableType
 
 /-!

@@ -8,7 +8,6 @@ module
 
 public import VCVio.CryptoFoundations.GroupModel.Interaction
 public import VCVio.OracleComp.CanReturn
-public import Mathlib.Algebra.BigOperators.Fin
 
 /-!
 # Typed algebraic outputs over a fixed basis

@@ -7,7 +7,6 @@ Authors: Devon Tuma
 module
 
 public import VCVio.EvalDist.MeasureTVDist.Basic
-public meta import Mathlib.Tactic.Positivity.Core
 
 /-!
 # Positivity of total variation distance

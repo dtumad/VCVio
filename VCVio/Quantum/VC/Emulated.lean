@@ -7,7 +7,6 @@ Authors: Quang Dao
 module
 public import QuantumFoundations.MatrixMap.Comparison
 public import VCVio.Quantum.VC.Unitaries
-public import QuantumFoundations.Oracle.Unitary
 public import VCVio.Quantum.Oracle.ClassicalRead
 
 /-!

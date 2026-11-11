@@ -6,8 +6,6 @@ Authors: Quang Dao
 
 module
 public import VCVio.CryptoFoundations.Rewinding.Finder
-public import Mathlib.Data.Fin.Tuple.Basic
-public import Mathlib.Data.Fintype.BigOperators
 
 /-!
 # Finite averages and threshold error

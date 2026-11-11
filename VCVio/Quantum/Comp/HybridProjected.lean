@@ -5,8 +5,6 @@ Authors: Quang Dao
 -/
 
 module
-public import QuantumFoundations.ForMathlib.Analysis.Matrix.Contraction
-public import QuantumFoundations.SubInstrument
 public import VCVio.Quantum.Comp.Hybrid
 
 /-!

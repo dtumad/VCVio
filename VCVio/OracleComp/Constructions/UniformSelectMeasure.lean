@@ -7,8 +7,6 @@ Authors: Devon Tuma
 module
 public import VCVio.OracleComp.Constructions.UniformFinMeasure
 public import VCVio.EvalDist.Monad.Option
-public import ToMathlib.Data.Vector.Count
-public import ToMathlib.Data.Vector.ListVector
 
 /-!
 # Uniform selection on output measures

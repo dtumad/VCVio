@@ -7,8 +7,6 @@ Authors: Chung Thai Nguyen, Yuxi Zheng, Michele Orrù
 module
 
 public import VCVio.EvalDist.DiscreteTVDist
-public import VCVio.EvalDist.ProbabilityNotation
-public import VCVio.OracleComp.EvalDist.Measure
 public import VCVio.OracleComp.ProbComp
 
 /-!

@@ -6,9 +6,7 @@ Authors: Quang Dao
 
 module
 public import QuantumFoundations.MatrixMap.BlockNorm
-public import VCVio.Quantum.Oracle.Compressed.CommutatorSharp
 public import VCVio.Quantum.Comp.GradedRuntime
-public import VCVio.Quantum.Oracle.Compressed.Size
 public import VCVio.Quantum.VC.CheckedRead
 public import VCVio.Quantum.Oracle.Compressed.CheckedReadBound
 public import VCVio.Quantum.VC.Conditions

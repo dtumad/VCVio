@@ -8,7 +8,6 @@ module
 
 public import PolyFun.Interaction.Concurrent.Fairness
 public import VCVio.Interaction.UC.AsyncRuntime
-public import VCVio.Interaction.UC.Computational
 
 /-!
 # Fair PPT security for asynchronous env-open processes

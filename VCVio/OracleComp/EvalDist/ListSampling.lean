@@ -8,7 +8,6 @@ module
 public import VCVio.OracleComp.EvalDist.Measure
 public import VCVio.OracleComp.ProbComp.Basic
 public import VCVio.EvalDist.List
-public import Mathlib.Data.List.InsertIdx
 
 /-!
 # Independent list sampling at a chosen position

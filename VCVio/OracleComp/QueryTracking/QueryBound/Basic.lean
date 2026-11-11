@@ -6,10 +6,8 @@ Authors: Devon Tuma, Alexander Hicks
 
 module
 
-public import Mathlib.Algebra.Polynomial.Eval.Defs
 public import PolyFun.PFunctor.Free.Cost.Support
 public import PolyFun.PFunctor.Handler.Charge
-public import VCVio.OracleComp.Support
 public import VCVio.OracleComp.QueryTracking.CountingOracle.Core
 public import VCVio.OracleComp.SimSemantics.Append.Core
 public import VCVio.OracleComp.SimSemantics.StateT.Basic

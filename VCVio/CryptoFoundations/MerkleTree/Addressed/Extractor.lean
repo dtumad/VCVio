@@ -8,7 +8,6 @@ module
 
 public import VCVio.CryptoFoundations.MerkleTree.Addressed.Query
 public import VCVio.CryptoFoundations.MerkleTree.Extractor
-public import VCVio.OracleComp.OracleComp
 
 /-!
 # Address-key specialization of the generic Merkle transcript extractor

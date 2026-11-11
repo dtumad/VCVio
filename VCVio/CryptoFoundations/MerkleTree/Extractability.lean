@@ -8,8 +8,6 @@ module
 
 public import VCVio.CryptoFoundations.MerkleTree.ExtractionKernel
 public import VCVio.CryptoFoundations.MerkleTree.Addressed.QueryBound
-public import VCVio.OracleComp.QueryTracking.Collision
-public import ToMathlib.Data.IndexedBinaryTree.Lemmas
 import VCVio.OracleComp.QueryTracking.AdaptivePrefix
 import VCVio.OracleComp.QueryTracking.Unpredictability
 

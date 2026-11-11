@@ -6,8 +6,6 @@ Authors: Quang Dao
 
 module
 
-public import PolyFun.Control.Monad.Support.WP
-public import Std.WP
 public import VCVio.ProgramLogic.Unary.HoarePropTriple
 
 /-!

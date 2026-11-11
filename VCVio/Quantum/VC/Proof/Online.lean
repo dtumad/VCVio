@@ -5,11 +5,7 @@ Authors: Quang Dao
 -/
 
 module
-public import QuantumFoundations.MatrixMap.BlockNorm
-public import QuantumFoundations.Oracle.Basis
-public import VCVio.Quantum.VC.Proof.Commutativity
 public import VCVio.Quantum.VC.Proof.Offline
-public import VCVio.Quantum.Oracle.Compressed.CollisionRuntime
 
 /-!
 # Recording grades and summed branch comparisons

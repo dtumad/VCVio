@@ -8,7 +8,6 @@ module
 
 public import VCVio.OracleComp.QueryTracking.CachingLoggingOracle
 public import VCVio.OracleComp.QueryTracking.Collision
-public import VCVio.EvalDist.Monad.Measure
 import VCVio.OracleComp.QueryTracking.Birthday
 
 /-!

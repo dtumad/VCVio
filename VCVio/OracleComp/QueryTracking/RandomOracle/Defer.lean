@@ -8,8 +8,6 @@ module
 
 public import VCVio.OracleComp.QueryTracking.RandomOracle.Relabel
 public import VCVio.OracleComp.QueryTracking.RandomOracle.Commute
-public import VCVio.OracleComp.SimSemantics.StateT.Measure
-public import VCVio.OracleComp.QueryTracking.QueryBound.Counter
 
 /-!
 # Deferred touches of a relabelled lazy random oracle

@@ -9,7 +9,6 @@ public import VCVio.CryptoFoundations.GroupModel.Collision
 public import VCVio.CryptoFoundations.GroupModel.Cost
 public import VCVio.CryptoFoundations.GroupModel.Instances
 public import VCVio.OracleComp.Constructions.SampleableType.SchwartzZippel
-public import VCVio.EvalDist.MeasureTVDist.Bind
 public import Mathlib.Algebra.MvPolynomial.CommRing
 import Mathlib.Data.List.GetD
 

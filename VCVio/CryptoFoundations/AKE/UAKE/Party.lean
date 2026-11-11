@@ -6,7 +6,6 @@ Authors: Ben Hamlin
 
 module
 public import VCVio.OracleComp.SimSemantics.Append
-public import VCVio.OracleComp.SimSemantics.SimulateQ
 
 /-!
 # UAKE Scheme Party Definitions

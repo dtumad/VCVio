@@ -8,7 +8,6 @@ module
 
 public import VCVio.ProgramLogic.Unary.WP.Necessary
 public import VCVio.OracleComp.Constructions.Replicate
-public import VCVio.OracleComp.Constructions.SampleableType.Basic
 public import VCVio.OracleComp.Coercions.SubSpec.Basic
 
 /-!

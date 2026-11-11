@@ -8,7 +8,6 @@ module
 import QuantumFoundations.MatrixMap.Norm
 public import VCVio.Quantum.Oracle.Compressed.CheckedRead
 public import VCVio.Quantum.Oracle.Compressed.CommutatorSharp
-import Mathlib.Analysis.Matrix.Order
 
 /-!
 # Signed character blocks of a checked read

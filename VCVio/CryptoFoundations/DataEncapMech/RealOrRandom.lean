@@ -7,7 +7,6 @@ Authors: Quang Dao
 module
 
 public import VCVio.CryptoFoundations.DataEncapMech
-public import VCVio.EvalDist.Monad.Bool
 
 /-!
 # Real-or-random one-time IND-CPA for DEMs

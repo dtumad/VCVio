@@ -7,7 +7,6 @@ Authors: Alexander Hicks
 module
 
 public import VCVio.OracleComp.QueryTracking.RandomOracle.ClassIndexedTape
-public import VCVio.OracleComp.QueryTracking.QueryBound.Simulation
 
 /-!
 # Positions on a class-indexed tape run

@@ -8,7 +8,6 @@ module
 public import VCVio.OracleComp.QueryTracking.RandomOracle.DependentTable
 public import VCVio.OracleComp.QueryTracking.LoggingOracle.Core
 public import VCVio.OracleComp.QueryTracking.CostModel
-public import VCVio.EvalDist.ProbabilityBounds
 
 /-!
 # Adaptive queries with bad events depending on unqueried cells

@@ -7,7 +7,6 @@ Authors: Quang Dao
 module
 public import VCVio.CryptoFoundations.MerkleTree.OrderedResolver
 public import VCVio.CryptoFoundations.MerkleTree.Extractor
-public import Mathlib.Data.Set.Card
 
 /-!
 # Decoded node support and extraction stability

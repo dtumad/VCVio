@@ -5,15 +5,11 @@ Authors: Devon Tuma
 -/
 
 module
-public import VCVio.OracleComp.EvalDist.Measure
 public import VCVio.OracleComp.Constructions.SampleableType.Measure
-public import VCVio.OracleComp.SimSemantics.SimulateQ
-public import VCVio.OracleComp.Coercions.SubSpec.Basic
 public import VCVio.OracleComp.Coercions.SubSpec.Measure
 public import VCVio.OracleComp.QueryTracking.LoggingOracle.Core
 public import PolyFun.PFunctor.Dynamical.Behavior
 public import PolyFun.PFunctor.Dynamical.Run
-public import PolyFun.PFunctor.Free.Path
 
 /-!
 # Oracle strategies: the coalgebra dual of `OracleComp`

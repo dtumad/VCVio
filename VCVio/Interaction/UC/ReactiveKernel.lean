@@ -7,7 +7,6 @@ Authors: Devon Tuma
 module
 
 public import VCVio.Interaction.UC.ReactiveRuntime
-public import VCVio.EvalDist.Monad.Measure
 
 /-!
 # Local joint-kernel replacement for reactive execution

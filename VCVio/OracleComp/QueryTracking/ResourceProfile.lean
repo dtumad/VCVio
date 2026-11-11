@@ -6,7 +6,6 @@ Authors: Quang Dao
 
 module
 
-public import Mathlib.Data.Finsupp.Basic
 public import Mathlib.Data.Finsupp.Order
 
 /-!

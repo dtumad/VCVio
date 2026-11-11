@@ -6,10 +6,7 @@ Authors: Devon Tuma
 
 module
 
-public import VCVio.OracleComp.SimSemantics.StateT.StateSeparating
 public import VCVio.OracleComp.SimSemantics.StateT.Measure
-public import VCVio.OracleComp.EvalDist.Measure
-public import VCVio.EvalDist.ProbabilityNotation
 public import VCVio.StateSeparating.Advantage.Measure
 public import VCVio.OracleComp.Coercions.SubSpec.Measure
 

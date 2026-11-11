@@ -7,8 +7,6 @@ Authors: Quang Dao
 module
 public import VCVio.CryptoFoundations.MerkleTree.LabelledPath
 public import VCVio.CryptoFoundations.VectorCommitment
-public import VCVio.OracleComp.Constructions.SampleableType.Basic
-public import Mathlib.Data.List.Rotate
 
 /-!
 # Salted Merkle commitments

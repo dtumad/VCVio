@@ -5,7 +5,6 @@ Authors: Quang Dao
 -/
 
 module
-public import QuantumFoundations.MatrixMap.Comparison
 
 public import VCVio.Quantum.Oracle.Compressed.CollisionBlocks
 public import VCVio.Quantum.Oracle.Emulated

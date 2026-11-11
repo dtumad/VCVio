@@ -11,7 +11,6 @@ public import VCVio.CryptoFoundations.FiatShamir.WithAbort.GhostBodies.Bodies
 public import VCVio.CryptoFoundations.FiatShamir.QueryBounds
 public import VCVio.ProgramLogic.Relational.SimulateQ
 public import VCVio.OracleComp.SimSemantics.StateT.StateSeparating
-public import VCVio.OracleComp.QueryTracking.RandomOracle.ProbeEps
 public import VCVio.OracleComp.QueryTracking.RandomOracle.DeferredSampling
 
 /-!

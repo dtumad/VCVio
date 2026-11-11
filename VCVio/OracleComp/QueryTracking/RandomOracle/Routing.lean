@@ -7,7 +7,6 @@ Authors: Devon Tuma
 module
 
 public import VCVio.OracleComp.QueryTracking.RandomOracle.EagerTable
-public import VCVio.EvalDist.Monad.UniformTable
 
 /-!
 # Injective input routing for finite random oracles

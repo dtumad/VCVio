@@ -10,7 +10,6 @@ public import VCVio.CryptoFoundations.DataEncapMech
 public import VCVio.CryptoFoundations.KeyEncapMech
 public import VCVio.CryptoFoundations.AsymmEncAlg.INDCPA.OneTime
 public import VCVio.Schemes.KEMDEM.Measure
-public import VCVio.OracleComp.Constructions.SampleableType.Basic
 
 /-!
 # KEM + DEM Composition

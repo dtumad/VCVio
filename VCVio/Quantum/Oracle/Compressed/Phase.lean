@@ -5,7 +5,6 @@ Authors: Quang Dao
 -/
 
 module
-public import QuantumFoundations.ForMathlib.Analysis.Matrix.Contraction
 
 public import Mathlib.Analysis.Fourier.FiniteAbelian.PontryaginDuality
 public import VCVio.Quantum.Oracle.Compressed.Truncation

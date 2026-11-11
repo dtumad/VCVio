@@ -6,7 +6,6 @@ Authors: Devon Tuma
 
 module
 
-public import PolyFun.PFunctor.Free.Support
 public import VCVio.OracleComp.Support
 
 /-!

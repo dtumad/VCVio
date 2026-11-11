@@ -8,7 +8,6 @@ module
 
 public import VCVio.OracleComp.QueryTracking.RandomOracle.Defer
 public import VCVio.OracleComp.QueryTracking.RandomOracle.TouchRead
-public import VCVio.OracleComp.QueryTracking.QueryBound.Simulation
 
 /-!
 # Read sets of the deferred game

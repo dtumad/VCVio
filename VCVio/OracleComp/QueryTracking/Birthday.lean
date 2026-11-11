@@ -7,7 +7,6 @@ Authors: James Waters
 module
 public import VCVio.OracleComp.QueryTracking.Collision
 public import ToMathlib.Data.ENNReal.Gauss
-public import VCVio.OracleComp.EvalDist.Measure
 
 /-!
 # ROM Birthday Bound

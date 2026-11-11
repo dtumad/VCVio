@@ -6,11 +6,9 @@ Authors: Quang Dao
 
 module
 
-public import QuantumFoundations.MatrixMap.OpNorm
 public import QuantumFoundations.MatrixMap.Pinching
 public import VCVio.Quantum.Oracle.Compressed.Instability
 public import VCVio.Quantum.Oracle.Compressed.Phase
-
 
 /-!
 # Lemmas 5.9 and 5.10 for the truncated compressed oracle

@@ -7,7 +7,6 @@ Authors: Quang Dao
 module
 
 public import VCVio.CryptoFoundations.MerkleTree.MultiExtractability.Potential
-import VCVio.OracleComp.QueryTracking.Collision
 import VCVio.OracleComp.QueryTracking.Birthday
 
 /-!

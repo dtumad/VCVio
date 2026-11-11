@@ -6,7 +6,6 @@ Authors: Quang Dao
 
 module
 public import VCVio.CryptoFoundations.Rewinding.ThresholdSound
-public import VCVio.CryptoFoundations.Rewinding.ThresholdEager
 public import VCVio.CryptoFoundations.Rewinding.ThresholdStep
 public import VCVio.CryptoFoundations.Rewinding.ThresholdBounds
 

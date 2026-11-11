@@ -5,11 +5,9 @@ Authors: Devon Tuma, Quang Dao
 -/
 
 module
-public import VCVio.Prelude.Core
 public import VCVio.OracleComp.Support
 public import VCVio.EvalDist.Defs.Support.Failure
 public import ToMathlib.Control.OptionT
-public import Batteries.Control.OptionT
 
 /-!
 # Executable uniform oracle programs

@@ -6,9 +6,7 @@ Authors: Quang Dao
 
 module
 
-public import VCVio.OracleComp.Coercions.SubSpec.Basic
 public import VCVio.OracleComp.QueryTracking.RandomOracle.Simulation
-public import VCVio.OracleComp.SimSemantics.QueryImpl.Compose
 
 /-!
 # Rounds of parallel oracle queries

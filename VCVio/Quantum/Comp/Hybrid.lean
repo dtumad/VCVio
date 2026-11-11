@@ -6,12 +6,9 @@ Authors: Quang Dao
 
 module
 public import QuantumFoundations.MatrixMap.Conjugation
-public import QuantumFoundations.SubInstrument
 public import VCVio.Quantum.Comp.QueryMass
 public import VCVio.Quantum.Comp.Simulation
 public import QuantumFoundations.SubInstrument.Subsystem
-public import QuantumFoundations.DSubInstrument.Relabel
-public import QuantumFoundations.MatrixMap.Kraus
 public import QuantumFoundations.MatrixMap.Norm
 
 /-!

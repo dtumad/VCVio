@@ -6,15 +6,10 @@ Authors: Devon Tuma, Quang Dao
 
 module
 public import VCVio.OracleComp.ReachableWhen
-public import VCVio.OracleComp.Support
 public import VCVio.OracleComp.EvalDist.Measure
-public import VCVio.EvalDist.Defs.Support.Failure
 public import VCVio.EvalDist.Monad.Seq
 public import VCVio.EvalDist.Instances.OptionT
 public import VCVio.EvalDist.PFunctorSupport
-public import PolyFun.PFunctor.Free.WP
-public import VCVio.OracleComp.SimSemantics.SimulateQ
-public import ToMathlib.Data.Set.Functor
 
 /-!
 # Evaluation of oracle computations

@@ -7,8 +7,6 @@ Authors: Nicolas Consigny, Matthias Meijers, Quang Dao
 module
 public import VCVio.CryptoFoundations.HardnessAssumptions.TweakableHash.FinalValidity
 public import VCVio.CryptoFoundations.HardnessAssumptions.TweakableHash.SMDTTCR
-public import VCVio.OracleComp.SimSemantics.StateT.PreservesInv
-public import VCVio.OracleComp.EvalDist.AnswerMeasure
 
 /-!
 # Source-final-validity SM-DT-TCR

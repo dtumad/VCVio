@@ -10,7 +10,6 @@ public import ToMathlib.MeasureTheory.Integral.Countable
 public import ToMathlib.MeasureTheory.Measure.Coupling.Maximal
 public import VCVio.EvalDist.EvalDistEq
 public import VCVio.EvalDist.Monad.Measure
-public import VCVio.EvalDist.ProbabilityNotation
 
 /-!
 # Finitely supported denotations and their singleton masses

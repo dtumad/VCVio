@@ -7,7 +7,6 @@ Authors: Devon Tuma, Quang Dao
 module
 public import VCVio.OracleComp.ProbComp.Basic
 public import VCVio.OracleComp.EvalDist
-public import Batteries.Control.OptionT
 
 /-!
 # Finite support of uniform sampling

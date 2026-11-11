@@ -5,7 +5,6 @@ Authors: Quang Dao
 -/
 
 module
-public import QuantumFoundations.ForMathlib.Analysis.Matrix.PosSemidef
 
 public import VCVio.Quantum.Oracle.Compressed.CommutatorBound
 import QuantumFoundations.MatrixMap.Completion

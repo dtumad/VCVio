@@ -7,7 +7,6 @@ Authors: Devon Tuma
 module
 public import VCVio.OracleComp.Coinductive.DynSystem
 public import PolyFun.PFunctor.Dynamical.DynComputation.Bounded
-public import PolyFun.PFunctor.Dynamical.Simulation
 
 /-!
 # Oracle machines: `DynComputation` presentations of `OracleComp` programs

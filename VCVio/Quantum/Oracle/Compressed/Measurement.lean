@@ -5,7 +5,6 @@ Authors: Quang Dao
 -/
 
 module
-public import QuantumFoundations.DSubInstrument.Observe
 public import VCVio.Quantum.Oracle.Compressed.Equivalence
 
 /-!

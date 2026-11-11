@@ -8,11 +8,7 @@ module
 public import PolyFun.Interaction.Execution.ReactiveNetwork.Behavior
 public import PolyFun.Interaction.Execution.ReactiveNetwork.Serial
 public import PolyFun.Interaction.Execution.ReactiveNetwork.Transport
-public import VCVio.OracleComp.Support
 public import VCVio.OracleComp.ReachableWhen
-public import VCVio.OracleComp.SimSemantics.SimulateQ
-public import VCVio.OracleComp.EvalDist.Measure
-public import VCVio.OracleComp.Constructions.SampleableType.Basic
 public import VCVio.OracleComp.Constructions.SampleableType.Measure
 
 /-!

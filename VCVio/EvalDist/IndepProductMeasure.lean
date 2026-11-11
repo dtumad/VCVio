@@ -7,8 +7,6 @@ Authors: Devon Tuma
 module
 
 public import VCVio.EvalDist.Kernel
-public import ToMathlib.Control.Monad.Fold
-public import Mathlib.MeasureTheory.Constructions.Pi
 public import Mathlib.Probability.UniformOn
 
 /-!

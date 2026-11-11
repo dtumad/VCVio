@@ -6,7 +6,6 @@ Authors: Quang Dao
 
 module
 public import VCVio.OracleComp.Constructions.SampleableType.Measure
-public import Mathlib.Algebra.Module.Basic
 
 /-!
 # The two-source powers discrete-logarithm problem

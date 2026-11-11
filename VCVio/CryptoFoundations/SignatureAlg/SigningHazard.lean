@@ -7,7 +7,6 @@ Authors: Alexander Hicks
 module
 
 public import VCVio.CryptoFoundations.SignatureAlg.Transcript
-public import VCVio.EvalDist.ProbabilityBounds
 
 /-!
 # A hazard raised only by signing

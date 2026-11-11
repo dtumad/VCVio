@@ -7,7 +7,6 @@ Authors: Quang Dao
 module
 public import VCVio.Quantum.VC.MultiExtractor
 public import VCVio.Quantum.Oracle.Compressed.Basic
-public import VCVio.CryptoFoundations.VectorCommitment
 
 /-!
 # Sufficient conditions for post-quantum multi-extractability

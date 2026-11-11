@@ -7,10 +7,8 @@ Authors: Quang Dao
 module
 
 public import VCVio.ProgramLogic.Unary.HoareTriple
-public import VCVio.OracleComp.SimSemantics.SimulateQ
 public import VCVio.OracleComp.SimSemantics.StateT.Basic
 public import VCVio.OracleComp.Coercions.SubSpec.Measure
-public import ToMathlib.MeasureTheory.Measure.UniformTable
 
 /-!
 # Oracle-Aware Unary WP Rules

@@ -8,7 +8,6 @@ module
 
 public import VCVio.OracleComp.QueryTracking.QueryBound.Batch
 public import VCVio.OracleComp.QueryTracking.WriterCost
-public import VCVio.EvalDist.ProbabilityBounds
 
 /-!
 # Truncating a program at a round bound

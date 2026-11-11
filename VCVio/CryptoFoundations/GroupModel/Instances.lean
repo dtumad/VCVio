@@ -6,7 +6,6 @@ Authors: Quang Dao
 
 module
 public import VCVio.CryptoFoundations.GroupModel.Projection
-public import Mathlib.Algebra.MvPolynomial.Eval
 
 /-!
 # Standard group models and evaluation morphisms

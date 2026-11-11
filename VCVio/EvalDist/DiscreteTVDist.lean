@@ -7,9 +7,7 @@ Authors: Chung Thai Nguyen, Yuxi Zheng, Michele Orrù
 module
 
 public import VCVio.EvalDist.EvalDistEq
-public import VCVio.EvalDist.MeasureTVDist.Basic
 public import VCVio.EvalDist.MeasureTVDist.Bind
-public import VCVio.EvalDist.ProbabilityNotation
 
 /-!
 # Total variation under the discrete σ-algebra

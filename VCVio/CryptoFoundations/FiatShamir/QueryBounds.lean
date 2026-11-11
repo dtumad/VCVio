@@ -6,7 +6,6 @@ Authors: Devon Tuma, Quang Dao
 
 module
 
-public import VCVio.OracleComp.Coercions.Add.Basic
 public import VCVio.OracleComp.QueryTracking.QueryBound
 
 /-!

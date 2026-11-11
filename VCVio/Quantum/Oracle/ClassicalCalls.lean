@@ -5,8 +5,6 @@ Authors: Quang Dao
 -/
 
 module
-public import QuantumFoundations.DSubInstrument
-public import QuantumFoundations.SubInstrument
 public import VCVio.Quantum.Oracle.Classical
 public import VCVio.Quantum.Oracle.Emulated
 import VCVio.OracleComp.EvalDist.Sum

@@ -9,7 +9,6 @@ module
 public import VCVio.ProgramLogic.Relational.Basic
 public import VCVio.OracleComp.QueryTracking.QueryBound
 public import VCVio.OracleComp.SimSemantics.StateT.StateProjection
-public import VCVio.OracleComp.SimSemantics.StateT.Basic
 
 /-!
 # Relational `simulateQ` rules

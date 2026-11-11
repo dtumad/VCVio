@@ -6,7 +6,6 @@ Authors: Quang Dao
 
 module
 public import QuantumFoundations.ForMathlib.Analysis.Matrix.Contraction
-public import QuantumFoundations.Oracle.Unitary
 public import VCVio.Quantum.Oracle.Compressed.Size
 
 /-!

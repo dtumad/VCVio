@@ -7,8 +7,6 @@ Authors: Alexander Hicks
 module
 
 public import VCVio.CryptoFoundations.SignatureAlg
-public import VCVio.OracleComp.SimSemantics.QueryImpl.Compose
-public import VCVio.OracleComp.SimSemantics.WriterT.Core
 
 /-!
 # Naturality of the unforgeability experiment

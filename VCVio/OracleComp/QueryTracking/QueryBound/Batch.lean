@@ -6,7 +6,6 @@ Authors: Quang Dao
 
 module
 
-public import VCVio.OracleComp.QueryTracking.QueryBound.Basic
 public import VCVio.OracleComp.SimSemantics.Batch
 
 /-!

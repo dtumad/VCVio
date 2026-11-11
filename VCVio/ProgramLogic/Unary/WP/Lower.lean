@@ -6,14 +6,12 @@ Authors: Quang Dao
 
 module
 
-public import PolyFun.Control.Monad.Algebra
 public import ToMathlib.Control.Except
 public import ToMathlib.Control.OptionT
 public import ToMathlib.Control.StateT
 public import ToMathlib.Control.WriterT
 public import VCVio.ProgramLogic.Unary.WP.Measure
 public import VCVio.OracleComp.EvalDist.AnswerMeasure
-public import PolyFun.Control.Monad.Algebra.WP
 public import PolyFun.Control.Do.Spec
 
 /-!

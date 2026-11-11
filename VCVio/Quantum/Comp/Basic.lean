@@ -5,7 +5,6 @@ Authors: Quang Dao
 -/
 
 module
-public import PolyFun.IPFunctor.Free.Indexed
 public import PolyFun.IPFunctor.Free.Bound
 public import VCVio.Quantum.Comp.LocalSig
 public import QuantumFoundations.SubInstrument

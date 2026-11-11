@@ -5,7 +5,6 @@ Authors: Quang Dao
 -/
 
 module
-public import QuantumFoundations.Oracle.Basis
 public import VCVio.Quantum.Oracle.Compressed.Oracle
 public import VCVio.Quantum.Oracle.Comb
 public import VCVio.Quantum.Oracle.Model

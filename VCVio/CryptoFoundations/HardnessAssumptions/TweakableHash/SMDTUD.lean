@@ -6,11 +6,7 @@ Authors: Matthias Meijers
 
 module
 public import VCVio.CryptoFoundations.HardnessAssumptions.TweakableHash.Collection
-public import VCVio.OracleComp.Constructions.SampleableType.Measure
 public import VCVio.OracleComp.SimSemantics.Append
-public import ToMathlib.MeasureTheory.Measure.Bool
-
-import Batteries.Tactic.Lint
 
 /-!
 # Single-function, distinct-tweak, multi-target undetectability (SM-DT-UD)

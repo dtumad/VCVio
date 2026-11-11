@@ -5,10 +5,8 @@ Authors: Quang Dao, Alexander Hicks
 -/
 
 module
-public import Mathlib.Algebra.Polynomial.Eval.Defs
 public import VCVio.OracleComp.QueryTracking.QueryBound.Basic
 public import VCVio.OracleComp.QueryTracking.QueryCost
-import Mathlib.Tactic.GRewrite
 
 /-!
 # Cost Models for Oracle Computations

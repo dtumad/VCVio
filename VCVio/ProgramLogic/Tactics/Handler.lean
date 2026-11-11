@@ -6,7 +6,6 @@ Authors: Quang Dao
 
 module
 
-public meta import Lean.Elab.Tactic.Basic
 public import VCVio.OracleComp.QueryTracking.HandlerSimp
 
 /-!

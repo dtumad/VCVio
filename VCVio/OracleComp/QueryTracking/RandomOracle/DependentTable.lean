@@ -5,10 +5,8 @@ Authors: Oleksandr Vovkotrub, Quang Dao
 -/
 
 module
-public import VCVio.OracleComp.QueryTracking.RandomOracle.Basic
 public import VCVio.EvalDist.Monad.DependentTable
 public import VCVio.OracleComp.QueryTracking.RandomOracle.Simulation
-public import VCVio.OracleComp.EvalDist.Measure
 
 /-!
 # Cached random oracles with dependent answer spaces

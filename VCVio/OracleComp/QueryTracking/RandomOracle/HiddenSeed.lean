@@ -7,14 +7,10 @@ Authors: Alexander Hicks
 module
 
 public import VCVio.OracleComp.SimSemantics.StateT.UntilBad
-public import VCVio.OracleComp.SimSemantics.StateT.StateProjection
-public import VCVio.OracleComp.SimSemantics.QueryImpl.Compose
-public import VCVio.OracleComp.QueryTracking.QueryBound.Basic
 public import VCVio.OracleComp.QueryTracking.ExpectedQueryCount
 public import VCVio.OracleComp.QueryTracking.RandomOracle.Simulation
 public import VCVio.OracleComp.QueryTracking.QueryBound.Counter
 import VCVio.OracleComp.Constructions.SampleableType.Measure
-import VCVio.OracleComp.EvalDist.Measure
 
 /-!
 # Hidden-seed derivations from a random oracle

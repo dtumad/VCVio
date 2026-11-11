@@ -5,11 +5,7 @@ Authors: Matthias Meijers
 -/
 
 module
-public import VCVio.CryptoFoundations.HardnessAssumptions.TweakableHash.Collection
 public import VCVio.CryptoFoundations.HardnessAssumptions.TweakableHash.SMDTDSPRFinalValidity
-public import VCVio.OracleComp.SimSemantics.Append
-
-import Batteries.Tactic.Lint
 
 /-!
 # Single-function, distinct-tweak, multi-target decisional second-preimage resistance (SM-DT-DSPR)

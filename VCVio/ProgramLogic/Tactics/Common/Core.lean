@@ -6,14 +6,10 @@ Authors: Quang Dao
 
 module
 
-public meta import Lean.Elab.Tactic.Basic
 public meta import Lean.Meta.Match.MatcherApp
-public meta import Lean.Meta.Sym.Pattern
-public import VCVio.OracleComp.Constructions.Replicate.Basic
 public import VCVio.OracleComp.Constructions.ReplicateMeasure
 public import VCVio.ProgramLogic.NotationCore
 public import VCVio.EvalDist.Defs.Measure
-public import VCVio.EvalDist.ProbabilityNotation
 
 /-!
 # VCGen Planner Core

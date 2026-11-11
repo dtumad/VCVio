@@ -6,10 +6,6 @@ Authors: Devon Tuma, Quang Dao, Alexander Hicks
 
 module
 public import VCVio.OracleComp.QueryTracking.QueryBound
-public import VCVio.OracleComp.QueryTracking.Tracing.Core
-public import VCVio.OracleComp.SimSemantics.Append.Core
-public import PolyFun.PFunctor.Free.Path.Execution
-public import ToMathlib.Control.WriterT
 
 /-!
 # Logged query execution

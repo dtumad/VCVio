@@ -9,7 +9,6 @@ module
 public import VCVio.CryptoFoundations.SymmEncAlg.Measure
 public import VCVio.CryptoFoundations.SymmEncAlg.OneTimeINDCPA
 public import VCVio.OracleComp.QueryTracking.QueryBound.Basic
-public import VCVio.OracleComp.SimSemantics.Append.Core
 
 /-!
 # Deterministic symmetric encryption and IND$-CPA

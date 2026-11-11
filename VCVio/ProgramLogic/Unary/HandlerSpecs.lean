@@ -8,12 +8,8 @@ module
 
 public import PolyFun.Control.Do.Spec
 public import VCVio.OracleComp.QueryTracking.CachingLoggingOracle
-public import VCVio.OracleComp.QueryTracking.CachingOracle
-public import VCVio.OracleComp.QueryTracking.CountingOracle.Core
-public import VCVio.OracleComp.QueryTracking.LoggingOracle.Core
 public import VCVio.OracleComp.QueryTracking.SeededOracle
 public import VCVio.ProgramLogic.Unary.WP.Necessary
-public import PolyFun.Control.Monad.WriterT.WP
 public import PolyFun.PFunctor.Free.WP.Charge
 
 /-!

@@ -6,8 +6,6 @@ Authors: Quang Dao
 
 module
 public import VCVio.CryptoFoundations.SecExp.Measure
-public import VCVio.OracleComp.Constructions.SampleableType.Measure
-public import VCVio.OracleComp.ProbComp.Basic
 public import VCVio.OracleComp.ProbCompLift
 public import VCVio.CryptoFoundations.LeftOrRight
 public import VCVio.OracleComp.SimSemantics.Append

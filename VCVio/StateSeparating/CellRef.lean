@@ -7,7 +7,6 @@ Authors: Quang Dao
 module
 public import ToMathlib.Data.Heap
 public import VCVio.OracleComp.EvalDist.Measure
-public import VCVio.OracleComp.ProbComp.Basic
 public import VCVio.OracleComp.Constructions.UniformFinMeasure
 public import VCVio.OracleComp.SimSemantics.QueryImpl.Constructions.Core
 

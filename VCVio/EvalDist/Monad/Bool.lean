@@ -6,9 +6,7 @@ Authors: Devon Tuma
 
 module
 
-public import VCVio.EvalDist.Defs.Measure.Core
 public import VCVio.EvalDist.ProbabilityNotation
-public import ToMathlib.MeasureTheory.Measure.Bool
 
 /-!
 # Boolean guessing experiments under measure semantics

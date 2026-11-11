@@ -6,7 +6,6 @@ Authors: Quang Dao
 
 module
 public import VCVio.CryptoFoundations.Rewinding.Laws
-public import Mathlib.Data.Fintype.EquivFin
 
 /-!
 # Eager representation of frozen reruns

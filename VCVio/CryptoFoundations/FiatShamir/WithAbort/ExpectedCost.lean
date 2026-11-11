@@ -8,7 +8,6 @@ module
 
 public import VCVio.CryptoFoundations.FiatShamir.WithAbort.Cost
 public import VCVio.EvalDist.Monad.Branch
-public import Mathlib.Analysis.SpecificLimits.Basic
 
 /-!
 # Expected-cost theorems for Fiat-Shamir with aborts

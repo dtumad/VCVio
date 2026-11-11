@@ -7,7 +7,6 @@ Authors: Alexander Hicks
 module
 
 public import VCVio.Algorithms.Keccak
-import Mathlib.Data.List.TakeDrop
 import Mathlib.Tactic.Linarith
 
 /-!

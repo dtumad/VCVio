@@ -6,8 +6,6 @@ Authors: Devon Tuma
 
 module
 public import VCVio.OracleComp.SimSemantics.Append.Core
-public import VCVio.OracleComp.SimSemantics.QueryImpl.Constructions.Core
-public import VCVio.OracleComp.Coercions.Add.Basic
 
 /-!
 # Simulation of combined oracle interfaces

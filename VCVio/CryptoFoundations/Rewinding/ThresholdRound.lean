@@ -5,7 +5,6 @@ Authors: Quang Dao
 -/
 
 module
-public import ToMathlib.Data.List.Count
 public import VCVio.CryptoFoundations.Rewinding.Finder
 public import VCVio.OracleComp.Constructions.WithoutReplacement
 

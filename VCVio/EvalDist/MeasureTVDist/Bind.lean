@@ -7,7 +7,6 @@ Authors: Devon Tuma
 module
 
 public import VCVio.EvalDist.MeasureTVDist.Basic
-public import ToMathlib.MeasureTheory.Measure.TotalVariation.Bind
 public import ToMathlib.Probability.Kernel.TotalVariation
 
 /-!

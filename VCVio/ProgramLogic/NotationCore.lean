@@ -8,7 +8,6 @@ module
 
 public import VCVio.ProgramLogic.Unary.HoareTriple
 public import VCVio.EvalDist.MeasureTVDist.Basic
-public import VCVio.ProgramLogic.Relational.Basic
 public import VCVio.ProgramLogic.Relational.QuantitativeDefs
 public import ToMathlib.Control.Monad.RelWP
 

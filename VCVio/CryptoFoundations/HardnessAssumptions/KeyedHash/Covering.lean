@@ -6,7 +6,6 @@ Authors: Alexander Hicks
 
 module
 
-public import VCVio.OracleComp.Constructions.SampleableType.Measure
 public import VCVio.OracleComp.QueryTracking.RandomOracle.Tape
 import Mathlib.Data.Nat.Choose.Vandermonde
 

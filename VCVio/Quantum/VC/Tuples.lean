@@ -6,8 +6,6 @@ Authors: Quang Dao
 
 module
 public import VCVio.CryptoFoundations.VectorCommitment
-public import Mathlib.Data.Fintype.Sigma
-public import Mathlib.Data.Fintype.Pi
 
 /-!
 # Tuples of commitments and decommitments

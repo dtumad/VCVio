@@ -6,7 +6,6 @@ Authors: Quang Dao
 
 module
 public import VCVio.CryptoFoundations.CommitmentScheme
-public import VCVio.CryptoFoundations.HardnessAssumptions.DiscreteLogRelation.Algebra
 public import VCVio.CryptoFoundations.GroupModel.GenericRelation
 public import Mathlib.Data.FinEnum.Option
 

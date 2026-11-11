@@ -7,7 +7,6 @@ Authors: Quang Dao, Alexander Hicks
 module
 
 public import VCVio.CryptoFoundations.MerkleTree.Addressed.Monadic
-public import VCVio.OracleComp.QueryTracking.QueryBound
 import ToMathlib.Data.IndexedBinaryTree.Lemmas
 
 /-!

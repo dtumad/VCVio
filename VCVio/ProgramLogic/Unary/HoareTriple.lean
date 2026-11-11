@@ -8,10 +8,8 @@ module
 
 public import VCVio.ProgramLogic.Unary.WP.OracleMeasure
 public import VCVio.ProgramLogic.Unary.WP.Lower
-public import VCVio.EvalDist.ProbabilityNotation
 public import VCVio.OracleComp.Constructions.Replicate.Basic
 public import VCVio.OracleComp.Constructions.SampleableType.Basic
-public import ToMathlib.MeasureTheory.Measure.Bounds
 
 /-!
 # Quantitative Hoare triples

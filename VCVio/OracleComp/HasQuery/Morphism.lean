@@ -6,10 +6,8 @@ Authors: Quang Dao
 
 module
 
-public import VCVio.OracleComp.HasQuery.Basic
 public import VCVio.OracleComp.ProbComp.Basic
 public import VCVio.OracleComp.SimSemantics.SimulateQ
-public import PolyFun.Control.Monad.Hom
 
 /-!
 # Morphisms of `HasQuery` Monads

@@ -6,11 +6,7 @@ Authors: Alexander Hicks
 
 module
 public import VCVio.OracleComp.QueryTracking.RandomOracle.CachePartial
-public import VCVio.OracleComp.QueryTracking.QueryBound.Simulation
 public import VCVio.OracleComp.QueryTracking.WriterCost
-public import VCVio.OracleComp.SimSemantics.StateT.PreservesInv
-public import VCVio.EvalDist.Monad.Measure
-public import VCVio.EvalDist.ProbabilityNotation
 
 /-!
 # The fresh-answer bound for a shared lazy random oracle

@@ -5,7 +5,6 @@ Authors: Quang Dao
 -/
 
 module
-public import PolyFun.IPFunctor.Free.Lens
 public import VCVio.Quantum.Oracle.Emulated
 
 /-!

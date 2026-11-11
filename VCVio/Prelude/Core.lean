@@ -7,12 +7,9 @@ Authors: Devon Tuma, Quang Dao
 module
 public import ToMathlib.Algebra.BigOperators.Finset
 public import ToMathlib.Control.Functor.Prod
-public import Mathlib.Algebra.BigOperators.Group.List.Basic
 public import ToMathlib.Data.Fin.Basic
 public import ToMathlib.Data.Vector.ListVector
 public import ToMathlib.Logic.Basic
-public import ToMathlib.Data.List.Count
-public import ToMathlib.Data.Vector.Count
 public import ToMathlib.Data.BitVec
 public import ToMathlib.Data.Vector.Induction
 public import ToMathlib.Topology.Algebra.InfiniteSum.Option

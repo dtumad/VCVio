@@ -7,7 +7,6 @@ Authors: Quang Dao
 module
 
 public import VCVio.Schemes.PointerChainPuzzle.Sequential
-public import VCVio.OracleComp.Constructions.SampleableType.Measure
 public import VCVio.OracleComp.QueryTracking.RandomOracle.FreshAnswer
 
 /-!

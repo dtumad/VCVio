@@ -6,7 +6,6 @@ Authors: Quang Dao
 
 module
 public import VCVio.Quantum.Oracle.Compressed.Size
-public import Mathlib.Data.ZMod.Basic
 
 /-!
 # A unitary dilation of a checked classical read

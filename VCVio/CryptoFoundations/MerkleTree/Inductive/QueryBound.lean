@@ -7,7 +7,6 @@ Authors: Bolton Bailey
 module
 
 public import VCVio.CryptoFoundations.MerkleTree.Inductive.Defs
-public import VCVio.OracleComp.QueryTracking.QueryBound
 public import ToMathlib.Data.IndexedBinaryTree.Lemmas
 
 /-!

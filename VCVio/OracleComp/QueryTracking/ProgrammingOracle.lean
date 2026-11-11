@@ -6,7 +6,6 @@ Authors: Quang Dao
 
 module
 public import VCVio.OracleComp.QueryTracking.CachingOracle
-public import VCVio.OracleComp.SimSemantics.StateT.StateProjection
 
 /-!
 # Programmable Oracles

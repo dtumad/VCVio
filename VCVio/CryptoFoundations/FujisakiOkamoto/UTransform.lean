@@ -8,8 +8,6 @@ module
 public import VCVio.CryptoFoundations.FujisakiOkamoto.TTransform
 public import VCVio.CryptoFoundations.KeyEncapMech
 public import VCVio.CryptoFoundations.PRF
-public import VCVio.OracleComp.Coercions.Add.Basic
-public import VCVio.OracleComp.SimSemantics.StateT.BundledSemantics
 
 /-!
 # Fujisaki-Okamoto U Transform

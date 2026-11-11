@@ -6,7 +6,6 @@ Authors: Quang Dao
 
 module
 public import VCVio.CryptoFoundations.Rewinding.ThresholdEager
-public import VCVio.CryptoFoundations.Rewinding.Finder
 public import VCVio.OracleComp.EvalDist.List
 
 /-!

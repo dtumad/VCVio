@@ -5,17 +5,10 @@ Authors: Devon Tuma, Quang Dao
 -/
 
 module
-public import VCVio.OracleComp.ProbComp.Basic
 public import VCVio.OracleComp.SimSemantics.SimulateQ
-public import VCVio.OracleComp.Support
 public import VCVio.OracleComp.Constructions.UniformFinMeasure
 public import VCVio.EvalDist.Monad.Seq.Uniform
 public import ToMathlib.Data.FinEnum
-public import Init.Data.UInt.Lemmas
-public import Mathlib.Data.FinEnum
-public import Mathlib.Data.Fintype.Perm
-public import Mathlib.Data.Fintype.Pi
-public import Mathlib.Data.Fintype.Vector
 import VCVio.OracleComp.EvalDist.Measure
 
 /-!

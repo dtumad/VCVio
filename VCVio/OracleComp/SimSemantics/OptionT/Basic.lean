@@ -6,7 +6,6 @@ Authors: Devon Tuma, Quang Dao
 
 module
 public import VCVio.OracleComp.SimSemantics.SimulateQ
-public import ToMathlib.Control.OptionT
 
 /-!
 # Simulation Semantics through `OptionT` Handlers

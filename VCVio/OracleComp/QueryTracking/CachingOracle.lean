@@ -6,10 +6,7 @@ Authors: Devon Tuma, Quang Dao
 
 module
 public import VCVio.OracleComp.QueryTracking.QueryBound
-public import VCVio.OracleComp.QueryTracking.Structures
-public import VCVio.OracleComp.SimSemantics.QueryImpl.Constructions.Core
 public import VCVio.OracleComp.SimSemantics.StateT.PreservesInv
-public import VCVio.OracleComp.SimSemantics.StateT.StateProjection
 
 /-!
 # Caching Queries Made by a Computation

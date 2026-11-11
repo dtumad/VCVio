@@ -6,7 +6,6 @@ Authors: Quang Dao
 
 module
 public import VCVio.Quantum.Comp.Runtime
-public import PolyFun.IPFunctor.Free.Bound
 
 /-!
 # Query budgets and operation costs of quantum programs

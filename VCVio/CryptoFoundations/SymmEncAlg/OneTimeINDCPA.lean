@@ -8,8 +8,6 @@ module
 
 public import VCVio.CryptoFoundations.SecExp.Measure
 public import VCVio.CryptoFoundations.SymmEncAlg.Defs
-public import VCVio.OracleComp.Constructions.SampleableType.Measure
-public import VCVio.OracleComp.ProbComp.Basic
 
 /-!
 # One-time IND-CPA for symmetric encryption

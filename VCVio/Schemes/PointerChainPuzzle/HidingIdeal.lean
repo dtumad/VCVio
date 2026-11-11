@@ -8,7 +8,6 @@ module
 
 public import VCVio.Schemes.PointerChainPuzzle.HidingPRF
 public import VCVio.OracleComp.QueryTracking.RandomOracle.Commute
-public import VCVio.OracleComp.SimSemantics.StateT.Measure
 
 /-!
 # Time-lock encryption with the pointer-chain puzzle: the ideal PRF world

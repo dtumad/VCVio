@@ -6,7 +6,6 @@ Authors: Quang Dao
 
 module
 public import VCVio.Quantum.VC.Proof.Extraction
-public import VCVio.Quantum.Oracle.Compressed.Consistency
 
 /-!
 # Distances between checked and partial-table projectors

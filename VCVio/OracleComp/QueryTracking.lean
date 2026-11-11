@@ -24,8 +24,6 @@ public import VCVio.OracleComp.QueryTracking.QueryCost
 public import VCVio.OracleComp.QueryTracking.RandomOracle.Basic
 public import VCVio.OracleComp.QueryTracking.RandomOracle.Eager
 public import VCVio.OracleComp.QueryTracking.RandomOracle.EagerTable
-public import VCVio.OracleComp.SimSemantics.QueryImpl.Basic
-public import VCVio.OracleComp.EvalDist.Measure
 public import VCVio.OracleComp.QueryTracking.ResourceProfile
 public import VCVio.OracleComp.QueryTracking.SeededOracle
 public import VCVio.OracleComp.QueryTracking.Structures

@@ -6,7 +6,6 @@ Authors: Quang Dao
 
 module
 public import VCVio.CryptoFoundations.FiatShamir.Sigma.Stateful.SimpAttr
-public import VCVio.OracleComp.OracleSpec
 public import VCVio.OracleComp.QueryTracking.Structures
 public import VCVio.OracleComp.SimSemantics.StateT.StateSeparating
 

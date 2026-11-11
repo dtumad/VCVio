@@ -6,8 +6,6 @@ Authors: Quang Dao
 
 module
 
-public import VCVio.CryptoFoundations.MerkleTree.ExtractionKernel
-public import VCVio.CryptoFoundations.MerkleTree.Inductive.Batch.Disagreement
 public import VCVio.CryptoFoundations.MerkleTree.MultiExtractability.Game
 
 /-!

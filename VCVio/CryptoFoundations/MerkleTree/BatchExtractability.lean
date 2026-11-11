@@ -7,11 +7,7 @@ Authors: Quang Dao
 module
 
 public import VCVio.CryptoFoundations.MerkleTree.Extractability
-public import VCVio.CryptoFoundations.MerkleTree.Inductive.Batch.Addressed
 public import VCVio.CryptoFoundations.MerkleTree.Inductive.Batch.Disagreement
-public import VCVio.CryptoFoundations.MerkleTree.Inductive.Batch.Opening
-public import VCVio.CryptoFoundations.MerkleTree.Inductive.Batch.QueryBound
-public import VCVio.CryptoFoundations.MerkleTree.Inductive.Batch.ToSingle
 
 /-!
 # Query-parametric batch openings for Merkle extractability

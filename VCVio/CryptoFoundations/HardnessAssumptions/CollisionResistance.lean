@@ -5,9 +5,7 @@ Authors: XC0R
 -/
 
 module
-public import VCVio.OracleComp.ProbComp.Basic
 public import VCVio.OracleComp.Constructions.UniformFinMeasure
-public import VCVio.OracleComp.EvalDist.AnswerMeasure
 public import VCVio.OracleComp.QueryTracking.Birthday
 
 /-!

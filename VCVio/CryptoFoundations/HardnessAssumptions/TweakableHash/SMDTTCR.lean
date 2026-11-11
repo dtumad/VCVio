@@ -6,7 +6,6 @@ Authors: Nicolas Consigny, Matthias Meijers
 
 module
 public import VCVio.CryptoFoundations.HardnessAssumptions.TweakableHash.Collection
-public import VCVio.OracleComp.EvalDist.AnswerMeasure
 public import VCVio.OracleComp.SimSemantics.Append
 
 /-!

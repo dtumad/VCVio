@@ -5,11 +5,9 @@ Authors: Quang Dao
 -/
 
 module
-public import PolyFun.Interaction.Basic.Sampler
 public import PolyFun.Interaction.Basic.TypeTreeFintype
 public import PolyFun.Interaction.Open.OpenProcessModel
 public import VCVio.Interaction.UC.Computational
-public import VCVio.OracleComp.Constructions.SampleableType.Basic
 
 /-!
 # Runtime execution semantics for open processes

@@ -7,7 +7,6 @@ Authors: Devon Tuma
 module
 
 public import VCVio.Schemes.Schnorr.ChallengeRestriction
-public import Mathlib.Data.ZMod.Basic
 
 /-!
 # Bounded integer challenges inside Schnorr's scalar field

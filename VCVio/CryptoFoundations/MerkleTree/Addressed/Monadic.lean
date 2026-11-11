@@ -7,8 +7,6 @@ Authors: Quang Dao
 module
 
 public import VCVio.CryptoFoundations.MerkleTree.Addressed.Basic
-public import VCVio.OracleComp.SimSemantics.SimulateQ
-public import PolyFun.Control.Monad.Hom
 public import ToMathlib.Data.IndexedBinaryTree.Equiv
 
 /-!

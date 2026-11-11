@@ -5,9 +5,7 @@ Authors: Quang Dao
 -/
 
 module
-public import ToMathlib.Control.WriterT
 public import VCVio.OracleComp.Coercions.Add.Basic
-public import VCVio.OracleComp.HasQuery.Basic
 public import VCVio.OracleComp.QueryTracking.CountingOracle.Core
 
 /-!

@@ -6,7 +6,6 @@ Authors: Devon Tuma
 
 module
 
-public import VCVio.OracleComp.Support
 public import VCVio.OracleComp.ProbComp.Basic
 public import VCVio.OracleComp.SimSemantics.SimulateQ
 public import ToMathlib.Control.StateT

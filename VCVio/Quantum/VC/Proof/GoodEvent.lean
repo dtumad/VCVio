@@ -7,7 +7,6 @@ Authors: Quang Dao
 module
 
 public import VCVio.Quantum.VC.Proof.Offline
-import VCVio.Quantum.Oracle.Compressed.BinaryPartition
 import VCVio.Quantum.Oracle.Compressed.ProjectorEvent
 
 /-!

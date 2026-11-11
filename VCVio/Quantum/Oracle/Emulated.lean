@@ -5,16 +5,10 @@ Authors: Quang Dao
 -/
 
 module
-public import QuantumFoundations.ForMathlib.Analysis.Matrix.Contraction
-public import QuantumFoundations.ForMathlib.Analysis.Matrix.PosSemidef
-public import QuantumFoundations.MatrixMap.Conjugation
-public import QuantumFoundations.MatrixMap.Family
 public import PolyFun.IPFunctor.Free.Bound.Substitution
 public import VCVio.Quantum.Comp.Combinators
 public import VCVio.Quantum.Comp.HybridIndex
-public import VCVio.Quantum.Comp.QueryMass
 public import QuantumFoundations.MatrixMap.Pinching
-public import QuantumFoundations.Oracle.Basis
 
 /-!
 # Emulated oracles

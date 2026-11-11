@@ -6,10 +6,7 @@ Authors: Quang Dao
 
 module
 
-public import PolyFun.Control.Monad.Algebra.WP
-public import PolyFun.Control.Monad.Algebra.Restrict
 public import VCVio.ProgramLogic.Unary.HoareTriple
-public import VCVio.ProgramLogic.Prob
 public import VCVio.ProgramLogic.Unary.WP.Probabilistic.Measure
 
 /-!

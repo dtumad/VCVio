@@ -5,11 +5,9 @@ Authors: Quang Dao
 -/
 
 module
-public import PolyFun.PFunctor.Free.Cursor.Fork
 public import ToMathlib.Data.ENNReal.SumSquares
 public import VCVio.OracleComp.Constructions.Fork.Basic
 public import VCVio.OracleComp.QueryTracking.LoggingOracle.Core
-public import VCVio.OracleComp.QueryTracking.Structures
 
 import VCVio.OracleComp.EvalDist.Measure
 

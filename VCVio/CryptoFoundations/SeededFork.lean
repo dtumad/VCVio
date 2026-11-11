@@ -6,7 +6,6 @@ Authors: Devon Tuma, Quang Dao
 
 module
 public import ToMathlib.Data.ENNReal.SumSquares
-public import VCVio.OracleComp.QueryTracking.CostModel
 public import VCVio.ProgramLogic.Unary.HoareTriple
 public import VCVio.OracleComp.QueryTracking.SeededOracle
 

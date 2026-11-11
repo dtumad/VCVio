@@ -6,7 +6,6 @@ Authors: Quang Dao, Devon Tuma
 
 module
 public import Mathlib.Basic.ENNReal.Basic
-public import Mathlib.Order.CompleteLatticeIntervals
 
 /-!
 # Bounded probability assertions

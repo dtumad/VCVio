@@ -5,8 +5,6 @@ Authors: Quang Dao
 -/
 
 module
-public import QuantumFoundations.MatrixMap.Family
-public import QuantumFoundations.MatrixMap.Kraus
 public import VCVio.Quantum.Comp.QueryBound
 
 /-!

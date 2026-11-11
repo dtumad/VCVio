@@ -5,9 +5,7 @@ Authors: Quang Dao
 -/
 
 module
-public import VCVio.OracleComp.ProbComp.Basic
 public import VCVio.OracleComp.SimSemantics.Append
-public import VCVio.OracleComp.Support
 public import VCVio.OracleComp.EvalDist.Measure
 public import VCVio.OracleComp.QueryTracking.QueryLogCheck
 

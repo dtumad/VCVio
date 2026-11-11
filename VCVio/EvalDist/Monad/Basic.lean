@@ -7,7 +7,6 @@ Authors: Devon Tuma, Quang Dao
 module
 public import VCVio.EvalDist.Monad.Support
 public import VCVio.EvalDist.Defs.Measure
-public import VCVio.EvalDist.ProbabilityNotation
 public import ToMathlib.Data.ENNReal.Gauss
 
 /-!

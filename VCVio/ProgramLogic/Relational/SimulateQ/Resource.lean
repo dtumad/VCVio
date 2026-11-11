@@ -7,7 +7,6 @@ Authors: Quang Dao
 module
 
 public import VCVio.ProgramLogic.Relational.SimulateQ.StateDependent
-public import VCVio.OracleComp.EvalDist.Sum
 
 /-!
 # Resource-charged and averaged-state bad-event bounds

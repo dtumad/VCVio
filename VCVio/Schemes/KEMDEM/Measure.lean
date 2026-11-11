@@ -6,7 +6,6 @@ Authors: Devon Tuma, Quang Dao
 
 module
 public import VCVio.EvalDist.Monad.Measure
-public import ToMathlib.MeasureTheory.Measure.Bool
 
 /-!
 # Measure-based KEM–DEM hybrid argument
