@@ -7,8 +7,6 @@ Authors: Devon Tuma
 module
 public import ToCslib.Data.Fin.MOfFn
 public import Mathlib.Control.Monad.Basic
-public import Mathlib.Data.Fin.Basic
-public import Mathlib.Data.Fin.Tuple.Basic
 public import Mathlib.Data.Fintype.EquivFin
 public import Mathlib.Control.Basic
 

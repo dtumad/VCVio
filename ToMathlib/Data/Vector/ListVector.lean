@@ -5,9 +5,6 @@ Authors: Devon Tuma
 -/
 
 module
-public import Mathlib.Data.Vector.Basic
-public import Mathlib.Data.Fintype.Card
-public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 public import ToMathlib.Data.Vector.Count
 
 /-!

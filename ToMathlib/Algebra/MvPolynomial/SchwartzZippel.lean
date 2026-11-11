@@ -6,9 +6,7 @@ Authors: Katerina Hristova, Aristotle, Quang Dao
 
 module
 public import Mathlib.Algebra.MvPolynomial.SchwartzZippel
-public import Mathlib.Algebra.Order.Ring.NNRat
 public import Mathlib.Basic.ENNReal.BigOperators
-public import Mathlib.Basic.ENNReal.Real
 
 /-! ## Counting zeros of multivariate polynomials
 

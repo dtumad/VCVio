@@ -5,7 +5,6 @@ Authors: Devon Tuma
 -/
 module
 
-public import Mathlib.Basic.ENNReal.BigOperators
 public import Mathlib.MeasureTheory.Measure.GiryMonad
 
 /-!

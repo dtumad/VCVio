@@ -5,11 +5,8 @@ Authors: Devon Tuma
 -/
 module
 
-public import Mathlib.MeasureTheory.Measure.Decomposition.RadonNikodym
 public import Mathlib.InformationTheory.KullbackLeibler.DataProcessing
-public import Mathlib.Analysis.Convex.SpecificFunctions.Basic
 public import Mathlib.Probability.Kernel.Composition.RadonNikodym
-public import Mathlib.Analysis.SpecialFunctions.Pow.NNReal
 
 /-!
 # The Renyi moment generating function of a pair of measures

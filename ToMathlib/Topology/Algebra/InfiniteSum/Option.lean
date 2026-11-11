@@ -5,7 +5,6 @@ Authors: Devon Tuma
 -/
 
 module
-public import Mathlib.Topology.Algebra.InfiniteSum.Basic
 public import Mathlib.Topology.Instances.ENNReal.Lemmas
 
 /-!

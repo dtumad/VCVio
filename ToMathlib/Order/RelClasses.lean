@@ -7,7 +7,6 @@ Authors: Alexander Hicks
 module
 
 public import Mathlib.Order.PropInstances
-public import Mathlib.Order.RelClasses
 
 /-!
 # Order classes of the total relation

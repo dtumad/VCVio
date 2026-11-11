@@ -5,7 +5,6 @@ Authors: Devon Tuma
 -/
 module
 
-public import Mathlib.Data.Finset.Card
 public import Mathlib.Probability.Distributions.Uniform
 
 /-!

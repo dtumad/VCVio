@@ -7,7 +7,6 @@ module
 
 public import Mathlib.CategoryTheory.Enriched.Basic
 public import Mathlib.Order.Category.Preord
-public import Mathlib.Order.Monotone.Basic
 
 /-! # Order enriched category
 

@@ -6,7 +6,6 @@ Authors: Devon Tuma
 
 module
 
-public import Mathlib.Algebra.Group.TypeTags.Basic
 public import Mathlib.MeasureTheory.MeasurableSpace.Constructions
 
 /-!

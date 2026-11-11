@@ -7,7 +7,6 @@ Authors: Devon Tuma
 module
 
 public import Mathlib.MeasureTheory.Integral.Lebesgue.Add
-public import Mathlib.MeasureTheory.Integral.Lebesgue.Basic
 
 /-!
 # Tail sums for natural-valued observables

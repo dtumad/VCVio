@@ -6,7 +6,6 @@ Authors: Quang Dao
 module
 
 public import ToMathlib.MeasureTheory.Integral.Quadratic
-public import Mathlib.MeasureTheory.Integral.Lebesgue.Countable
 
 /-!
 # Sum-of-squares inequalities for `ℝ≥0∞`

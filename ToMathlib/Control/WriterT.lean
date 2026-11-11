@@ -8,7 +8,6 @@ module
 public import Mathlib.Algebra.Group.TypeTags.Basic
 public import Mathlib.Control.Monad.Writer
 public import Mathlib.Order.Basic
-public import Batteries.Control.AlternativeMonad
 
 /-!
 # Writer Monad Transformer Utilities

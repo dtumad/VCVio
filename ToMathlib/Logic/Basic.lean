@@ -6,7 +6,6 @@ Authors: Devon Tuma
 
 module
 public import Mathlib.Logic.Function.Basic
-public import Mathlib.Logic.Function.Defs
 
 /-!
 # Small logic and function lemmas

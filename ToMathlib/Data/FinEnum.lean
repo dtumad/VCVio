@@ -8,7 +8,6 @@ module
 public import Mathlib.Data.FinEnum
 public import Mathlib.Data.Fintype.Perm
 public import Mathlib.Data.List.Sym
-public import Mathlib.Logic.Embedding.Basic
 public import Mathlib.Data.Fintype.Pi
 
 /-!

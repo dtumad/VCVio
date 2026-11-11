@@ -6,7 +6,6 @@ Authors: Devon Tuma
 module
 
 -- import PolyFun.Control.Monad.Free
-public import Batteries.Control.AlternativeMonad
 public import Batteries.Control.OptionT
 public import PolyFun.Control.Monad.Hom
 public import ToMathlib.Control.Monad.Fold

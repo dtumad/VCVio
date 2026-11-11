@@ -7,9 +7,7 @@ Authors: Devon Tuma, Quang Dao
 module
 
 public import ToMathlib.Data.ENNReal.AbsDiff
-public import Mathlib.MeasureTheory.Measure.Map
 public import Mathlib.MeasureTheory.Measure.Sub
-public import Mathlib.MeasureTheory.Measure.Typeclasses.Finite
 public import Mathlib.MeasureTheory.Measure.Typeclasses.Probability
 
 /-!

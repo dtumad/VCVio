@@ -7,9 +7,7 @@ Authors: Bolton Bailey
 module
 
 -- TODO minimize imports
-public import Mathlib.Tactic.Use
 public import Mathlib.Data.Set.Basic
-
 
 /-!
 # Inductive Indexed Binary Trees

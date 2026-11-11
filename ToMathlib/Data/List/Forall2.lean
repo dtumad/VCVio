@@ -6,7 +6,6 @@ Authors: Alexander Hicks
 
 module
 
-public import Mathlib.Data.List.Forall2
 public import Mathlib.Data.List.Range
 
 /-!

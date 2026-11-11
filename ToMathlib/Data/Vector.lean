@@ -8,7 +8,6 @@ module
 public import ToMathlib.Data.Vector.Induction
 public import ToMathlib.Data.Vector.ListVector
 public import ToMathlib.Logic.Basic
-public import Mathlib.Control.Monad.Basic
 public import PolyFun.Control.Monad.Hom
 
 /-!

@@ -5,13 +5,8 @@ Authors: Devon Tuma
 -/
 
 module
-public import Mathlib.Data.Fintype.Card
-public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
-public import Mathlib.Data.List.FinRange
-public import Mathlib.Algebra.BigOperators.Ring.Finset
 public import Mathlib.Algebra.BigOperators.Fin
 public import Mathlib.Algebra.CharP.Defs
-public import Mathlib.Data.Nat.Cast.Basic
 
 /-!
 # Counting predicates over lists, `Fin`, and arrays

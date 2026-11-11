@@ -6,7 +6,6 @@ Authors: Devon Tuma
 
 module
 public import Mathlib.Basic.ENNReal.BigOperators
-public import Mathlib.Tactic.Finiteness
 
 /-!
 # `finiteness` rules for finite sums
