@@ -307,7 +307,7 @@ private lemma cmaSimLoggedImpl_liftAdv_run
       (h := fun t ↦ by
         rcases t with ((n | mc) | m) <;>
           · change simulateQ _ (liftM ((cmaSpec M Commit Chal Resp Stmt).query _)) = _
-            simp [cmaSimLoggedLeftImpl])
+            simp [cmaSimLoggedLeftImpl]; try rfl)
       (oa := oa))
 
 private lemma cmaSimLoggedImpl_liftAdv_run_expanded

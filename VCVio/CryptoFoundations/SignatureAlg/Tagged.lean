@@ -223,11 +223,11 @@ theorem isQueryBoundP_mapOracles_main_isRight {sigAlg : SignatureAlg (OracleComp
   refine hadv.simulateQ_of_step (fun t _ ↦ ?_) fun t ht ↦ ?_ <;> rcases t with t | m <;>
     simp only [QueryImpl.addLift_def, QueryImpl.add_apply_inl, QueryImpl.add_apply_inr,
       QueryImpl.liftTarget_apply]
-  · exact (IsQueryBoundP.liftComp_subSpec (p := fun _ ↦ False) (fun _ ↦ by simp; rfl)
+  · exact (IsQueryBoundP.liftComp_subSpec (p := fun _ ↦ False) (fun _ ↦ by simp)
       (isQueryBoundP_false (G t) 0)).mono zero_le_one
-  · exact IsQueryBoundP.liftComp_subSpec (p := fun _ ↦ True) (fun _ ↦ by simp; rfl)
+  · exact IsQueryBoundP.liftComp_subSpec (p := fun _ ↦ True) (fun _ ↦ by simp)
       ((isQueryBoundP_query_iff _ _ _).2 fun _ ↦ Nat.one_pos)
-  · exact IsQueryBoundP.liftComp_subSpec (p := fun _ ↦ False) (fun _ ↦ by simp; rfl)
+  · exact IsQueryBoundP.liftComp_subSpec (p := fun _ ↦ False) (fun _ ↦ by simp)
       (isQueryBoundP_false (G t) 0)
   · exact (ht (hp m)).elim
 
