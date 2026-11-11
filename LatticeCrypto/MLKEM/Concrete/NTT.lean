@@ -10,14 +10,8 @@ import all Init.Data.Vector.Algebra
 import all LatticeCrypto.MLKEM.Arithmetic
 import Mathlib.Tactic.ReduceModChar
 public meta import LatticeCrypto.MLKEM.Arithmetic
-public meta import LatticeCrypto.MLKEM.Params
-public meta import Mathlib.Data.Fintype.Defs
-public meta import Mathlib.Data.ZMod.Defs
 public import LatticeCrypto.MLKEM.Arithmetic
-public import LatticeCrypto.Ring.NTTCert
 public import LatticeCrypto.Ring.NTTLoop
-public import LatticeCrypto.Ring.NTTSplitCert
-public import Mathlib.Algebra.BigOperators.Ring.Finset
 public import Mathlib.RingTheory.RootsOfUnity.PrimitiveRoots
 
 /-!

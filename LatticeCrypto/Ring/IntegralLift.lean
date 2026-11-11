@@ -5,7 +5,6 @@ Authors: Quang Dao
 -/
 
 module
-public import Mathlib.Data.ZMod.Basic
 public import LatticeCrypto.Ring.VectorBackend
 
 /-!

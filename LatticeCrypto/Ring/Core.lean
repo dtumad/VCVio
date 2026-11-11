@@ -5,12 +5,7 @@ Authors: Quang Dao
 -/
 
 module
-public import Init.Data.Vector.Basic
-public import Mathlib.LinearAlgebra.Matrix.Defs
 public import Mathlib.RingTheory.AdjoinRoot
-public import Mathlib.RingTheory.Ideal.Operations
-public import Mathlib.RingTheory.Ideal.Quotient.Basic
-public import Mathlib.RingTheory.Polynomial.Basic
 
 /-!
 # Generic Negacyclic Ring Core

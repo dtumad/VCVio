@@ -9,7 +9,6 @@ module
 import all LatticeCrypto.MLDSA.Concrete.Encoding
 public import LatticeCrypto.MLDSA.Concrete.Encoding
 public import LatticeCrypto.MLDSA.Concrete.NTT
-public import LatticeCrypto.MLDSA.Concrete.Rounding
 
 /-!
 # Algebraic Range Bounds Behind the Concrete ML-DSA Primitive Laws

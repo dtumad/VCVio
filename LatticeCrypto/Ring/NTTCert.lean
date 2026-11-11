@@ -5,7 +5,6 @@ Authors: Quang Dao
 -/
 
 module
-public import Mathlib.Algebra.BigOperators.Ring.Finset
 public import LatticeCrypto.Ring.VectorBackend
 
 /-!

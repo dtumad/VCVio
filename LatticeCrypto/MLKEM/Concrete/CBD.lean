@@ -6,8 +6,6 @@ Authors: Quang Dao
 
 module
 public import LatticeCrypto.MLKEM.Arithmetic
-public import VCVio.OracleComp.ProbComp.Basic
-public import VCVio.OracleComp.Constructions.UniformFinMeasure
 
 /-!
 # Concrete CBD Sampling for ML-KEM

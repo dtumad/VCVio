@@ -7,7 +7,6 @@ Authors: Quang Dao
 module
 public import LatticeCrypto.MLDSA.Primitives
 public import LatticeCrypto.MLDSA.Concrete.Rounding
-public import Mathlib.Data.List.OfFn
 import Mathlib.Data.List.GetD
 
 /-!

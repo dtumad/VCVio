@@ -5,7 +5,6 @@ Authors: Quang Dao
 -/
 
 module
-public import VCVio.OracleComp.Constructions.SampleableType.Basic
 public import VCVio.OracleComp.Constructions.SampleableType.Measure
 
 /-!

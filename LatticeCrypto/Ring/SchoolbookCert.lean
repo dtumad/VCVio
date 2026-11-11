@@ -6,7 +6,6 @@ Authors: Quang Dao
 
 module
 public import LatticeCrypto.Ring.VectorBackend
-public import Mathlib.RingTheory.Polynomial.Basic
 
 /-!
 # Schoolbook Negacyclic Multiplication Soundness

@@ -5,10 +5,8 @@ Authors: Quang Dao
 -/
 
 module
-public import LatticeCrypto.Falcon.Concrete.BigInt31
 public import LatticeCrypto.Falcon.Concrete.FXR
 public import LatticeCrypto.Falcon.Concrete.PolyBigInt
-public import LatticeCrypto.Falcon.Concrete.SmallPrimeNTT
 
 /-!
 # NTRU Equation Solver for Falcon Key Generation

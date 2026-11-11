@@ -7,9 +7,7 @@ Authors: Quang Dao
 module
 import Mathlib.Tactic.ReduceModChar
 public import LatticeCrypto.Falcon.Arithmetic
-public import LatticeCrypto.Ring.NTTCert
 public import LatticeCrypto.Ring.NTTLoop
-public import LatticeCrypto.Ring.NTTSplitCert
 public import Mathlib.RingTheory.RootsOfUnity.PrimitiveRoots
 
 /-!

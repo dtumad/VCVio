@@ -6,11 +6,8 @@ Authors: Quang Dao
 
 module
 public import LatticeCrypto.MLDSA.Arithmetic
-public import LatticeCrypto.Ring.Norms
-public import Batteries.Data.Vector.Lemmas
 public import Mathlib.Data.Int.Lemmas
 public import Mathlib.Data.Int.NatAbs
-public import Mathlib.Data.ZMod.ValMinAbs
 
 /-!
 # Concrete Rounding for ML-DSA

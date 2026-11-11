@@ -7,9 +7,6 @@ Authors: Quang Dao
 module
 public import ToMathlib.Analysis.SumIntegralComparisons
 public import Mathlib.Analysis.SpecialFunctions.Gaussian.GaussianIntegral
-public import Mathlib.MeasureTheory.Measure.WithDensity
-public import Mathlib.MeasureTheory.Measure.Count
-public import Mathlib.Topology.Algebra.InfiniteSum.Real
 
 /-!
 # Discrete Gaussian Distribution

@@ -5,7 +5,6 @@ Authors: Quang Dao
 -/
 
 module
-public import LatticeCrypto.MLKEM.Encoding
 public import LatticeCrypto.MLKEM.Primitives
 public import VCVio.CryptoFoundations.AsymmEncAlg.Defs
 

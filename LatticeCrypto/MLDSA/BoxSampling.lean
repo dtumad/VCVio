@@ -6,7 +6,6 @@ Authors: Devon Tuma
 
 module
 public import LatticeCrypto.MLDSA.Arithmetic
-public import VCVio.OracleComp.Constructions.SampleableType.Measure
 
 /-!
 # Box sampling for ML-DSA

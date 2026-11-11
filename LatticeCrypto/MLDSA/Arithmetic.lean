@@ -8,7 +8,6 @@ module
 public import LatticeCrypto.MLDSA.Params
 public import LatticeCrypto.Ring.Sampling
 public import LatticeCrypto.Ring.SchoolbookCert
-public import LatticeCrypto.Ring.Transform
 public import LatticeCrypto.Ring.Norms
 public import LatticeCrypto.Ring.Rounding
 

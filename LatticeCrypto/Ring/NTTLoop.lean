@@ -5,7 +5,6 @@ Authors: XC0R, Quang Dao
 -/
 
 module
-public import Init.Internal.Order.While
 public import LatticeCrypto.Ring.NTTSplitCert
 
 /-!

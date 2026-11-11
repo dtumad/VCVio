@@ -8,7 +8,6 @@ module
 public import LatticeCrypto.MLKEM.Params
 public import LatticeCrypto.Ring.Sampling
 public import LatticeCrypto.Ring.SchoolbookCert
-public import LatticeCrypto.Ring.Transform
 
 /-!
 # ML-KEM Arithmetic Assembly

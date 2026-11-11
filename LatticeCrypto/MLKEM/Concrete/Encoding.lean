@@ -9,7 +9,6 @@ import Batteries.Data.ByteArray
 import all Mathlib.Data.Nat.Digits.Lemmas
 public import LatticeCrypto.MLKEM.Encoding
 public import Mathlib.Data.List.GetD
-public import Mathlib.Data.List.OfFn
 public import Mathlib.Data.Nat.Digits.Lemmas
 
 /-!

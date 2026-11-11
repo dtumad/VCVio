@@ -8,7 +8,6 @@ module
 public import LatticeCrypto.MLDSA.Arithmetic
 public import LatticeCrypto.MLKEM.Arithmetic
 public import LatticeCrypto.Falcon.Arithmetic
-public import LatticeCrypto.Ring.Transform
 
 /-!
 # Generic Ring Smoke Checks
