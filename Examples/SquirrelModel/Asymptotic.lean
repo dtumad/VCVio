@@ -16,10 +16,7 @@ probability in the security parameter `η`; `u ∼ v` when no polynomial-time at
 distinguishes them; `u ⊬ v := ∀ f [adv], [f u ≠ v]`; and `u ▷ v := ∃ f [adv], [f u = v]`. Its
 `adv` predicate is a built-in notion of polynomial-time adversary.
 
-VCVio has no polynomial-time class, so this file takes the class as a parameter: an `AdvClass`
-is any class of `η`-indexed adversaries closed under the three compositions the rules use, namely
-sequencing, drawing a fresh uniform value, and testing an answer against a target. Over such a
-class, the predicates are:
+Over a class `C` of `η`-indexed adversaries, the predicates are:
 
 * `Overwhelming p`: `1 - p` is negligible, Squirrel's `[φ]`;
 * `NonDeducible C uv`: every adversary in `C` computes the second component of `uv` from the
@@ -29,14 +26,27 @@ class, the predicates are:
   Squirrel's `u ▷ v` with its witness made explicit;
 * `Indist C x y`: every distinguisher in `C` has negligible advantage, Squirrel's `u ∼ v`.
 
-The rules FreshL, WeakL, WeakR and Rw-Equiv lift from the concrete lemmas of `Deduction.lean`, each
-by one closure property of the class. Deducers and simulators are explicit arguments, never
-existentials. `AdvClass.all`, the class of all adversaries, shows the closure conditions can be
-met; for it `NonDeducible` is information-theoretic secrecy. `nonDeducible_uniform` shows the
-rules' hypotheses can be met by a nontrivial family: a uniform `η`-bit number cannot be computed
-from nothing, using `negligible_inv_two_pow`. Wiring in a computational class (for
-instance one built from VCVio's backend-relative `IsPPTBy`) is not attempted here; that is where
-assumptions such as CDH would enter.
+## Where efficiency enters
+
+The class is a parameter. VCVio's polynomial-time notions (`IsPPTBy`, `IsOraclePPTBy` in
+`Asymptotics/ComputationalComplexity.lean`) are relative to a cost backend, and the
+machine-level certificates their closure needs are not yet inhabited; strict uniform PPT
+(`IsPPT`) lives in cslib-frontier, on a newer toolchain. So every efficiency assumption a rule
+uses is either a closure property of the class or a named membership hypothesis, each matching
+one closure lemma of cslib-frontier's `IsPPTOn`:
+
+* `AdvClass.kleisli`: running one member after another (`IsPPTOn.bind`);
+* `AdvClass.withInput`: running a member while keeping its input (`IsPPTOn.bind_with`);
+* FreshL: the sampler of the fresh name is in the class (`isPPTOn_sampleList` for bitstrings);
+* WeakR: the function `h` is in the class;
+* Rw-Equiv: the projection and the equality test are in the class (`decide_eq`).
+
+Two cautions. `mem` sees typed programs, so a polynomial-time class must fix the encodings of
+its types in advance; an encoding chosen per adversary could carry the secret. And the empty
+class meets every closure condition, so a `NonDeducible C` statement is exactly as strong as `C`.
+The class of all adversaries, `AdvClass.all`, gives information-theoretic secrecy, and
+`nonDeducible_uniform` shows a uniform `η`-bit number is secret there, hence for every class
+(`NonDeducible.mono`).
 -/
 
 public section
@@ -48,28 +58,24 @@ namespace SquirrelModel.Asymptotic
 /-- An adversary indexed by the security parameter, from `α` to `β`. -/
 abbrev Adv (α β : Type) : Type := ℕ → α → ProbComp β
 
-/-- A class of `η`-indexed adversaries closed under the compositions Squirrel's rules use. -/
+/-- A class of `η`-indexed adversaries closed under the two structural compositions Squirrel's
+rules use. Everything else a rule needs is a named membership hypothesis. -/
 structure AdvClass where
   /-- Membership in the class. -/
   mem : {α β : Type} → Adv α β → Prop
-  /-- Running one member after another stays in the class (rules WeakL and WeakR). -/
+  /-- Running one member after another stays in the class. -/
   kleisli {α β γ : Type} {g : Adv α β} {f : Adv β γ} :
     mem g → mem f → mem (fun η a => g η a >>= f η)
-  /-- Drawing a fresh uniform value before running stays in the class (rule FreshL). -/
-  fresh {α β N : Type} [SampleableType N] {f : Adv (α × N) β} :
-    mem f → mem (fun η u => freshLReduction (f η) u)
-  /-- Testing a member's answer against a target stays in the class (rule Rw-Equiv). -/
-  eqTest {α β : Type} [DecidableEq β] {f : Adv α β} :
-    mem f → mem (fun η z => deduceDistinguisher (f η) z)
+  /-- Running a member while keeping its input stays in the class. -/
+  withInput {α β : Type} {f : Adv α β} : mem f → mem (fun η a => (a, ·) <$> f η a)
 
-/-- The class of all adversaries meets every closure condition. -/
+/-- The class of all adversaries meets both closure conditions. -/
 def AdvClass.all : AdvClass where
   mem _ := True
   kleisli _ _ := trivial
-  fresh _ := trivial
-  eqTest _ := trivial
+  withInput _ := trivial
 
-variable {α α' β γ : Type}
+variable {α α' β γ N : Type}
 
 /-- Squirrel's `[φ]`: the probability `p` is overwhelming in the security parameter. -/
 def Overwhelming (p : ℕ → ℝ≥0∞) : Prop := negligible fun η => 1 - p η
@@ -92,15 +98,23 @@ def DeducibleBy (C : AdvClass) (g : Adv α β) (uv : ℕ → ProbComp (α × β)
 def Indist (C : AdvClass) (x y : ℕ → ProbComp γ) : Prop :=
   ∀ D : Adv γ Bool, C.mem D → negligible fun η => 𝒟[x η >>= D η].boolDist 𝒟[y η >>= D η]
 
+/-- A secret against a larger class is a secret against a smaller one. -/
+theorem NonDeducible.mono {C C' : AdvClass} (hCC' : ∀ {α β : Type} (f : Adv α β), C.mem f → C'.mem f)
+    {uv : ℕ → ProbComp (α × β)} (h : NonDeducible C' uv) : NonDeducible C uv :=
+  fun f hf => h f (hCC' f hf)
+
 /-! ## The rules -/
 
-/-- **FreshL.** A fresh uniform value on the left keeps a secret secret. -/
-theorem NonDeducible.freshL (C : AdvClass) {N : Type} [SampleableType N]
-    {uv : ℕ → ProbComp (α × β)} (h : NonDeducible C uv) :
-    NonDeducible C (fun η => do let z ← uv η; let n ← $ᵗ N; pure ((z.1, n), z.2)) := by
+/-- **FreshL.** A fresh name on the left keeps a secret secret. The name is drawn by the sampler
+`smp η`, which the class must contain: Squirrel's names are `η`-bit strings, so `smp` is an
+`η`-indexed family of distributions on one type. -/
+theorem NonDeducible.freshL (C : AdvClass) (smp : ℕ → ProbComp N)
+    (hs : C.mem (fun η (_ : α) => smp η)) {uv : ℕ → ProbComp (α × β)} (h : NonDeducible C uv) :
+    NonDeducible C (fun η => do let z ← uv η; let n ← smp η; pure ((z.1, n), z.2)) := by
   intro f hf
-  have hred := h _ (C.fresh hf)
-  simpa only [deduceGame, deduceAdv_freshL] using hred
+  have hred := h _ (C.kleisli (C.withInput hs) hf)
+  refine negligible_of_le (fun η => le_of_eq ?_) hred
+  simp only [deduceGame, deduceAdv, prEvent_norm]
 
 /-- **WeakL.** If the named simulator `g ∈ C` computes `u` from `u'`, a secret from `u'` is a
 secret from `u`. -/
@@ -124,13 +138,20 @@ theorem NonDeducible.weakR (C : AdvClass) {uv : ℕ → ProbComp (α × β)} (h 
   have hred := hw _ (hfun ▸ C.kleisli hf hh)
   exact negligible_of_le (fun η => deduceAdv_le_weakR (uv η) h (f η)) hred
 
-/-- **Rw-Equiv.** Indistinguishable families have the same secrets. -/
-theorem NonDeducible.rwEquiv (C : AdvClass) {uv₁ uv₂ : ℕ → ProbComp (α × β)}
+/-- **Rw-Equiv.** Indistinguishable families have the same secrets. The distinguisher is
+`deduceDistinguisher`: project, run the adversary, test its answer for equality with the target.
+The projection and the equality test must be in the class. -/
+theorem NonDeducible.rwEquiv (C : AdvClass) [DecidableEq β] {uv₁ uv₂ : ℕ → ProbComp (α × β)}
+    (hfst : C.mem (fun _ (z : α × β) => (pure z.1 : ProbComp α)))
+    (hEq : C.mem (fun _ (p : (α × β) × β) => (pure (decide (p.2 = p.1.2)) : ProbComp Bool)))
     (hI : Indist C uv₁ uv₂) (h : NonDeducible C uv₂) : NonDeducible C uv₁ := by
-  classical
   intro f hf
+  have hD : C.mem (fun η z => deduceDistinguisher (f η) z) := by
+    have hc := C.kleisli (C.withInput (C.kleisli hfst hf)) hEq
+    convert hc using 2 with η z
+    simp [deduceDistinguisher]
   exact negligible_of_le (fun η => deduceAdv_le_rwEquiv (uv₁ η) (uv₂ η) (f η))
-    (negligible_add (h f hf) (hI _ (C.eqTest hf)))
+    (negligible_add (h f hf) (hI _ hD))
 
 /-! ## A nontrivial secret
 
@@ -175,5 +196,11 @@ theorem nonDeducible_uniform :
       rw [prEvent_map]
       exact prEvent_eq_val_uniformFin_le (2 ^ η) w
   simpa only [prEvent_norm, Nat.cast_pow, Nat.cast_ofNat] using key
+
+/-- The uniform `η`-bit number is a secret against every class of adversaries. -/
+theorem nonDeducible_uniform_of (C : AdvClass) :
+    NonDeducible C fun η =>
+      (fun v : Fin (2 ^ η) => ((), (v : ℕ))) <$> ($ᵗ (Fin (2 ^ η))) :=
+  nonDeducible_uniform.mono fun _ _ => trivial
 
 end SquirrelModel.Asymptotic

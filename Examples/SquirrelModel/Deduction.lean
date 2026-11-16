@@ -27,9 +27,10 @@ about named reductions:
   distinguisher (rule Rw-Equiv);
 * `deduceAdv_cdhPair`: the non-deduction `g, a•g, b•g ⊬ (a*b)•g` is the CDH experiment.
 
-Each rule names the reduction it uses, so no statement quantifies over an unbounded adversary
-type. The bounds are concrete at a fixed security parameter; there is no polynomial-time layer,
-which is where Squirrel's `adv` predicate does its work.
+Every statement holds for all adversaries and names the reduction it uses; none asserts that an
+adversary exists. The bounds are concrete at a fixed security parameter. Efficiency, which
+Squirrel's `adv` predicate supplies, enters in `Asymptotic.lean` through a class of adversaries,
+and the reductions here are what that class must be closed under.
 -/
 
 public section

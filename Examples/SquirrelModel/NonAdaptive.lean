@@ -22,6 +22,9 @@ an attacker, followed by a continuation that makes no further queries.
 * `isNonAdaptive_residual`: after the whole schedule, the continuation `residual p os` makes no
   further queries.
 
+The correspondence is between programs, not their costs: `attOf` reads the message off `p`'s
+continuations, so it is as expensive to compute as `p` is.
+
 `attOf` needs a default message for frames the program never reaches, hence `[Inhabited Msg]`.
 The hypothesis cannot be dropped: with no messages at all, the query-free program `pure x` is
 non-adaptive for the empty schedule, but no function `Frame Msg → Msg` exists.
