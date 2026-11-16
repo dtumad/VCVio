@@ -143,19 +143,18 @@ theorem monotone_outputMeasure [∀ a, DiscreteMeasurableSpace (P.B a)]
   monotone_nat_of_le_succ fun k => outputMeasure_le_succ k computation
 
 /-- The fuel-free measure of returned values. Divergence is represented by missing total mass. -/
-noncomputable def returnedMeasure [∀ a, DiscreteMeasurableSpace (P.B a)]
-    [MeasurableSpace β] (computation : Resumption P β) : Measure β :=
+noncomputable def returnedMeasure [MeasurableSpace β] (computation : Resumption P β) :
+    Measure β :=
   ⨆ k, outputMeasure k computation
 
 @[simp]
-theorem returnedMeasure_pure [∀ a, DiscreteMeasurableSpace (P.B a)]
-    [MeasurableSpace β] (result : β) :
+theorem returnedMeasure_pure [MeasurableSpace β] (result : β) :
     returnedMeasure (pure (p := P) result) = Measure.dirac result := by
   simp [returnedMeasure]
 
 /-- Every finite observation is below the returned-output limit. -/
-theorem outputMeasure_le_returnedMeasure [∀ a, DiscreteMeasurableSpace (P.B a)]
-    [MeasurableSpace β] (k : ℕ) (computation : Resumption P β) :
+theorem outputMeasure_le_returnedMeasure [MeasurableSpace β] (k : ℕ)
+    (computation : Resumption P β) :
     outputMeasure k computation ≤ returnedMeasure computation :=
   le_iSup (fun fuel => outputMeasure fuel computation) k
 
