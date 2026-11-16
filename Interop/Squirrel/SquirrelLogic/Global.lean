@@ -5,10 +5,8 @@ Authors: Devon Tuma
 -/
 module
 
-public import SquirrelLogic.RandomVariable
+public import SquirrelLogic.Indist
 public import SquirrelLogic.Sum
-public import VCVio.CryptoFoundations.Asymptotics.Negligible
-public import ToMathlib.Data.ENNReal.AbsDiff
 
 /-!
 # Squirrel's global formulas and sequents
@@ -24,8 +22,9 @@ propositions:
 
 * `[φ]` is `Overwhelming`: over uniform tapes, the probability that `φ` is false is negligible;
 * `const t` is `RV.IsConst`;
-* `adv t` and `u⃗ ∼ v⃗` are read through `C : AdvClass M`, a parameter standing for LICS23's
-  polynomial-time machines. No rule about them is proved here.
+* `adv t` and `u⃗ ∼ v⃗` are read through `C : AdvClass M` (`SquirrelLogic.Indist`), a parameter
+  standing for LICS23's polynomial-time machines. The vectors of `∼` are environments of terms
+  (`Vec`), so that they are extended and shortened by `Env.cons` and `Vals.tail`.
 
 `Valid R C Θ F` is the validity of the global sequent `Θ ⊢ F` (LICS23 §III): `F` holds in every
 model respecting the labels and the restriction `R`, at every value of the variables, wherever
@@ -72,18 +71,19 @@ inductive GlobalOp (B : Type) : Kind B → Type where
   | const (τ : Ty B) : GlobalOp B .glob
   /-- `adv t`: the attacker computes the term. -/
   | adv (τ : Ty B) : GlobalOp B .glob
-  /-- `u⃗ ∼ v⃗` for vectors of terms of types `τs`. -/
+  /-- `u⃗ ∼ v⃗` for vectors of terms of the types `τs`. -/
   | equiv (τs : List (Ty B)) : GlobalOp B .glob
 
 /-- The global constructors. Quantifiers bind one variable of a local sort; `[·]`, `const`,
-`adv` and `∼` take local terms; the connectives take global formulas. -/
+`adv` and `∼` take local terms; the connectives take global formulas. The arguments of `∼` are
+its two sides at each position of the vector. -/
 @[expose, reducible] def globalSig (B : Type) : ScopedSignature (Kind B) where
   Op := GlobalOp B
   Arg o := match o with
     | .top | .bot => Fin 0
     | .and | .or | .imp => Fin 2
     | .all _ | .ex _ | .box | .const _ | .adv _ => Fin 1
-    | .equiv τs => Bool × Fin τs.length
+    | .equiv τs => Bool × (τ : Ty B) × ScopedVar τs τ
   binders o := match o with
     | .all τ | .ex τ => fun _ => [.loc τ]
     | _ => fun _ => []
@@ -91,7 +91,7 @@ inductive GlobalOp (B : Type) : Kind B → Type where
     | .top | .bot | .and | .or | .imp | .all _ | .ex _ => fun _ => .glob
     | .box => fun _ => .loc .bool
     | .const τ | .adv τ => fun _ => .loc τ
-    | .equiv τs => fun p => .loc τs[p.2]
+    | .equiv _ => fun p => .loc p.2.1
 
 /-- Local and global constructors together. -/
 @[expose, reducible] def fullSig (D : Decl B) : ScopedSignature (Kind B) :=
@@ -125,7 +125,32 @@ variable {Γ : List (Kind B)} {a : Ty B}
   | [] => tt
   | φ :: φs => ite φ (conj φs) ff
 
+variable {b : Ty B}
+
+/-- Application. -/
+@[expose] def app (f : FTerm D Γ (.arrow a b)) (x : FTerm D Γ a) : FTerm D Γ b :=
+  .node (.inl (.app a b)) (Fin.cases f fun _ => x)
+
+/-- Abstraction over the nearest variable. -/
+@[expose] def lam (body : FTerm D (.loc a :: Γ) b) : FTerm D Γ (.arrow a b) :=
+  .node (.inl (.lam a b)) fun _ => body
+
+/-- Local equality `t = u`. -/
+@[expose] def eq (t u : FTerm D Γ a) : FTerm D Γ .bool :=
+  app (app (.node (.inl (.eq a)) fun p => nomatch p) t) u
+
+/-- Local universal quantification `∀ (x : a). φ`, as `∀_a (λ x. φ)`. -/
+@[expose] def all (φ : FTerm D (.loc a :: Γ) .bool) : FTerm D Γ .bool :=
+  app (.node (.inl (.all a)) fun p => nomatch p) (lam φ)
+
+/-- An honest function symbol. -/
+@[expose] def fn (f : D.Fn) : FTerm D Γ (D.fnTy f) := .node (.inl (.fn f)) fun p => nomatch p
+
 end FTerm
+
+/-- Vectors of local terms of the types `τs`, as environments. -/
+abbrev Vec (D : Decl B) (Γ : List (Kind B)) (τs : List (Ty B)) :=
+  Env (fun τ => FTerm D Γ τ) τs
 
 namespace Form
 
@@ -146,6 +171,10 @@ variable {Γ : List (Kind B)} {τ : Ty B}
 
 /-- `adv t`. -/
 @[expose] def adv (t : FTerm D Γ τ) : Form D Γ := .node (.inr (.adv τ)) fun _ => t
+
+/-- `u⃗ ∼ v⃗`. -/
+@[expose] def equiv {τs : List (Ty B)} (u v : Vec D Γ τs) : Form D Γ :=
+  .node (.inr (.equiv τs)) fun p => bif p.1 then v _ p.2.2 else u _ p.2.2
 
 end Form
 
@@ -175,33 +204,6 @@ value in `⋂_η ⟦τ⟧_η`; `Ty.Same` agrees with that at base types and at a
 @[expose] def RV.IsConst {M : Model D} {τ : Ty B} (X : RV M τ) : Prop :=
   ∀ η η' ρ ρ', τ.Same M.carrier (X η ρ) (X η' ρ')
 
-/-- The adversaries against a model: the attacker computations `adv` admits and the
-distinguishers `∼` quantifies over. LICS23 takes polynomial-time machines that read the attacker
-tape and query higher-order values through handles; here the class is a parameter. -/
-structure AdvClass (M : Model D) where
-  /-- Attacker computations of a value of type `τ` from the attacker tape. -/
-  computes : {τ : Ty B} → ((η : ℕ) → M.TapeA η → τ.Value M.carrier η) → Prop
-  /-- Distinguishers of vectors of values of types `τs`, reading the attacker tape. -/
-  distinguishes : {τs : List (Ty B)} →
-    ((η : ℕ) → Env (Ty.Value M.carrier η) τs → M.TapeA η → Bool) → Prop
-
-namespace AdvClass
-
-variable {M : Model D}
-
-/-- `adv t` (LICS23 Fig. 2): an admitted attacker computation agrees with `t` everywhere. -/
-@[expose] def Adv (C : AdvClass M) {τ : Ty B} (X : RV M τ) : Prop :=
-  ∃ A, C.computes A ∧ ∀ η ρ, X η ρ = A η ρ.1
-
-/-- `u⃗ ∼ v⃗` (LICS23 Fig. 2): every admitted distinguisher has negligible advantage. -/
-@[expose] def Indist (C : AdvClass M) {τs : List (Ty B)}
-    (u v : (η : ℕ) → M.Tape η → Env (Ty.Value M.carrier η) τs) : Prop :=
-  ∀ A, C.distinguishes A → negligible fun η =>
-    ENNReal.absDiff (Pr{let ρ ← $ᵗ (M.Tape η)}[A η (u η ρ) ρ.1 = true])
-      (Pr{let ρ ← $ᵗ (M.Tape η)}[A η (v η ρ) ρ.1 = true])
-
-end AdvClass
-
 /-! ## Semantics and validity -/
 
 /-- Global constructors as propositions about random variables (LICS23 Fig. 2). -/
@@ -217,8 +219,8 @@ end AdvClass
   | _, .box, next => Overwhelming M.toTapeModel (next 0 Env.empty)
   | _, .const _, next => RV.IsConst (next 0 Env.empty)
   | _, .adv _, next => C.Adv (next 0 Env.empty)
-  | _, .equiv _, next => C.Indist (fun η ρ => Env.ofFin fun i => next (false, i) Env.empty η ρ)
-      (fun η ρ => Env.ofFin fun i => next (true, i) Env.empty η ρ)
+  | _, .equiv _, next => C.Indist (fun η ρ _ x => next (false, ⟨_, x⟩) Env.empty η ρ)
+      (fun η ρ _ x => next (true, ⟨_, x⟩) Env.empty η ρ)
 
 /-- Local constructors as random variables, global ones as propositions. -/
 @[expose] noncomputable def fullInterp (M : Model D) (C : AdvClass M) :
@@ -275,6 +277,55 @@ theorem Form.holds_box {φ : FTerm D Γ .bool} :
 
 @[simp] theorem FTerm.denote_tt :
     (FTerm.tt : FTerm D Γ .bool).denote (fullInterp M C) env = fun _ _ => true := rfl
+
+@[simp] theorem FTerm.denote_ff :
+    (FTerm.ff : FTerm D Γ .bool).denote (fullInterp M C) env = fun _ _ => false := rfl
+
+@[simp] theorem FTerm.denote_app {a b : Ty B} (f : FTerm D Γ (.arrow a b)) (x : FTerm D Γ a) :
+    (FTerm.app f x).denote (fullInterp M C) env =
+      fun η ρ => f.denote (fullInterp M C) env η ρ (x.denote (fullInterp M C) env η ρ) := rfl
+
+/-- Local equality is equality of the values at each parameter and tape. -/
+@[simp] theorem FTerm.denote_eq {a : Ty B} (t u : FTerm D Γ a) :
+    (FTerm.eq t u).denote (fullInterp M C) env = fun η ρ =>
+      @decide (t.denote (fullInterp M C) env η ρ = u.denote (fullInterp M C) env η ρ)
+        (Classical.propDecidable _) := rfl
+
+/-- Local universal quantification at `(η, ρ)` ranges over the carrier at `η`; the bound variable
+is the constant random variable `RV.constAt η x`. -/
+@[simp] theorem FTerm.denote_all {a : Ty B} (φ : FTerm D (.loc a :: Γ) .bool) :
+    (FTerm.all φ).denote (fullInterp M C) env = fun η ρ =>
+      @decide (∀ x, φ.denote (fullInterp M C) (Env.cons (RV.constAt η x) env) η ρ = true)
+        (Classical.propDecidable _) := rfl
+
+@[simp] theorem FTerm.denote_fn (f : D.Fn) :
+    (FTerm.fn f : FTerm D Γ (D.fnTy f)).denote (fullInterp M C) env = fun η _ => M.fn η f := rfl
+
+/-- A term weakened past a binder ignores the value bound there. -/
+theorem denote_weaken_cons {V : Kind B → Type} (alg : Interpretation (fullSig D) V)
+    {s s' : Kind B} (t : (fullSig D).Term Γ s) (x : V s') (ξ : Env V Γ) :
+    (t.weaken s').denote alg (Env.cons x ξ) = t.denote alg ξ := by
+  rw [Term.weaken, Term.denote_rename]
+  rfl
+
+/-- The random variables of a vector of terms. -/
+@[expose] noncomputable def Vec.rv (M : Model D) (C : AdvClass M) {τs : List (Ty B)}
+    (u : Vec D Γ τs) (env : Env (Kind.Value M) Γ) : VecRV M τs :=
+  fun η ρ _ x => (u _ x).denote (fullInterp M C) env η ρ
+
+@[simp] theorem Vec.rv_cons {τ : Ty B} {τs : List (Ty B)} (t : FTerm D Γ τ) (u : Vec D Γ τs) :
+    Vec.rv M C (Env.cons t u : Vec D Γ (τ :: τs)) env =
+      VecRV.cons (t.denote (fullInterp M C) env) (u.rv M C env) := by
+  funext η ρ σ x
+  cases x <;> rfl
+
+theorem Form.holds_adv {τ : Ty B} {t : FTerm D Γ τ} :
+    (Form.adv t).Holds M C env ↔ C.Adv (t.denote (fullInterp M C) env) :=
+  Iff.rfl
+
+theorem Form.holds_equiv {τs : List (Ty B)} {u v : Vec D Γ τs} :
+    (Form.equiv u v).Holds M C env ↔ C.Indist (u.rv M C env) (v.rv M C env) :=
+  Iff.rfl
 
 end Reading
 

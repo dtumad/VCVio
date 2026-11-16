@@ -5,7 +5,7 @@ Authors: Devon Tuma
 -/
 module
 
-public import SquirrelLogic.Global
+public import SquirrelLogic.Rules.Rename
 import VCVio.OracleComp.EvalDist.Measure
 
 /-!
@@ -17,6 +17,9 @@ import VCVio.OracleComp.EvalDist.Measure
 * `Valid.not_box_ff`: `[false]` is not valid, so validity is not trivial either.
 * `Valid.all_inst`: instantiating a valid global universal, derived from G.Cut, G.L-∀̃ and
   G.Axiom.
+* `Valid.not_equiv_tt_ff`: `true ∼ false` is not valid against all distinguishers, so the rules
+  about `∼` do not hold vacuously.
+* `Model.trivial_renamesNames`: the restriction of the renaming rule is satisfiable.
 -/
 
 public section
@@ -34,8 +37,7 @@ noncomputable def Model.trivial (D : Decl B) : Model D where
   TapeH _ := Unit
   carrier _ _ := {[]}
   nonempty _ _ := Set.singleton_nonempty _
-  name η n _ _ := Classical.choice ((D.nameCod n).nonempty_value
-    (fun _ _ => Set.singleton_nonempty _) η)
+  name η {_ b} _ _ _ := Classical.choice (b.nonempty_value (fun _ _ => Set.singleton_nonempty _) η)
   fn η f := Classical.choice ((D.fnTy f).nonempty_value (fun _ _ => Set.singleton_nonempty _) η)
   att η f _ := Classical.choice ((D.attTy f).nonempty_value
     (fun _ _ => Set.singleton_nonempty _) η)
@@ -63,5 +65,23 @@ theorem Valid.all_inst {R : Model D → Prop} {C : ∀ M : Model D, AdvClass M}
     {Γ : List (Kind B)} {Θ : List (Form D Γ)} {τ : Ty B} {G : Form D (.loc τ :: Γ)}
     (t : FTerm D Γ τ) (h : Valid R C Θ (.all τ G)) : Valid R C Θ (G.substOne t) :=
   h.cut (all_left t (ax List.mem_cons_self))
+
+/-- `true ∼ false` is not valid against the class of all machines: the distinguisher that
+returns its input has advantage one. -/
+theorem Valid.not_equiv_tt_ff :
+    ¬ Valid (D := D) (fun _ => True) AdvClass.all (Γ := []) []
+      (.equiv (Env.cons .tt Env.empty) (Env.cons .ff Env.empty)) := fun h => by
+  have hM := Form.holds_equiv.1 (h (Model.trivial D) Model.trivial_respectsLabels trivial
+    Env.empty (by simp)) (fun _ e _ => e _ .zero) trivial
+  refine not_negligible_one (negligible_of_le (fun η => le_of_eq ?_) hM)
+  simp only [advantage, Vec.rv_cons, VecRV.cons, Env.cons_zero, FTerm.denote_tt, FTerm.denote_ff]
+  rw [OracleComp.prEvent_true_eq_one,
+    prEvent_eq_zero_of_forall_not _ _ fun _ h => Bool.noConfusion h, ENNReal.absDiff_zero_right]
+
+/-- Renaming the names of the trivial model is the identity on its honest tapes: names there do
+not read the tape. -/
+theorem Model.trivial_renamesNames (π : ∀ {a b : Ty B}, D.Name a b → D.Name a b) :
+    (Model.trivial D).RenamesNames π :=
+  fun _ => ⟨Equiv.refl _, fun _ _ _ => rfl⟩
 
 end SquirrelLogic
