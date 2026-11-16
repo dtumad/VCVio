@@ -1,6 +1,7 @@
 module
 
 public import SquirrelLogic.Sum
+public import SquirrelLogic.ProductTape
 public import SquirrelLogic.Syntax
 public import SquirrelLogic.Model
 public import SquirrelLogic.RandomVariable
