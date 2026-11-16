@@ -76,8 +76,7 @@ structure Model (D : Decl B) extends TapeModel where
   /-- Carriers are nonempty. -/
   nonempty : ∀ b η, (carrier b η).Nonempty
   /-- A name reads its sample from the honest tape. -/
-  name : ∀ η (n : D.Name), (D.nameDom n).Value carrier η → TapeH η →
-    (D.nameCod n).Value carrier η
+  name : ∀ η {a b : Ty B}, D.Name a b → a.Value carrier η → TapeH η → b.Value carrier η
   /-- An honest function symbol is a fixed value at each `η`. -/
   fn : ∀ η (f : D.Fn), (D.fnTy f).Value carrier η
   /-- An attacker function symbol is computed from the attacker tape. -/
