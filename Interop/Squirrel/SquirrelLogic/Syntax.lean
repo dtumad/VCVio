@@ -19,7 +19,8 @@ variables, renaming and capture-avoiding substitution are PolyFun's.
 * `Label` holds the type labels used so far (`finite`, `fixed`), and `Ty.HasLabel` lifts a base
   type's labels along arrows as LICS23 §II-B.1 does.
 * `Decl B` declares the labels of each base type, the names (`n : τ₀ → τ₁` with `τ₀` finite,
-  §II-B.2), the honest function symbols and the attacker function symbols.
+  §II-B.2), the honest function symbols and the attacker function symbols. Names are indexed by
+  their types, so renaming names never changes the sort of a constructor.
 * `Kind B` is the sorts: a local type `loc τ`, or `glob`, the sort of global formulas. The local
   signature has no constructor at `glob`; the sort is here so that the global layer
   (`SquirrelLogic.Global`) is a sum of signatures over the same sorts.
@@ -68,14 +69,10 @@ symbols. -/
 structure Decl (B : Type) where
   /-- The labels declared for each base type. -/
   labels : B → Label → Prop
-  /-- Names: random samplings indexed by a finite type. -/
-  Name : Type
-  /-- The index type of a name. -/
-  nameDom : Name → Ty B
-  /-- The type of a name's samples. -/
-  nameCod : Name → Ty B
+  /-- Names `n : a → b`: random samplings of type `b` indexed by `a`. -/
+  Name : Ty B → Ty B → Type
   /-- Names are indexed by finite types (LICS23 §II-B.2). -/
-  nameDom_finite : ∀ n, (nameDom n).HasLabel labels .finite
+  nameDom_finite : ∀ {a b : Ty B}, Name a b → a.HasLabel labels .finite
   /-- Honest function symbols, interpreted without randomness. -/
   Fn : Type
   /-- The type of an honest function symbol. -/
@@ -113,7 +110,7 @@ inductive LocalOp (D : Decl B) : Kind B → Type where
   /-- The quantifier constant `∃_a : (a → bool) → bool`. -/
   | ex (a : Ty B) : LocalOp D (.loc (.arrow (.arrow a .bool) .bool))
   /-- A declared name `n : τ₀ → τ₁`. -/
-  | name (n : D.Name) : LocalOp D (.loc (.arrow (D.nameDom n) (D.nameCod n)))
+  | name {a b : Ty B} (n : D.Name a b) : LocalOp D (.loc (.arrow a b))
   /-- A declared honest function symbol. -/
   | fn (f : D.Fn) : LocalOp D (.loc (D.fnTy f))
   /-- A declared attacker function symbol. -/
@@ -177,7 +174,7 @@ variable {Γ : List (Kind B)} {a b : Ty B}
   app (.node (.ex a) fun p => nomatch p) (lam φ)
 
 /-- A name applied to an index. -/
-@[expose] def name (n : D.Name) (i : LTerm D Γ (D.nameDom n)) : LTerm D Γ (D.nameCod n) :=
+@[expose] def name (n : D.Name a b) (i : LTerm D Γ a) : LTerm D Γ b :=
   app (.node (.name n) fun p => nomatch p) i
 
 /-- Local implication, as a conditional. -/

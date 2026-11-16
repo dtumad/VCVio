@@ -327,3 +327,211 @@ The agent's full note is untracked at `PolyFun.wt/squirrel-generic/notes/squirre
    RandomVariable, Global, Derivation, Examples}.lean`. The plan's
    `Interop/Squirrel/{Syntax,Model,Global}.lean` sketch should be updated to match.
 5. **Ledger.** `../OBLIGATIONS.md` gains the choice rows L12–L15 for this code.
+
+## M0 start: indistinguishability, L.R-∀ and renaming
+
+This work was done on top of `b7c103222`, with PolyFun still at `ea3b297`. Nothing here uses
+A3's `Term.heads`.
+
+### Build and checks
+
+- **Build.** `LEAN_NUM_THREADS=4 lake build SquirrelLogic` succeeds from a clean touch of every
+  file, with no warnings.
+- **Axioms.** `#print axioms` was run on 46 headline declarations, the new ones and the A2
+  rules. They use only `propext`, `Classical.choice` and `Quot.sound`.
+- **Forbidden tactics.** There is no `sorry`, `stop` or `native_decide`.
+- **Comment fences.** `scripts/check-comment-fences.py` passes.
+- **Not run.** `lake lint`, the axiom sweep and the tests were not run, as for A1 and A2.
+
+| File | Content | Lines | Code lines |
+|---|---|---|---|
+| `Indist.lean` (new) | distinguishers, named reductions, `advantage`, `AdvClass`, laws of `Indist` | 294 | 153 |
+| `Rules/Local.lean` (new) | L.R-∀ | 91 | 57 |
+| `Rules/Equiv.lean` (new) | structural `∼` rules | 120 | 66 |
+| `Rules/Rename.lean` (new) | name renaming | 107 | 64 |
+| `TwoTimePad.lean` (new) | the reused-randomness countermodel | 107 | 60 |
+| `Global.lean` (changed) | vectors as environments, new local constructors, reading lemmas | 395 | 211 |
+| `Derivation.lean` (changed) | 11 more constructors | 134 | 87 |
+| `Syntax.lean`, `Model.lean`, `Examples.lean` (changed) | names indexed by types; satisfiability checks | | |
+
+### L.R-∀
+
+`Valid.local_all` (LICS23 Fig. 7, Proposition 2):
+
+```
+LValid R C (Θ.map (Term.weaken · (.loc τ))) (Γl.map (Term.weaken · (.loc τ))) φ →
+  LValid R C Θ Γl (FTerm.all φ)
+```
+
+- **The proof** is the choice construction. A random variable `X` picks, at each parameter and
+  tape, a counterexample to `φ` when one exists, and the premise is instantiated at `X`.
+- **Locality is the step that matters.** `denote_cons_congr`, a corollary of
+  `eval_denote_fullInterp`, identifies `φ` at `cons X env` with `φ` at
+  `cons (RV.constAt η (X η ρ)) env`, which is the variable that local `∀` binds.
+- **Size.** The proof has 25 lines, over the 10-line target for structural rules. The helper
+  `FTerm.denote_conj_weaken` is a list induction.
+- **Friction.** The classical `decide` of `∀_τ` needs `Classical.propDecidable` passed by hand,
+  and `dif_pos` and `dite_cond_eq_true` are deprecated; `simp [X, hx]` unfolds the choice.
+
+### The adversary class
+
+- **Distinguishers see values of `⟦τ⟧_η`.** `Vals M η τs := Env (Ty.Value M.carrier η) τs` is a
+  vector of values at `η`, so their type depends on `η`. `Distinguisher M τs` tests such a
+  vector at each `η` and reads `ρa`.
+- **Advantage.** `advantage A u v η` is
+  `absDiff Pr_ρ[A η (u η ρ) ρ.1 = true] Pr_ρ[A η (v η ρ) ρ.1 = true]` over `$ᵗ (M.Tape η)`.
+- **Indistinguishability.** `C.Indist u v := ∀ A, C.distinguishes A → negligible (advantage A u v)`.
+- **`adv`.** `C.Adv X := ∃ g, C.computes g ∧ ∀ η ρ, X η ρ = g η ρ.1`. This is LICS23's definition
+  of the atom's meaning; it is not a security statement.
+- **One closure field per rule**, each a named reduction that changes the vector and then runs
+  the given distinguisher:
+
+| Field | Reduction | Used by |
+|---|---|---|
+| `app_mem` | `Distinguisher.app`: apply the first entry to the second | `Indist.app`, `Valid.equiv_app` (FA-App) |
+| `fn_mem` | `Distinguisher.fn f`: prepend the value of an honest symbol | `Indist.fn`, `Valid.equiv_fn` (FA-Fn) |
+| `adv_mem` | `Distinguisher.adv g`: prepend `g` run on the same `ρa` (needs `computes g`) | `Indist.adv`, `Valid.equiv_adv` (FA-Adv) |
+| `tail_mem` | `Distinguisher.tail`: ignore the first entry | `Indist.tail`, `Valid.equiv_tail` (Restr) |
+| `dup_mem` | `Distinguisher.dup`: duplicate the first entry | `Indist.dup`, `Valid.equiv_dup` (Dup) |
+| `ite_mem` | `Distinguisher.ite`: the conditional of the first three entries | `Indist.ite`, `Valid.equiv_ite` (If) |
+
+- **The per-`η` statements hold by `rfl`.** These are `advantage_app`, `advantage_fn`,
+  `advantage_adv`, `advantage_tail`, `advantage_dup` and `advantage_ite`, for example
+  `advantage A u.app v.app = advantage A.app u v`. Each reduction keeps the advantage exactly, at
+  every `η`, which is the shape D1 asks for.
+- **Class instances.** `AdvClass.all` admits every machine. The empty class also meets every
+  field, and then `Indist` always holds.
+- **The spike's `AdvClass` is not used.** Its adversaries have fixed types, and the types here
+  depend on `η`.
+
+### The shared tape (ledger row L10)
+
+- **No rule needs a hypothesis about the shared tape.** This covers every structural rule proved
+  here, the renaming rule and the countermodel; the last two change only the honest tape.
+- **FA-Adv depends on the shared reading.** Its reduction `Distinguisher.adv g A` recomputes the
+  added term by running `g` on the attacker tape it reads.
+- **With fresh coins it would not go through.** A distinguisher drawing its own coins cannot
+  recompute a term of `ρa`. The rule would then need `ρa` to be independent of the vectors, which
+  fails as soon as they contain attacker symbols.
+- **Still open.** Relating these distinguishers to VCVio's fresh-coin adversaries (A4). L10 is
+  updated with this.
+
+### Rules about `∼`
+
+- **Vectors are environments.** `Form.equiv u v` takes `u v : Vec D Γ τs`, environments of
+  terms. `GlobalOp.equiv τs` has the arguments `Bool × (τ : Ty B) × ScopedVar τs τ`, so rules
+  extend and shorten vectors with `Env.cons` and `Vals.tail`.
+- **Rules act on the first entries.** There is no permutation rule yet; one more closure field
+  would add it.
+
+| Rule | Theorem | Proof lines | Law used |
+|---|---|---|---|
+| Refl | `Valid.equiv_refl` | 1 | `absDiff_self` |
+| Sym | `Valid.equiv_symm` | 1 | `absDiff_comm` |
+| Trans | `Valid.equiv_trans` | 2 | `absDiff_triangle`, `negligible_add` |
+| G.Equiv:FA-App | `Valid.equiv_app` | 4 | `app_mem` |
+| FA-Fn | `Valid.equiv_fn` | 3 | `fn_mem` |
+| G.Equiv:FA-Adv | `Valid.equiv_adv` | 3 | `adv_mem` |
+| Restr | `Valid.equiv_tail` | 4 | `tail_mem` |
+| Dup | `Valid.equiv_dup` | 4 | `dup_mem` |
+| If | `Valid.equiv_ite` | 4 | `ite_mem` |
+| Rewrite under `[t = t']` | `Valid.equiv_rewrite` | 9 | `advantage_le_add_prEvent_ne` |
+| Name renaming | `Valid.equiv_renameNames` | 9, plus 19 in helpers | `prEvent_uniformSample_equiv` |
+
+- **BC14's FA** for an honest symbol is `equiv_fn` followed by `equiv_app`.
+- **Rewriting.**
+  - `advantage_le_add_prEvent_ne` bounds the advantage at `u` by the advantage at `u'` plus
+    `Pr[u ≠ u']`.
+  - `Valid.equiv_rewrite` turns `[t = t']` and `t', u⃗ ∼ w⃗` into `t, u⃗ ∼ w⃗`.
+  - LICS23's general G.Rewrite, for any formula `F[·]` whose hole is not under `const` or `adv`,
+    needs that side condition checked on syntax. That is A3's `Term.heads`, not at either pin.
+- **Non-vacuity.** `Valid.not_equiv_tt_ff`: `true ∼ false` fails against `AdvClass.all`.
+
+### Name renaming
+
+- **Names are indexed by their types.** `Decl.Name : Ty B → Ty B → Type` and
+  `LocalOp.name {a b} (n : D.Name a b)`. A type-preserving `π` then maps constructors without
+  casts, and `Term.renameNames π` is one fold whose algebra matches on the name constructor.
+- **Semantics.** `denote_renameNames` (by `fold_fusion`) shows that, pointwise, renaming reads
+  the honest tape through `σ`. `denote_renameNames_closed` lifts this to closed terms by
+  locality.
+- **The rule.** `Valid.equiv_renameNames (hR : ∀ M, R M → M.RenamesNames π) (u : Vec D [] τs) :
+  Valid R C Θ (.equiv u (u.renameNames π))`.
+  - `Model.RenamesNames π M` asks, at each `η`, for a bijection `σ` of honest tapes with
+    `M.name η (π n) i ρh = M.name η n i (σ ρh)`.
+  - The uniform tape is invariant under `σ` (`SampleableType.prEvent_uniformSample_equiv`), so
+    every advantage is zero.
+  - Vectors must be closed, because a free variable may read the honest tape.
+- **Ledger.** This restriction is a modelling choice, ledger row L16.
+- **Non-vacuity is weak.** `Model.trivial_renamesNames` holds because names there ignore the
+  tape. A model with two independent names exchanged by a tape bijection was not built.
+
+### Derivations (D2)
+
+`Derivation` gains `localAll` and ten `∼` constructors, and `Derivation.sound` handles each in one
+line. Renaming is left out, because it needs a restriction on models and derivations are
+independent of the restriction.
+
+### Encryption from IND-CPA: the countermodel only
+
+`TwoTimePad.lean` has a declaration with one name, the pad `r : bool → bool`, and an honest
+symbol `enc m r = m xor r`. Its model reads the pad from one uniform honest bit.
+
+- `TwoTimePad.valid_fresh`: `enc false r ∼ enc true r` is valid for every class of
+  distinguishers. Flipping the tape bit maps one side to the other.
+- `TwoTimePad.not_valid_reuse`: `enc false r, enc false r ∼ enc true r, enc false r` fails
+  against `AdvClass.all`. Testing the entries for equality has advantage one.
+
+This shows that the freshness condition of the encryption rules is necessary, in a model where
+the scheme is perfectly secure for one use. It is the first countermodel of the kind the plan
+asks for.
+
+The rule itself (`pk, enc(m₀; r) ∼ pk, enc(m₁; r)` from IND-CPA, with the reduction named) was not
+done. Three things stand in the way:
+
+1. **Side conditions.** The key must occur only under `pk`, and `r` must be fresh.
+   - These are syntactic: they need A3's `Term.heads` on the new pin.
+   - Alternatively they become semantic: the honest tape splits as a product of key slice, coin
+     slice and the rest, and the other entries read only the rest and `ρa`.
+2. **The reduction must sample.** Given `pk` and the challenge, the named reduction samples the
+   rest of the tape and `ρa` itself, then runs the distinguisher. This needs the product split,
+   and VCVio's IND-CPA game for a scheme whose key generation and encryption are `$ᵗ` over those
+   slices.
+3. **The class must map across.** The IND-CPA assumption has to hold for the image of `C` under
+   the reduction. That is a hypothesis naming the reduction, not a closure field of `C`.
+
+The estimate is 150 or more lines, mostly coupling uniform tape slices with the game's samplers.
+
+### Problems hit
+
+1. **Field binders.** In `AdvClass.all`, `fn_mem _ _ := trivial` bound the wrong binders; a field
+   with an explicit binder after implicit ones needed `by intros; trivial`.
+2. **Implicit reductions time out.** With the reduction left implicit (`h _ (C.app_mem hA)`),
+   unification unfolded `Pr` and hit the 200000-heartbeat limit. Naming the reduction and stating
+   `advantage_app … := rfl` fixed it, and that is also D1's statement shape.
+3. **Dot notation fails** on `Vec`, an abbreviation of a `Π`-type, and on terms for functions in
+   the `Term` namespace: `t.renameNames` resolves to `IFreeM.renameNames`. The fixes are
+   `Vec.rv M C u env` and `Term.renameNames π t`.
+4. **Concrete models need exposure.** Under the module system, `rfl` lemmas about a concrete
+   model (`denote_enc`) need `@[expose]` on `decl`, `model`, `pad` and `enc`.
+5. **Mathlib changes.** `add_le_add_left` changed its argument order (`add_le_add` used instead),
+   and there is no `Equiv.boolNot`.
+6. **Concrete tapes.** `model.TapeH η` is `Bool` only after unfolding. `simp` lemmas about `Bool`
+   do not fire on it, and `decide` rejects goals with free variables; `cases` and
+   `Bool.noConfusion` close them.
+
+### Suggested changes to the plan
+
+- **Cryptographic rules take their reduction as data.** Structural rules fit closure fields. A
+  cryptographic rule should name its reduction to the VCVio game, and take the assumption for the
+  image of `C` under it as a hypothesis, as above. Do not add a field to `AdvClass` per
+  assumption.
+- **Freshness.** The freshness and key-usage side conditions are where the encryption rule meets
+  A3. Do that rule after the rebase onto the new PolyFun pin. Until then, the semantic product
+  split of the honest tape is the fallback.
+- **Small next items.**
+  - a permutation rule for vectors;
+  - general G.Rewrite, after `Term.heads`;
+  - a two-name model satisfying `Model.RenamesNames` nontrivially;
+  - FA for honest symbols as one derived rule. It needs `D.fnTy f = .arrow a b`, so it is a cast,
+    or a declaration whose symbols are indexed by type, like names now.
