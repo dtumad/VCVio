@@ -144,7 +144,7 @@ variable {b : Ty B}
   app (.node (.inl (.all a)) fun p => nomatch p) (lam φ)
 
 /-- An honest function symbol. -/
-@[expose] def fn (f : D.Fn) : FTerm D Γ (D.fnTy f) := .node (.inl (.fn f)) fun p => nomatch p
+@[expose] def fn (f : D.Fn a) : FTerm D Γ a := .node (.inl (.fn f)) fun p => nomatch p
 
 end FTerm
 
@@ -298,8 +298,8 @@ is the constant random variable `RV.constAt η x`. -/
       @decide (∀ x, φ.denote (fullInterp M C) (Env.cons (RV.constAt η x) env) η ρ = true)
         (Classical.propDecidable _) := rfl
 
-@[simp] theorem FTerm.denote_fn (f : D.Fn) :
-    (FTerm.fn f : FTerm D Γ (D.fnTy f)).denote (fullInterp M C) env = fun η _ => M.fn η f := rfl
+@[simp] theorem FTerm.denote_fn {τ : Ty B} (f : D.Fn τ) :
+    (FTerm.fn f : FTerm D Γ τ).denote (fullInterp M C) env = fun η _ => M.fn η f := rfl
 
 /-- A term weakened past a binder ignores the value bound there. -/
 theorem denote_weaken_cons {V : Kind B → Type} (alg : Interpretation (fullSig D) V)

@@ -19,7 +19,7 @@ import VCVio.OracleComp.EvalDist.Measure
   G.Axiom.
 * `Valid.not_equiv_tt_ff`: `true ∼ false` is not valid against all distinguishers, so the rules
   about `∼` do not hold vacuously.
-* `Model.trivial_renamesNames`: the restriction of the renaming rule is satisfiable.
+
 -/
 
 public section
@@ -30,15 +30,16 @@ open IPFunctor IPFunctor.ScopedSignature
 
 variable {B : Type} {D : Decl B}
 
-/-- Every base type is the single empty bitstring, and the tapes have one element. Names,
-honest and attacker symbols take arbitrary values. -/
+/-- Every base type is the single empty bitstring, the attacker tape and the coins have one
+element, and the samplers, honest and attacker symbols take arbitrary values. -/
 noncomputable def Model.trivial (D : Decl B) : Model D where
   TapeA _ := Unit
-  TapeH _ := Unit
   carrier _ _ := {[]}
   nonempty _ _ := Set.singleton_nonempty _
-  name η {_ b} _ _ _ := Classical.choice (b.nonempty_value (fun _ _ => Set.singleton_nonempty _) η)
-  fn η f := Classical.choice ((D.fnTy f).nonempty_value (fun _ _ => Set.singleton_nonempty _) η)
+  Coin _ _ := Unit
+  sample η b _ := Classical.choice (b.nonempty_value (fun _ _ => Set.singleton_nonempty _) η)
+  finite_index η {a _} _ := a.finite_value_of_finite (fun _ _ => Set.finite_singleton _) η
+  fn η {τ} _ := Classical.choice (τ.nonempty_value (fun _ _ => Set.singleton_nonempty _) η)
   att η f _ := Classical.choice ((D.attTy f).nonempty_value
     (fun _ _ => Set.singleton_nonempty _) η)
 
@@ -77,11 +78,5 @@ theorem Valid.not_equiv_tt_ff :
   simp only [advantage, Vec.rv_cons, VecRV.cons, Env.cons_zero, FTerm.denote_tt, FTerm.denote_ff]
   rw [OracleComp.prEvent_true_eq_one,
     prEvent_eq_zero_of_forall_not _ _ fun _ h => Bool.noConfusion h, ENNReal.absDiff_zero_right]
-
-/-- Renaming the names of the trivial model is the identity on its honest tapes: names there do
-not read the tape. -/
-theorem Model.trivial_renamesNames (π : ∀ {a b : Ty B}, D.Name a b → D.Name a b) :
-    (Model.trivial D).RenamesNames π :=
-  fun _ => ⟨Equiv.refl _, fun _ _ _ => rfl⟩
 
 end SquirrelLogic

@@ -19,8 +19,9 @@ variables, renaming and capture-avoiding substitution are PolyFun's.
 * `Label` holds the type labels used so far (`finite`, `fixed`), and `Ty.HasLabel` lifts a base
   type's labels along arrows as LICS23 §II-B.1 does.
 * `Decl B` declares the labels of each base type, the names (`n : τ₀ → τ₁` with `τ₀` finite,
-  §II-B.2), the honest function symbols and the attacker function symbols. Names are indexed by
-  their types, so renaming names never changes the sort of a constructor.
+  §II-B.2), the honest function symbols and the attacker function symbols. Names and honest
+  symbols are indexed by their types, so renaming names never changes the sort of a constructor
+  and an honest symbol of an arrow type can be applied without a cast.
 * `Kind B` is the sorts: a local type `loc τ`, or `glob`, the sort of global formulas. The local
   signature has no constructor at `glob`; the sort is here so that the global layer
   (`SquirrelLogic.Global`) is a sum of signatures over the same sorts.
@@ -73,10 +74,10 @@ structure Decl (B : Type) where
   Name : Ty B → Ty B → Type
   /-- Names are indexed by finite types (LICS23 §II-B.2). -/
   nameDom_finite : ∀ {a b : Ty B}, Name a b → a.HasLabel labels .finite
-  /-- Honest function symbols, interpreted without randomness. -/
-  Fn : Type
-  /-- The type of an honest function symbol. -/
-  fnTy : Fn → Ty B
+  /-- There are finitely many names (LICS23 §II-B.2). -/
+  finite_names : Finite ((a : Ty B) × (b : Ty B) × Name a b)
+  /-- Honest function symbols of each type, interpreted without randomness. -/
+  Fn : Ty B → Type
   /-- Attacker function symbols, interpreted from the attacker's random tape. -/
   Att : Type
   /-- The type of an attacker function symbol. -/
@@ -112,7 +113,7 @@ inductive LocalOp (D : Decl B) : Kind B → Type where
   /-- A declared name `n : τ₀ → τ₁`. -/
   | name {a b : Ty B} (n : D.Name a b) : LocalOp D (.loc (.arrow a b))
   /-- A declared honest function symbol. -/
-  | fn (f : D.Fn) : LocalOp D (.loc (D.fnTy f))
+  | fn {τ : Ty B} (f : D.Fn τ) : LocalOp D (.loc τ)
   /-- A declared attacker function symbol. -/
   | att (f : D.Att) : LocalOp D (.loc (D.attTy f))
 
