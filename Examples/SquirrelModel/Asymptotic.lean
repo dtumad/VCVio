@@ -99,8 +99,9 @@ def Indist (C : AdvClass) (x y : ℕ → ProbComp γ) : Prop :=
   ∀ D : Adv γ Bool, C.mem D → negligible fun η => 𝒟[x η >>= D η].boolDist 𝒟[y η >>= D η]
 
 /-- A secret against a larger class is a secret against a smaller one. -/
-theorem NonDeducible.mono {C C' : AdvClass} (hCC' : ∀ {α β : Type} (f : Adv α β), C.mem f → C'.mem f)
-    {uv : ℕ → ProbComp (α × β)} (h : NonDeducible C' uv) : NonDeducible C uv :=
+theorem NonDeducible.mono {C C' : AdvClass}
+    (hCC' : ∀ {α β : Type} (f : Adv α β), C.mem f → C'.mem f) {uv : ℕ → ProbComp (α × β)}
+    (h : NonDeducible C' uv) : NonDeducible C uv :=
   fun f hf => h f (hCC' f hf)
 
 /-! ## The rules -/
