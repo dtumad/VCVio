@@ -61,7 +61,7 @@ theorem equiv_app {b : Ty B} {t s : FTerm D Γ (.arrow a b)} {t' s' : FTerm D Γ
   exact hI.app
 
 /-- **FA-Fn.** An honest symbol may be added. -/
-theorem equiv_fn (f : D.Fn) (h : Valid R C Θ (.equiv u v)) :
+theorem equiv_fn (f : D.Fn τ) (h : Valid R C Θ (.equiv u v)) :
     Valid R C Θ (.equiv (Env.cons (FTerm.fn f) u) (Env.cons (FTerm.fn f) v)) := by
   intro M hl hR env hΘ
   simp only [Form.holds_equiv, Vec.rv_cons, FTerm.denote_fn]
@@ -114,6 +114,19 @@ theorem equiv_rewrite {t t' : FTerm D Γ τ} {w : Vec D Γ (τ :: τs)}
   refine @decide_eq_false _ (Classical.propDecidable _) fun he => hne ?_
   change Env.cons _ _ = Env.cons _ _
   rw [he]
+
+/-- **Perm.** Reindexing both vectors along one map of positions that preserves types; this
+permutes, projects and duplicates entries. -/
+theorem equiv_rename {τs' : List (Ty B)} (r : Renaming τs' τs) (h : Valid R C Θ (.equiv u v)) :
+    Valid R C Θ (.equiv (Env.rename r u) (Env.rename r v)) :=
+  fun M hl hR env hΘ => Form.holds_equiv.2 ((Form.holds_equiv.1 (h M hl hR env hΘ)).rename r)
+
+/-- **FA** (BC14) for an honest symbol of arrow type: FA-Fn, then FA-App. -/
+theorem equiv_fa {b : Ty B} (f : D.Fn (.arrow a b)) {t s : FTerm D Γ a}
+    (h : Valid R C Θ (.equiv (Env.cons t u) (Env.cons s v))) :
+    Valid R C Θ (.equiv (Env.cons (FTerm.app (FTerm.fn f) t) u)
+      (Env.cons (FTerm.app (FTerm.fn f) s) v)) :=
+  (equiv_fn f h).equiv_app
 
 end Valid
 

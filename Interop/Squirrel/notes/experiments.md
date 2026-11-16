@@ -535,3 +535,135 @@ The estimate is 150 or more lines, mostly coupling uniform tape slices with the 
   - a two-name model satisfying `Model.RenamesNames` nontrivially;
   - FA for honest symbols as one derived rule. It needs `D.fnTy f = .arrow a b`, so it is a cast,
     or a declaration whose symbols are indexed by type, like names now.
+
+## M0, part 2: tape slices, small rules, and the encryption rule's design
+
+This work was done on top of `1b5bbe80f`, with PolyFun still at `ea3b297`.
+
+### Build and checks
+
+- **Build.** `LEAN_NUM_THREADS=4 lake build SquirrelLogic` succeeds from a clean touch, with no
+  warnings.
+- **Axioms.** `#print axioms` was run on 54 headline declarations, the earlier list plus the new
+  ones. They use only `propext`, `Classical.choice` and `Quot.sound`.
+- **Forbidden tactics.** There is no `sorry`, `stop` or `native_decide`.
+- **Comment fences.** The check passes.
+
+### The honest tape as slices (task 1)
+
+- **The tape is a product.** `Model.TapeH M η := (k : M.Slot η) → M.Coin η k.1.2.1`, one coin
+  per slot. A slot is a name with its types, and an index value.
+- **The model supplies coins and samplers per type.** A model gives `Coin η b` (a
+  `SampleableType`) and a sampler `sample η b : Coin η b → ⟦b⟧_η` for each type `b`.
+- **Names are a definition.** `Model.name M η n i ρh := M.sample η b (ρh ⟨⟨a, b, n⟩, i⟩)`, no
+  longer a field.
+- **This is LICS23 §II-B.2, structurally.**
+  - Distinct (name, index) pairs read distinct coordinates of a product of uniform coins, so they
+    are independent.
+  - Names of one type share a sampler, so they are identically distributed.
+  - Each name extracts finitely many bits.
+- **Declarations and models gain finiteness.** `Decl` gains `finite_names` (finitely many
+  names). `Model` gains `finite_index` (finite index types in the model).
+- **The attacker tape stays opaque**, a field with a `SampleableType` instance.
+- **`$ᵗ` still works.** `Model.instSampleableTapeH` uses VCVio's
+  `SampleableType.piOfFintype`, with `Fintype.ofFinite` on the slots and coins.
+  `Model.toTapeModel` packages both tapes for `Overwhelming`.
+- **Friction.**
+  - `Model.toTapeModel` must be `noncomputable`, because of the instance.
+  - Concrete models hit the structure-field binder problem again: a field `f _ n := …` binds the
+    first implicit, and `f _ := fun n => …` is needed.
+- **`RenamesNames` is a theorem.**
+  - `Model.tapePerm M η π : M.TapeH η ≃ M.TapeH η` permutes coordinates along a type-preserving
+    bijection `π : ∀ {a b}, D.Name a b ≃ D.Name a b`.
+  - `Model.renamesNames M π : M.RenamesNames fun n => π n` then holds by `rfl`.
+  - Hence `Valid.equiv_renameNames_of_equiv π u : Valid R C Θ (.equiv u (u.renameNames fun n =>
+    π n))` holds in every model. Ledger row L16 is closed; its residue is closed vectors, as in
+    LICS23.
+- **Proof friction.** The inverse laws of `tapePerm` need `change` then
+  `rw [π.apply_symm_apply]`. Neither `simp` nor a `congrArg` term elaborated through the
+  dependent coordinate type.
+- **Honest symbols are indexed by type.** `Decl.Fn : Ty B → Type`, like names, so an honest
+  symbol of arrow type applies without a cast.
+
+### Small items (task 3)
+
+- **Perm.** The closure field is general:
+  `rename_mem (r : Renaming τs' τs) : distinguishes A → distinguishes (A.rename r)`, with
+  `Distinguisher.rename r A := fun η e ρa => A η (Env.rename r e) ρa`. The rule is
+  `Valid.equiv_rename r : Valid R C Θ (.equiv u v) → Valid R C Θ (.equiv (Env.rename r u)
+  (Env.rename r v))`, in one line.
+  - PolyFun's `Renaming` (a map of positions that preserves types) gives permutation,
+    projection and duplication at once.
+  - `tail_mem` and `dup_mem` are now special cases, kept for their simpler statements.
+- **A two-name model.** `TwoTimePad` has pads `r` and `s`, which read different coordinates.
+  `TwoTimePad.valid_swap : Valid R C [] (.equiv [pad r] [pad s])` is the renaming rule at the
+  exchange `swap`, in every model.
+  - `Term.renameNames swap (pad r)` equals `pad s` only up to function extensionality on node
+    arguments. So the proof compares random variables through `denote_renameNames_closed`
+    instead.
+- **BC14 FA.** `Valid.equiv_fa (f : D.Fn (.arrow a b))` turns `t, u⃗ ∼ s, v⃗` into
+  `f t, u⃗ ∼ f s, v⃗`. Its proof is `(equiv_fn f h).equiv_app`.
+
+### The encryption rule (task 2): not done; the design and what is missing
+
+- **The VCVio target.** `AsymmEncAlg.IND_CPA_OneTime_Game` with `IND_CPA_OneTime_Advantage`,
+  which is the `boolBias` of the game. `evalDist_boolBias_bind_coin`
+  (`VCVio/EvalDist/Monad/Bool.lean`) turns a game of the shape
+  `do b ← coin; z ← if b then real else rand; pure (b == z)` into
+  `(𝒟[real]).boolDist 𝒟[rand]`.
+- **The scheme induced by a model.** Fix a key name `nk` (index `ik`), a coin name `r`
+  (index `ir`), and honest symbols `pkOf : D.Fn (kTy ⇒ pkTy)` and
+  `encOf : D.Fn (msgTy ⇒ rTy ⇒ pkTy ⇒ cTy)`. At each `η`:
+  - key generation is `do c ← $ᵗ (M.Coin η kTy); pure (pkOf (M.sample η kTy c), ())`;
+  - encryption is `do c ← $ᵗ (M.Coin η rTy); pure (encOf m (M.sample η rTy c) pk)`.
+
+  The assumption concerns the scheme the model implements.
+- **The statement.** The context `u⃗` and the messages `m₀`, `m₁` are terms in the context
+  `[loc pkTy]`, whose free variable stands for the public key; this is BC14's "`nk` occurs only
+  under `pk`". The conclusion is
+
+  ```
+  pk(nk), enc(m₀{x ↦ pk(nk)}, r, pk(nk)), u⃗{x ↦ pk(nk)}
+    ∼ pk(nk), enc(m₁{x ↦ pk(nk)}, r, pk(nk)), u⃗{x ↦ pk(nk)}
+  ```
+
+  - The semantic side conditions say that the values of `u⃗`, `m₀` and `m₁` at `(x := X, ρ)` do
+    not change when the key slot or the coin slot of `ρh` is updated, which is A3's
+    `denote_update_eq` shape.
+  - The hypothesis is `∀ A, (C M).distinguishes A → negligible fun η => IND_CPA_OneTime_Advantage
+    (scheme M η) runtime (encReduction A η)`.
+- **The named reduction.**
+  `encReduction : Distinguisher M (pkTy :: cTy :: τs) → (η : ℕ) →
+  IND_CPA_OneTime_Adversary (scheme M η)`.
+  - `chooseMessages pk` samples `ρa` and `ρh`, then returns the values of `m₀` and `m₁` at
+    `(x := pk, ρ)` with the state `(pk, ρa, ρh)`.
+  - `distinguish (pk, ρa, ρh) c` returns `A η (pk, c, u⃗ at (x := pk, ρ)) ρa`.
+  - It needs no inversion of `pk`: the side conditions let it use its own key and coin
+    coordinates.
+- **What is missing: the per-`η` equality.** It is
+  `advantage A left right η = IND_CPA_OneTime_Advantage (scheme M η) runtime (encReduction A η)`.
+  It needs four pieces of about 20–40 lines each:
+  1. Rewrite the game into the `coin / real / rand` shape (a `bind_congr` on the hidden bit),
+     then apply `evalDist_boolBias_bind_coin`. The losslessness side conditions hold because
+     everything is uniform sampling.
+  2. A uniform-tape coupling. The map `(kc, rc, ρh) ↦ (ρh[key := kc][coin := rc], ρh key,
+     ρh coin)` is a bijection of `Coin × Coin × TapeH`. So under `$ᵗ` the updated tape is
+     uniform, and the discarded old coordinates marginalize away.
+     `prEvent_uniformSample_pair_of_bijective` and `prEvent_uniformSample_equiv` are the tools.
+  3. Use locality (`denote_cons_congr`) and `denote_substOne`, so the value of
+     `u⃗{x ↦ pk(nk)}` at `ρ` is the value of `u⃗` at `(x := pk value, ρ)`. Then use the side
+     conditions to move the key and coin coordinates.
+  4. Lift: `negligible_of_le` and the hypothesis.
+- **Non-vacuity, not yet done.** A scheme that leaks the message (`encOf m r pk := m`) makes the
+  conclusion fail with advantage one, by the distinguisher "the second entry equals `true`". Its
+  proof is like `TwoTimePad.not_valid_reuse`. The reuse countermodel `TwoTimePad.not_valid_reuse`
+  stands.
+- **The estimate** is a session's work. The coupling (piece 2) is the main risk, and it is
+  generic: "updating finitely many coordinates of a uniform product tape with fresh uniform coins
+  keeps it uniform" belongs beside A3's `Scoped/Measure.lean`.
+
+### Ledger
+
+- **L12** narrows to polynomial time: independence and identical distribution are structural.
+- **L16** is closed.
+- **L10** is unchanged.

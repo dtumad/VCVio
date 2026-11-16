@@ -71,7 +71,7 @@ namespace Distinguisher
   fun η e ρa => A η (Env.cons (e _ .zero (e _ (.succ .zero))) e.tail.tail) ρa
 
 /-- The reduction for FA-Fn: prepend the value of an honest symbol, then test. -/
-@[expose] def fn (f : D.Fn) (A : Distinguisher M (D.fnTy f :: τs)) : Distinguisher M τs :=
+@[expose] def fn (f : D.Fn τ) (A : Distinguisher M (τ :: τs)) : Distinguisher M τs :=
   fun η e ρa => A η (Env.cons (M.fn η f) e) ρa
 
 /-- The reduction for FA-Adv: prepend an attacker computation run on the same attacker tape,
@@ -92,6 +92,12 @@ then test. -/
   fun η e ρa => A η
     (Env.cons (cond (e _ .zero) (e _ (.succ .zero)) (e _ (.succ (.succ .zero)))) e.tail.tail.tail)
     ρa
+
+/-- The reduction for Perm: reindex the vector along a map of positions that preserves types
+(PolyFun's `Renaming`). Permutation, projection and duplication are instances. -/
+@[expose] def rename {τs' : List (Ty B)} (r : Renaming τs' τs) (A : Distinguisher M τs') :
+    Distinguisher M τs :=
+  fun η e ρa => A η (Env.rename r e) ρa
 
 end Distinguisher
 
@@ -114,7 +120,7 @@ structure AdvClass (M : Model D) where
   app_mem {a b : Ty B} {τs : List (Ty B)} {A : Distinguisher M (b :: τs)} :
     distinguishes A → distinguishes (A.app (a := a))
   /-- FA-Fn (`Valid.equiv_fn`). -/
-  fn_mem {τs : List (Ty B)} (f : D.Fn) {A : Distinguisher M (D.fnTy f :: τs)} :
+  fn_mem {τ : Ty B} {τs : List (Ty B)} (f : D.Fn τ) {A : Distinguisher M (τ :: τs)} :
     distinguishes A → distinguishes (A.fn f)
   /-- FA-Adv (`Valid.equiv_adv`). -/
   adv_mem {τ : Ty B} {τs : List (Ty B)} {g : AttackerFn M τ} {A : Distinguisher M (τ :: τs)} :
@@ -128,6 +134,9 @@ structure AdvClass (M : Model D) where
   /-- If (`Valid.equiv_ite`). -/
   ite_mem {a : Ty B} {τs : List (Ty B)} {A : Distinguisher M (a :: τs)} :
     distinguishes A → distinguishes A.ite
+  /-- Perm, and every reindexing of a vector (`Valid.equiv_rename`). -/
+  rename_mem {τs τs' : List (Ty B)} (r : Renaming τs' τs) {A : Distinguisher M τs'} :
+    distinguishes A → distinguishes (A.rename r)
 
 namespace AdvClass
 
@@ -141,6 +150,7 @@ namespace AdvClass
   tail_mem _ := trivial
   dup_mem _ := trivial
   ite_mem _ := trivial
+  rename_mem := by intros; trivial
 
 /-- `adv t` (LICS23 Fig. 2): an admitted attacker computation agrees with `t` everywhere. -/
 @[expose] def Adv (C : AdvClass M) (X : RV M τ) : Prop :=
@@ -176,6 +186,10 @@ namespace VecRV
   fun η ρ => Env.cons (cond (u η ρ _ .zero) (u η ρ _ (.succ .zero)) (u η ρ _ (.succ (.succ .zero))))
     (u η ρ).tail.tail.tail
 
+/-- Reindex along a map of positions. -/
+@[expose] def rename {τs' : List (Ty B)} (r : Renaming τs' τs) (u : VecRV M τs) : VecRV M τs' :=
+  fun η ρ => Env.rename r (u η ρ)
+
 end VecRV
 
 /-! ## Concrete statements: each reduction keeps the advantage at every `η` -/
@@ -187,7 +201,7 @@ variable (A : Distinguisher M τs)
 theorem advantage_app (A : Distinguisher M (b :: τs)) (u v : VecRV M (.arrow a b :: a :: τs)) :
     advantage A u.app v.app = advantage A.app u v := rfl
 
-theorem advantage_fn (f : D.Fn) (A : Distinguisher M (D.fnTy f :: τs)) (u v : VecRV M τs) :
+theorem advantage_fn (f : D.Fn τ) (A : Distinguisher M (τ :: τs)) (u v : VecRV M τs) :
     advantage A (VecRV.cons (fun η _ => M.fn η f) u) (VecRV.cons (fun η _ => M.fn η f) v) =
       advantage (A.fn f) u v := rfl
 
@@ -203,6 +217,9 @@ theorem advantage_dup (A : Distinguisher M (τ :: τ :: τs)) (u v : VecRV M (τ
 
 theorem advantage_ite (A : Distinguisher M (a :: τs)) (u v : VecRV M (.bool :: a :: a :: τs)) :
     advantage A u.ite v.ite = advantage A.ite u v := rfl
+
+theorem advantage_rename {τs' : List (Ty B)} (r : Renaming τs' τs) (A : Distinguisher M τs')
+    (u v : VecRV M τs) : advantage A (u.rename r) (v.rename r) = advantage (A.rename r) u v := rfl
 
 /-- Changing a vector where it is rarely different changes an advantage by at most the
 probability that it differs. -/
@@ -247,7 +264,7 @@ theorem Indist.app {u v : VecRV M (.arrow a b :: a :: τs)} (h : C.Indist u v) :
   exact h A.app (C.app_mem hA)
 
 /-- FA-Fn, by the reduction `Distinguisher.fn`. -/
-theorem Indist.fn (f : D.Fn) (h : C.Indist u v) :
+theorem Indist.fn (f : D.Fn τ) (h : C.Indist u v) :
     C.Indist (VecRV.cons (fun η _ => M.fn η f) u) (VecRV.cons (fun η _ => M.fn η f) v) :=
   fun A hA => by
   rw [advantage_fn]
@@ -280,6 +297,12 @@ theorem Indist.ite {u v : VecRV M (.bool :: a :: a :: τs)} (h : C.Indist u v) :
     C.Indist u.ite v.ite := fun A hA => by
   rw [advantage_ite]
   exact h A.ite (C.ite_mem hA)
+
+/-- Perm, by the reduction `Distinguisher.rename`. -/
+theorem Indist.rename {τs' : List (Ty B)} (r : Renaming τs' τs) (h : C.Indist u v) :
+    C.Indist (u.rename r) (v.rename r) := fun A hA => by
+  rw [advantage_rename]
+  exact h (A.rename r) (C.rename_mem r hA)
 
 /-- Rewriting under an overwhelming equality: if `u` and `u'` differ with negligible probability,
 `u` is indistinguishable from whatever `u'` is. -/

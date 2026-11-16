@@ -15,12 +15,12 @@ Renaming the names of a closed vector of terms gives an indistinguishable vector
 α-renaming of names). `Term.renameNames π` replaces every name `n` by `π n`; names are indexed by
 their types, so `π` preserves types and the renaming needs no casts.
 
-The rule is sound in models where renaming the names is a bijection `σ` of the honest tapes:
-`n` reads from `σ ρh` what `π n` reads from `ρh` (`Model.RenamesNames`). The uniform distribution
-is invariant under `σ`, so every distinguisher has advantage zero. LICS23 asks of names only that
-their samplings be independent and identically distributed for each output type; when each name
-and index reads its own slice of the honest tape, such a `σ` exchanges the slices. The
-restriction is a hypothesis of the rule, not derived from those requirements.
+The rule holds wherever renaming the names is a bijection `σ` of the honest tapes: `n` reads
+from `σ ρh` what `π n` reads from `ρh` (`Model.RenamesNames`). The uniform distribution is
+invariant under `σ`, so every distinguisher has advantage zero. Every model has such a `σ` for a
+bijective renaming (`Model.renamesNames`): the honest tape has one coordinate per name and
+index, and `σ` permutes the coordinates (`Model.tapePerm`). So `Valid.equiv_renameNames_of_equiv`
+holds in every model.
 
 The vectors must be closed: a free variable stands for any random variable, which may read the
 honest tape, and then renaming is unsound.
@@ -52,6 +52,23 @@ variable {B : Type} {D : Decl B}
     Prop :=
   ∀ η, ∃ σ : M.TapeH η ≃ M.TapeH η,
     ∀ {a b : Ty B} (n : D.Name a b) i ρh, M.name η (π n) i ρh = M.name η n i (σ ρh)
+
+/-- Permute the coordinates of the honest tape along a bijective renaming of names. -/
+@[expose] def Model.tapePerm (M : Model D) (η : ℕ) (π : ∀ {a b : Ty B}, D.Name a b ≃ D.Name a b) :
+    M.TapeH η ≃ M.TapeH η where
+  toFun ρh k := ρh ⟨⟨k.1.1, k.1.2.1, π k.1.2.2⟩, k.2⟩
+  invFun ρh k := ρh ⟨⟨k.1.1, k.1.2.1, π.symm k.1.2.2⟩, k.2⟩
+  left_inv ρh := funext fun ⟨⟨a, b, n⟩, i⟩ => by
+    change ρh ⟨⟨a, b, π (π.symm n)⟩, i⟩ = ρh ⟨⟨a, b, n⟩, i⟩
+    rw [π.apply_symm_apply]
+  right_inv ρh := funext fun ⟨⟨a, b, n⟩, i⟩ => by
+    change ρh ⟨⟨a, b, π.symm (π n)⟩, i⟩ = ρh ⟨⟨a, b, n⟩, i⟩
+    rw [π.symm_apply_apply]
+
+/-- A bijective renaming of names is the permutation `Model.tapePerm` of the honest tape. -/
+theorem Model.renamesNames (M : Model D) (π : ∀ {a b : Ty B}, D.Name a b ≃ D.Name a b) :
+    M.RenamesNames fun n => π n :=
+  fun η => ⟨M.tapePerm η π, fun _ _ _ => by rfl⟩
 
 variable {M : Model D} {π : ∀ {a b : Ty B}, D.Name a b → D.Name a b}
 
@@ -103,5 +120,12 @@ theorem Valid.equiv_renameNames {R : Model D → Prop} {C : ∀ M : Model D, Adv
   simp only [hrv]
   exact (SampleableType.prEvent_uniformSample_equiv ((Equiv.refl _).prodCongr σ)
     fun ρ => A η (Vec.rv M (C M) u env η ρ) ρ.1 = true).symm
+
+/-- **Name renaming**, in every model: a closed vector is indistinguishable from its renaming
+along a bijection of names. -/
+theorem Valid.equiv_renameNames_of_equiv {R : Model D → Prop} {C : ∀ M : Model D, AdvClass M}
+    (π : ∀ {a b : Ty B}, D.Name a b ≃ D.Name a b) {Θ : List (Form D [])} {τs : List (Ty B)}
+    (u : Vec D [] τs) : Valid R C Θ (.equiv u (u.renameNames fun n => π n)) :=
+  Valid.equiv_renameNames (fun M _ => M.renamesNames π) u
 
 end SquirrelLogic

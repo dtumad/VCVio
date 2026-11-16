@@ -16,14 +16,16 @@ Encryption rules (BC14 CCA1, SP21 ENC-KP, LICS23) require the randomness of the 
 ciphertext to be fresh: it occurs nowhere else in the vectors. This file shows the condition is
 needed, in a model where the scheme is perfectly secure for one use.
 
-The scheme is the one-bit pad `enc m r = m xor r`, with the pad a name `r` read from a uniform
-honest tape bit. Then:
+The scheme is the one-bit pad `enc m k = m xor k`, with pads the names `r` and `s : bool → bool`,
+each reading its own uniform bit of the honest tape. Then:
 
 * `TwoTimePad.valid_fresh`: `enc false r ∼ enc true r` holds against every class of
   distinguishers (the pad is fresh);
 * `TwoTimePad.not_valid_reuse`: `enc false r, enc false r ∼ enc true r, enc false r` fails
   against the class of all distinguishers (the pad is reused): testing the two entries for
-  equality has advantage one.
+  equality has advantage one;
+* `TwoTimePad.valid_swap`: `r false ∼ s false`, an instance of name renaming at the
+  permutation exchanging `r` and `s`, which reads a different coordinate of the tape.
 -/
 
 public section
@@ -32,49 +34,62 @@ namespace SquirrelLogic.TwoTimePad
 
 open IPFunctor IPFunctor.ScopedSignature
 
-/-- One name, the pad, indexed by a Boolean. -/
+/-- Two names, the pads, indexed by a Boolean. -/
 inductive Name : Ty Empty → Ty Empty → Type where
   /-- The pad `r : bool → bool`. -/
   | r : Name .bool .bool
+  /-- The pad `s : bool → bool`. -/
+  | s : Name .bool .bool
 
-/-- No base types, the pad, one honest symbol (the encryption `bool → bool → bool`) and no
-attacker symbols. -/
+/-- No base types, the two pads, one honest symbol of each type (the encryption at
+`bool → bool → bool`) and no attacker symbols. -/
 @[expose] def decl : Decl Empty where
   labels b := b.elim
   Name := Name
-  nameDom_finite n := match n with | .r => trivial
-  Fn := Unit
-  fnTy _ := .arrow .bool (.arrow .bool .bool)
+  nameDom_finite := fun n => match n with | .r | .s => trivial
+  finite_names := Finite.of_injective (β := Bool)
+    (fun n => match n with | ⟨_, _, .r⟩ => true | ⟨_, _, .s⟩ => false)
+    fun | ⟨_, _, .r⟩, ⟨_, _, .r⟩, _ => rfl | ⟨_, _, .s⟩, ⟨_, _, .s⟩, _ => rfl
+  Fn _ := Unit
   Att := Empty
   attTy f := f.elim
 
-/-- The pad reads the honest tape, one uniform bit; encryption is `xor`. -/
+/-- Coins are bits; a pad of type `bool` is its coin; encryption is `xor`. -/
 @[expose] noncomputable def model : Model decl where
   TapeA _ := Unit
-  TapeH _ := Bool
   carrier b := b.elim
   nonempty b := b.elim
-  name _ := fun {_ _} n => match n with | .r => fun _ ρh => ρh
-  fn _ _ := fun m k => xor m k
+  Coin _ _ := Bool
+  sample η b := match b with
+    | .bool => id
+    | b => fun _ => Classical.choice (b.nonempty_value (fun b => b.elim) η)
+  finite_index _ := fun n => match n with | .r | .s => inferInstanceAs (Finite Bool)
+  fn η τ _ := match τ with
+    | .arrow .bool (.arrow .bool .bool) => fun m k => xor m k
+    | τ => Classical.choice (τ.nonempty_value (fun b => b.elim) η)
   att _ f := f.elim
 
 theorem model_respectsLabels : model.RespectsLabels := fun b => b.elim
 
-/-- The pad at index `false`. -/
-@[expose] def pad : FTerm decl [] .bool :=
-  FTerm.app (.node (.inl (.name Name.r)) fun p => nomatch p) FTerm.ff
+/-- The coordinate the pad `r` reads at index `false`. -/
+abbrev slotR (η : ℕ) : model.Slot η := ⟨⟨.bool, .bool, Name.r⟩, false⟩
 
-/-- Encryption of a message under the pad. -/
+/-- A pad at index `false`. -/
+@[expose] def pad (n : Name .bool .bool) : FTerm decl [] .bool :=
+  FTerm.app (.node (.inl (.name (D := decl) n)) fun p => nomatch p) FTerm.ff
+
+/-- Encryption of a message under the pad `r`. -/
 @[expose] def enc (m : FTerm decl [] .bool) : FTerm decl [] .bool :=
-  FTerm.app (FTerm.app (FTerm.fn ()) m) pad
+  FTerm.app (FTerm.app (FTerm.fn (D := decl) (a := .arrow .bool (.arrow .bool .bool)) ()) m)
+    (pad .r)
 
-theorem denote_enc (C : AdvClass model) (m : FTerm decl [] .bool) (env : Env (Kind.Value model) [])
-    (η : ℕ) (ρ : model.Tape η) :
+theorem denote_enc (C : AdvClass model) (m : FTerm decl [] .bool)
+    (env : Env (Kind.Value model) []) (η : ℕ) (ρ : model.Tape η) :
     (enc m).denote (fullInterp model C) env η ρ =
-      xor (m.denote (fullInterp model C) env η ρ) ρ.2 := rfl
+      xor (m.denote (fullInterp model C) env η ρ) (ρ.2 (slotR η)) := rfl
 
 /-- With a fresh pad, the two encryptions are indistinguishable for every class: flipping the
-tape bit maps one to the other. -/
+tape maps one to the other. -/
 theorem valid_fresh (C : ∀ M : Model decl, AdvClass M) :
     Valid (fun M => M = model) C (Γ := []) []
       (.equiv (Env.cons (enc .ff) Env.empty) (Env.cons (enc .tt) Env.empty)) := by
@@ -83,11 +98,14 @@ theorem valid_fresh (C : ∀ M : Model decl, AdvClass M) :
   have he : ∀ ρ, Vec.rv model (C model) (Env.empty : Vec decl [] []) env η ρ = Env.empty :=
     fun _ => Env.eq_empty _
   simp only [Vec.rv_cons, VecRV.cons, denote_enc, FTerm.denote_tt, FTerm.denote_ff, he]
-  let flip : model.TapeH η ≃ model.TapeH η := ⟨not, not, Bool.not_not, Bool.not_not⟩
+  let flip : model.TapeH η ≃ model.TapeH η :=
+    ⟨fun ρh k => !ρh k, fun ρh k => !ρh k, fun _ => funext fun _ => Bool.not_not _,
+      fun _ => funext fun _ => Bool.not_not _⟩
   refine Eq.trans ?_ (SampleableType.prEvent_uniformSample_equiv ((Equiv.refl _).prodCongr flip) _)
   refine prEvent_congr _ _ _ fun ρ => ?_
-  obtain ⟨a, b⟩ := ρ
-  cases b <;> rfl
+  change A η (Env.cons (xor false (ρ.2 (slotR η))) Env.empty) ρ.1 = true ↔
+    A η (Env.cons (xor true (!ρ.2 (slotR η))) Env.empty) ρ.1 = true
+  cases ρ.2 (slotR η) <;> rfl
 
 /-- With the pad reused, testing the two entries for equality tells the vectors apart with
 advantage one. -/
@@ -101,7 +119,30 @@ theorem not_valid_reuse :
   simp only [advantage, Vec.rv_cons, VecRV.cons, Env.cons_zero, Env.cons_succ, denote_enc,
     FTerm.denote_tt, FTerm.denote_ff, decide_true, decide_eq_true_eq]
   rw [OracleComp.prEvent_true_eq_one, prEvent_eq_zero_of_forall_not _ _ fun ρ h => by
-    obtain ⟨_, b⟩ := ρ; revert h; cases b <;> exact fun h => Bool.noConfusion h,
+    revert h; cases ρ.2 (slotR η) <;> exact fun h => Bool.noConfusion h,
     ENNReal.absDiff_zero_right]
+
+/-- The permutation of names exchanging the two pads. -/
+@[expose] def swap : ∀ {a b : Ty Empty}, decl.Name a b ≃ decl.Name a b
+  | .bool, .bool => ⟨fun | .r => .s | .s => .r, fun | .r => .s | .s => .r,
+      fun n => by cases n <;> rfl, fun n => by cases n <;> rfl⟩
+  | _, _ => Equiv.refl _
+
+/-- Name renaming at the exchange of the pads, in every model: `r false ∼ s false`. -/
+theorem valid_swap {R : Model decl → Prop} {C : ∀ M : Model decl, AdvClass M} :
+    Valid R C (Γ := []) []
+      (.equiv (Env.cons (pad .r) Env.empty) (Env.cons (pad .s) Env.empty)) := by
+  intro M hl hR env hΘ
+  have h := Form.holds_equiv.1 (Valid.equiv_renameNames_of_equiv (R := R) (C := C) (Θ := [])
+    swap (Env.cons (pad .r) Env.empty) M hl hR env hΘ)
+  have hrv : Vec.rv M (C M) (Env.cons (pad .s) Env.empty) env =
+      Vec.rv M (C M) (Vec.renameNames (fun n => swap n) (Env.cons (pad .r) Env.empty)) env := by
+    funext η ρ τ x
+    cases x with
+    | zero => exact (denote_renameNames_closed (C M) (σ := M.tapePerm η swap)
+        (fun _ _ _ => by rfl) ρ (pad .r) env).symm
+    | succ x => exact nomatch x
+  rw [Form.holds_equiv, hrv]
+  exact h
 
 end SquirrelLogic.TwoTimePad
