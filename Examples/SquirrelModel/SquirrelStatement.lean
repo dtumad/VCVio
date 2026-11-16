@@ -58,7 +58,7 @@ the frame, and the final guess `f` of the frame. -/
   f <$> (ofSchedule att σ []).liftM (toChain n)
 
 /-- Running a query node through a handler runs the handler, then the continuation. -/
-theorem liftM_liftBind {P : PFunctor} {m : Type → Type} [Monad m] {α : Type}
+private theorem liftM_liftBind {P : PFunctor} {m : Type → Type} [Monad m] {α : Type}
     (h : (a : P.A) → m (P.B a)) (a : P.A) (k : P.B a → FreeM P α) :
     (FreeM.liftBind a k).liftM h = h a >>= fun o => (k o).liftM h := rfl
 

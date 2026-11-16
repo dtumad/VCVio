@@ -60,13 +60,8 @@ the walk stops. -/
 
 /-! ## Shifting a schedule's starting frame -/
 
-/-- Binding after a query binds inside its continuation. -/
-theorem liftBind_bind' {β : Type} (a : Act × Msg) (k : Option Msg → FreeM (iface Act Msg) α)
-    (f : α → FreeM (iface Act Msg) β) :
-    (FreeM.liftBind a k >>= f) = FreeM.liftBind a (fun o => k o >>= f) := rfl
-
 /-- Mapping over a query maps inside its continuation. -/
-theorem map_liftBind' {β : Type} (f : α → β) (a : Act × Msg)
+private theorem map_liftBind {β : Type} (f : α → β) (a : Act × Msg)
     (k : Option Msg → FreeM (iface Act Msg) α) :
     f <$> FreeM.liftBind a k = FreeM.liftBind a (fun o => f <$> k o) := rfl
 
@@ -78,7 +73,7 @@ theorem ofSchedule_eq_map_append (att : Frame Msg → Msg) (σ : List Act) (fr :
   | nil => rfl
   | cons a σ ih =>
     simp only [ofSchedule, List.nil_append]
-    rw [map_liftBind']
+    rw [map_liftBind]
     congr 1
     funext o
     rw [ih att (o :: fr), ih (fun fr' => att (fr' ++ fr)) [o], Functor.map_map]
