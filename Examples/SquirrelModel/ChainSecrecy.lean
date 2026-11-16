@@ -205,4 +205,34 @@ theorem chainAdv_le [Fintype K] (A : ChainAdversary K M) {q : ℕ}
       exact le_of_eq (SampleableType.prEvent_uniformSample_eq_singleton' z.1.1)
   simpa only [prEvent_norm] using key
 
+/-! ## The bound is attained, its hypothesis can be met, and it is small -/
+
+/-- At `q = 0` the bound is attained: guessing a fixed key succeeds with probability `1 / |K|`. -/
+theorem chainAdv_pure [Fintype K] (k : K) :
+    chainAdv (pure k : OracleComp (advSpec K M) K) = (Fintype.card K : ℝ≥0∞)⁻¹ := by
+  simp only [chainAdv, chainExp, simulateQ_pure, StateT.run'_eq, StateT.run_pure, map_pure,
+    prEvent_norm]
+  exact SampleableType.prEvent_uniformSample_eq_singleton' k
+
+/-- A probe attacker that updates, corrupts, hashes the leaked key and guesses makes three
+charged queries, so `chainAdv_le` applies to it with `q = 3`. -/
+example (x u : M) :
+    IsQueryBoundP (do
+      let _ ← (liftM ((advSpec K M).query (.inr (.inl x))) : OracleComp (advSpec K M) Unit)
+      let k ← (liftM ((advSpec K M).query (.inr (.inr u))) : OracleComp (advSpec K M) K)
+      (liftM ((advSpec K M).query (.inl (.inr (k, x)))) : OracleComp (advSpec K M) K))
+      (fun t => isCoin t = false) 3 := by
+  refine isQueryBoundP_bind (n := 1) (m := 2) ?_ fun _ _ => ?_
+  · exact (isQueryBoundP_query_iff _ _ _).2 fun _ => Nat.one_pos
+  refine isQueryBoundP_bind (n := 1) (m := 1) ?_ fun _ _ => ?_
+  · exact (isQueryBoundP_query_iff _ _ _).2 fun _ => Nat.one_pos
+  · exact (isQueryBoundP_query_iff _ _ _).2 fun _ => Nat.one_pos
+
+/-- At a 256-bit key and `2^64` queries the bound is below one. -/
+example : ((2 ^ 64 : ℕ) + 1 : ℝ≥0∞) * (Fintype.card (Fin (2 ^ 256)) : ℝ≥0∞)⁻¹ < 1 := by
+  rw [Fintype.card_fin, ← div_eq_mul_inv]
+  refine ENNReal.div_lt_of_lt_mul ?_
+  rw [one_mul]
+  exact_mod_cast (by norm_num : 2 ^ 64 + 1 < 2 ^ 256)
+
 end SquirrelModel.Chain
