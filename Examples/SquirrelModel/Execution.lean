@@ -11,6 +11,15 @@ public import PolyFun.PFunctor.Free.Path.Execution
 /-!
 # Squirrel's execution model as a program run against a stateful handler
 
+**Translation.** Squirrel's actions, its timestamps, are the first components of positions of
+`iface Act Msg`, and an action's output is the answer at that position. A protocol's mutable cells
+are the state `S` of a `Protocol`; its names are parameters, as `chainProtocol` takes its initial
+secret, or are sampled by the step monad `m`. Squirrel's attacker function `att`, applied to the
+frame, is a function `att : Frame Msg → Msg`, and the attacker of a fixed trace `σ` is the free
+program `ofSchedule att σ`. The macros `input@τ`, `exec@τ` and `frame@τ` are `macros`, which the
+run of `Protocol.handler` computes (`run_ofSchedule`). Squirrel's attackers are the programs with
+`IsNonAdaptive σ`.
+
 The Squirrel prover describes a protocol as a set of *actions*. At each action the attacker
 supplies an input, the protocol checks a condition, updates its mutable cells and emits an output.
 The attacker's input at an action is a function `att` of the *frame*, the sequence of outputs so
@@ -130,6 +139,8 @@ equations: `input@τ = att(frame@pred τ)`, `exec@τ = exec@(pred τ) && cond@τ
 @[expose] def Macros.toRun (M : Macros Msg S) : Frame Msg × (S × Bool) :=
   (M.frame, (M.cells, M.exec))
 
+/-! ## Adequacy -/
+
 section adequacy
 
 variable {m : Type → Type} [Monad m] [LawfulMonad m]
@@ -203,10 +214,10 @@ theorem not_isNonAdaptive_adaptiveProbe (σ : List Bool) : ¬ IsNonAdaptive σ a
 
 /-! ## The motivating example of the paper
 
-The hash chain of Hérouard, Jacomme, Koutsos and Lallemand (CCS 2026, Section 2): a cell `ck`
-starts at a secret `s`; action `A i` replaces it with `h(⟨ck, x⟩)` for the attacker's input `x` and
-outputs a constant; `Corrupt` does the same update and outputs the new `ck`; `ROM j` answers the
-attacker's hash queries. -/
+The hash chain of Hérouard, Jacomme, Koutsos and Lallemand (CCS 2026), §2: a cell `ck` starts at
+a secret `s`; action `A i` replaces it with `h(⟨ck, x⟩)` for the attacker's input `x` and outputs a
+constant; `Corrupt` does the same update and outputs the new `ck`; `ROM j` answers the attacker's
+hash queries. -/
 
 /-- The actions of the motivating example. -/
 inductive ChainAct (n : ℕ) where

@@ -11,12 +11,18 @@ public import VCVio.OracleComp.Constructions.SampleableType.Measure
 /-!
 # Forward secrecy of the hash chain, against an adaptive attacker
 
-The motivating example of Hérouard, Jacomme, Koutsos and Lallemand (CCS 2026, Section 2) is a
-one-sided ratchet: a key `ck` starts at a secret `s`, each update replaces it with `H(ck, x)` for
-an attacker-chosen `x`, and a corruption leaks the key after an update. The attacker has the
-random oracle `H`. The paper proves forward secrecy in Squirrel,
-`[happens(t, t')] → [safe t] → frame@t' ⊬ ck@t`, for a trace fixed in advance and a single
-corruption.
+**Translation.** In the motivating example of Hérouard, Jacomme, Koutsos and Lallemand
+(CCS 2026), §2, the keyed hash `h(·, k)` becomes a lazily sampled random oracle `H : K × M → K`
+(`hashSpec`). The actions `A i`, `Corrupt` and `ROM j` become the oracles `upd`, `corrupt` and the
+hash oracle of `advSpec`, answered by `chainImpl` with the cell `ck` as state, and Squirrel's shared
+random tape becomes the coin oracle. The name `s` is the uniformly sampled initial key. The
+attacker is one free program `A : ChainAdversary K M` over these oracles, and `frame@t' ⊬ ck@init`
+becomes the bound on `chainAdv A`, its probability of outputting `s`.
+
+The example is a one-sided ratchet: a key `ck` starts at a secret `s`, each update replaces it
+with `H(ck, x)` for an attacker-chosen `x`, and a corruption leaks the key after an update. The
+paper proves forward secrecy in Squirrel, `[happens(t, t')] → [safe t] → frame@t' ⊬ ck@t`, for a
+trace fixed in advance and a single corruption.
 
 Here the attacker is a program over four oracles: uniform coins, the hash oracle, `upd x` and
 `corrupt u` (`advSpec`). It may interleave them in any order, choose when to corrupt from what it
@@ -37,11 +43,10 @@ identifies its real game (`SecretEncoding.realImpl`) with the actual chain run, 
 game, which never reads `s`, at a cost of `q / |K|`. The ideal game's chance of outputting `s`
 is `1 / |K|`.
 
-## Not covered
+## Later keys
 
-Secrecy of a later safe key `ck@t` with `t > init` needs a hybrid over the updates before `t`:
-each step re-encodes the next key as a fresh secret, which needs a lemma moving the ideal game's
-table draw to the front. The expected bound is about `((t + 1) q + 1) / |K|`.
+Secrecy of a later safe key `ck@t`, for `t > init`, is `keyAdv_le` in `ChainLaterKeys.lean`: a
+hybrid over the updates before `t`, with bound `((t + 1) q + 1) / |K|`.
 -/
 
 public section
@@ -96,7 +101,7 @@ variable {K M}
 /-- The chain in the derivation world. The state is `none` while the key is still the secret: an
 update is then the derivation of its input. Afterwards the state holds the key, and updates are
 public hash queries on it. -/
-@[expose] def chainImplD :
+def chainImplD :
     QueryImpl (advSpec K M) (StateT (Option K) (OracleComp (derivSpec K M))) := fun
   | .inl t => StateT.lift ((derivSpec K M).query (.inl t))
   | .inr (.inl x) => StateT.mk fun
@@ -107,7 +112,7 @@ public hash queries on it. -/
       | some ck => (fun k => (k, some k)) <$> (derivSpec K M).query (.inl (.inr (ck, u)))
 
 /-- The chain game in the derivation world. -/
-@[expose] def chainGame (A : ChainAdversary K M) : OracleComp (derivSpec K M) (K × Option K) :=
+def chainGame (A : ChainAdversary K M) : OracleComp (derivSpec K M) (K × Option K) :=
   (simulateQ chainImplD A).run none
 
 /-- Query by query, answering derivations under the secret `s` turns the derivation-world chain
@@ -171,7 +176,7 @@ theorem run_realImpl_chainGame (s : K) (A : ChainAdversary K M) :
     (chainImplD_step s) A none
   rw [chainGame, SecretEncoding.realImpl, QueryImpl.simulateQ_compose,
     QueryImpl.simulateQ_mapStateTBase_run]
-  rw [show (none : Option K).getD s = s from rfl] at h
+  rw [Option.getD_none] at h
   rw [← h, simulateQ_map, StateT.run_map]
   rfl
 

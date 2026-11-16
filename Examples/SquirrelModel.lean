@@ -28,6 +28,20 @@ free programs and handlers, check its secrecy rules as lemmas about named reduct
 fixed traces, prove the paper's motivating example with adaptive corruption, and prove one healing
 step of its ratchet.
 
+## Translation
+
+* Actions (timestamps) are positions of `iface Act Msg`; a protocol's mutable cells are the state
+  of a `Protocol`; names are values that the protocol or the experiment samples.
+* The attacker functions `att`, reading a shared random tape, are one free program over the
+  attacker's interface: adaptive in general, `ofSchedule att σ` for a fixed trace `σ`.
+* The macros `input@τ`, `exec@τ` and `frame@τ` are the run of `Protocol.handler`.
+* `u ⊬ v` is `deduceAdv` at a fixed security parameter and `NonDeducible` over a class of
+  adversaries; `u, o ⊬ v` with an oracle is `deduceAdvO`; `u ▷ v` is `DeducibleBy`; `u ∼ v` is
+  `Indist`; `[φ]` is `Overwhelming`; `adv` is `AdvClass`.
+* Validity in all models is universal quantification over protocols, handlers and adversaries.
+* The keyed hash `h(·, k)` is a random oracle (`ChainSecrecy`, `ChainLaterKeys`, `Healing`) or a
+  PRF (`PRFChain`).
+
 ## Execution
 
 1. `Execution.lean`. The attacker's view is a polynomial functor (`iface`), the protocol a stateful

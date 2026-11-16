@@ -11,6 +11,10 @@ public import Examples.SquirrelModel.Asymptotic
 /-!
 # Forward secrecy of the hash chain, asymptotically
 
+**Translation.** Squirrel's security parameter `η` is the key length, with keys `Fin (2 ^ η)`. In
+place of a polynomial-time attacker, an attacker family `A η` has a polynomial query bound, and
+`frame@t' ⊬ ck@init` in Squirrel's asymptotic semantics is `negligible fun η => chainAdv (A η)`.
+
 Squirrel states its results asymptotically: a probability is negligible in the security parameter
 `η`. `chainAdv_le` gives the concrete bound `(q + 1) / |K|`. With `η`-bit keys
 (`K = Fin (2 ^ η)`) and an attacker family making polynomially many queries, that bound is

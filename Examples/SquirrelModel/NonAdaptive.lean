@@ -10,6 +10,11 @@ public import Examples.SquirrelModel.Execution
 /-!
 # Squirrel's attackers are exactly the non-adaptive programs
 
+**Translation.** A Squirrel attacker, a fixed trace `σ` with an attacker function `att` of the
+frame, is the program `ofSchedule att σ []`, and `IsNonAdaptive σ` says that a program visits
+exactly the actions `σ`. The two describe the same programs, up to a query-free continuation, so
+quantifying over Squirrel's attackers is quantifying over non-adaptive programs.
+
 `Execution.lean` shows that a Squirrel attacker, a fixed schedule `σ` together with a function
 `att` of the frame, is a non-adaptive program (`isNonAdaptive_ofSchedule`). This file proves the
 converse: every program over `iface Act Msg` whose paths all visit exactly the actions `σ` is such
@@ -53,7 +58,7 @@ the walk stops. -/
     residual (.liftBind a k) (o :: os) = residual (k o) os := rfl
 
 /-- The message a program sends at its root, or the default at a leaf. -/
-@[expose] def rootMsg [Inhabited Msg] : FreeM (iface Act Msg) α → Msg
+def rootMsg [Inhabited Msg] : FreeM (iface Act Msg) α → Msg
   | .pure _ => default
   | .liftBind a _ => a.2
 

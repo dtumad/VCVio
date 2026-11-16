@@ -13,14 +13,21 @@ import Mathlib.Algebra.Field.ZMod
 /-!
 # Healing: one honest exchange makes the root key secret again
 
+**Translation.** The ratchet's keyed hash `h(·, k)` is an unkeyed random oracle `H : K × G → K`.
+The exponents `x` and `y` of the honest exchange are sampled names, written `a` and `b`, and `g^x`
+is `a • g` in an additive group. The attacker after the compromise is a free program
+`A : HealingAdversary K G` that reads `rk`, `g`, `a • g` and `b • g` and queries `H` adaptively.
+Secrecy of `rk'` is the bound on `healingAdv rk g A`, an instance of `deduceAdvO`; Pc-Oracle is
+`deduceAdvO_le_pcOracle_sum`, and the CDH premise `g, g^x, g^y ⊬ g^{xy}` is `deduceAdv_cdhPair`.
+
 Hérouard, Jacomme, Koutsos and Lallemand (CCS 2026) prove post-compromise security of an
 asymmetric ratchet whose root key is updated as `rk' = h(⟨rk, g^{xy}⟩, k)`. After a compromise
 leaks `rk`, one honest Diffie–Hellman exchange, in which the attacker sees `g^x` and `g^y` but
-neither exponent, heals the session: `rk'` is secret again. In their proof (§4.3, the healing
-case) the secrecy of `g^{xy}` gives that of `rk'` through the right PRF rule PRF.R, once `rk'` is
-shown to be a fresh hash; `g^{xy}` itself is secret by Gap Diffie–Hellman, since their attacker
-also gets DDH oracles. With a random oracle in place of the keyed hash, the same step is
-Pc-Oracle at `m = ⟨rk, g^{xy}⟩`, whose premise `u, o' ⊬ m` comes down to
+neither exponent, heals the session: `rk'` is secret again. In the paper's proof (§4.3, the
+healing case) the secrecy of `g^{xy}` gives that of `rk'` through the right PRF rule PRF.R, once
+`rk'` is shown to be a fresh hash; `g^{xy}` itself is secret by Gap Diffie–Hellman, since the
+paper's attacker also gets DDH oracles. With a random oracle in place of the keyed hash, the same
+step is Pc-Oracle at `m = ⟨rk, g^{xy}⟩`, whose premise `u, o' ⊬ m` comes down to
 `g, g^x, g^y ⊬ g^{xy}`: computational Diffie–Hellman, as here.
 
 This file proves that step, with the group written additively (`a • g` for `g^a`).
@@ -165,7 +172,7 @@ theorem deduceAdvO_guessQuery_le_cdhExperiment [SampleableType F] [SampleableTyp
 /-! ## The ideal world -/
 
 /-- An event with the same probability after every outcome of a draw keeps that probability. -/
-private theorem prEvent_bind_eq_of_forall_eq' {α : Type} (mx : ProbComp α)
+private theorem prEvent_bind_eq_of_forall_prEvent_eq {α : Type} (mx : ProbComp α)
     (f : α → ProbComp Prop) {ε : ℝ≥0∞} (h : ∀ a, prEvent (f a) = ε) :
     prEvent (mx >>= f) = ε := by
   simpa using prEvent_bind_eq_of_forall_eq mx (prEvent_true_eq_one mx) f id (by simpa using h)
@@ -178,10 +185,10 @@ theorem deduceAdvO_programmedSample_eq_inv_card [SampleableType F] [SampleableTy
         (fun x => x.2.2.2) (fun x => x.2.2.1) A =
       (Fintype.card K : ℝ≥0∞)⁻¹ := by
   simp only [deduceAdvO, oracleExp, programmedSample, healingView, prEvent_norm, bind_assoc]
-  refine prEvent_bind_eq_of_forall_eq' _ _ fun a => prEvent_bind_eq_of_forall_eq' _ _
-    fun b => prEvent_bind_eq_of_forall_eq' _ _ fun H => ?_
+  refine prEvent_bind_eq_of_forall_prEvent_eq _ _ fun a => prEvent_bind_eq_of_forall_prEvent_eq _ _
+    fun b => prEvent_bind_eq_of_forall_prEvent_eq _ _ fun H => ?_
   rw [prEvent_bind_map_swap]
-  exact prEvent_bind_eq_of_forall_eq' _ _ fun z =>
+  exact prEvent_bind_eq_of_forall_prEvent_eq _ _ fun z =>
     SampleableType.prEvent_uniformSample_eq_singleton' z.1
 
 /-! ## Healing against the programmed hash -/
@@ -339,8 +346,8 @@ theorem healingAdv_pure [SampleableType F] [SampleableType K] [Fintype K]
   rw [healingAdv_eq_programmedAdv]
   simp only [programmedAdv, deduceAdvO, oracleExp, programmedSample, simulateQ_pure,
     StateT.run_pure, prEvent_norm, bind_assoc, map_pure]
-  refine prEvent_bind_eq_of_forall_eq' _ _ fun a => prEvent_bind_eq_of_forall_eq' _ _
-    fun b => prEvent_bind_eq_of_forall_eq' _ _ fun H => ?_
+  refine prEvent_bind_eq_of_forall_prEvent_eq _ _ fun a => prEvent_bind_eq_of_forall_prEvent_eq _ _
+    fun b => prEvent_bind_eq_of_forall_prEvent_eq _ _ fun H => ?_
   exact SampleableType.prEvent_uniformSample_eq_singleton' k
 
 /-- The hypotheses of `healingAdv_le` hold jointly: at the field and group `ZMod 2`, with root keys

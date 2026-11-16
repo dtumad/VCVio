@@ -10,10 +10,15 @@ public import Examples.SquirrelModel.ChainSecrecy
 /-!
 # Forward secrecy of later keys of the hash chain
 
+**Translation.** In Hérouard, Jacomme, Koutsos and Lallemand (CCS 2026), §2, the key `ck@t` is safe
+when no corruption happens up to `t`. Here `ck@t` is the key after the first `t` updates, and
+`[safe t]` is a restriction on the attacker's type, `SafeAdversary K M t`: no corruption among its
+first `t` chain operations. The keyed hash is the random oracle of `ChainSecrecy`, and
+`frame@t' ⊬ ck@t` is the bound on `keyAdv t A`, the attacker's probability of outputting that key.
+
 `ChainSecrecy` bounds the attacker's chance of outputting the initial key `ck₀ = s`. The paper's
-statement (Hérouard, Jacomme, Koutsos, Lallemand, CCS 2026, Section 2) covers every safe key:
-`[happens(t, t')] → [safe t] → frame@t' ⊬ ck@t`, where `ck@t` is safe when no corruption happens up
-to `t`. Here that is proved for every `t`, against an adaptive attacker in the random-oracle model.
+statement covers every safe key: `[happens(t, t')] → [safe t] → frame@t' ⊬ ck@t`. Here it is proved
+for every `t`, against an adaptive attacker in the random-oracle model.
 
 A `t`-safe attacker (`SafeAdversary K M t`) makes updates as its first `t` chain operations:
 before each of them it uses only coins and the hash oracle, and it chooses each update's input from
@@ -71,11 +76,13 @@ theorem simulateQ_liftHash {ι : Type} {spec : OracleSpec ι} {m : Type → Type
     simulateQ impl (liftHash spec oa) = simulateQ (fun t => impl (.inl t)) oa :=
   QueryImpl.simulateQ_liftComp_left_eq_of_apply impl _ (fun _ => rfl) oa
 
+/-- Lifting a program commutes with bind. -/
 theorem liftHash_bind {ι : Type} (spec : OracleSpec ι) {α β : Type}
     (oa : OracleComp (unifSpec + hashSpec K M) α) (f : α → OracleComp (unifSpec + hashSpec K M) β) :
     liftHash spec (oa >>= f) = liftHash spec oa >>= fun x => liftHash spec (f x) :=
   liftComp_bind (h := leftLift _ _) _ oa f
 
+/-- A lifted query is the same query in the left summand. -/
 theorem liftHash_query {ι : Type} (spec : OracleSpec ι) (t : (unifSpec + hashSpec K M).Domain) :
     liftHash spec (liftM ((unifSpec + hashSpec K M).query t) :
         OracleComp (unifSpec + hashSpec K M) _) =
@@ -118,7 +125,7 @@ theorem run_simulateQ_chainImpl_liftHash {α : Type} (oa : OracleComp (unifSpec 
 
 /-! ## One safe update -/
 
-section Step
+section step
 
 variable {β : Type}
 
@@ -133,7 +140,7 @@ names, and continue with `rest` from the new key. -/
   rest p.2 ck'
 
 /-- `stepRun` in the derivation world: the update is the derivation of its input. -/
-@[expose] def stepRunD (P : OracleComp (unifSpec + hashSpec K M) (M × β))
+def stepRunD (P : OracleComp (unifSpec + hashSpec K M) (M × β))
     (rest : β → K → OracleComp (unifSpec + hashSpec K M) (K × K)) :
     OracleComp (derivSpec K M) (K × K) := do
   let p ← liftHash (M →ₒ K) P
@@ -188,7 +195,7 @@ theorem isQueryBoundP_bind_of_stepRun {P : OracleComp (unifSpec + hashSpec K M) 
     simp only [bind_assoc, isQueryBoundP_query_bind_iff]
     exact ⟨h.1, fun u => ih u (h.2 u)⟩
 
-end Step
+end step
 
 /-! ## Attackers that leave the key after `t` updates safe -/
 
@@ -258,30 +265,17 @@ theorem isQueryBoundP_of_run'_simulateQ_chainImpl {A : ChainAdversary K M} {ck :
   | pure x => trivial
   | query_bind t k ih =>
     rw [isQueryBoundP_query_bind_iff]
-    rcases t with (n | t) | x | u
-    · simp only [add_apply_inl, simulateQ_bind, simulateQ_query, OracleQuery.input_query,
-        OracleQuery.cont_query, chainImpl, id_map, StateT.run'_eq, StateT.run_bind,
-        StateT.run_lift, bind_pure_comp, bind_map_left, map_bind, isQueryBoundP_query_bind_iff,
-        Sum.isRight_inl, Bool.false_eq_true, not_false_eq_true, true_or, ↓reduceIte,
-        isQueryBoundP_map_iff, true_and, isCoin, Bool.true_eq_false] at h ⊢
-      exact fun u => ih u (by simpa [StateT.run'_eq] using h u)
-    · simp only [add_apply_inl, add_apply_inr, simulateQ_bind, simulateQ_query,
+    rcases t with (n | t) | x | u <;>
+      simp only [add_apply_inl, add_apply_inr, simulateQ_bind, simulateQ_query,
         OracleQuery.input_query, OracleQuery.cont_query, chainImpl, id_map, StateT.run'_eq,
-        StateT.run_bind, StateT.run_lift, bind_pure_comp, bind_map_left, map_bind,
-        isQueryBoundP_query_bind_iff, Sum.isRight_inr, not_true_eq_false, false_or, ↓reduceIte,
-        isQueryBoundP_map_iff, isCoin] at h ⊢
-      exact ⟨h.1, fun u => ih u (by simpa [StateT.run'_eq] using h.2 u)⟩
-    · simp only [add_apply_inr, add_apply_inl, simulateQ_bind, simulateQ_query,
-        OracleQuery.input_query, OracleQuery.cont_query, chainImpl, id_map, StateT.run'_eq,
-        StateT.run_bind, StateT.run_mk, bind_map_left, map_bind, isQueryBoundP_query_bind_iff,
-        Sum.isRight_inr, not_true_eq_false, false_or, ↓reduceIte, isQueryBoundP_map_iff,
-        isCoin] at h ⊢
-      exact ⟨h.1, fun u => ih u (by simpa [StateT.run'_eq] using h.2 ck)⟩
-    · simp only [add_apply_inr, simulateQ_bind, simulateQ_query, OracleQuery.input_query,
-        OracleQuery.cont_query, chainImpl, id_map, StateT.run'_eq, StateT.run_bind, StateT.run_mk,
-        bind_map_left, map_bind, isQueryBoundP_query_bind_iff, Sum.isRight_inr, not_true_eq_false,
-        false_or, ↓reduceIte, isQueryBoundP_map_iff, isCoin] at h ⊢
-      exact ⟨h.1, fun u => ih u (by simpa [StateT.run'_eq] using h.2 u)⟩
+        StateT.run_bind, StateT.run_lift, StateT.run_mk, bind_pure_comp, bind_map_left, map_bind,
+        isQueryBoundP_query_bind_iff, Sum.isRight_inl, Sum.isRight_inr, Bool.false_eq_true,
+        Bool.true_eq_false, not_false_eq_true, not_true_eq_false, true_or, false_or, true_and,
+        ↓reduceIte, isQueryBoundP_map_iff, isCoin] at h ⊢
+    · exact fun u => ih u (by simpa [StateT.run'_eq] using h u)
+    · exact ⟨h.1, fun u => ih u (by simpa [StateT.run'_eq] using h.2 u)⟩
+    · exact ⟨h.1, fun u => ih u (by simpa [StateT.run'_eq] using h.2 ck)⟩
+    · exact ⟨h.1, fun u => ih u (by simpa [StateT.run'_eq] using h.2 u)⟩
 
 variable [SampleableType K] [DecidableEq K] [DecidableEq M]
 

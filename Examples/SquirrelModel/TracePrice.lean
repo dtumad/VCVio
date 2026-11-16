@@ -11,11 +11,17 @@ public import VCVio.OracleComp.Constructions.SampleableType.Measure
 /-!
 # The price of fixed traces
 
-Squirrel (Hérouard, Jacomme, Koutsos and Lallemand, CCS 2026) proves a property for every
-trace and every attacker against that trace: its attackers choose their messages adaptively, but
-the sequence of actions is fixed in advance. In this model those attackers are the non-adaptive
-programs (`IsNonAdaptive`, characterized by `eq_ofSchedule_bind_residual`). This file prices the
-step from them to attackers that choose their next action from earlier outputs.
+**Translation.** Squirrel's attackers for a trace `σ` are the programs with `IsNonAdaptive σ`; an
+attacker that picks its next action from earlier outputs is an arbitrary program over
+`iface Act Msg`. A bound proved in Squirrel for every trace is the hypothesis `hε`, quantified over
+all traces of length `n` and used at the guided programs `guided p σ`. The protocol is any stateful
+handler with a probability semantics, `Protocol.handler` in particular.
+
+Squirrel, as used by Hérouard, Jacomme, Koutsos and Lallemand (CCS 2026), proves a property for
+every trace and every attacker against it: the attacker's messages are adaptive, but its sequence
+of actions is fixed in advance. Those attackers are the non-adaptive programs (`IsNonAdaptive`,
+characterized by `eq_ofSchedule_bind_residual`). This file prices the step from them to attackers
+that choose their next action from earlier outputs.
 
 * `guided p σ` follows an adaptive program `p` along a fixed trace `σ`: it copies `p` while `p`'s
   actions agree with `σ`, finishes `σ` blindly at the first disagreement, and returns `p`'s result
@@ -251,11 +257,20 @@ theorem Protocol.map_run_handler_false {m : Type → Type} [Monad m] [LawfulMona
       (fun z : α × (S × Bool) => (z.1, (s, false))) <$> π.handler.run q (s, false) =
         π.handler.run q (s, false)
   | .pure a => by
-    rw [show (FreeM.pure a : FreeM (iface Act Msg) α) = pure a from rfl]
+    rw [FreeM.pure_eq_pure]
     simp
   | .liftBind q k => by
     rw [Handler.Stateful.run_liftBind]
     simp [Protocol.handler, StateT.run, Protocol.map_run_handler_false π s (k none)]
+
+/-- A fixed action matches a fair bit with probability at most `1 / 2`. -/
+theorem prEvent_uniformSample_head?_eq_some_le (σ : List Bool) :
+    Pr{let b ← $ᵗ Bool}[σ.head? = some b] ≤ 2⁻¹ := by
+  cases σ.head? with
+  | none => simp
+  | some a =>
+    simp only [Option.some.injEq]
+    exact (SampleableType.prEvent_uniformSample_eq_singleton' a).le.trans (by simp)
 
 /-- A toy protocol with actions and messages `Bool`. Its cells hold the bit revealed so far and
 whether a check has passed. The first action, whichever it is, samples a fair bit `b` and outputs
@@ -306,7 +321,7 @@ theorem prEvent_twoStep_le_of_isNonAdaptive (σ : List Bool) (q : FreeM (iface B
     Pr{let z ← twoStep.handler.run q (twoStep.init, true)}[z.2.1.2 = true] ≤ 2⁻¹ := by
   match σ, q, hq with
   | _, .pure x, _ =>
-    rw [show (FreeM.pure x : FreeM (iface Bool Bool) α) = pure x from rfl]
+    rw [FreeM.pure_eq_pure]
     simp [twoStep]
   | [], .liftBind q₀ k, hq =>
     exact absurd (hq ⟨none, FreeM.Path.ofHandler (fun _ => none) (k none)⟩)
@@ -320,7 +335,7 @@ theorem prEvent_twoStep_le_of_isNonAdaptive (σ : List Bool) (q : FreeM (iface B
       generalize k (some b) = r at hkb
       match σ', r, hkb, hb with
       | _, .pure y, _, _ =>
-        rw [show (FreeM.pure y : FreeM (iface Bool Bool) α) = pure y from rfl]
+        rw [FreeM.pure_eq_pure]
         simp
       | [], .liftBind q₁ k₁, hkb, _ =>
         exact absurd (hkb ⟨none, FreeM.Path.ofHandler (fun _ => none) (k₁ none)⟩)
@@ -332,11 +347,7 @@ theorem prEvent_twoStep_le_of_isNonAdaptive (σ : List Bool) (q : FreeM (iface B
         rw [Handler.Stateful.run_liftBind, twoStep_handler_run_some, ite_eq_right ha₁, pure_bind,
           ← Protocol.map_run_handler_false, prEvent_map]
         exact prEvent_eq_zero_of_forall_not _ _ fun _ => by simp
-    · cases σ'.head? with
-      | none => simp
-      | some a =>
-        simp only [Option.some.injEq]
-        exact (SampleableType.prEvent_uniformSample_eq_singleton' a).le.trans (by simp)
+    · exact prEvent_uniformSample_head?_eq_some_le σ'
 
 /-- Every run of `twoStepAttacker` makes exactly two queries. -/
 theorem length_twoStepAttacker (path : FreeM.Path twoStepAttacker) :
@@ -357,15 +368,6 @@ example : Pr{let z ← twoStep.handler.run twoStepAttacker (twoStep.init, true)}
 
 /-! ## The factor `|Act| ^ (n - 1)` is attained -/
 
-/-- A fixed action matches a fair bit with probability at most `1 / 2`. -/
-theorem prEvent_uniformSample_head?_eq_some_le (σ : List Bool) :
-    Pr{let b ← $ᵗ Bool}[σ.head? = some b] ≤ 2⁻¹ := by
-  cases σ.head? with
-  | none => simp
-  | some a =>
-    simp only [Option.some.injEq]
-    exact (SampleableType.prEvent_uniformSample_eq_singleton' a).le.trans (by simp)
-
 /-- A ladder of checks, with actions and messages `Bool`. The cells hold the bit that the next
 action must match, initially the public bit `false`, and the number of checks passed. Every action
 `a` is a check against the stored bit: it samples a fresh fair bit and outputs it, and on success
@@ -374,6 +376,7 @@ def ladder : Protocol ProbComp Bool Bool (Bool × ℕ) where
   init := (false, 0)
   step a _ s := (fun b => (decide (a = s.1), b, (b, s.2 + 1))) <$> ($ᵗ Bool)
 
+/-- The ladder starts at the public bit `false`, with no checks passed. -/
 theorem ladder_init : ladder.init = (false, 0) := by
   simp [ladder]
 
@@ -430,7 +433,7 @@ theorem prEvent_ladder_le_of_state (σ : List Bool) :
     intro q b' c k hq
     cases q with
     | pure x =>
-      rw [show (FreeM.pure x : FreeM (iface Bool Bool) α) = pure x from rfl]
+      rw [FreeM.pure_eq_pure]
       simp
     | liftBind q₀ k₀ =>
       exact absurd (hq ⟨none, FreeM.Path.ofHandler (fun _ => none) (k₀ none)⟩)

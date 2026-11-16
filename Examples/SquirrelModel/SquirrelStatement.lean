@@ -11,8 +11,14 @@ public import Examples.SquirrelModel.ChainSecrecy
 /-!
 # The paper's forward-secrecy statement, as a corollary
 
-The paper proves forward secrecy of its hash chain in Squirrel's form
-(`motivating-example.sp`, `forward_secrecy`):
+**Translation.** Squirrel's attacker for a fixed trace `σ` of the chain's actions (`ChainAct`) is
+`ofSchedule att σ []`, with messages computed by `att` from the frame. `toChain` answers each action
+with the corresponding oracle of `advSpec`, and the final guess `f` of the frame computes `ck@init`
+from `frame@t'`. The statement `frame@t' ⊬ ck@init` is the bound on
+`chainAdv (scheduleAdversary σ att f)`, for every trace `σ`, `att` and `f`.
+
+Hérouard, Jacomme, Koutsos and Lallemand (CCS 2026), §2, prove forward secrecy of their hash chain
+in Squirrel's form (`motivating-example.sp`, `forward_secrecy`):
 
   `[happens(t, t')] → [safe t] → frame@t' ⊬ ck@t`.
 
@@ -57,11 +63,6 @@ the frame, and the final guess `f` of the frame. -/
     (att : Frame (K × M) → K × M) (f : Frame (K × M) → K) : OracleComp (advSpec K M) K :=
   f <$> (ofSchedule att σ []).liftM (toChain n)
 
-/-- Running a query node through a handler runs the handler, then the continuation. -/
-private theorem liftM_liftBind {P : PFunctor} {m : Type → Type} [Monad m] {α : Type}
-    (h : (a : P.A) → m (P.B a)) (a : P.A) (k : P.B a → FreeM P α) :
-    (FreeM.liftBind a k).liftM h = h a >>= fun o => (k o).liftM h := rfl
-
 /-- Each action of the trace costs one charged query. -/
 theorem isQueryBoundP_liftM_ofSchedule {n : ℕ} (att : Frame (K × M) → K × M)
     (σ : List (ChainAct n)) (fr : Frame (K × M)) :
@@ -70,7 +71,7 @@ theorem isQueryBoundP_liftM_ofSchedule {n : ℕ} (att : Frame (K × M) → K × 
   induction σ generalizing fr with
   | nil => exact isQueryBoundP_pure _ _ _
   | cons a σ ih =>
-    rw [ofSchedule, liftM_liftBind, List.length_cons, Nat.add_comm]
+    rw [ofSchedule, FreeM.liftM, List.length_cons, Nat.add_comm]
     refine isQueryBoundP_bind (n := 1) ?_ fun o _ => ih (o :: fr)
     rcases a with _ | _ | _ <;>
       exact (isQueryBoundP_map_iff _ _ _).2 ((isQueryBoundP_query_iff _ _ _).2 fun _ => Nat.one_pos)

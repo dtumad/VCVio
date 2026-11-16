@@ -12,12 +12,17 @@ public import ToMathlib.MeasureTheory.Measure.Bool
 /-!
 # Non-deduction as the success of a named adversary
 
+**Translation.** Squirrel's terms `u` and `v`, with the names they contain, are the components of a
+joint sample `uv : ProbComp (α × β)`, and an attacker is a function `f : α → ProbComp β`. At a fixed
+security parameter, `u ⊬ v` says that `deduceAdv uv f` is small for every `f`, and `u ∼ v` enters
+as the `boolDist` advantage of a distinguisher. Each rule is an inequality with its reduction named
+(`freshLReduction`, `deduceDistinguisher`, `cdhReduction`). Squirrel's `adv` predicate has no
+counterpart here: the statements hold for every attacker.
+
 Hérouard, Jacomme, Koutsos and Lallemand (CCS 2026) add to the Squirrel prover a non-deduction
 predicate `u ⊬ v`: no polynomial-time attacker computes `v` from `u`, except with negligible
-probability. Here the same notion is a concrete quantity. A joint sample `uv : ProbComp (α × β)`
-gives the two random variables, and `deduceAdv uv f` is the probability that the adversary `f`
-computes the second component from the first. Squirrel's rules for `⊬` then become statements
-about named reductions:
+probability. `deduceAdv uv f` is the probability that `f` computes the second component of `uv`
+from the first, and Squirrel's rules for `⊬` become statements about named reductions:
 
 * `deduceAdv_freshL`: a fresh sample on the left does not help (rule FreshL);
 * `deduceAdv_weakL`: whatever is computable from `u'` is no more useful than `u'` (rule WeakL);
@@ -91,7 +96,7 @@ theorem deduceAdv_eq_evalDist_deduceDistinguisher [DecidableEq β] (uv : ProbCom
     deduceAdv uv f = 𝒟[uv >>= deduceDistinguisher f] {true} := by
   have key := prEvent_eq_evalDist_decide (do let z ← uv; let w ← f z.1; pure (z, w))
     (fun x => x.2 = x.1.2)
-  rw [show deduceDistinguisher f = fun z => do let w ← f z.1; pure (decide (w = z.2)) from rfl]
+  unfold deduceDistinguisher
   simpa only [deduceAdv, prEvent_norm] using key
 
 /-- **Rw-Equiv.** Changing the joint sample changes the adversary's success by at most the

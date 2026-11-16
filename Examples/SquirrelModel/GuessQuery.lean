@@ -12,6 +12,11 @@ public import VCVio.OracleComp.QueryTracking.QueryBound.Simulation
 /-!
 # From "the attacker queries `m`" to "the attacker computes `m`"
 
+**Translation.** Squirrel's premise `u, o' ⊬ m` of Pc-Oracle says, at a fixed security parameter,
+that `deduceAdvO s u m o' g` is small for every attacker `g`. The guessing argument names the
+attackers it uses, `guessQuery d₀ i f` for each query position `i`, and the attacker's query budget
+is `IsQueryBoundP`.
+
 `deduceAdvO_le_pcOracle` bounds the cost of puncturing an oracle at `m` by `queryAdvO`, the
 probability that the attacker *queries* `m`. Squirrel's Pc-Oracle rule instead ends in a
 non-deduction `u, o' ⊬ m`: no attacker *computes* `m`. This file closes that gap with the usual
@@ -22,7 +27,7 @@ input of its `i`-th query. If `f` makes at most `q` queries, then
 
 so Pc-Oracle holds with the single-message premise of Squirrel's rule, at a cost of one deducing
 adversary per query position (`deduceAdvO_le_pcOracle_sum`). This is the factor `q` in the
-paper's soundness proof of Rw-Oracle (Appendix C).
+soundness proof of Rw-Oracle by Hérouard, Jacomme, Koutsos and Lallemand (CCS 2026), Appendix C.
 -/
 
 public section

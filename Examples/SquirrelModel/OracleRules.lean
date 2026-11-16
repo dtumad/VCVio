@@ -10,7 +10,14 @@ public import VCVio.OracleComp.SimSemantics.StateT.UntilBad
 /-!
 # Squirrel's oracle rules as identical-until-bad
 
-Squirrel's secrecy logic (Hérouard, Jacomme, Koutsos and Lallemand, CCS 2026) has two rules about
+**Translation.** Squirrel's oracle `o` in `u, o ⊬ v` is a function `o x : D → R` of the shared
+sample `x ← s`, answered by the logging handler `logImpl (o x)`; `u` and `v` are functions of the
+same sample. The attacker is a free program `f : α → OracleComp (D →ₒ R) β`, whose queries may
+depend on earlier answers. At a fixed security parameter, `u, o ⊬ v` says that
+`deduceAdvO s u v o f` is small for every `f`, and the event that the attacker queries a point of
+`B` is `queryAdvO s u o f B`.
+
+The secrecy logic of Hérouard, Jacomme, Koutsos and Lallemand (CCS 2026) has two rules about
 oracles on the left of a non-deduction `u, o ⊬ v`:
 
 * **Rw-Oracle** replaces the oracle `o₁` by `o₂` when the two agree on every query the attacker
@@ -47,10 +54,13 @@ namespace SquirrelModel
 
 variable {Ω α β D R : Type}
 
+/-! ## The logging handler and the experiment -/
+
 /-- The oracle `o` as a handler that logs every query, newest first. -/
 @[expose] def logImpl (o : D → R) : QueryImpl (D →ₒ R) (StateT (List D) ProbComp) :=
   fun d => do modify (d :: ·); pure (o d)
 
+/-- One logged query answers `o d` and pushes `d` onto the log. -/
 theorem logImpl_run (o : D → R) (d : D) (log : List D) :
     (logImpl o d).run log = pure (o d, d :: log) := by
   simp [logImpl]
@@ -72,6 +82,8 @@ of `B`. -/
 @[expose] noncomputable def queryAdvO (s : ProbComp Ω) (u : Ω → α) (o : Ω → D → R)
     (f : α → OracleComp (D →ₒ R) β) (B : Ω → Set D) : ℝ≥0∞ :=
   Pr{let y ← oracleExp s u o f}[∃ d ∈ y.2.2, d ∈ B y.1]
+
+/-! ## Rw-Oracle and Pc-Oracle -/
 
 /-- Logging handlers for oracles that agree outside `B` agree until a query in `B` is logged. -/
 theorem agreeUntilBad_logImpl (o₁ o₂ : D → R) (B : Set D)

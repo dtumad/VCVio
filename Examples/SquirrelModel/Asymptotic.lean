@@ -11,6 +11,12 @@ public import VCVio.CryptoFoundations.Asymptotics.Security
 /-!
 # Squirrel's secrecy logic over a class of adversaries
 
+**Translation.** Squirrel's `adv` predicate is a class `C : AdvClass` of adversaries `Adv α β`
+indexed by the security parameter `η`, and its formulas over `η` are predicates on families
+`ℕ → ProbComp _`: `[φ]` is `Overwhelming`, `u ⊬ v` is `NonDeducible C`, `u ▷ v` is
+`DeducibleBy C g` and `u ∼ v` is `Indist C`. A rule valid in every model is a lemma for all families
+and every class meeting its hypotheses.
+
 Squirrel's global formulas are asymptotic: `[φ]` holds when `φ` is true with overwhelming
 probability in the security parameter `η`; `u ∼ v` when no polynomial-time attacker
 distinguishes them; `u ⊬ v := ∀ f [adv], [f u ≠ v]`; and `u ▷ v := ∃ f [adv], [f u = v]`. Its
@@ -30,8 +36,8 @@ Over a class `C` of `η`-indexed adversaries, the predicates are:
 
 The class is a parameter. VCVio's polynomial-time notions (`IsPPTBy`, `IsOraclePPTBy` in
 `Asymptotics/ComputationalComplexity.lean`) are relative to a cost backend, and the
-machine-level certificates their closure needs are not yet inhabited; strict uniform PPT
-(`IsPPT`) lives in cslib-frontier, on a newer toolchain. So every efficiency assumption a rule
+machine-level certificates their closure needs have no instances here; strict uniform PPT
+(`IsPPT`) is in cslib-frontier, on a different toolchain. So every efficiency assumption a rule
 uses is either a closure property of the class or a named membership hypothesis, each matching
 one closure lemma of cslib-frontier's `IsPPTOn`:
 

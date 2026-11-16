@@ -11,12 +11,16 @@ public import VCVio.CryptoFoundations.PRF
 /-!
 # Forward secrecy of the keyed hash chain, from a PRF
 
-This is the paper's own model of the hash chain (Hérouard, Jacomme, Koutsos, Lallemand, CCS 2026,
-Section 2). The hash is keyed (`hash h. name k`): the chain updates `ck := h(<ck, x>, k)` under a
-secret key `k`, the attacker's ROM action gives it oracle access to `h(·, k)`, and Squirrel assumes
-that `h` is a PRF. Here the hash oracle of `ChainSecrecy` is answered by `prf.eval k` for a secret
-key `k ← prf.keygen` (`prfChainExp`); the attacker and its four oracles are those of
-`ChainSecrecy`.
+**Translation.** The keyed hash `h(·, k)` of Hérouard, Jacomme, Koutsos and Lallemand (CCS 2026),
+§2, is a PRF `prf : PRFScheme Kp (K × M) K` evaluated under a secret key `k ← prf.keygen`, in place
+of the random oracle of `ChainSecrecy`. Squirrel's PRF assumption enters as the PRF advantage of the
+named reduction `chainReduction A`. The attacker and its oracles are those of `ChainSecrecy`, and
+`frame@t' ⊬ ck@init` is the bound on `prfChainAdv prf A`.
+
+This is the paper's own model of the hash chain. The hash is keyed (`hash h. name k`): the chain
+updates `ck := h(<ck, x>, k)` under a secret key `k`, the attacker's ROM action gives it oracle
+access to `h(·, k)`, and Squirrel assumes that `h` is a PRF. Here the hash oracle of `ChainSecrecy`
+is answered by `prf.eval k` (`prfChainExp`).
 
 `prfChainAdv_le` bounds the attacker's probability of outputting the initial key by the PRF
 advantage of the named reduction `chainReduction A` plus the random-oracle bound `(q + 1) / |K|`
