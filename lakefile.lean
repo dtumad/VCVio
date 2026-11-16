@@ -363,6 +363,12 @@ lean_lib VCVioTest
 /-- Lattice crypto test support modules (helpers, ACVP vectors). -/
 lean_lib LatticeCryptoTest
 
+/-- Squirrel's higher-order logic as scoped polynomial syntax: local terms, models over finite
+random tapes, and global formulas. Optional; build with `lake build SquirrelLogic`. -/
+lean_lib SquirrelLogic where
+  srcDir := "Interop/Squirrel"
+  roots := #[`SquirrelLogic]
+
 /-- SLH-DSA known-answer test executables (differential tests vs external reference signers).
 Test-only and deliberately kept out of the `HashSig` library aggregate: each KAT module carries a
 root-level `main`, and a `submodules` glob builds them independently so the entry points never
