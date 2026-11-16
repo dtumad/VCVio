@@ -16,6 +16,7 @@ public import Examples.SquirrelModel.ChainSecrecy
 public import Examples.SquirrelModel.SquirrelStatement
 public import Examples.SquirrelModel.ChainAsymptotic
 public import Examples.SquirrelModel.PRFChain
+public import Examples.SquirrelModel.Healing
 
 /-!
 # Squirrel inside PolyFun and VCVio: a tour
@@ -23,7 +24,8 @@ public import Examples.SquirrelModel.PRFChain
 Hérouard, Jacomme, Koutsos and Lallemand (CCS 2026) add a secrecy logic to the Squirrel prover and
 prove post-compromise security of a ratchet with it. These files model Squirrel's semantics with
 free programs and handlers, check its secrecy rules as lemmas about named reductions, price its
-fixed traces, and prove the paper's motivating example with adaptive corruption.
+fixed traces, prove the paper's motivating example with adaptive corruption, and prove one healing
+step of its ratchet.
 
 ## Execution
 
@@ -58,12 +60,18 @@ fixed traces, and prove the paper's motivating example with adaptive corruption.
 11. `PRFChain.lean`. **`prfChainAdv_le`**: the paper's keyed hash, assumed a PRF: the bound is the
     PRF advantage of the named reduction `chainReduction A` plus `(q + 1) / |K|`.
 
+## The ratchet: one healing step
+
+12. `Healing.lean`. **`healingAdv_le`**: after a compromise leaks `rk`, one honest Diffie–Hellman
+    exchange makes `rk' = H(rk, g^{ab})` secret again, up to the CDH success of named guessing
+    reductions plus `1 / |K|`; Pc-Oracle and CDH-as-non-deduction composed.
+
 ## What the statements assume
 
 The random-oracle results (`chainAdv_le` and its corollaries, the oracle rules) are
 information-theoretic: they hold against every adversary, counting only its oracle queries. The
-rule lemmas and `prfChainAdv_le` hold for every adversary and name the reduction they use, so the
-reduction's cost is its code. Efficiency enters only in `Asymptotic.lean` and in
+rule lemmas, `prfChainAdv_le` and `healingAdv_le` hold for every adversary and name the reductions
+they use, so each reduction's cost is its code. Efficiency enters only in `Asymptotic.lean` and in
 `negligible_prfChainAdv`, as named hypotheses: closure of the adversary class, and PRF security
 for the one reduction family used.
 -/
