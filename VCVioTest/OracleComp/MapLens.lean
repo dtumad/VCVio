@@ -17,7 +17,7 @@ runs use two summands answered differently and a backward map that is not the id
 fail if a lift picks the wrong summand or if a pulled-back handler ignores the backward map.
 -/
 
-@[expose] public section
+public section
 
 universe u v w
 
