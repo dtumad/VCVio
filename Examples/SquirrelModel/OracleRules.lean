@@ -34,9 +34,9 @@ handler theory VCVio already has. The oracle is answered by `logImpl`, which rec
   hypothesis of `deduceAdvO_le_rwOracle` can be met.
 
 Squirrel's rules end in a single-message non-deduction `u, o' ⊬ m`. Turning the query-log bound
-into that form costs a factor of the attacker's query count (guess which query hits `m`); that
-step is not formalized here. The adversary's only oracle is the hash oracle: its own randomness
-can be supplied through `u`, sampled with the rest by `s`.
+into that form costs a factor of the attacker's query count (guess which query hits `m`);
+`GuessQuery.lean` proves that step. The adversary's only oracle is the hash oracle: its own
+randomness can be supplied through `u`, sampled with the rest by `s`.
 -/
 
 public section
