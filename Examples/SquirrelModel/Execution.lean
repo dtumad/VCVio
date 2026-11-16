@@ -174,7 +174,7 @@ end adequacy
 visits exactly the actions `σ`, in order. Only the actions are fixed: the messages it sends may
 still depend on earlier outputs. This is the class of attackers Squirrel's fixed traces quantify
 over. -/
-def IsNonAdaptive {α : Type} (σ : List Act) (p : FreeM (iface Act Msg) α) : Prop :=
+@[expose] def IsNonAdaptive {α : Type} (σ : List Act) (p : FreeM (iface Act Msg) α) : Prop :=
   ∀ path : FreeM.Path p, (FreeM.Path.positions p path).map Prod.fst = σ
 
 /-- Fixed-schedule attacker programs are non-adaptive. -/
