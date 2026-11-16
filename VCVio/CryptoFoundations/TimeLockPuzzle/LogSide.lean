@@ -280,7 +280,7 @@ private lemma isSome_inr_iff_of_mem_support_liftComp {α : Type}
     (hz : z ∈ support ((simulateQ (unifFwdImpl (spec + side) + (spec + side).randomOracle.batch)
       (liftComp oa (unifSpec + (spec + side).batch))).run c)) (x : ι') :
     (z.2 (.inr x)).isSome ↔ (c (.inr x)).isSome := by
-  rw [liftComp_def, ← QueryImpl.simulateQ_compose] at hz
+  rw [liftComp_eq_simulateQ, ← QueryImpl.simulateQ_compose] at hz
   refine simulateQ_run_preservesInv _ (fun c' => ∀ x, (c' (.inr x)).isSome ↔ (c (.inr x)).isSome)
     (fun t c' hc' y hy x => ?_) oa c (fun _ => Iff.rfl) z hz x
   rw [QueryImpl.apply_compose] at hy

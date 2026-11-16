@@ -809,7 +809,7 @@ lemma simulateQ_keyedRomImpl_liftComp (T : Fin (2 * qEnc) → K) {α : Type}
     (oa : OracleComp (unifSpec + sealSpec n S L Salt Ctx N K) α) :
     simulateQ (keyedRomImpl prf qEnc T) (liftComp oa (indexedSpec n S L Salt Ctx N K qEnc)) =
       simulateQ (sealSpec n S L Salt Ctx N K).romImpl oa := by
-  rw [liftComp_def]
+  rw [liftComp_eq_simulateQ]
   refine QueryImpl.simulateQ_simulateQ_eq_of_apply (fun t => ?_) oa
   rcases t with k | x
   · exact simulateQ_spec_query (keyedRomImpl (n := n) (S := S) (L := L) (Salt := Salt)

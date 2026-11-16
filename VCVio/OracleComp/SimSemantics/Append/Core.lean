@@ -154,7 +154,7 @@ lifted computation saturates (times out) instead of failing fast; with it, the s
 lemma simulateQ_add_liftComp_left (oa : OracleComp spec₁' α) :
     simulateQ (impl₁' + impl₂') (OracleComp.liftComp oa (spec₁' + spec₂')) =
       simulateQ impl₁' oa := by
-  rw [OracleComp.liftComp_def, ← simulateQ_compose]
+  rw [OracleComp.liftComp_eq_simulateQ, ← simulateQ_compose]
   congr 1 with t
   exact simulateQ_add_liftM_query_left impl₁' impl₂' t
 
@@ -162,7 +162,7 @@ lemma simulateQ_add_liftComp_left (oa : OracleComp spec₁' α) :
 lemma simulateQ_add_liftComp_right (ob : OracleComp spec₂' α) :
     simulateQ (impl₁' + impl₂') (OracleComp.liftComp ob (spec₁' + spec₂')) =
       simulateQ impl₂' ob := by
-  rw [OracleComp.liftComp_def, ← simulateQ_compose]
+  rw [OracleComp.liftComp_eq_simulateQ, ← simulateQ_compose]
   congr 1 with t
   exact simulateQ_add_liftM_query_right impl₁' impl₂' t
 
@@ -172,8 +172,9 @@ alone. -/
 lemma simulateQ_add_simulateQ_toQueryImpl_left (oa : OracleComp spec₁' α) :
     simulateQ (impl₁' + impl₂') (simulateQ
       (HasQuery.toQueryImpl (spec := spec₁') (m := OracleComp (spec₁' + spec₂'))) oa) =
-    simulateQ impl₁' oa :=
-  simulateQ_add_liftComp_left impl₁' impl₂' oa
+    simulateQ impl₁' oa := by
+  rw [← simulateQ_add_liftComp_left impl₁' impl₂' oa, OracleComp.liftComp_eq_simulateQ]
+  rfl
 
 /-- `liftM`-normal-form companion of `simulateQ_add_liftComp_left`. Because `liftComp_eq_liftM`
 normalizes `liftComp → liftM` under `simp`, the `liftComp`-keyed lemma never fires inside `simp`;
@@ -248,8 +249,9 @@ Like `toQueryImpl_eq_id'`, this is deliberately **not** `@[simp]`: globally it l
 of a `toQueryImpl.liftTarget` handler fully reduce, which can re-enable a backward
 induction-hypothesis rewrite and diverge. Pass it explicitly to `simp` (alongside the
 opaque handler definition) to discharge a lifted-in computation, e.g.
-`simp [myHandler, simulateQ_toQueryImpl]`; the `simulateQ_add_liftM_left`/`_right` and
-`simulateQ_liftTarget` rungs are `@[simp]` and fire on their own. -/
+`simp [myHandler, simulateQ_toQueryImpl]`. The `simulateQ_liftTarget` rung is `@[simp]` and
+fires on its own; the `simulateQ_add_liftM_left`/`_right` rungs are opt-in and are passed the same
+way. -/
 lemma simulateQ_toQueryImpl {ι : Type*} {spec : OracleSpec ι} {α : Type u}
     (mx : OracleComp spec α) :
     simulateQ (HasQuery.toQueryImpl : QueryImpl spec (OracleComp spec)) mx = mx := by
@@ -564,7 +566,7 @@ This handles the componentwise lift route chosen for a sum source. -/
 theorem simulateQ_add_liftComp_sum_left
     (hab : QueryImpl (a + b) m) (hc : QueryImpl c m) (p : OracleComp (a + b) α) :
     simulateQ (hab + hc) (liftComp p ((a + b) + c)) = simulateQ hab p := by
-  rw [liftComp_def]
+  rw [liftComp_eq_simulateQ]
   apply QueryImpl.simulateQ_simulateQ_eq_of_apply
   intro q
   cases q <;> change simulateQ _ (liftM (((a + b) + c).query _)) = _
@@ -575,7 +577,7 @@ theorem simulateQ_add_add_liftComp_left
     (ha : QueryImpl a m) (hb : QueryImpl b m) (hc : QueryImpl c m)
     (p : OracleComp a α) :
     simulateQ ((ha + hb) + hc) (liftComp p ((a + b) + c)) = simulateQ ha p := by
-  rw [liftComp_def]
+  rw [liftComp_eq_simulateQ]
   apply QueryImpl.simulateQ_simulateQ_eq_of_apply
   intro q
   change simulateQ _ (liftM (((a + b) + c).query (.inl (.inl q)))) = _

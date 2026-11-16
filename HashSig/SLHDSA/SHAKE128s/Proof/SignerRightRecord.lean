@@ -84,7 +84,7 @@ theorem signInternalAt_simulate {m : Type → Type} [Monad m] [LawfulMonad m] [H
 theorem signInternalAt_liftM (randomizer : Digest) (sk : SecretKey) (message : Bytes) :
     (signInternalAt (m := OracleComp OracleWorld) randomizer sk message) =
       liftM (signInternalAt (m := OracleComp HashSpec) randomizer sk message) := by
-  rw [← OracleComp.liftComp_eq_liftM, OracleComp.liftComp_def]
+  rw [← OracleComp.liftComp_eq_liftM, OracleComp.liftComp_eq_simulateQ]
   exact (signInternalAt_simulate
     (fun t => liftM (HashSpec.query t) : QueryImpl HashSpec (OracleComp OracleWorld))
     (fun _ => rfl) randomizer sk message).symm

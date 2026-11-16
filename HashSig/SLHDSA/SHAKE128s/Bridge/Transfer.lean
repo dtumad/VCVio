@@ -303,7 +303,7 @@ theorem run_simulateQ_addCostOracle_liftM {Output α : Type} (oa : ProbComp α) 
     (simulateQ (addCostOracle (spec := Game.World Output) Game.hashCost)
       (liftM oa : OracleComp (Game.World Output) α)).run =
       (fun a => (a, 1)) <$> (liftM oa : OracleComp (Game.World Output) α) := by
-  rw [← liftComp_eq_liftM, liftComp_def]
+  rw [← liftComp_eq_liftM, liftComp_eq_simulateQ]
   induction oa using OracleComp.inductionOn with
   | pure x => simp
   | query_bind t k ih =>

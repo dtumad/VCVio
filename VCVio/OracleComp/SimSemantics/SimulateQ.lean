@@ -7,6 +7,7 @@ Authors: Devon Tuma, Quang Dao
 module
 public import PolyFun.Control.Monad.Hom.Loops
 public import VCVio.OracleComp.SimSemantics.QueryImpl.Basic
+public import VCVio.OracleComp.MapLens.Basic
 public import VCVio.Prelude.Core
 public import ToMathlib.Control.OptionT
 
@@ -249,13 +250,13 @@ lemma simulateQ_natural [Monad n] (F : r →ᵐ n) (mx : OracleComp spec α) :
     F (simulateQ impl mx) = simulateQ (fun t => F (impl t)) mx :=
   PFunctor.FreeM.liftM_natural (P := spec.toPFunctor) (m := r) impl F mx
 
-/-- Simulating a computation relabelled along a lens `l` answers each query `t` with the answer
-to `l.toFunA t`, translated back by `l.toFunB t`. -/
+/-- Simulating a computation relabelled along a lens `l` is simulating the original computation
+with the handler pulled back along `l`, which answers each query `t` with the answer to
+`l.toFunA t`, translated back by `l.toFunB t`. -/
 lemma simulateQ_mapLens [LawfulMonad r] {ι' : Type*} {spec' : OracleSpec ι'}
     (l : PFunctor.Lens spec.toPFunctor spec'.toPFunctor) (impl' : QueryImpl spec' r)
     (mx : OracleComp spec α) :
-    simulateQ impl' (mx.mapLens l) =
-      simulateQ (fun t => l.toFunB t <$> impl' (l.toFunA t)) mx :=
+    simulateQ impl' (mx.mapLens l) = simulateQ (impl'.comapLens l) mx :=
   PFunctor.FreeM.liftM_mapLens l impl' mx
 
 end simulateQ
@@ -277,6 +278,13 @@ lemma simulateQ_id' (mx : OracleComp spec α) :
 /-- Lifting queries to their original implementation has no effect on a computation. -/
 lemma simulateQ_ofLift_eq_self {α} (mx : OracleComp spec α) :
     simulateQ (QueryImpl.ofLift spec (OracleComp spec)) mx = mx := by simp
+
+/-- Transport along a lens is the simulation that answers each query `t` by the query
+`l.toFunA t`, mapped back by `l.toFunB t`. -/
+lemma OracleComp.mapLens_eq_simulateQ {ι' : Type*} {spec' : OracleSpec ι'}
+    (l : PFunctor.Lens spec.toPFunctor spec'.toPFunctor) (mx : OracleComp spec α) :
+    mx.mapLens l = simulateQ ((QueryImpl.id' spec').comapLens l) mx := by
+  rw [← simulateQ_mapLens, simulateQ_id']
 
 section tests
 

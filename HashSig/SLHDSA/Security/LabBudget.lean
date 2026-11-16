@@ -145,7 +145,7 @@ theorem isQueryBoundP_labScheme_sign_of_hmsg {q : (labSpec core).Domain → Prop
     isQueryBoundP_bind (n := 0) (m := 0) (isQueryBoundP_liftM_withDerivations
         (fun n h => (show False from hq (.inl (.inl (.inl n))) h)) _)
       fun _ _ => (isQueryBoundP_query_iff _ _ _).2 fun h => (show False from hq _ h).elim
-  rw [liftComp_def]
+  rw [liftComp_eq_simulateQ]
   exact IsQueryBoundP.simulateQ_of_step h
     (fun _ _ => (isQueryBoundP_query_iff _ _ _).2 fun _ => Nat.one_pos)
     fun t ht => by

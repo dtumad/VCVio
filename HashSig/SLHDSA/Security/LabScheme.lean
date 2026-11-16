@@ -491,7 +491,7 @@ theorem liftComp_unforgeableTranscriptExperiment_deriveAdversary {e : core.SkSee
       unforgeableTranscriptExperiment
         (sigAlg := (deriveScheme core optRand pkSeed).map (labLiftHom core).toMonadHom)
         ⟨(labAdversary core adv pkSeed).main⟩ := by
-  rw [liftComp_def]
+  rw [liftComp_eq_simulateQ]
   refine (simulateQ_unforgeableTranscriptExperiment
     (QueryImpl.ofLift (deriveSpec core) (OracleComp (labSpec core))) _).trans ?_
   congr 1

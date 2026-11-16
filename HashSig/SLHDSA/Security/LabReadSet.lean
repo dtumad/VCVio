@@ -76,7 +76,7 @@ theorem readsUnhidden_randomizer (pkSeed : core.PkSeed) {U : Bytes vp.params.m �
       query (spec := deriveSpec core) (.inr (.inr (addrnd, msg)))) :
         OracleComp (deriveSpec core) core.Y) (labSpec core)) := by
   unfold ReadsUnhidden
-  rw [liftComp_def]
+  rw [liftComp_eq_simulateQ]
   refine AllQueriesSatisfy.simulateQ
     (P := fun t ↦ (slhGraph core pkSeed).ReadsWithin (hiddenCells core U st)ᶜ (.inl t)) ?_ ?_
   · refine allQueriesSatisfy_bind ?_ fun _ ↦

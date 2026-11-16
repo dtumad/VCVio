@@ -161,6 +161,38 @@ class DisjointSubSpec
 macro:50 lhs:term " ⊥ₒ[" ambient:term "] " rhs:term : term =>
   `(DisjointSubSpec $lhs $rhs $ambient)
 
+/-- The lens of a query lift, read off at the generic queries: a query `t` is sent to the input of
+the lifted query `liftM (spec.query t)`, and an answer to that input is translated back by the
+lifted query's continuation. For one inclusion `h : spec ⊂ₒ superSpec` it is `h.toLens`
+(`SubSpec.liftLens_eq_toLens`); for a chain of query lifts it is the lens of the whole chain.
+`OracleComp.liftComp` is transport along this lens. -/
+@[expose]
+def liftLens (spec : OracleSpec.{u, w} ι) (superSpec : OracleSpec.{v, w} τ)
+    [h : MonadLiftT (OracleQuery spec) (OracleQuery superSpec)] :
+    PFunctor.Lens spec.toPFunctor superSpec.toPFunctor where
+  toFunA t := (liftM (spec.query t) : OracleQuery superSpec (spec.Range t)).input
+  toFunB t := (liftM (spec.query t) : OracleQuery superSpec (spec.Range t)).cont
+
+section liftLens
+
+variable (spec : OracleSpec.{u, w} ι) (superSpec : OracleSpec.{v, w} τ)
+  [h : MonadLiftT (OracleQuery spec) (OracleQuery superSpec)]
+
+@[simp] lemma liftLens_toFunA (t : spec.Domain) :
+    (liftLens spec superSpec).toFunA t =
+      (liftM (spec.query t) : OracleQuery superSpec (spec.Range t)).input := rfl
+
+@[simp] lemma liftLens_toFunB (t : spec.Domain) :
+    (liftLens spec superSpec).toFunB t =
+      (liftM (spec.query t) : OracleQuery superSpec (spec.Range t)).cont := rfl
+
+end liftLens
+
+/-- The lens read off the query lift of an inclusion is the inclusion's lens. -/
+lemma SubSpec.liftLens_eq_toLens [h : spec ⊂ₒ superSpec] :
+    liftLens spec superSpec = h.toLens :=
+  PFunctor.Lens.ext_mapObj _ _ fun t => h.liftM_eq_lift (spec.query t)
+
 end OracleSpec
 
 
@@ -175,20 +207,27 @@ lemma liftM_eq_liftM_liftM [MonadLiftT (OracleQuery spec) (OracleQuery superSpec
 
 section liftComp
 
-/-- Lift a computation from `spec` to `superSpec` using a `SubSpec` instance on queries.
-Usually `liftM` should be preferred but this can allow more explicit annotation. -/
+/-- Lift a computation from `spec` to `superSpec` along a lift of queries: transport along the
+lens `liftLens spec superSpec` read off that lift. Usually `liftM` should be preferred but this
+can allow more explicit annotation. -/
 @[expose]
-def liftComp (mx : OracleComp spec α) (superSpec : OracleSpec τ)
-    [h : MonadLiftT (OracleQuery spec) (OracleQuery superSpec)] :
+def liftComp {spec : OracleSpec.{u, w} ι} {α : Type w} (mx : OracleComp spec α)
+    (superSpec : OracleSpec.{v, w} τ) [h : MonadLiftT (OracleQuery spec) (OracleQuery superSpec)] :
     OracleComp superSpec α :=
-    simulateQ (fun t => liftM (spec.query t)) mx
+  mx.mapLens (liftLens spec superSpec)
 
 variable (superSpec : OracleSpec τ)
     [h : MonadLiftT (OracleQuery spec) (OracleQuery superSpec)]
 
+lemma liftComp_def (mx : OracleComp spec α) :
+    liftComp mx superSpec = mx.mapLens (liftLens spec superSpec) := rfl
+
+/-- `liftComp` as the simulation that answers each query by its lift. -/
 @[grind =, aesop unsafe norm]
-lemma liftComp_def (mx : OracleComp spec α) : liftComp mx superSpec =
-    simulateQ (fun t => liftM (spec.query t)) mx := rfl
+lemma liftComp_eq_simulateQ (mx : OracleComp spec α) :
+    liftComp mx superSpec = simulateQ (fun t => liftM (spec.query t)) mx := by
+  rw [liftComp_def, mapLens_eq_simulateQ]
+  rfl
 
 @[simp]
 lemma liftComp_pure (x : α) : liftComp (pure x : OracleComp spec α) superSpec = pure x := rfl
@@ -197,7 +236,7 @@ lemma liftComp_pure (x : α) : liftComp (pure x : OracleComp spec α) superSpec 
 lemma liftComp_query (q : OracleQuery spec α) :
     liftComp (q : OracleComp spec _) superSpec =
       q.cont <$> (liftM (spec.query q.input) : OracleComp superSpec _) := by
-  simp [liftComp]
+  simp [liftComp_eq_simulateQ]
 
 /-- Signature translation of a primitive query is its query lift. -/
 lemma liftComp_liftM_query (t : spec.Domain) :
@@ -222,7 +261,7 @@ lemma liftComp_self (mx : OracleComp spec α) :
 @[simp]
 lemma liftComp_map (mx : OracleComp spec α) (f : α → β) :
     liftComp (f <$> mx) superSpec = f <$> liftComp mx superSpec := by
-  simp [liftComp]
+  simp [liftComp_eq_simulateQ]
 
 /-- `bind`-`pure` form of `liftComp_map`, matching the term shape produced by `do`-notation
 (`do let a ← oa; pure (f a)`) before any `bind_pure_comp` normalization. -/
@@ -239,7 +278,8 @@ since an arbitrary embedding need not reach all responses of the original oracle
 lemma mem_support_of_mem_support_liftComp (oa : OracleComp spec α) (x : α) :
     x ∈ support (oa.liftComp superSpec) → x ∈ support oa := by
   intro hx
-  rw [← PFunctor.FreeM.reachable_eq_support] at hx ⊢
+  rw [liftComp_eq_simulateQ, ← PFunctor.FreeM.reachable_eq_support] at hx
+  rw [← PFunctor.FreeM.reachable_eq_support]
   change x ∈ (PFunctor.FreeM.liftM
     (fun t => (liftM (spec.query t) : OracleComp superSpec (spec.Range t))) oa).reachable at hx
   exact (PFunctor.FreeM.reachable_liftM_subset
@@ -249,7 +289,7 @@ lemma mem_support_of_mem_support_liftComp (oa : OracleComp spec α) (x : α) :
 @[simp]
 lemma liftComp_seq (og : OracleComp spec (α → β)) (mx : OracleComp spec α) :
     liftComp (og <*> mx) superSpec = liftComp og superSpec <*> liftComp mx superSpec := by
-  simp [liftComp, monad_norm]
+  simp [liftComp_eq_simulateQ, monad_norm]
 
 @[simp]
 lemma liftComp_seqLeft (mx : OracleComp spec α) (my : OracleComp spec β) :
@@ -281,7 +321,7 @@ does not change which outputs are reachable. This is the support analogue of
 the uniform-measure lifting law. -/
 lemma support_liftComp (mx : OracleComp spec α) :
     support (liftComp mx superSpec) = support mx := by
-  simp only [liftComp]
+  rw [liftComp_eq_simulateQ]
   induction mx using OracleComp.inductionOn with
   | pure x => simp
   | query_bind t oa ih =>
@@ -311,15 +351,15 @@ Registered as a low-priority `MonadLift` (not `MonadLiftT`) so that:
   `Std.WP.Spec.UnfoldLift.monadLift_refl` (a `rfl`-based lemma) needs in
   order to peel off spurious self-lifts inside terms `vcgen` walks.
 
-* For `MonadLiftT (OracleQuery spec) (OracleComp superSpec)`, the built-in
-  high-priority `MonadLift (OracleQuery superSpec) (OracleComp superSpec)` is
+* For `MonadLiftT (OracleQuery spec) (OracleComp superSpec)`, CSLib's
+  default-priority `MonadLift (OracleQuery superSpec) (OracleComp superSpec)` is
   tried first by `monadLiftTrans` and succeeds via the `SubSpec` chain on
   `OracleQuery`, never reaching this instance. Single-query lifts therefore
   go through the standard "lift query then embed" path with no spurious
   walk through `liftComp`.
 
 * For `MonadLiftT (OracleComp spec) (OracleComp superSpec)` with
-  `spec ≠ superSpec`, the high-priority built-in fails (no
+  `spec ≠ superSpec`, the CSLib instance fails (no
   `MonadLiftT (OracleComp _) (OracleQuery _)`), Lean backtracks to this
   low-priority instance, and the recursive subgoal collapses via
   `MonadLiftT.refl`. The result is a single `liftComp mx superSpec`. -/
@@ -425,6 +465,7 @@ lemma monadLift_liftM_OptionT [MonadLift (OracleQuery spec) (OracleQuery superSp
   simp only [OptionT.run_mk, OptionT.lift]
   rw [simulateQ_bind]
   simp only [simulateQ_pure, ← map_eq_pure_bind]
+  rw [← liftComp_eq_liftM, liftComp_eq_simulateQ]
   rfl
 
 end OptionT
@@ -446,44 +487,33 @@ end StateT
 
 Lifting across nested sum specs (for example `(spec₁ + spec₂) + spec₃`) can go through several
 `MonadLiftT (OracleQuery _) (OracleQuery _)` instance routes, which are not definitionally equal.
-The lemmas below align any two routes that agree on single queries; the agreement hypothesis is
-typically closed by `rfl` for the canonical sum embeddings. All instances are free implicit
-arguments, so `rw` applies to whatever route appears in the goal. -/
+`liftComp` depends on a route only through its lens `liftLens`, so two routes give the same lift
+when their lenses are equal; for the canonical sum embeddings the lens equation is typically
+`rfl`. All instances are free implicit arguments, so `rw` applies to whatever route appears in the
+goal. -/
 
+open scoped PFunctor in
 /-- Lifting an oracle computation in two steps (`spec₁ ↪ spec₂ ↪ spec₃`) equals lifting it
-directly, provided the two routes agree on single queries. -/
-lemma liftComp_liftComp {ι₁ ι₂ ι₃ : Type} {spec₁ : OracleSpec ι₁}
-    {spec₂ : OracleSpec ι₂} {spec₃ : OracleSpec ι₃} {α : Type}
+directly, provided the composite of the two steps' lenses is the direct lens. -/
+lemma liftComp_liftComp {ι₁ : Type u} {ι₂ : Type v} {ι₃ : Type u'}
+    {spec₁ : OracleSpec.{u, w} ι₁} {spec₂ : OracleSpec.{v, w} ι₂}
+    {spec₃ : OracleSpec.{u', w} ι₃} {α : Type w}
     {i₁₂ : MonadLiftT (OracleQuery spec₁) (OracleQuery spec₂)}
     {i₂₃ : MonadLiftT (OracleQuery spec₂) (OracleQuery spec₃)}
     {i₁₃ : MonadLiftT (OracleQuery spec₁) (OracleQuery spec₃)}
-    (hq : ∀ (t : spec₁.Domain),
-      ((liftM (spec₁.query t) : OracleComp spec₂ (spec₁.Range t)).liftComp spec₃)
-        = (liftM (spec₁.query t) : OracleComp spec₃ (spec₁.Range t)))
+    (hl : liftLens spec₂ spec₃ ∘ₗ liftLens spec₁ spec₂ = liftLens spec₁ spec₃)
     (x : OracleComp spec₁ α) :
     liftComp (liftComp x spec₂) spec₃ = liftComp x spec₃ := by
-  induction x using OracleComp.inductionOn with
-  | pure x => simp only [liftComp_pure]
-  | query_bind t k ih =>
-    simp only [liftComp_bind, liftComp_query, bind_map_left, ih]
-    rw [hq]
+  rw [liftComp_def, liftComp_def, liftComp_def, mapLens_mapLens, hl]
 
-/-- `liftComp` only depends on the `MonadLiftT` instance through its action on single queries:
-two (possibly structurally different) instance routes that agree on queries give equal lifts. -/
-lemma liftComp_inst_irrel {ι₁ ι₂ : Type} {spec₁ : OracleSpec ι₁}
-    {spec₂ : OracleSpec ι₂} {α : Type}
+/-- `liftComp` depends on the `MonadLiftT` instance only through its lens: two (possibly
+structurally different) instance routes with equal lenses give equal lifts. -/
+lemma liftComp_inst_irrel {ι₁ : Type u} {ι₂ : Type v}
+    {spec₁ : OracleSpec.{u, w} ι₁} {spec₂ : OracleSpec.{v, w} ι₂} {α : Type w}
     {i₁ i₂ : MonadLiftT (OracleQuery spec₁) (OracleQuery spec₂)}
-    (hq : ∀ (t : spec₁.Domain),
-      (liftComp ((spec₁.query t : OracleQuery spec₁ _) : OracleComp spec₁ _) spec₂
-          (h := i₁))
-        = (liftComp ((spec₁.query t : OracleQuery spec₁ _) : OracleComp spec₁ _) spec₂
-            (h := i₂)))
+    (hl : liftLens spec₁ spec₂ (h := i₁) = liftLens spec₁ spec₂ (h := i₂))
     (x : OracleComp spec₁ α) :
     liftComp x spec₂ (h := i₁) = liftComp x spec₂ (h := i₂) := by
-  induction x using OracleComp.inductionOn with
-  | pure x => simp only [liftComp_pure]
-  | query_bind t k ih =>
-    simp only [liftComp_bind, ih]
-    exact congrArg (· >>= _) (hq t)
+  rw [liftComp_def, liftComp_def, hl]
 
 end OracleComp

@@ -145,6 +145,8 @@ By the Yoneda lemma for polynomial functors this lens data is in bijection with 
 
 `SubSpec.toLens` exposes the underlying lens; `SubSpec.trans` is composition of these lenses; the reflexive `MonadLiftT` instance covers the identity.
 
+`OracleSpec.liftLens spec superSpec` reads the lens off any query lift `[MonadLiftT (OracleQuery spec) (OracleQuery superSpec)]` at the generic queries, and `liftComp mx superSpec` is `mx.mapLens (liftLens spec superSpec)` (`liftComp_def`); `liftComp_eq_simulateQ` gives the same lift as the simulation answering each query by its lift. For one inclusion the lens is `h.toLens` (`SubSpec.liftLens_eq_toLens`), and for a chain of query lifts it is the chain's lens. Two lift routes therefore give the same lift when their lenses are equal (`liftComp_liftComp`, `liftComp_inst_irrel`), and for the canonical sum embeddings that lens equation is `rfl`. Transport along an arbitrary lens, and the matching pull-back of handlers `QueryImpl.comapLens`, live in `VCVio/OracleComp/MapLens/Basic.lean`; `simulateQ_mapLens` relates the two.
+
 #### Why `SubSpec` extends `MonadLift` rather than `PFunctor.Lens`
 
 The fields *are* a lens. We extend `MonadLift` for two pragmatic reasons:
@@ -174,6 +176,8 @@ When lifting `OracleComp spec α` to `OracleComp superSpec α` (e.g., a sub-comp
 
 | Lemma | Signature |
 |-------|-----------|
+| `liftComp_def` | `liftComp mx superSpec = mx.mapLens (liftLens spec superSpec)` |
+| `liftComp_eq_simulateQ` | `liftComp mx superSpec = simulateQ (fun t => liftM (spec.query t)) mx` |
 | `liftComp_pure` | `liftComp (pure x) superSpec = pure x` |
 | `liftComp_bind` | `liftComp (mx >>= my) superSpec = liftComp mx superSpec >>= ...` |
 

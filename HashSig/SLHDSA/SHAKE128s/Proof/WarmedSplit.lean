@@ -71,7 +71,7 @@ theorem run_rom_liftM {α : Type} (computation : OracleComp HashSpec α)
 theorem verify_liftM (pk : PublicKey) (request : Message) (signature : Bytes) :
     (Scheme.verify pk request signature : OracleComp OracleWorld Bool) =
       liftM (Scheme.verify (m := OracleComp HashSpec) pk request signature) := by
-  rw [← OracleComp.liftComp_eq_liftM, OracleComp.liftComp_def]
+  rw [← OracleComp.liftComp_eq_liftM, OracleComp.liftComp_eq_simulateQ]
   exact (VerifierNaturality.verify_simulate (m := OracleComp OracleWorld)
     (fun t => liftM (HashSpec.query t)) (fun _ => rfl) pk request signature).symm
 
@@ -80,7 +80,7 @@ theorem keygenInternal_liftM (secretSeed prfSeed publicSeed : Digest) :
     (Scheme.keygenInternal secretSeed prfSeed publicSeed :
         OracleComp OracleWorld (SecretKey × PublicKey)) =
       liftM (Scheme.keygenInternal (m := OracleComp HashSpec) secretSeed prfSeed publicSeed) := by
-  rw [← OracleComp.liftComp_eq_liftM, OracleComp.liftComp_def]
+  rw [← OracleComp.liftComp_eq_liftM, OracleComp.liftComp_eq_simulateQ]
   exact (Correctness.Naturality.keygenInternal_simulate (m := OracleComp OracleWorld)
     (fun t => liftM (HashSpec.query t)) (fun _ => rfl) secretSeed prfSeed publicSeed).symm
 

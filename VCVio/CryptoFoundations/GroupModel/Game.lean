@@ -151,7 +151,7 @@ theorem run_toAlgebraic {F : Type} [CommSemiring F] [DecidableEq S] {σ : Sig S}
       run M obs (coinImpl (G := G) random + game) A tbl := by
   unfold run toAlgebraic
   congr 1
-  rw [liftComp_def, ← QueryImpl.simulateQ_compose]
+  rw [liftComp_eq_simulateQ, ← QueryImpl.simulateQ_compose]
   congr 1
   funext t
   rcases t with t | t

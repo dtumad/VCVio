@@ -327,7 +327,7 @@ to `sealTypedSpec`, its rounds translated by the extended encoding. -/
 theorem byteScheme_gen_eq (m : ℕ) [NeZero n] :
     (byteScheme b n m).gen =
       simulateQ (sealEncoding hb hn).roundImpl (typedSealScheme b n m).gen := by
-  rw [typedSealScheme, sealScheme, liftSpec, liftComp_def, ← QueryImpl.simulateQ_compose]
+  rw [typedSealScheme, sealScheme, liftSpec, liftComp_eq_simulateQ, ← QueryImpl.simulateQ_compose]
   change simulateQ roundImpl _ = _
   congr 1
   funext t
@@ -374,7 +374,7 @@ theorem byteEnvelope_encrypt_eq (m : ℕ) (key : Puzzle b n × Bytes 32) (msg : 
         (liftM ($ᵗ Bytes 16) : OracleComp (unifSpec + byteSpec) (Bytes 16)) := by
     rw [← liftComp_eq_liftM, QueryImpl.simulateQ_liftComp_left_eq_of_apply _
       (fun k => (liftM (unifSpec.query k) : OracleComp (unifSpec + byteSpec) _)) (fun k => rfl),
-      ← liftComp_def, liftComp_eq_liftM]
+      ← liftComp_eq_simulateQ, liftComp_eq_liftM]
   have hderive : ∀ nonce,
       simulateQ ((sealEncoding hb hn).encodeImpl ∘ₛ RandomOracleEncoding.typedLift)
         (liftM (sealDerive (n := n) (L := Bytes b) (Salt := Bytes 16) (Ctx := Bytes 32) key.2

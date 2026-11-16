@@ -388,6 +388,7 @@ public import VCVio.OracleComp.FinRatPMF
 public import VCVio.OracleComp.HasQuery.Basic
 public import VCVio.OracleComp.HasQuery.Morphism
 public import VCVio.OracleComp.MapLens
+public import VCVio.OracleComp.MapLens.Basic
 public import VCVio.OracleComp.OracleComp
 public import VCVio.OracleComp.OracleContext
 public import VCVio.OracleComp.OracleQuery

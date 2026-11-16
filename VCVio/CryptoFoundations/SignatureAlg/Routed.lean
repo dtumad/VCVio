@@ -100,7 +100,7 @@ theorem simulateQ_liftRawImpl {α : Type} (oa : OracleComp (unifSpec + ext) α) 
 the inclusion of `unifSpec + hs` in `(unifSpec + hs) + sig`. -/
 theorem simulateQ_liftAmbientImpl {α : Type} (oa : OracleComp (unifSpec + hs) α) :
     simulateQ (liftAmbientImpl (sig := sig)) oa = liftComp oa ((unifSpec + hs) + sig) := by
-  rw [liftComp_def]
+  rw [liftComp_eq_simulateQ]
   congr 1
   funext t
   rcases t with n | t <;> rfl

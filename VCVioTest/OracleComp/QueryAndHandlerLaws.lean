@@ -13,7 +13,7 @@ public import VCVio.OracleComp.SimSemantics.StateT.PreservesInv
 /-!
 # Query-log projections, lift routes and stateful handlers
 
-Projections of sum-interface logs simplify, two lift routes agreeing on queries give one lift,
+Projections of sum-interface logs simplify, two lift routes with equal lenses give one lift,
 handlers over two base monads with equal local laws have equal run laws, and an invariant holds on
 the final states of a handler over an arbitrary lawful attached base monad.
 -/
@@ -27,7 +27,7 @@ variable {α σ ι : Type}
 example {ι₁ ι₂ ι₃ : Type} {a : OracleSpec ι₁} {b : OracleSpec ι₂} {c : OracleSpec ι₃}
     (p : OracleComp a α) :
     liftComp (liftComp p (a + b)) ((a + b) + c) = liftComp p ((a + b) + c) :=
-  liftComp_liftComp (spec₁ := a) (spec₂ := a + b) (spec₃ := (a + b) + c) (fun _ => rfl) p
+  liftComp_liftComp (spec₁ := a) (spec₂ := a + b) (spec₃ := (a + b) + c) rfl p
 
 example {spec : OracleSpec ι} [MeasurableSpace (α × σ)]
     (impl : QueryImpl spec (StateT σ ProbComp))

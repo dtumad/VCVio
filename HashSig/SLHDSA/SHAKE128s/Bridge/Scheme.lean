@@ -205,7 +205,7 @@ theorem simulateQ_relabel_verify (pk : PublicKey) (req : Message) (sig : Bytes) 
 theorem simulateQ_relabel_unifQuery {α : Type} (oa : ProbComp α) :
     𝓡 (simulateQ (fun i => query (spec := unifSpec) i) oa : PaperComp α) =
       (liftM oa : OracleComp (Game.World FIPS205.Answer) α) := by
-  rw [← liftComp_eq_liftM, liftComp_def,
+  rw [← liftComp_eq_liftM, liftComp_eq_simulateQ,
     QueryImpl.simulateQ_simulateQ_eq_of_apply (impl := fun t => liftM (unifSpec.query t))]
   intro t
   rfl

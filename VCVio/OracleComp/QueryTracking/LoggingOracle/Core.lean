@@ -872,7 +872,7 @@ lemma withQueryLog_liftComp_left_of_query {ι₁ ι₂ : Type} {oSpec : OracleSp
     simp only [simulateQ_spec_query, hi, withQueryLog_query, simulateQ_bind, simulateQ_pure,
       map_bind, map_pure]
     simp [withQueryLog]
-  simpa only [liftComp_def, map_eq_bind_pure_comp, Function.comp_apply, Function.comp_def,
+  simpa only [liftComp_eq_simulateQ, map_eq_bind_pure_comp, Function.comp_apply, Function.comp_def,
     QueryLog.inl, impl, withQueryLog, OracleSpec.loggingOracle] using
     withQueryLog_simulateQ_of_query impl (fun e => ⟨.inl e.1, e.2⟩) hquery X
 

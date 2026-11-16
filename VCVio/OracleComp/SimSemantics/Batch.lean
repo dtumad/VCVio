@@ -415,7 +415,7 @@ theorem run_simulateQ_add_parallelStateT_batch_liftComp {τ : Type} {free : Orac
         (liftComp oa (free + (spec + side).batch))).run (s₁, s₂) =
       Prod.map id (·, s₂) <$>
         (simulateQ (base.liftTarget (StateT σ₁ m) + impl₁.batch) oa).run s₁ := by
-  rw [liftComp_def, ← QueryImpl.simulateQ_compose]
+  rw [liftComp_eq_simulateQ, ← QueryImpl.simulateQ_compose]
   refine (map_run_simulateQ_eq_of_query_map_eq _ _ (·, s₂) (fun t s₁ => ?_) oa s₁).symm
   rcases t with n | ts
   · simp only [QueryImpl.apply_compose]

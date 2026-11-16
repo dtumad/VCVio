@@ -412,7 +412,7 @@ theorem labAdversary_withPost [SampleableType core.Y] [DecidableEq core.Y]
   funext out
   congr 1
   rw [← simulateQ_ofLift_simulateQ_withDerivationsLift_liftPub]
-  simp only [OracleComp.liftComp_def, ← QueryImpl.simulateQ_compose]
+  simp only [OracleComp.liftComp_eq_simulateQ, ← QueryImpl.simulateQ_compose]
   congr 1
 
 variable [SampleableType core.Y] [DecidableEq core.Y] [SampleableType (Bytes vp.params.m)]
