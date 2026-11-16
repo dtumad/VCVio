@@ -667,3 +667,81 @@ This work was done on top of `1b5bbe80f`, with PolyFun still at `ea3b297`.
 - **L12** narrows to polynomial time: independence and identical distribution are structural.
 - **L16** is closed.
 - **L10** is unchanged.
+
+## M0, part 3: one closure field per reduction shape, and the coupling
+
+This work was done on top of `0652ca0e4`.
+
+### Build and checks
+
+- **Build.** `lake build SquirrelLogic` succeeds with no warnings.
+- **Axioms.** `#print axioms` on the new and changed declarations shows only the standard three.
+- **Forbidden tactics.** There is no `sorry`, `stop` or `native_decide`.
+- **Comment fences.** The check passes.
+
+### Fewer closure fields
+
+`tail_mem` and `dup_mem` are gone, and with them `Distinguisher.tail`, `Distinguisher.dup`,
+`advantage_tail` and `advantage_dup`. Restr and Dup now go through the reindexing field:
+
+- `Indist.tail` is `h.rename fun _ x => .succ x`;
+- `Indist.dup` is `rename` at `Env.cons .zero fun _ x => x`, after a pointwise identification of
+  `VecRV.dup` with that reindexing (`funext` and `cases`).
+
+`Valid.equiv_tail` and `Valid.equiv_dup` are unchanged. The class now carries five closure
+fields, each one reduction shape, and fewer fields mean a weaker assumption on `C`:
+
+| Field | Reduction | Used by |
+|---|---|---|
+| `app_mem` | `Distinguisher.app` | FA-App |
+| `fn_mem` | `Distinguisher.fn f` | FA-Fn, and through it BC14 FA |
+| `adv_mem` | `Distinguisher.adv g` (needs `computes g`) | FA-Adv |
+| `ite_mem` | `Distinguisher.ite` | If |
+| `rename_mem` | `Distinguisher.rename r` | Perm, Restr, Dup |
+
+### The coupling (`ProductTape.lean`)
+
+```
+prEvent_uniformSample_update {ι} [DecidableEq ι] {α : ι → Type} [SampleableType (∀ i, α i)]
+    (i₀ : ι) [SampleableType (α i₀)] (p : (∀ i, α i) → Prop) :
+  Pr{let c ← $ᵗ (α i₀); let ρ ← $ᵗ (∀ i, α i)}[p (Function.update ρ i₀ c)] =
+    Pr{let ρ ← $ᵗ (∀ i, α i)}[p ρ]
+```
+
+- **No Squirrel types.** The lemma holds for any `SampleableType` instances on the product and
+  the coordinate, since all of them are uniform.
+- **Proof.** `(c, ρ) ↦ (update ρ i₀ c, ρ i₀)` is a bijection, and
+  `SampleableType.prEvent_uniformSample_pair_of_bijective` makes the pair uniform on product ×
+  coordinate. Drawing the old coordinate first (`Equiv.prodComm`) and dropping it
+  (`OracleComp.prEvent_bind_const`) marginalizes it away.
+- **Friction.** `prEvent_bind_const` matches the normalized event (`simpa only [prEvent_norm]`),
+  not the `Pr{…}` notation directly. It needs its lossless prefix stated at `ProbComp`, or the
+  `AnswerMeasure` instance problem is stuck.
+- **Use.** Applied twice, once at the key slot and once at the coin slot of `Model.TapeH`, it is
+  piece 2 of the encryption rule's per-`η` equality.
+
+### The encryption rule: still missing
+
+The per-`η` equality
+`advantage A left right η = IND_CPA_OneTime_Advantage (scheme M η) runtime (encReduction A η)`
+was not reached in this session. `scheme`, `encReduction` and the rule are not yet in Lean. What
+remains is pieces 1, 3 and 4 of part 2's plan, plus the definitions:
+
+- `scheme M η : AsymmEncAlg ProbComp …` from the key and coin slots;
+- `encReduction` as designed;
+- rewriting `IND_CPA_OneTime_Game` into the shape of `evalDist_boolBias_bind_coin`;
+- locality with `denote_substOne` for terms whose free variable stands for the public key;
+- the lift.
+
+On `runtime`, checked against VCVio's definitions: `IND_CPA_OneTime_Game` takes a
+`ProbCompRuntime (OracleComp spec)`. At `spec := unifSpec` the honest choice is
+`ProbCompRuntime.probComp`, under which `runtime.evalDist` is `𝒟`. It imposes no query or time
+bound, so the reduction's running time is unconstrained by the game. Efficiency enters only
+through the hypothesis on the image of `C M` under `encReduction`. That belongs in the rule's
+docstring and in ledger row L14 when the rule lands.
+
+The leaky-scheme check and the `Derivation` constructor wait for the rule.
+
+### Ledger
+
+No row changes in this part. The CCA1 row waits for the rule.
