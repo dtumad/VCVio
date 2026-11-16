@@ -971,8 +971,9 @@ theorem keygenInternal_lift (secretSeed prfSeed publicSeed : Digest) :
     (Scheme.keygenInternal (m := OracleComp OracleWorld) secretSeed prfSeed publicSeed) =
       OracleComp.liftComp
         (Scheme.keygenInternal (m := OracleComp HashSpec) secretSeed prfSeed publicSeed)
-        OracleWorld :=
-  (Correctness.Naturality.keygenInternal_simulate
+        OracleWorld := by
+  rw [OracleComp.liftComp_eq_simulateQ]
+  exact (Correctness.Naturality.keygenInternal_simulate
     (fun input => query (spec := HashSpec) input : QueryImpl HashSpec (OracleComp OracleWorld))
     (fun _ => rfl) secretSeed prfSeed publicSeed).symm
 

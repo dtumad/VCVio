@@ -43,6 +43,7 @@ theorem verify_lift (pk : PublicKey) (request : Message) (signature : Bytes) :
     (Scheme.verify pk request signature : OracleComp OracleWorld Bool) =
       OracleComp.liftComp (Scheme.verify pk request signature : OracleComp HashSpec Bool)
         OracleWorld := by
+  rw [OracleComp.liftComp_eq_simulateQ]
   exact (VerifierNaturality.verify_simulate
     (fun input => query (spec := HashSpec) input : QueryImpl HashSpec (OracleComp OracleWorld))
     (fun _ => rfl) pk request signature).symm

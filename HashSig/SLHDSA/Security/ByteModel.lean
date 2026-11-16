@@ -559,7 +559,8 @@ variable {vp}
 theorem simulateQ_encImpl_liftM {α : Type} (oa : ProbComp α) :
     simulateQ (encImpl vp) (liftM oa : OracleComp (unifSpec + hashSpec (shakeCore vp)) α) =
       liftM oa := by
-  rw [encImpl, QueryImpl.simulateQ_add_liftM_left, ← OracleComp.liftComp_eq_liftM]
+  rw [encImpl, QueryImpl.simulateQ_add_liftM_left, ← OracleComp.liftComp_eq_liftM,
+    OracleComp.liftComp_eq_simulateQ]
   rfl
 
 /-- The strong unforgeability experiment of `shakeRomScheme` draws the public seed and then runs

@@ -305,6 +305,7 @@ private lemma cmaSimLoggedImpl_liftAdv_run
         (Chal := Chal) (Resp := Resp) (Stmt := Stmt) (Wit := Wit)
         hr simT)
       (h := fun t ↦ by
+        rw [← OracleComp.liftComp_eq_liftM, OracleComp.liftComp_liftM_query]
         rcases t with ((n | mc) | m) <;>
           · change simulateQ _ (liftM ((cmaSpec M Commit Chal Resp Stmt).query _)) = _
             simp [cmaSimLoggedLeftImpl])

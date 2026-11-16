@@ -283,6 +283,7 @@ theorem IsOnlineQueryBound.liftComp {ι' : Type} {superSpec : OracleSpec.{0, 0} 
     [spec ⊂ₒ superSpec] {oa : OracleComp (free + spec.batch) α} {b : ℕ × ℕ}
     (h : IsOnlineQueryBound oa b) :
     IsOnlineQueryBound (liftComp oa (free + superSpec.batch)) b := by
+  rw [liftComp_eq_simulateQ]
   refine h.simulateQ_of_step fun t => ?_
   rcases t with n | ts
   · exact (isQueryBound_query_iff (spec := free + superSpec.batch) (.inl n) _ _ _).mpr trivial

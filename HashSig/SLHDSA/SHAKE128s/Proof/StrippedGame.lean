@@ -89,8 +89,9 @@ having nothing to do with the adversary. -/
 /-- Signing in the game's monad is the lift of signing in the hash-only monad. -/
 theorem sign_lift (sk : SecretKey) (request : Message) :
     (Scheme.sign (m := OracleComp OracleWorld) sk request) =
-      OracleComp.liftComp (Scheme.sign (m := OracleComp HashSpec) sk request) OracleWorld :=
-  (Correctness.Naturality.sign_simulate
+      OracleComp.liftComp (Scheme.sign (m := OracleComp HashSpec) sk request) OracleWorld := by
+  rw [OracleComp.liftComp_eq_simulateQ]
+  exact (Correctness.Naturality.sign_simulate
     (fun input => query (spec := HashSpec) input : QueryImpl HashSpec (OracleComp OracleWorld))
     (fun _ => rfl) sk request).symm
 

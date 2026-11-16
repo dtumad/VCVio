@@ -281,7 +281,7 @@ private theorem run_simulateQ_runImpl_nonce (c₁ : (sealSpec n S L Salt Ctx N K
   rw [show simulateQ (QueryImpl.ofLift unifSpec
       (OracleComp (PRFOracleSpec (Fin (2 * qEnc) × ByteArray) (Bytes 32)))) ($ᵗ N : ProbComp N) =
       liftComp ($ᵗ N : ProbComp N) (PRFOracleSpec (Fin (2 * qEnc) × ByteArray) (Bytes 32))
-      from rfl]
+      from (liftComp_eq_simulateQ _ _).symm]
   rw [simulateQ_prfIdealQueryImpl_liftComp]
   simp [map_eq_bind_pure_comp]
 

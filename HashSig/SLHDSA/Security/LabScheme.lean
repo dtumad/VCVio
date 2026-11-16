@@ -77,7 +77,9 @@ queries. -/
 
 /-- The lifting morphism is `liftComp`. -/
 theorem labLiftHom_apply {α : Type} (oa : OracleComp (deriveSpec core) α) :
-    (labLiftHom core).toMonadHom oa = liftComp oa (labSpec core) := rfl
+    (labLiftHom core).toMonadHom oa = liftComp oa (labSpec core) := by
+  rw [liftComp_eq_simulateQ]
+  rfl
 
 /-! ## Hash paths -/
 
@@ -433,7 +435,7 @@ theorem map_labLiftHom_deriveScheme_keygen :
       return (⟨pkSeed, pkRoot⟩, ⟨pkSeed, pkRoot⟩) := by
   rw [map_keygen, deriveScheme, MonadHom.mmap_bind,
     GeneralScheme.keygenInternalWithSecretM_natural core (labLiftHom core) (deriveSecret core)
-      (labSecret core) (fun _ _ => rfl)]
+      (labSecret core) (fun _ _ => labLiftHom_apply core _)]
   simp
 
 /-- Signing of the lifted secret-free scheme draws the randomizer as `labScheme` does and signs
@@ -450,8 +452,9 @@ theorem map_labLiftHom_deriveScheme_sign (pk sk : PublicKeyCore core) (msg : Lis
   dsimp only [deriveScheme]
   simp only [liftComp_bind, bind_assoc]
   refine bind_congr fun _ => bind_congr fun R => ?_
-  exact GeneralScheme.signInternalWithSecretRandomizerM_natural core (labLiftHom core)
-    (deriveSecret core) (labSecret core) (fun _ _ => rfl) msg _ _ R
+  exact (labLiftHom_apply core _).symm.trans <|
+    GeneralScheme.signInternalWithSecretRandomizerM_natural core (labLiftHom core)
+      (deriveSecret core) (labSecret core) (fun _ _ => labLiftHom_apply core _) msg _ _ R
 
 /-- Verification of the lifted secret-free scheme is verification of `labScheme`. -/
 theorem map_labLiftHom_deriveScheme_verify (pk : PublicKeyCore core) (msg : List Byte)
