@@ -39,4 +39,9 @@ theorem negligible_chainAdv (A : (η : ℕ) → ChainAdversary (Fin (2 ^ η)) M)
   refine (chainAdv_le (A η) (hA η)).trans (le_of_eq ?_)
   simp [Polynomial.eval_add]
 
+/-- The hypotheses can be met: the attacker that guesses `0` without querying. -/
+example : negligible fun η =>
+    chainAdv (pure 0 : OracleComp (advSpec (Fin (2 ^ η)) Unit) (Fin (2 ^ η))) :=
+  negligible_chainAdv _ 0 fun _ => isQueryBoundP_pure _ _ _
+
 end SquirrelModel.Chain
