@@ -32,7 +32,9 @@ class, the predicates are:
 The rules FreshL, WeakL, WeakR and Rw-Equiv lift from the concrete lemmas of `Deduction.lean`, each
 by one closure property of the class. Deducers and simulators are explicit arguments, never
 existentials. `AdvClass.all`, the class of all adversaries, shows the closure conditions can be
-met; for it `NonDeducible` is information-theoretic secrecy. Wiring in a computational class (for
+met; for it `NonDeducible` is information-theoretic secrecy. `nonDeducible_uniform` shows the
+rules' hypotheses can be met by a nontrivial family: a uniform `η`-bit number cannot be computed
+from nothing, using `negligible_inv_two_pow`. Wiring in a computational class (for
 instance one built from VCVio's backend-relative `IsPPTBy`) is not attempted here; that is where
 assumptions such as CDH would enter.
 -/
@@ -129,5 +131,49 @@ theorem NonDeducible.rwEquiv (C : AdvClass) {uv₁ uv₂ : ℕ → ProbComp (α 
   intro f hf
   exact negligible_of_le (fun η => deduceAdv_le_rwEquiv (uv₁ η) (uv₂ η) (f η))
     (negligible_add (h f hf) (hI _ (C.eqTest hf)))
+
+/-! ## A nontrivial secret
+
+The rules' hypotheses can be met by a nontrivial family, even over the class of all adversaries:
+a uniform `η`-bit value is a secret from nothing. -/
+
+/-- `2^{-η}` is negligible. -/
+theorem negligible_inv_two_pow : negligible fun η : ℕ => ((2 : ℝ≥0∞) ^ η)⁻¹ := by
+  rw [negligible_iff_superpolynomialDecay_toReal fun η => by simp]
+  intro k
+  refine (tendsto_pow_const_div_const_pow_of_one_lt k (by norm_num : (1 : ℝ) < 2)).congr
+    fun η => ?_
+  simp [div_eq_mul_inv, ENNReal.toReal_inv, ENNReal.toReal_pow]
+
+/-- A uniform element of `Fin n` hits a given number with probability at most `1 / n`. -/
+theorem prEvent_eq_val_uniformFin_le (n : ℕ) [NeZero n] (w : ℕ) :
+    Pr{let v ← $ᵗ (Fin n)}[w = (v : ℕ)] ≤ (n : ℝ≥0∞)⁻¹ := by
+  by_cases hw : w < n
+  · refine le_of_eq ((prEvent_congr _ _ _ fun v => ?_).trans
+      ((SampleableType.prEvent_uniformSample_eq_singleton' (⟨w, hw⟩ : Fin n)).trans (by simp)))
+    rw [Fin.ext_iff]
+  · rw [prEvent_eq_zero_of_forall_not ($ᵗ (Fin n)) (fun v : Fin n => w = (v : ℕ))
+      fun v h => hw (by rw [h]; exact v.isLt)]
+    exact zero_le
+
+/-- A uniform `η`-bit number cannot be computed from nothing: `NonDeducible` holds for this
+family over the class of all adversaries. -/
+theorem nonDeducible_uniform :
+    NonDeducible AdvClass.all fun η =>
+      (fun v : Fin (2 ^ η) => ((), (v : ℕ))) <$> ($ᵗ (Fin (2 ^ η))) := by
+  intro f _
+  refine negligible_of_le (fun η => ?_) negligible_inv_two_pow
+  have hswap : (deduceGame fun η =>
+        (fun v : Fin (2 ^ η) => ((), (v : ℕ))) <$> ($ᵗ (Fin (2 ^ η)))).advantage f η =
+      Pr{let w ← f η (); let v ← $ᵗ (Fin (2 ^ η))}[w = (v : ℕ)] := by
+    rw [← prEvent_bind_map_swap]
+    simp only [deduceGame, deduceAdv, prEvent_norm]
+  rw [hswap]
+  have key : Pr{let y ← (f η () >>= fun w => (fun v => (w, v)) <$> ($ᵗ (Fin (2 ^ η))))}[
+      y.1 = (y.2 : ℕ)] ≤ ((2 ^ η : ℕ) : ℝ≥0∞)⁻¹ :=
+    prEvent_bind_le_of_forall_le _ _ _ fun w => by
+      rw [prEvent_map]
+      exact prEvent_eq_val_uniformFin_le (2 ^ η) w
+  simpa only [prEvent_norm, Nat.cast_pow, Nat.cast_ofNat] using key
 
 end SquirrelModel.Asymptotic
