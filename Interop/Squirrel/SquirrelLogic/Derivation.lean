@@ -73,7 +73,7 @@ inductive Derivation (D : Decl B) : {Γ : List (Kind B)} → List (Form D Γ) �
       Derivation D Θ (.equiv (Env.cons (FTerm.app t t') u) (Env.cons (FTerm.app s s') v))
   /-- FA-Fn. -/
   | equivFn {Γ : List (Kind B)} {Θ : List (Form D Γ)} {τs : List (Ty B)} {u v : Vec D Γ τs}
-      (f : D.Fn) : Derivation D Θ (.equiv u v) →
+      {τ : Ty B} (f : D.Fn τ) : Derivation D Θ (.equiv u v) →
       Derivation D Θ (.equiv (Env.cons (FTerm.fn f) u) (Env.cons (FTerm.fn f) v))
   /-- G.Equiv:FA-Adv. -/
   | equivAdv {Γ : List (Kind B)} {Θ : List (Form D Γ)} {τs : List (Ty B)} {u v : Vec D Γ τs}

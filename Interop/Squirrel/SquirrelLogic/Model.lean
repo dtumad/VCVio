@@ -26,8 +26,10 @@ parameter `η`,
 needs a decidable test. Equality and the quantifiers range over function spaces, so they decide
 their propositions classically.
 
-The requirements LICS23 places on names (independent samplings for distinct name-index pairs,
-polynomial-time samplers) are not yet restrictions on models; nothing here uses them.
+Names follow LICS23 §II-B.2 structurally: the honest tape is a product with one uniform coin per
+name and index, a name reads its own coordinate, and names of one type share a sampler. So
+samplings for distinct name-index pairs are independent and those of one type are identically
+distributed. That samplers run in polynomial time is not a restriction here.
 
 ## Main results
 
@@ -69,20 +71,63 @@ attribute [instance] TapeModel.sampleableA TapeModel.sampleableH
 /-- Both tapes. -/
 abbrev TapeModel.Tape (T : TapeModel) (η : ℕ) : Type := T.TapeA η × T.TapeH η
 
-/-- A model of a declaration environment. -/
-structure Model (D : Decl B) extends TapeModel where
+/-- A model of a declaration environment. The honest tape is not a field: it is the product of
+one coin per name and index (`Model.TapeH`), and a name reads its own coordinate. -/
+structure Model (D : Decl B) where
+  /-- The attacker's random tapes. -/
+  TapeA : ℕ → Type
+  /-- Attacker tapes are finite and nonempty, with their uniform sampler. -/
+  [sampleableA : ∀ η, SampleableType (TapeA η)]
   /-- Each base type is a nonempty set of bitstrings at each `η`. -/
   carrier : B → ℕ → Set (List Bool)
   /-- Carriers are nonempty. -/
   nonempty : ∀ b η, (carrier b η).Nonempty
-  /-- A name reads its sample from the honest tape. -/
-  name : ∀ η {a b : Ty B}, D.Name a b → a.Value carrier η → TapeH η → b.Value carrier η
+  /-- The coins of the sampler for names of type `b`. -/
+  Coin : ℕ → Ty B → Type
+  /-- Coins are finite and nonempty, with their uniform sampler. -/
+  [sampleableCoin : ∀ η b, SampleableType (Coin η b)]
+  /-- The sampler for names of type `b`: names of one type follow one distribution. -/
+  sample : ∀ η (b : Ty B), Coin η b → b.Value carrier η
+  /-- Name indices are finite in the model. -/
+  finite_index : ∀ η {a b : Ty B}, D.Name a b → Finite (a.Value carrier η)
   /-- An honest function symbol is a fixed value at each `η`. -/
-  fn : ∀ η (f : D.Fn), (D.fnTy f).Value carrier η
+  fn : ∀ η {τ : Ty B}, D.Fn τ → τ.Value carrier η
   /-- An attacker function symbol is computed from the attacker tape. -/
   att : ∀ η (f : D.Att), TapeA η → (D.attTy f).Value carrier η
 
+attribute [instance] Model.sampleableA Model.sampleableCoin
+
 variable {D : Decl B}
+
+/-- The coordinates of the honest tape at `η`: a name with its types, and an index. -/
+abbrev Model.Slot (M : Model D) (η : ℕ) : Type :=
+  (n : (a : Ty B) × (b : Ty B) × D.Name a b) × n.1.Value M.carrier η
+
+/-- The honest tape at `η`: an independent coin for every name and index (LICS23 §II-B.2). -/
+@[expose] def Model.TapeH (M : Model D) (η : ℕ) : Type := (k : M.Slot η) → M.Coin η k.1.2.1
+
+/-- The honest tape is uniform: its coordinates are independent uniform coins. -/
+noncomputable instance Model.instSampleableTapeH (M : Model D) (η : ℕ) :
+    SampleableType (M.TapeH η) :=
+  haveI := D.finite_names
+  haveI : ∀ n : (a : Ty B) × (b : Ty B) × D.Name a b, Finite (n.1.Value M.carrier η) :=
+    fun n => M.finite_index η n.2.2
+  haveI := Fintype.ofFinite (M.Slot η)
+  haveI : ∀ k : M.Slot η, Fintype (M.Coin η k.1.2.1) := fun _ => Fintype.ofFinite _
+  SampleableType.piOfFintype _
+
+/-- Both tapes. -/
+abbrev Model.Tape (M : Model D) (η : ℕ) : Type := M.TapeA η × M.TapeH η
+
+/-- The tapes of a model. -/
+@[expose, reducible] noncomputable def Model.toTapeModel (M : Model D) : TapeModel where
+  TapeA := M.TapeA
+  TapeH := M.TapeH
+
+/-- A name reads the coin of its own slot and runs the sampler of its type. -/
+@[expose] def Model.name (M : Model D) (η : ℕ) {a b : Ty B} (n : D.Name a b)
+    (i : a.Value M.carrier η) (ρh : M.TapeH η) : b.Value M.carrier η :=
+  M.sample η b (ρh ⟨⟨a, b, n⟩, i⟩)
 
 /-! ## Labels -/
 
@@ -94,6 +139,16 @@ variable {D : Decl B}
 /-- A model respects the labels declared for its base types. -/
 @[expose] def Model.RespectsLabels (M : Model D) : Prop :=
   ∀ b l, D.labels b l → l.Holds M.carrier b
+
+/-- Every type is finite when the carriers are finite. -/
+theorem Ty.finite_value_of_finite {carrier : B → ℕ → Set (List Bool)}
+    (h : ∀ b η, (carrier b η).Finite) (η : ℕ) : ∀ τ : Ty B, Finite (τ.Value carrier η)
+  | .bool => inferInstanceAs (Finite Bool)
+  | .base b => (h b η).to_subtype
+  | .arrow a b =>
+    have := a.finite_value_of_finite h η
+    have := b.finite_value_of_finite h η
+    inferInstanceAs (Finite (a.Value carrier η → b.Value carrier η))
 
 /-- Every type is inhabited when the carriers are nonempty. -/
 theorem Ty.nonempty_value {carrier : B → ℕ → Set (List Bool)}
