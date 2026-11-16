@@ -15,6 +15,7 @@ public import Examples.SquirrelModel.Asymptotic
 public import Examples.SquirrelModel.ChainSecrecy
 public import Examples.SquirrelModel.SquirrelStatement
 public import Examples.SquirrelModel.ChainAsymptotic
+public import Examples.SquirrelModel.ChainLaterKeys
 public import Examples.SquirrelModel.PRFChain
 public import Examples.SquirrelModel.Healing
 
@@ -57,19 +58,22 @@ step of its ratchet.
    `frame@t' ⊬ ck@init`, for Squirrel's fixed-trace attacker, as a corollary.
 10. `ChainAsymptotic.lean`. **`negligible_chainAdv`**: negligible for `η`-bit keys and
     polynomially many queries.
-11. `PRFChain.lean`. **`prfChainAdv_le`**: the paper's keyed hash, assumed a PRF: the bound is the
+11. `ChainLaterKeys.lean`. **`keyAdv_le`**: every safe key `ck_t`, against an attacker whose first
+    `t` chain operations are updates and which corrupts freely afterwards:
+    `((t + 1) q + 1) / |K|`.
+12. `PRFChain.lean`. **`prfChainAdv_le`**: the paper's keyed hash, assumed a PRF: the bound is the
     PRF advantage of the named reduction `chainReduction A` plus `(q + 1) / |K|`.
 
 ## The ratchet: one healing step
 
-12. `Healing.lean`. **`healingAdv_le`**: after a compromise leaks `rk`, one honest Diffie–Hellman
+13. `Healing.lean`. **`healingAdv_le`**: after a compromise leaks `rk`, one honest Diffie–Hellman
     exchange makes `rk' = H(rk, g^{ab})` secret again, up to the CDH success of named guessing
     reductions plus `1 / |K|`; Pc-Oracle and CDH-as-non-deduction composed.
 
 ## What the statements assume
 
-The random-oracle results (`chainAdv_le` and its corollaries, the oracle rules) are
-information-theoretic: they hold against every adversary, counting only its oracle queries. The
+The random-oracle results (`chainAdv_le`, `keyAdv_le` and their corollaries, the oracle rules)
+are information-theoretic: they hold against every adversary, counting only its oracle queries. The
 rule lemmas, `prfChainAdv_le` and `healingAdv_le` hold for every adversary and name the reductions
 they use, so each reduction's cost is its code. Efficiency enters only in `Asymptotic.lean` and in
 `negligible_prfChainAdv`, as named hypotheses: closure of the adversary class, and PRF security
