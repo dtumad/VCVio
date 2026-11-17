@@ -37,8 +37,9 @@ and its premise holds, and its conclusion fails (`freshL_needs_longTapes`).
   returns `[false]`; no honest symbol has type `msg`; every other construction only passes values
   on. The guessing machine returns an argument of one of its queries, so the induction also shows
   that every query has clean arguments (`Gen.clean_argsClean`). So with nothing on the left no
-  admitted machine guesses `m` except with probability `2^{-(η+1)}`: `[] ⊬ m` holds. But the identity on `n` computes `m` whenever both are `[true]`,
-  with probability close to one, so `n ⊬ m` fails, although `n` is fresh in `m`.
+  admitted machine guesses `m` except with probability `2^{-(η+1)}`: `[] ⊬ m` holds. But the
+  identity on `n` computes `m` whenever both are `[true]`, with probability close to one, so
+  `n ⊬ m` fails, although `n` is fresh in `m`.
 
 The construction asks less than its sketch: the two names have one likely value, not two values
 sharing their mass, so the failure of `n ⊬ m` follows from the marginals by a union bound.
