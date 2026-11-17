@@ -141,7 +141,7 @@ theorem caseStudy_needs_condition :
   refine ⟨(valid_fresh _).equiv_symm, fun h => ?_⟩
   have hM := Form.holds_equiv.1 (h model model_respectsLabels rfl Env.empty (by simp))
     (Machine.input .zero Ty.isGround_bool)
-    (AdvClass.all_mem_of_readsBelow_zero (Machine.readsBelow_input _ _))
+    (AdvClass.all_mem_input _ _)
   rw [Machine.test_input] at hM
   refine not_negligible_one (negligible_of_le (fun η => ?_)
     (negligible_const_mul hM (c := 2) ENNReal.ofNat_ne_top))

@@ -220,7 +220,7 @@ theorem not_indist_eq_name {u v : VecRV pmodel [msg, msg]}
     ¬ (AdvClass.all pmodel).Indist u v := by
   intro h
   have hA := h (Machine.eqTest (Ty.isGround_base ()))
-    (AdvClass.all_mem_of_readsBelow_zero (Machine.readsBelow_eqTest _))
+    ((AdvClass.all _).eqTest_mem _)
   rw [Machine.test_eqTest] at hA
   obtain ⟨c, hc, hle⟩ := pmodel_isLarge
   refine not_negligible_one (negligible_of_le (fun η => ?_)

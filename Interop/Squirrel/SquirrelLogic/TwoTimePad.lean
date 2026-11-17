@@ -119,7 +119,7 @@ theorem not_valid_reuse :
         (Env.cons (enc .tt) (Env.cons (enc .ff) Env.empty))) := fun h => by
   have hM := Form.holds_equiv.1 (h model model_respectsLabels rfl Env.empty (by simp))
     (Machine.eqTest Ty.isGround_bool)
-    (AdvClass.all_mem_of_readsBelow_zero (Machine.readsBelow_eqTest _))
+    ((AdvClass.all _).eqTest_mem _)
   refine not_negligible_one (negligible_of_le (fun η => le_of_eq ?_) hM)
   simp only [advantage, Machine.test_eqTest, Distinguisher.eqTest, Vec.rv_cons, VecRV.cons,
     Env.cons_zero, Env.cons_succ, denote_enc,
