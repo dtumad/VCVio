@@ -467,6 +467,69 @@ end PRFSymbols
 
 /-! ## The rules -/
 
+section Vectors
+
+variable {S : Type} {V : S → Type}
+
+/-- A property of every entry of two vectors holds of every entry of their concatenation. -/
+theorem Env.forall_append {Γ : List S} {p : ∀ a, V a → Prop} :
+    ∀ {Ξ : List S} {ξ : Env V Ξ} {η : Env V Γ}, (∀ a x, p a (ξ a x)) → (∀ a x, p a (η a x)) →
+      ∀ a x, p a (Env.append ξ η a x)
+  | [], _, _, _, hη => hη
+  | _ :: _, _, _, hξ, hη => fun a x => by
+    cases x with
+    | zero => exact hξ _ .zero
+    | succ x => exact Env.forall_append (fun _ y => hξ _ y.succ) hη a x
+
+/-- The renaming that exchanges the last two entries of `(Ξ ++ [b]) ++ [c]`. -/
+@[expose] def swapLast (Ξ : List S) (b c : S) : Renaming ((Ξ ++ [b]) ++ [c]) ((Ξ ++ [c]) ++ [b]) :=
+  Env.append (Env.append (fun _ x => renameInl (Γ := [b]) _ (renameInl (Γ := [c]) _ x))
+      (Env.cons (renameInr (Ξ ++ [c]) _ .zero) Env.empty))
+    (Env.cons (renameInl (Γ := [b]) _ (renameInr Ξ _ .zero)) Env.empty)
+
+theorem Env.append_renameInl {Ξ Γ : List S} (ξ : Env V Ξ) (η : Env V Γ) {a : S}
+    (z : ScopedVar Ξ a) : Env.append ξ η a (renameInl a z) = ξ a z :=
+  congrFun (congrFun (Env.rename_renameInl_append ξ η) a) z
+
+theorem rename_swapLast {Ξ : List S} {b c : S} (w : Env V Ξ) (x : V c) (y : V b) :
+    Env.rename (swapLast Ξ b c)
+        (Env.append (Env.append w (Env.cons x Env.empty)) (Env.cons y Env.empty)) =
+      Env.append (Env.append w (Env.cons y Env.empty)) (Env.cons x Env.empty) := by
+  rw [swapLast, Env.rename_append_renaming, Env.rename_append_renaming]
+  congr 2
+  · funext a z
+    exact (Env.append_renameInl _ _ _).trans (Env.append_renameInl _ _ _)
+  · funext a z
+    cases z with
+    | zero => exact Env.append_renameInr _ _ _ _
+    | succ z => exact nomatch z
+  · funext a z
+    cases z with
+    | zero => exact (Env.append_renameInl _ _ _).trans (Env.append_renameInr _ _ _ _)
+    | succ z => exact nomatch z
+
+end Vectors
+
+theorem PRFSymbols.closeVec_append (P : PRFSymbols D) {Γ : List (Kind B)} {τs' : List (Ty B)} :
+    ∀ {τs : List (Ty B)} (u : OVec P Γ τs) (w : OVec P Γ τs'),
+      P.closeVec (Env.append u w) = Env.append (P.closeVec u) (P.closeVec w)
+  | [], _, _ => rfl
+  | _ :: _, u, w => by
+    funext a x
+    cases x with
+    | zero => rfl
+    | succ x => exact congrFun (congrFun
+        (PRFSymbols.closeVec_append P (fun _ y => u _ (.succ y)) w) a) x
+
+theorem PRFSymbols.closeVec_single (P : PRFSymbols D) {Γ : List (Kind B)} {β : Ty B}
+    (v : OTerm P Γ β) :
+    P.closeVec (Env.cons v Env.empty : OVec P Γ [β]) =
+      (Env.cons (P.close v) Env.empty : Vec D Γ [β]) := by
+  funext a x
+  cases x with
+  | zero => rfl
+  | succ x => exact nomatch x
+
 /-- A vector of Boolean and base types has order at most one. -/
 theorem Ty.IndistOrder.of_isGround {τs : List (Ty B)} (h : ∀ τ ∈ τs, τ.IsGround) :
     Ty.IndistOrder τs :=
@@ -531,6 +594,122 @@ theorem equiv_prf (P : PRFSymbols D) {Θ : List (Form D [])} (u : OVec P [] τs)
     hmg hku hkm hpu hpm hfu hfm (C M) env (fun τ x => FTerm.Avoids.freshAt (hau τ x) (C M) env)
     (FTerm.Avoids.freshAt ham (C M) env) A.test) (negligible_add (negligible_add h₁ h₂) hbox)
 
+/-- **PRF-Simple** (CCS26 Fig. 4 and Fig. 11, pp. 7 and 17): from `u⃗ ⊬ v` conclude
+`u⃗, h(m, k) ⊬ v`, derived as CCS26 derives it (p. 17): G.PRF on the vector `u⃗, v` gives
+`u⃗, v, h(m, k) ∼ u⃗, v, n(i)` for a name `n` fresh in `u⃗`, `v` and `m`; Perm moves `v` last;
+FreshL turns `u⃗ ⊬ v` into `u⃗, n(i) ⊬ v`; and Rw-Equiv, for a secret of Boolean or base type,
+gives the conclusion.
+
+The side conditions are those of the three rules: `ψ_key`, `⊢pptm`, first order and `[ψ_msg]` on
+`u⃗, v` and `m` (G.PRF); long tapes, polynomial bit blocks for the hash type, and read bounds of
+`u⃗` and `v` under `Θ` (FreshL); `n(i)` fresh in `u⃗`, `v` and `m`, and names of the hash type
+uniform (both). `hprf` is G.PRF's assumption at the vector `u⃗, v`. -/
+theorem nonDed_prf (P : PRFSymbols D) {Θ : List (Form D [])} {β : Ty B} (u : OVec P [] τs)
+    (v : OTerm P [] β) (m : OTerm P [] P.msgTy) {a : Ty B} (nn : D.Name a P.hTy) (i : D.Fn a)
+    {ho : Ty.SecrecyOrder τs β} {ho' : Ty.SecrecyOrder (τs ++ [P.hTy]) β}
+    (hg : ∀ τ ∈ τs, τ.IsGround) (hβ : β.IsGround) (hmg : P.msgTy.IsGround)
+    (hhg : P.hTy.IsGround) (hku : ∀ τ x, P.KeyFree (u τ x)) (hkv : P.KeyFree v)
+    (hkm : P.KeyFree m) (hpu : ∀ τ x, P.Pptm (u τ x)) (hpv : P.Pptm v) (hpm : P.Pptm m)
+    (hfu : ∀ τ x, P.FirstOrder (u τ x)) (hfv : P.FirstOrder v) (hfm : P.FirstOrder m)
+    (hnk : (⟨a, P.hTy, nn⟩ : (a : Ty B) × (b : Ty B) × D.Name a b) ≠ P.keyName)
+    (hR : ∀ M, R M → M.UniformSampler P.hTy ∧ M.LongTapes ∧ M.PolyCoins P.hTy ∧
+      (∀ τ x, FTerm.Avoids M (fun η k => k = M.nameSlot nn i η) (P.close (u τ x))) ∧
+      FTerm.Avoids M (fun η k => k = M.nameSlot nn i η) (P.close v) ∧
+      FTerm.Avoids M (fun η k => k = M.nameSlot nn i η) (P.close m))
+    (hread : ∀ M : Model D, M.RespectsLabels → R M → ∀ env, (∀ θ ∈ Θ, θ.Holds M (C M) env) →
+      Vec.ReadsPoly M (C M) (P.closeVec u) env ∧ FTerm.ReadsPoly M (C M) (P.close v) env)
+    (hprf : ∀ M : Model D, M.RespectsLabels → R M → ∀ hU : M.UniformSampler P.hTy,
+      ∀ A : Machine M ((τs ++ [β]) ++ [P.hTy]) .bool, (C M).mem A →
+        negligible (fun η => P.prfAdv M η hU
+          (P.hashReduction η (Env.append u (Env.cons v Env.empty)) m A.test)) ∧
+        negligible (fun η => P.prfAdv M η hU
+          (P.freshReduction η (Env.append u (Env.cons v Env.empty)) m A.test)))
+    (hmsg : Valid R C Θ (.box (P.psiMsg (Env.append u (Env.cons v Env.empty)) m)))
+    (h : Valid R C Θ (.nonDed (P.closeVec u) (P.close v) ho)) :
+    Valid R C Θ (.nonDed (Vec.snoc (P.closeVec u) (P.hashTerm (P.close m))) (P.close v) ho') := by
+  have hgv : ∀ τ ∈ τs ++ [β], τ.IsGround := fun τ hτ =>
+    (List.mem_append.1 hτ).elim (hg τ) fun h' => (List.mem_singleton.1 h') ▸ hβ
+  have hall : ∀ {p : ∀ τ, OTerm P [] τ → Prop}, (∀ τ x, p τ (u τ x)) → p β v →
+      ∀ τ x, p τ (Env.append u (Env.cons v Env.empty) τ x) := fun hu hv =>
+    Env.forall_append hu fun _ x => by
+      cases x with
+      | zero => exact hv
+      | succ x => exact nomatch x
+  have hprf' := equiv_prf P (Env.append u (Env.cons v Env.empty)) m nn i
+    (ho := Ty.IndistOrder.of_isGround fun τ hτ => (List.mem_append.1 hτ).elim (hgv τ)
+      fun h' => (List.mem_singleton.1 h') ▸ hhg)
+    hgv hmg (hall hku hkv) hkm (hall hpu hpv) hpm (hall hfu hfv) hfm hnk
+    (fun M hRM => ⟨(hR M hRM).1, hall (p := fun _ t => FTerm.Avoids M _ (P.close t))
+      (hR M hRM).2.2.2.1 (hR M hRM).2.2.2.2.1, (hR M hRM).2.2.2.2.2⟩) hprf hmsg
+  rw [P.closeVec_append, P.closeVec_single] at hprf'
+  have hperm := equiv_rename (swapLast τs P.hTy β) hprf'
+  rw [Vec.snoc, Vec.snoc, rename_swapLast, rename_swapLast] at hperm
+  exact nonDed_rwEquiv hβ (nonDed_freshL nn i (fun M hRM => ⟨(hR M hRM).2.1, (hR M hRM).2.2.1⟩)
+    hread (fun M hRM => ⟨(hR M hRM).2.2.2.1, (hR M hRM).2.2.2.2.1⟩) h) hperm
+
 end Valid
+
+/-! ## Instances, for derivations -/
+
+/-- An instance of G.PRF: the keyed hash, a closed vector and a message with calls, and a name of
+the hash type at an honest index. -/
+structure PRFInstance (D : Decl B) where
+  /-- The keyed hash. -/
+  P : PRFSymbols D
+  /-- The types of the vector. -/
+  τs : List (Ty B)
+  /-- The vector, with calls. -/
+  u : OVec P [] τs
+  /-- The message, with calls. -/
+  m : OTerm P [] P.msgTy
+  /-- The index type of the fresh name. -/
+  a : Ty B
+  /-- The fresh name, of the hash type. -/
+  nn : D.Name a P.hTy
+  /-- The index at which the fresh name is read. -/
+  i : D.Fn a
+  /-- The vectors of the conclusion have order at most one. -/
+  order : Ty.IndistOrder (τs ++ [P.hTy])
+
+namespace PRFInstance
+
+variable (e : PRFInstance D)
+
+/-- The syntactic side conditions of G.PRF: entries and message of Boolean or base type, `ψ_key`,
+`⊢pptm`, first order, and a fresh name that is not the key name. -/
+@[expose] def Syntactic : Prop :=
+  (∀ τ ∈ e.τs, τ.IsGround) ∧ e.P.msgTy.IsGround ∧ (∀ τ x, e.P.KeyFree (e.u τ x)) ∧
+    e.P.KeyFree e.m ∧ (∀ τ x, e.P.Pptm (e.u τ x)) ∧ e.P.Pptm e.m ∧
+    (∀ τ x, e.P.FirstOrder (e.u τ x)) ∧ e.P.FirstOrder e.m ∧
+    (⟨e.a, e.P.hTy, e.nn⟩ : (a : Ty B) × (b : Ty B) × D.Name a b) ≠ e.P.keyName
+
+/-- The semantic hypotheses of G.PRF: in every model of `R`, names of the hash type are uniform
+and the terms do not read the fresh name's coordinate; and the two reductions of every admitted
+machine have negligible PRF advantage. -/
+@[expose] def Holds (R : Model D → Prop) (C : ∀ M : Model D, AdvClass M) : Prop :=
+  (∀ M, R M → M.UniformSampler e.P.hTy ∧
+      (∀ τ x, FTerm.Avoids M (fun η k => k = M.nameSlot e.nn e.i η) (e.P.close (e.u τ x))) ∧
+      FTerm.Avoids M (fun η k => k = M.nameSlot e.nn e.i η) (e.P.close e.m)) ∧
+    ∀ M : Model D, M.RespectsLabels → R M → ∀ hU : M.UniformSampler e.P.hTy,
+      ∀ A : Machine M (e.τs ++ [e.P.hTy]) .bool, (C M).mem A →
+        negligible (fun η => e.P.prfAdv M η hU (e.P.hashReduction η e.u e.m A.test)) ∧
+          negligible (fun η => e.P.prfAdv M η hU (e.P.freshReduction η e.u e.m A.test))
+
+/-- The left vector of the conclusion, `u⃗, h(m, k)`. -/
+@[expose] def lhs : Vec D [] (e.τs ++ [e.P.hTy]) :=
+  Vec.snoc (e.P.closeVec e.u) (e.P.hashTerm (e.P.close e.m))
+
+/-- The right vector of the conclusion, `u⃗, n(i)`. -/
+@[expose] def rhs : Vec D [] (e.τs ++ [e.P.hTy]) :=
+  Vec.snoc (e.P.closeVec e.u) (FTerm.name e.nn (FTerm.fn e.i))
+
+/-- G.PRF at an instance. -/
+theorem valid {R : Model D → Prop} {C : ∀ M : Model D, AdvClass M} {Θ : List (Form D [])}
+    (hs : e.Syntactic) (hh : e.Holds R C) (hmsg : Valid R C Θ (.box (e.P.psiMsg e.u e.m))) :
+    Valid R C Θ (.equiv e.lhs e.rhs e.order) :=
+  Valid.equiv_prf e.P e.u e.m e.nn e.i hs.1 hs.2.1 hs.2.2.1 hs.2.2.2.1 hs.2.2.2.2.1
+    hs.2.2.2.2.2.1 hs.2.2.2.2.2.2.1 hs.2.2.2.2.2.2.2.1 hs.2.2.2.2.2.2.2.2 hh.1 hh.2 hmsg
+
+end PRFInstance
 
 end SquirrelLogic
