@@ -8,6 +8,7 @@ module
 public import SquirrelLogic.Rules.Local
 public import SquirrelLogic.Rules.Equiv
 public import SquirrelLogic.Rules.Enc
+public import SquirrelLogic.Rules.Rename
 
 /-!
 # Derivations of global sequents
@@ -15,8 +16,9 @@ public import SquirrelLogic.Rules.Enc
 Derivations in the fragment of LICS23 proved sound in `SquirrelLogic.Global` and
 `SquirrelLogic.Rules`, as data: each constructor is one rule, indexed by the context, the
 hypotheses and the conclusion. `Derivation.sound` maps every derivation to validity over every
-model restriction and every adversary class, one rule lemma per constructor. Name renaming
-(`Valid.equiv_renameNames`) is left out: it holds only under a restriction on models.
+model restriction and every adversary class, one rule lemma per constructor. Name renaming is the
+constructor for a bijection of names (`Valid.equiv_renameNames_of_equiv`), which holds in every
+model.
 
 The encryption rule (`Valid.equiv_enc`) is a constructor, at the instances that the parameter
 `enc` admits; its syntactic side condition, distinct key and coin names, is a premise of the
@@ -108,6 +110,19 @@ inductive Derivation (D : Decl B) (enc : EncInstance D → Prop) :
       {τ : Ty B} {t t' : FTerm D Γ τ} {w : Vec D Γ (τ :: τs)} :
       Derivation D enc Θ (.box (FTerm.eq t t')) → Derivation D enc Θ (.equiv (Env.cons t' u) w) →
       Derivation D enc Θ (.equiv (Env.cons t u) w)
+  /-- Eq1 (BC14 Fig. 2). -/
+  | equivEqSelf {Γ : List (Kind B)} {Θ : List (Form D Γ)} {τs : List (Ty B)} {τ : Ty B}
+      (t : FTerm D Γ τ) (u : Vec D Γ τs) :
+      Derivation D enc Θ (.equiv (Env.cons (FTerm.eq t t) u) (Env.cons FTerm.tt u))
+  /-- Restr and Perm (BC14 Fig. 2): reindexing both vectors. -/
+  | equivRename {Γ : List (Kind B)} {Θ : List (Form D Γ)} {τs τs' : List (Ty B)}
+      {u v : Vec D Γ τs} (r : Renaming τs' τs) :
+      Derivation D enc Θ (.equiv u v) →
+      Derivation D enc Θ (.equiv (Env.rename r u) (Env.rename r v))
+  /-- Name renaming along a bijection of names, for a closed vector. -/
+  | equivRenameNames {Θ : List (Form D [])} {τs : List (Ty B)}
+      (π : ∀ {a b : Ty B}, D.Name a b ≃ D.Name a b) (u : Vec D [] τs) :
+      Derivation D enc Θ (.equiv u (u.renameNames fun n => π n))
   /-- Encryption from one-time IND-CPA, at an admitted instance with distinct key and coin
   names. -/
   | equivEnc {Θ : List (Form D [])} (e : EncInstance D) : enc e →
@@ -140,6 +155,9 @@ theorem Derivation.sound {enc : EncInstance D → Prop} (R : Model D → Prop)
   | _, _, _, .equivDup d => (d.sound R C henc).equiv_dup
   | _, _, _, .equivIte d => (d.sound R C henc).equiv_ite
   | _, _, _, .equivRewrite d₁ d₂ => Valid.equiv_rewrite (d₁.sound R C henc) (d₂.sound R C henc)
+  | _, _, _, .equivEqSelf t u => Valid.equiv_eq_self t u
+  | _, _, _, .equivRename r d => Valid.equiv_rename r (d.sound R C henc)
+  | _, _, _, .equivRenameNames π u => Valid.equiv_renameNames_of_equiv π u
   | _, _, _, .equivEnc e he hkr => Valid.equiv_enc e.E hkr (henc e he).1 (henc e he).2
 
 /-- A worked derivation: from the hypothesis `∀̃ x. G`, conclude `G{x ↦ t}`. -/

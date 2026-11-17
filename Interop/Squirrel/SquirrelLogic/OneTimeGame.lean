@@ -17,6 +17,9 @@ second (`IND_CPA_OneTime_Branch`). There is no factor of two: the advantage is t
 hidden-bit game, `|Pr[win] − Pr[lose]|`, which is the distance between the branches by
 `evalDist_boolBias_bind_uniformBool`.
 
+`IND_CPA_OneTime_EqualLength len adv` says that the adversary submits only pairs of messages of
+equal length.
+
 Nothing here mentions Squirrel. It is local to this library until a second consumer needs it.
 -/
 
@@ -37,6 +40,14 @@ return the adversary's guess. -/
   let (m₁, m₂, state) ← adv.chooseMessages pk
   let c ← encAlg.encrypt pk (if b then m₁ else m₂)
   adv.distinguish state c
+
+/-- The adversary submits only pairs of messages of equal length `len`, on every public key. The
+standard IND-CPA game admits only these adversaries; VCVio's game has no such restriction, so a
+hypothesis about it is satisfiable by a scheme that leaks the length only when it is stated for
+such adversaries. -/
+@[expose] def IND_CPA_OneTime_EqualLength {L : Type} (len : M → L)
+    {encAlg : AsymmEncAlg ProbComp M PK SK C} (adv : IND_CPA_OneTime_Adversary encAlg) : Prop :=
+  ∀ pk, ∀ z ∈ support (adv.chooseMessages pk), len z.1 = len z.2.1
 
 /-- **The game's shape.** The one-time IND-CPA advantage at the `ProbComp` runtime is the distance
 between the probabilities that the adversary answers `true` in the two branches. -/
