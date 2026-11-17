@@ -1206,3 +1206,79 @@ Still missing from BC14 Fig. 2:
   is sound for its form, with the slip in `B1`'s probability; the rule is proved for the
   first-order fragment with factor one. L7 stays open for `⊢pptm` and the other sketched proofs.
 - No row is added: `guard_mem` is a closure field like the others, within L14.
+
+## M1, part 1: the secrecy predicates `⊬` and `▷`
+
+This work was done on top of `44ca7421d`. The source is CCS26, the authors' PDF pinned in
+`../SOURCES.md`: §3.1 (p. 6) for the definitions, Fig. 3 (p. 7) for the core rules, Fig. 11 and
+App. C.2 (pp. 16–17) for FreshL and FreshR; LICS23 App. A for the label `large`.
+
+### The predicates are definitions
+
+- **No new primitive.** `Form.nonDed u v` is `∀̃ f. adv(f) ⇒̃ [¬ (f(u⃗) = v)]` and `Form.ded u v`
+  is `∃̃ f. adv(f) ∧̃ [f(u⃗) = v]`, built from `Form.all`, `Form.ex`, `Form.imp`, `Form.and`,
+  `Form.adv`, `Form.box` and the local `FTerm.not`, `FTerm.eq`. `Global.lean` gains the smart
+  constructors `Form.and`, `Form.ex`, `Form.bot`, `Form.not` and `FTerm.not`, with `holds`
+  lemmas; `GlobalOp` is unchanged.
+- **Tuples are curried (no products).** `Ty` has no product type, so the tuple `u₁, …, uₙ` on
+  the left is a vector `Vec D Γ τs`, and `f` has the curried type `Ty.arrows τs β`, applied by
+  `FTerm.apps` (syntax) and `Ty.appVals` (values). The right side is one term. A term in the
+  middle of Trans or WeakL is on the right of a `▷`, so it is a single term, written as the
+  vector `[v]`. Rw-Equiv's vectors `u⃗, v` are `Vec.snoc u v`, PolyFun's `Env.append`.
+- **Semantics.** `Form.holds_nonDed` and `Form.holds_ded` read the formulas as
+  `AdvClass.NonDed C u v` (every admitted `g` has negligible `deduceAdv g u v`) and
+  `AdvClass.Ded C u v` (some admitted `g` has negligible `deduceErr g u v`), where
+  `deduceAdv g u v η = Pr_ρ[g(ρa)(u(ρ)) = v(ρ)]` and `deduceErr` is the probability of `≠`.
+- **Against the spike.** The spike's `deduceAdv uv f` (`Examples/SquirrelModel/Deduction.lean`)
+  is the same probability for a VCVio adversary `f : α → ProbComp β` that draws fresh coins; here
+  `g` reads the shared attacker tape `ρa` (L10). The two agree when `ρa` is independent of `u`
+  and `v`, and differ for FreshL (below).
+
+### The core rules (CCS26 Fig. 3)
+
+Each rule is a `Valid` theorem in `Rules/Secrecy.lean` that applies one law of `Secrecy.lean`,
+whose proof is an inequality at every `η` with the reduction named.
+
+| Rule | Lean | Bound at `η` | Reduction |
+|---|---|---|---|
+| Neg1 | `Valid.not_ded`, `AdvClass.NonDed.not_ded` | `deduceAdv g u v + deduceErr g u v = 1` | the witness of `▷` |
+| Neg2 | `Valid.not_nonDed`, `AdvClass.Ded.not_nonDed` | the same | the same |
+| Ineq | `Valid.box_not_eq`, `AdvClass.NonDed.negligible_eq` | `Pr[v = w] ≤ deduceAdv g u v + deduceErr g u w` | the witness of `u ▷ w` |
+| Trans | `Valid.ded_trans`, `AdvClass.Ded.trans` | `deduceErr (k.comp f) u w ≤ deduceErr f u v + deduceErr k [v] w` | `AttackerFn.comp` |
+| WeakL | `Valid.nonDed_weakL`, `AdvClass.NonDed.weakL` | `deduceAdv g [v] w ≤ deduceAdv (g.comp f) u w + deduceErr f u v` | `AttackerFn.comp` |
+| WeakR | `Valid.nonDed_weakR`, `AdvClass.NonDed.weakR` | `deduceAdv g u w ≤ deduceAdv (k.comp g) u v + deduceErr k [w] v` | `AttackerFn.comp` |
+| Rw-Equiv | `Valid.nonDed_rwEquiv`, `AdvClass.NonDed.rwEquiv` | `deduceAdv g u₁ v₁ ≤ deduceAdv g u₂ v₂ + advantage (Distinguisher.deduce g) (u₁, v₁) (u₂, v₂)` | `Distinguisher.deduce` |
+
+- `Valid.ded_apps` concludes `u⃗ ▷ f(u⃗)` from `adv(f)`: the definition of `▷` with its witness.
+  The fragment has no other way to introduce `▷`.
+- **Rw-Equiv at Boolean and base types only** (`Ty.IsGround`). Its distinguisher tests
+  `f(u⃗) = v`, which no machine does at an arrow type. The closure field is asked only there, so
+  that a polynomial-time class can meet it.
+- Rw-Oracle and Pc-Oracle are not done: they need `adv` at order two.
+
+### Closure fields
+
+| Field | Reduction | Used by | Polynomial-time counterpart |
+|---|---|---|---|
+| `comp_mem` | `AttackerFn.comp k f`: `f` then `k`, both on the shared `ρa` | Trans, WeakL, WeakR | `IsPPTOn.bind`; uniform PPT has it |
+| `eqTest_mem` | `Distinguisher.eqTest β` at ground `β` | Rw-Equiv, with `app_mem` and `adv_mem` | `decide_eq`; uniform PPT has it |
+| `applyConst_mem` | `AttackerFn.applyConst g x`: fix the first argument to `x η` | FreshL | non-uniform: polynomial advice or circuits have it for values of polynomial length; uniform PPT does not |
+
+Rw-Equiv's distinguisher is derived, not a field: `Distinguisher.deduce g` is
+`((eqTest β).appArgs τs).adv g`, where `appArgs` applies `Distinguisher.app` once per argument
+(`AdvClass.deduce_mem`).
+
+### The label `large`
+
+LICS23 App. A: if `large ∈ label(τ)`, then for every name `n : τ₀ → τ`, every `η`, `a` and `b`,
+`Pr_ρh[⟦n⟧(η, a)(ρh) = b] ≤ 1/2^{c_τ·η}`, for some real `c_τ > 0`. Here `Label.large` is a label
+of base types and `Model.IsLarge M τ` says `∃ c > 0, ∀ η y, Pr_coin[sample η τ coin = y] ≤
+2^{-(c·η)}`: names of one type share a sampler, so the bound is on the sampler.
+
+- **Lifting.** LICS23 lifts labels "in the natural way" without saying how `large` lifts. Here
+  `Ty.HasLabel` lifts `finite` and `fixed` along arrows as before, and Booleans and arrow types
+  are not `large`: the samplers of the parts do not determine the sampler of an arrow type, and a
+  Boolean is guessed with probability at least one half.
+- **Consequence.** `Model.trivial` respects every label but `large`. A type labelled `finite`,
+  `fixed` and `large` has no model, so `Valid.not_box_ff`, `Valid.not_equiv_tt_ff` and the
+  If1 countermodels now assume a declaration with no `large` base type.

@@ -37,7 +37,10 @@ distributed. That samplers run in polynomial time is not a restriction here.
 * `denote_substOne_congr`: replacing a subterm by one with the same meaning preserves meaning,
   the semantic core of local rewriting (LICS23 Fig. 7, L.Rewrite);
 * `denote_eq_app_of_eq`: function application is a congruence for local equality;
-* `Ty.finite_value`, `Ty.value_eq_of_fixed`: what the labels give.
+* `Ty.finite_value`, `Ty.value_eq_of_fixed`, `Model.isLarge_of_hasLabel`: what the labels give.
+
+`Ty.appVals` applies a curried function of a tuple (`Ty.arrows`) to a vector of values, and
+`Ty.postcomp` composes after it; they read CCS26's attacker functions of tuples.
 -/
 
 public section
@@ -53,6 +56,35 @@ variable {B : Type}
   | .bool => Bool
   | .base b => carrier b η
   | .arrow a b => a.Value carrier η → b.Value carrier η
+
+/-- A curried function of the tuple `τs` applied to a vector of arguments. -/
+@[expose] def Ty.appVals {carrier : B → ℕ → Set (List Bool)} {η : ℕ} {β : Ty B} :
+    {τs : List (Ty B)} → (Ty.arrows τs β).Value carrier η → Env (Ty.Value carrier η) τs →
+      β.Value carrier η
+  | [], g, _ => g
+  | _ :: _, g, e => Ty.appVals (g (e _ .zero)) fun _ x => e _ (.succ x)
+
+/-- Post-composition of a curried function of the tuple `τs` with `k`. -/
+@[expose] def Ty.postcomp {carrier : B → ℕ → Set (List Bool)} {η : ℕ} {β γ : Ty B}
+    (k : β.Value carrier η → γ.Value carrier η) :
+    {τs : List (Ty B)} → (Ty.arrows τs β).Value carrier η → (Ty.arrows τs γ).Value carrier η
+  | [], g => k g
+  | _ :: _, g => fun x => Ty.postcomp k (g x)
+
+@[simp] theorem Ty.appVals_nil {carrier : B → ℕ → Set (List Bool)} {η : ℕ} {β : Ty B}
+    (g : (Ty.arrows [] β).Value carrier η) (e : Env (Ty.Value carrier η) []) :
+    Ty.appVals g e = g := rfl
+
+@[simp] theorem Ty.appVals_cons {carrier : B → ℕ → Set (List Bool)} {η : ℕ} {β τ : Ty B}
+    {τs : List (Ty B)} (g : (Ty.arrows (τ :: τs) β).Value carrier η) (x : τ.Value carrier η)
+    (e : Env (Ty.Value carrier η) τs) : Ty.appVals g (Env.cons x e) = Ty.appVals (g x) e := rfl
+
+@[simp] theorem Ty.appVals_postcomp {carrier : B → ℕ → Set (List Bool)} {η : ℕ} {β γ : Ty B}
+    (k : β.Value carrier η → γ.Value carrier η) :
+    ∀ {τs : List (Ty B)} (g : (Ty.arrows τs β).Value carrier η) (e : Env (Ty.Value carrier η) τs),
+      Ty.appVals (Ty.postcomp k g) e = k (Ty.appVals g e)
+  | [], _, _ => rfl
+  | _ :: _, g, e => Ty.appVals_postcomp k (g (e _ .zero)) _
 
 /-- Random tapes: finite, nonempty sets for the attacker and for honest samplings. The uniform
 distribution on them is VCVio's `$ᵗ`. -/
@@ -127,6 +159,12 @@ abbrev Model.Tape (M : Model D) (η : ℕ) : Type := M.TapeA η × M.TapeH η
   TapeA := M.TapeA
   TapeH := M.TapeH
 
+/-- The coordinate of the honest tape that the name `n` reads at `η` at the value of the honest
+symbol `i`, a closed index. -/
+abbrev Model.nameSlot (M : Model D) {a b : Ty B} (n : D.Name a b) (i : D.Fn a) (η : ℕ) :
+    M.Slot η :=
+  ⟨⟨a, b, n⟩, M.fn η i⟩
+
 /-- A name reads the coin of its own slot and runs the sampler of its type. -/
 @[expose] def Model.name (M : Model D) (η : ℕ) {a b : Ty B} (n : D.Name a b)
     (i : a.Value M.carrier η) (ρh : M.TapeH η) : b.Value M.carrier η :=
@@ -134,14 +172,31 @@ abbrev Model.Tape (M : Model D) (η : ℕ) : Type := M.TapeA η × M.TapeH η
 
 /-! ## Labels -/
 
-/-- What a label requires of a base type's carriers (LICS23 App. A). -/
-@[expose] def Label.Holds (carrier : B → ℕ → Set (List Bool)) (b : B) : Label → Prop
-  | .finite => ∀ η, (carrier b η).Finite
-  | .fixed => ∀ η η', carrier b η = carrier b η'
+/-- The sampler of names of type `τ` draws any one value with probability at most `2^{-cη}`, for
+one `c > 0` and every `η`: LICS23's label `large` (App. A), which bounds
+`Pr_ρh[⟦n⟧(η, a)(ρh) = b]` for every name `n` of type `τ`. Names of one type share their sampler,
+so the bound is on the sampler. -/
+@[expose] def Model.IsLarge (M : Model D) (τ : Ty B) : Prop :=
+  ∃ c : ℝ, 0 < c ∧ ∀ η (y : τ.Value M.carrier η),
+    Pr{let r ← $ᵗ (M.Coin η τ)}[M.sample η τ r = y] ≤ (2 : ENNReal) ^ (-(c * η))
+
+/-- What a label requires of a base type in a model (LICS23 App. A). -/
+@[expose] def Label.Holds (M : Model D) (b : B) : Label → Prop
+  | .finite => ∀ η, (M.carrier b η).Finite
+  | .fixed => ∀ η η', M.carrier b η = M.carrier b η'
+  | .large => M.IsLarge (.base b)
 
 /-- A model respects the labels declared for its base types. -/
 @[expose] def Model.RespectsLabels (M : Model D) : Prop :=
-  ∀ b l, D.labels b l → l.Holds M.carrier b
+  ∀ b l, D.labels b l → l.Holds M b
+
+/-- A type labelled `large` has a large sampler in every model respecting the labels; it is a base
+type. -/
+theorem Model.isLarge_of_hasLabel (M : Model D) (hM : M.RespectsLabels) :
+    ∀ {τ : Ty B}, τ.HasLabel D.labels .large → M.IsLarge τ
+  | .bool, h => absurd rfl h
+  | .base b, h => hM b .large h
+  | .arrow _ _, h => absurd rfl h.1
 
 /-- Every type is finite when the carriers are finite. -/
 theorem Ty.finite_value_of_finite {carrier : B → ℕ → Set (List Bool)}
@@ -165,7 +220,7 @@ theorem Ty.finite_value (M : Model D) (hM : M.RespectsLabels) (η : ℕ) :
     ∀ τ : Ty B, τ.HasLabel D.labels .finite → Finite (τ.Value M.carrier η)
   | .bool, _ => inferInstanceAs (Finite Bool)
   | .base b, h => (hM b .finite h η).to_subtype
-  | .arrow a b, ⟨ha, hb⟩ =>
+  | .arrow a b, ⟨_, ha, hb⟩ =>
     have := a.finite_value M hM η ha
     have := b.finite_value M hM η hb
     inferInstanceAs (Finite (a.Value M.carrier η → b.Value M.carrier η))
@@ -175,7 +230,7 @@ theorem Ty.value_eq_of_fixed (M : Model D) (hM : M.RespectsLabels) (η η' : ℕ
     ∀ τ : Ty B, τ.HasLabel D.labels .fixed → τ.Value M.carrier η = τ.Value M.carrier η'
   | .bool, _ => rfl
   | .base b, h => congrArg (fun s : Set (List Bool) => (s : Type)) (hM b .fixed h η η')
-  | .arrow a b, ⟨ha, hb⟩ => by
+  | .arrow a b, ⟨_, ha, hb⟩ => by
     simp only [Ty.Value, a.value_eq_of_fixed M hM η η' ha, b.value_eq_of_fixed M hM η η' hb]
 
 /-! ## The pointwise reading -/

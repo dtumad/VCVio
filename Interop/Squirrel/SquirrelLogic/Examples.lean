@@ -12,8 +12,10 @@ import VCVio.OracleComp.EvalDist.Measure
 # Satisfiability checks and a derived rule
 
 * `Model.trivial D` interprets every base type as the single empty bitstring, over one-element
-  tapes; it respects every label (`Model.trivial_respectsLabels`), so validity does not quantify
-  over an empty class of models.
+  tapes; it respects every label but `large` (`Model.trivial_respectsLabels`), so for a
+  declaration with no `large` base type validity does not quantify over an empty class of
+  models. A `large` base type has a carrier that grows with `η`, which a type labelled `finite` and
+  `fixed` cannot have, so some declarations have no model.
 * `Valid.not_box_ff`: `[false]` is not valid, so validity is not trivial either.
 * `Valid.all_inst`: instantiating a valid global universal, derived from G.Cut, G.L-∀̃ and
   G.Axiom.
@@ -43,21 +45,18 @@ noncomputable def Model.trivial (D : Decl B) : Model D where
   att η f _ := Classical.choice ((D.attTy f).nonempty_value
     (fun _ _ => Set.singleton_nonempty _) η)
 
-/-- The trivial model meets every label: its carriers are finite and constant. -/
-theorem Model.trivial_respectsLabels : (Model.trivial D).RespectsLabels
+/-- The trivial model meets every label but `large`: its carriers are finite and constant. -/
+theorem Model.trivial_respectsLabels (hD : ∀ b, ¬ D.labels b .large) :
+    (Model.trivial D).RespectsLabels
   | _, .finite, _ => fun _ => Set.finite_singleton _
   | _, .fixed, _ => fun _ _ => rfl
+  | b, .large, h => absurd h (hD b)
 
-/-- The constant `1` is not negligible. -/
-theorem not_negligible_one : ¬ negligible fun _ : ℕ => (1 : ENNReal) := fun h => by
-  have h0 := h 0
-  simp only [pow_zero, one_mul] at h0
-  exact one_ne_zero (tendsto_nhds_unique tendsto_const_nhds h0)
-
-/-- `[false]` is not valid, whatever the adversary classes. -/
-theorem Valid.not_box_ff (C : ∀ M : Model D, AdvClass M) :
+/-- `[false]` is not valid, whatever the adversary classes, for a declaration with no `large`
+base type. -/
+theorem Valid.not_box_ff (hD : ∀ b, ¬ D.labels b .large) (C : ∀ M : Model D, AdvClass M) :
     ¬ Valid (fun _ => True) C (Γ := []) [] (.box .ff) := fun h => by
-  have hM := h (Model.trivial D) Model.trivial_respectsLabels trivial Env.empty (by simp)
+  have hM := h (Model.trivial D) (Model.trivial_respectsLabels hD) trivial Env.empty (by simp)
   refine not_negligible_one (negligible_of_le (fun η => le_of_eq ?_) hM)
   exact (OracleComp.prEvent_eq_one_of_forall_mem_support _ _ fun _ _ => rfl).symm
 
@@ -67,12 +66,12 @@ theorem Valid.all_inst {R : Model D → Prop} {C : ∀ M : Model D, AdvClass M}
     (t : FTerm D Γ τ) (h : Valid R C Θ (.all τ G)) : Valid R C Θ (G.substOne t) :=
   h.cut (all_left t (ax List.mem_cons_self))
 
-/-- `true ∼ false` is not valid against the class of all machines: the distinguisher that
-returns its input has advantage one. -/
-theorem Valid.not_equiv_tt_ff :
+/-- `true ∼ false` is not valid against the class of all machines, for a declaration with no
+`large` base type: the distinguisher that returns its input has advantage one. -/
+theorem Valid.not_equiv_tt_ff (hD : ∀ b, ¬ D.labels b .large) :
     ¬ Valid (D := D) (fun _ => True) AdvClass.all (Γ := []) []
       (.equiv (Env.cons .tt Env.empty) (Env.cons .ff Env.empty)) := fun h => by
-  have hM := Form.holds_equiv.1 (h (Model.trivial D) Model.trivial_respectsLabels trivial
+  have hM := Form.holds_equiv.1 (h (Model.trivial D) (Model.trivial_respectsLabels hD) trivial
     Env.empty (by simp)) (fun _ e _ => e _ .zero) trivial
   refine not_negligible_one (negligible_of_le (fun η => le_of_eq ?_) hM)
   simp only [advantage, Vec.rv_cons, VecRV.cons, Env.cons_zero, FTerm.denote_tt, FTerm.denote_ff]
