@@ -98,6 +98,13 @@ abbrev keyVal (M : Model D) (η : ℕ) (ρh : M.TapeH η) : P.keyTy.Value M.carr
 @[expose] def hashTerm {Γ : List (Kind B)} (m : FTerm D Γ P.msgTy) : FTerm D Γ P.hTy :=
   FTerm.app (FTerm.app (FTerm.fn P.hOf) m) (FTerm.name P.nk (FTerm.fn P.ik))
 
+/-- `h(m, k)` hashes the message's value under the key's value. -/
+theorem denote_hashTerm {M : Model D} (C : AdvClass M) {Γ : List (Kind B)}
+    (m : FTerm D Γ P.msgTy) (env : Env (Kind.Value M) Γ) :
+    (P.hashTerm m).denote (fullInterp M C) env =
+      fun η ρ => M.fn η P.hOf (m.denote (fullInterp M C) env η ρ) (P.keyVal M η ρ.2) :=
+  rfl
+
 /-- The oracle constructor: a call of `o_h^k = λx. h(x, k)`. -/
 inductive CallOp : Kind B → Type where
   /-- `call t`, standing for `h(t, k)`. -/
@@ -284,6 +291,18 @@ section Semantics
 
 variable {P} {M : Model D} {η : ℕ}
 
+/-- A local constructor other than the key name reads the same at two honest tapes that agree
+on every coordinate not belonging to the key name. -/
+theorem interp_eq_of_keyFreeOp {ρa : M.TapeA η} {ρh ρh' : M.TapeH η}
+    (hρ : ∀ k : M.Slot η, k.1 ≠ P.keyName → ρh k = ρh' k) {s : Kind B} (o : (localSig D).Op s)
+    (ho : P.keyFreeOp (.inl o))
+    (next : (p : (localSig D).Arg o) → Env (Kind.PtValue M η) ((localSig D).binders o p) →
+      Kind.PtValue M η ((localSig D).sort o p)) :
+    interp M η (ρa, ρh) o next = interp M η (ρa, ρh') o next := by
+  cases o with
+  | name n => exact funext fun i => congrArg (M.sample η _) (hρ ⟨⟨_, _, n⟩, i⟩ ho)
+  | _ => rfl
+
 /-- **ψ_key, semantically.** A term with calls in which the key name does not occur reads no
 coordinate of the honest tape that belongs to the key name: its reading is the same at two
 honest tapes that agree on every other coordinate, whatever the key value of its calls. -/
@@ -294,9 +313,7 @@ theorem ointerp_eq_of_keyFree {ρa : M.TapeA η} {ρh ρh' : M.TapeH η}
     t.denote (P.ointerp M η (ρa, ρh) kv) e = t.denote (P.ointerp M η (ρa, ρh') kv) e := by
   refine Term.denote_eq_of_every _ _ (fun op hop next => ?_) t ht e
   rcases op with o | o
-  · cases o with
-    | name n => exact funext fun i => congrArg (M.sample η _) (hρ ⟨⟨_, _, n⟩, i⟩ hop)
-    | _ => rfl
+  · exact interp_eq_of_keyFreeOp hρ o hop next
   · cases o
     rfl
 
