@@ -37,6 +37,14 @@ tapes.
 * `freshR_needs_large`: FreshR without the label `large` is unsound: the Boolean name `b` is fresh
   in the empty vector, and `⊬ b` fails, since the constant `true` guesses `b` with probability one
   half.
+
+The other rules of CCS26 Fig. 3 are used once each: Neg1 (`valid_neg1`: `¬ (k ▷ n)`), Neg2
+(`valid_neg2`: `¬ (k ⊬ h(k))`), Ineq (`valid_ineq`: `[n ≠ h(k)]`), Rw-Equiv (`valid_rwEquiv`:
+`k ⊬ h(h(n))` from `k, h(h(n)) ∼ k, n`, which holds in `model` since `h` is the identity) and
+WeakR (`valid_weakR`: `k ⊬ h(n)` from `k ⊬ h(h(n))` and `h(n) ▷ h(h(n))`). Three checks show
+premises needed: `neg1_needs_nonDed` (`¬ (k ▷ h(k))` fails), `ineq_needs_nonDed` (`[h(k) ≠ h(k)]`
+fails, while `k ▷ h(k)` holds) and `rwEquiv_needs_equiv` (`k ⊬ n` holds and `k ⊬ k` fails, so
+neither Rw-Equiv nor WeakR passes from one to the other without its second premise).
 -/
 
 public section
@@ -312,5 +320,89 @@ theorem freshR_needs_large :
     (negligible_const_mul hn (c := 2) ENNReal.ofNat_ne_top))
   change 1 ≤ 2 * Pr{let ρ ← $ᵗ (model.Tape η)}[true = model.nameAt (D := decl) Name.b Fn.idx η ρ]
   rw [prEvent_bT_eq_true, ENNReal.mul_inv_cancel two_ne_zero ENNReal.ofNat_ne_top]
+
+/-! ## Uses of Neg1, Neg2, Ineq, Rw-Equiv and WeakR -/
+
+/-- `y ⊬ x` for distinct message names, by FreshR, in every model against every class. -/
+theorem valid_nonDed_nm {R : Model decl → Prop} {C : ∀ M : Model decl, AdvClass M}
+    {x y : Name .bool msg} (hxy : x ≠ y) : Valid R C (Γ := []) [] (.nonDed (one (nm y)) (nm x)) :=
+  Valid.nonDed_freshR (D := decl) x Fn.idx rfl fun M _ τ z => match τ, z with
+    | _, .zero => nm_avoids hxy M
+
+/-- `k ▷ h(k)` in every model against all machines: `▷` from `adv(h)`. -/
+theorem valid_ded_k_hk {R : Model decl → Prop} :
+    Valid R (fun M => AdvClass.all M) (Γ := []) [] (.ded (one (nm Name.k)) (hT (nm Name.k))) :=
+  Valid.ded_apps (u := one (nm Name.k)) valid_advH
+
+/-- **Neg1**: `¬ (k ▷ n)`, from `k ⊬ n`. -/
+theorem valid_neg1 {R : Model decl → Prop} {C : ∀ M : Model decl, AdvClass M} :
+    Valid R C (Γ := []) [] (.not (.ded (one (nm Name.k)) (nm Name.n))) :=
+  Valid.not_ded (valid_nonDed_nm (x := Name.n) (y := Name.k) nofun)
+
+/-- **Neg1 needs `⊬`.** `¬ (k ▷ h(k))` fails in `model`: `k ▷ h(k)` holds. -/
+theorem neg1_needs_nonDed :
+    ¬ Valid (· = model) (fun M => AdvClass.all M) (Γ := []) []
+      (.not (.ded (one (nm Name.k)) (hT (nm Name.k)))) := fun h =>
+  Form.holds_not.1 (h model model_respectsLabels rfl Env.empty (by simp))
+    (valid_ded_k_hk model model_respectsLabels rfl Env.empty (by simp))
+
+/-- **Neg2**: `¬ (k ⊬ h(k))`, from `k ▷ h(k)`. -/
+theorem valid_neg2 {R : Model decl → Prop} :
+    Valid R (fun M => AdvClass.all M) (Γ := []) []
+      (.not (.nonDed (one (nm Name.k)) (hT (nm Name.k)))) :=
+  Valid.not_nonDed valid_ded_k_hk
+
+/-- **Ineq**: `[n ≠ h(k)]`, from `k ⊬ n` and `k ▷ h(k)`. -/
+theorem valid_ineq {R : Model decl → Prop} :
+    Valid R (fun M => AdvClass.all M) (Γ := []) []
+      (.box (FTerm.not (FTerm.eq (nm Name.n) (hT (nm Name.k))))) :=
+  Valid.box_not_eq (valid_nonDed_nm (x := Name.n) (y := Name.k) nofun) valid_ded_k_hk
+
+/-- **Ineq needs `⊬`.** `[h(k) ≠ h(k)]`, Ineq's conclusion from `k ⊬ h(k)` and `k ▷ h(k)`, fails in
+`model`: the second premise holds (`valid_ded_k_hk`), and the first is what Neg2 refutes. -/
+theorem ineq_needs_nonDed :
+    ¬ Valid (· = model) (fun M => AdvClass.all M) (Γ := []) []
+      (.box (FTerm.not (FTerm.eq (hT (nm Name.k)) (hT (nm Name.k))))) := fun h => by
+  have hb := Form.holds_box.1 (h model model_respectsLabels rfl Env.empty (by simp))
+  refine not_negligible_one (negligible_of_le (fun η => le_of_eq ?_) hb)
+  refine ((prEvent_congr _ _ (fun _ => True) fun ρ => iff_true_intro ?_).trans
+    (OracleComp.prEvent_true_eq_one _)).symm
+  simp [FTerm.not]
+
+/-- `k, h(h(n)) ∼ k, n` in `model`, where `h` is the identity: the two vectors are the same random
+variables. -/
+theorem valid_equiv_k_hhn :
+    Valid (· = model) (fun M => AdvClass.all M) (Γ := []) []
+      (.equiv (Vec.snoc (one (nm Name.k)) (hT (hT (nm Name.n))))
+        (Vec.snoc (one (nm Name.k)) (nm Name.n))) := by
+  rintro M - rfl env -
+  refine Form.holds_equiv.2 ?_
+  rw [Vec.rv_snoc, Vec.rv_snoc]
+  exact AdvClass.Indist.refl _
+
+/-- **Rw-Equiv**: `k ⊬ h(h(n))` in `model`, from `k ⊬ n` and `k, h(h(n)) ∼ k, n`. -/
+theorem valid_rwEquiv :
+    Valid (· = model) (fun M => AdvClass.all M) (Γ := []) []
+      (.nonDed (one (nm Name.k)) (hT (hT (nm Name.n)))) :=
+  Valid.nonDed_rwEquiv (Ty.isGround_base ()) (valid_nonDed_nm (x := Name.n) (y := Name.k) nofun)
+    valid_equiv_k_hhn
+
+/-- **WeakR**: `k ⊬ h(n)` in `model`, from `k ⊬ h(h(n))` and `h(n) ▷ h(h(n))`. -/
+theorem valid_weakR :
+    Valid (· = model) (fun M => AdvClass.all M) (Γ := []) []
+      (.nonDed (one (nm Name.k)) (hT (nm Name.n))) :=
+  Valid.nonDed_weakR valid_rwEquiv
+    (Valid.ded_apps (u := one (hT (nm Name.n))) (ho := of_decide_eq_true rfl) valid_advH)
+
+/-- **Rw-Equiv and WeakR need their second premise.** `k ⊬ n` holds in `model`, and `k ⊬ k` fails:
+Rw-Equiv from `k ⊬ n` to `k ⊬ k` would need `k, k ∼ k, n`, and WeakR would need `k ▷ n`. -/
+theorem rwEquiv_needs_equiv :
+    Valid (· = model) (fun M => AdvClass.all M) (Γ := []) []
+        (.nonDed (one (nm Name.k)) (nm Name.n)) ∧
+      ¬ Valid (· = model) (fun M => AdvClass.all M) (Γ := []) []
+        (.nonDed (one (nm Name.k)) (nm Name.k)) :=
+  ⟨valid_nonDed_nm nofun, fun h => not_nonDed_of_forall_eq (idMachine model) (idMachine_mem model)
+    (fun _ _ => (AdvMachine.appVals_eval _ _).trans (Machine.run_input _ _ _))
+    (Form.holds_nonDed.1 (h model model_respectsLabels rfl Env.empty (by simp)))⟩
 
 end SquirrelLogic.SecrecyExamples
