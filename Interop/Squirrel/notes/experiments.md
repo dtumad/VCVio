@@ -908,3 +908,109 @@ unsatisfiable for any declaration with an insecure triple of symbols of the righ
   quantifies over unequal pairs too, which real schemes do not meet. BC14's `EQL` guard, or a
   `fixed`-labelled message type, would remove that.
 - **`OneTimeGame.lean`** is a candidate for VCVio core, beside `IND_CPA_OneTime_Advantage`.
+
+## M0, part 5: the length guard, side conditions by construction, the worked derivation
+
+This work was done on top of `f6d7ea08f`.
+
+### Build and checks
+
+- **Build.** `LEAN_NUM_THREADS=4 lake build SquirrelLogic` succeeds with no warnings.
+- **Axioms.** `#print axioms` on 33 declarations: the rule, `Derivation.sound`, the new lemmas and
+  checks, and the earlier encryption checks. They use only `propext`, `Classical.choice` and
+  `Quot.sound` (`Derivation.allInst` only `propext` and `Quot.sound`).
+- **Forbidden tactics, comment fences, line length.** No `sorry`, `stop` or `native_decide`; the
+  fence check passes; no Lean line exceeds 100 characters.
+
+### The length guard
+
+Without a guard, `hcpa` asks VCVio's unrestricted game about the reduction, which may submit
+messages of different lengths. No scheme that leaks lengths meets that.
+`WorkedEnc.lpad_advantage_unequalAdv` shows advantage one for the length-leaking pad.
+
+- **The choice.** BC14's EncCCA1 guards the challenge with `if EQL(u, u′) then {u}ʳ else u″`.
+  Here the guard is the side condition `EncSymbols.EqualLength M m₀ m₁`: at every tape the two
+  messages, read at the tape's public key, have equal `lenOf`. The guard then always takes its
+  first branch. LICS23's G.CCA1 gets equal lengths the same way: its second message
+  `zero (len m)` has the length of the first in every model. The conditional form in the
+  conclusion was not chosen. Recovering the unguarded worked example from it would need a rewrite
+  under `[EQL]` at the second entry, and `Env.rename` is not definitionally the permuted `Env.cons`.
+- **The symbol.** `EncSymbols` gains `lenTy` and `lenOf : D.Fn (msgTy ⇒ lenTy)`, an honest symbol
+  that the model interprets freely.
+- **The reduction** tests the lengths and submits `(m₀, m₀)` when they differ, so it always
+  submits equal-length pairs (`EncSymbols.encReduction_equalLength`, stated with the generic
+  `IND_CPA_OneTime_EqualLength` of `OneTimeGame.lean`). Under `EqualLength` the fallback never
+  fires, and the per-`η` equality still has factor one.
+- **The check** (`WorkedEnc.lean`). A message is a length bit and a payload bit, read as a
+  function `bool → bool`. `lpad` masks the payload with the coin and copies the length bit.
+  - `lpad_advantage_eq_zero`: every adversary that submits equal-length pairs has advantage zero.
+  - `lpad_advantage_unequalAdv`: an adversary submitting unequal-length pairs has advantage one.
+  - `valid_worked_lpad`: every hypothesis of the worked derivation holds in this model, against
+    `AdvClass.all`.
+  - `not_valid_leak`: for `leak m _ _ = m`, the conclusion fails for the equal-length messages
+    `one` and `zero`, with advantage one.
+
+### Side conditions by construction (`Rules/Enc.lean`)
+
+`avoids_var`, `avoids_fn`, `avoids_tt`, `avoids_ff`, `Avoids.app`, `Avoids.ite`, `Avoids.eq`
+and `Avoids.name` hold in every model. A name other than the key and coin names, at an avoiding
+index, reads its own coordinate. Each proof is a `change` to the pointwise reading and a `rw`;
+the reading of a constructor is definitional. A fold-based statement (one `fold_rel` over a
+syntactic predicate on names) was not cheap. The relation would have to carry the predicate's
+fold beside both readings, and binders need environments of any length, while `Avoids` is stated
+for the one-variable context. A3's `Term.heads` is the syntactic route.
+
+### The worked derivation
+
+`WorkedEnc.workedDerivation : Derivation decl (· = workedInstance) [] (.equiv
+(encSymbols.challenge nTerm ctx) (encSymbols.challenge zeroTerm ctx))` is
+`pk(k), enc(n; r), n ∼ pk(k), enc(zero; r), n` in one step of `equivEnc`. Here `n` is a third
+name and `zero` an honest constant, and the vectors are the rule's substitution instances.
+
+`workedDerivation_sound` gets its validity from `Derivation.sound`. The side conditions are
+discharged by the lemmas above in every model (`avoids_n`, `avoids_ctx`). The hypotheses left are
+`hlen` (in every admitted model `n` and `zero` have equal length) and `hcpa`. In `model enc` the
+length fact holds by computation (`equalLength_n_zero`), and is not assumed.
+
+### Derivations
+
+`Derivation` gains three constructors, each sound in one line:
+- `equivEqSelf`: BC14's Eq1, `Valid.equiv_eq_self`, new in `Rules/Equiv.lean`.
+- `equivRename`: Restr and Perm by reindexing, `Valid.equiv_rename`.
+- `equivRenameNames`: renaming along a bijection of names, `Valid.equiv_renameNames_of_equiv`,
+  which holds in every model since part 2.
+
+The docstring's claim that renaming needs a restriction on models was stale; it is corrected.
+
+### M0 against the plan
+
+| Headline item | Status |
+|---|---|
+| `Base.sound` | met by `Derivation.sound`: every constructor of the fragment, with the encryption instances' hypotheses as the one parameter |
+| worked `pk, enc(n), n ∼ pk, enc(0), n` | met: `workedDerivation`, `workedDerivation_sound`, `valid_worked_lpad` |
+| countermodel with reused randomness | met: `TwoTimePad.not_valid_reuse`, `EncExamples.not_valid_enc_coinReused` |
+
+Against BC14 Fig. 2 and the plan's M0 row:
+
+- **Done:**
+  - Refl, Sym, Trans.
+  - Restr (with permutation), and name renaming.
+  - Eq1.
+  - EncCCA1 without decryption.
+  - Indcong for a curried honest symbol: FA-Fn, then FA-App once per argument. This was not
+    stated as one lemma.
+- **Not done:**
+  - **If1**, BC14's case split: `b, w⃗, x ∼ b, w⃗′, z ∧ b, w⃗, y ∼ b, w⃗′, z → w⃗, if b then x else
+    y ∼ w⃗′, z`. `Valid.equiv_ite` is FA for `if` (LICS23's form), not If1. If1 needs its own
+    reduction, which branches on `b` and flips a coin, and BC14's proof loses a factor of two.
+    The plan's row says "If", and earlier notes listed `equiv_ite` under that name; that holds
+    only for the FA form.
+  - **EncKP** (key privacy) and EncCCA1 with decryption. They are not in the M0 row, but they are
+    in Fig. 2.
+
+### Ledger
+
+- **L17** narrows: the length guard is in, and the open items are decryption, the guard as a
+  conditional for lengths that differ on some tapes, syntactic side conditions, and the
+  real-or-zero form.
+- **L16** gains the derivation constructor as an anchor.
