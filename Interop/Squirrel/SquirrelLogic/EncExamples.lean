@@ -162,7 +162,7 @@ theorem valid_enc_pad :
 
 /-- A one-step derivation by the encryption rule, admitting only `padInstance`. -/
 @[expose] def encDerivation :
-    Derivation decl (· = padInstance) (fun _ => True) (Γ := []) []
+    Derivation decl (· = padInstance) (fun _ => False) (fun _ => True) (Γ := []) []
       (.equiv ((encSymbols .s).challenge .tt Env.empty)
         ((encSymbols .s).challenge .ff Env.empty)) :=
   .equivEnc padInstance rfl keyName_ne_coinName
@@ -172,7 +172,8 @@ theorem encDerivation_sound :
     Valid (fun M => M = encModel pad) (fun M => AdvClass.all M) (Γ := []) []
       (.equiv ((encSymbols .s).challenge .tt Env.empty)
         ((encSymbols .s).challenge .ff Env.empty)) :=
-  encDerivation.sound _ _ (fun _ he => he ▸ padInstance_holds) fun _ _ => trivial
+  encDerivation.sound _ _ (fun _ he => he ▸ padInstance_holds) (fun _ h => h.elim)
+    fun _ _ => trivial
 
 /-- The machine returning the exclusive or of two Boolean inputs: a branch on the first. -/
 @[expose] def xorMachine (M : Model decl) : Machine M [.bool, .bool] .bool :=

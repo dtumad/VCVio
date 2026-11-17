@@ -174,7 +174,8 @@ theorem nm_avoids {x y : Name .bool msg} (hxy : x ≠ y) (M : Model decl) :
 
 /-- FreshR for one message name on the left. -/
 @[expose] def freshR {R₀ : Model decl → Prop} (x y : Name .bool msg) (hxy : x ≠ y) :
-    Derivation decl (fun _ => False) R₀ (Γ := []) [advH] (.nonDed (one (nm y)) (nm x)) :=
+    Derivation decl (fun _ => False) (fun _ => False) R₀ (Γ := []) [advH]
+      (.nonDed (one (nm y)) (nm x)) :=
   .nonDedFreshR (one (nm y)) x Fn.idx (by decide) rfl fun M τ z => match τ, z with
     | _, .zero => nm_avoids hxy M
 
@@ -183,7 +184,7 @@ theorem nm_avoids {x y : Name .bool msg} (hxy : x ≠ y) (M : Model decl) :
 /-- From `adv(h)`, derive `h(h(k)) ⊬ n`: FreshR gives `k ⊬ n`; `▷` from `adv` gives `k ▷ h(k)` and
 `h(k) ▷ h(h(k))`; Trans gives `k ▷ h(h(k))`; WeakL gives `h(h(k)) ⊬ n`. -/
 @[expose] def workedDerivation {R₀ : Model decl → Prop} :
-    Derivation decl (fun _ => False) R₀ (Γ := []) [advH]
+    Derivation decl (fun _ => False) (fun _ => False) R₀ (Γ := []) [advH]
       (.nonDed (one (hT (hT (nm Name.k)))) (nm Name.n)) :=
   .nonDedWeakL (freshR Name.n Name.k nofun)
     (.dedTrans (v := hT (nm Name.k)) (.dedApps (by decide) (.ax List.mem_cons_self))
@@ -192,7 +193,7 @@ theorem nm_avoids {x y : Name .bool msg} (hxy : x ≠ y) (M : Model decl) :
 /-- The worked derivation is valid in every model restriction, against every class. -/
 theorem workedDerivation_sound (R : Model decl → Prop) (C : ∀ M : Model decl, AdvClass M) :
     Valid R C [advH] (.nonDed (one (hT (hT (nm Name.k)))) (nm Name.n)) :=
-  workedDerivation.sound R C (fun _ h => h.elim) fun _ h => h
+  workedDerivation.sound R C (fun _ h => h.elim) (fun _ h => h.elim) fun _ h => h
 
 /-- The machine applying `h` to its input: FA-App of the input to the input, answered by the
 honest symbol. -/
