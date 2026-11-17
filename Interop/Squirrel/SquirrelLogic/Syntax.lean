@@ -16,8 +16,11 @@ declaration environment. Here they are the terms of one monomorphic `ScopedSigna
 variables, renaming and capture-avoiding substitution are PolyFun's.
 
 * `Ty B` is the simple types over base types `B`, with `bool` built in.
-* `Label` holds the type labels used so far (`finite`, `fixed`), and `Ty.HasLabel` lifts a base
-  type's labels along arrows as LICS23 §II-B.1 does.
+* `Label` holds the type labels used so far (`finite`, `fixed`, `large`), and `Ty.HasLabel` lifts
+  a base type's labels `finite` and `fixed` along arrows as LICS23 §II-B.1 does. `large` is a
+  property of a type's name sampler, so only base types declared `large` have it.
+* `Ty.arrows τs β` is the curried type `τ₁ → … → τₙ → β`. The logic has no product types, so a
+  function of a tuple is a curried function.
 * `Decl B` declares the labels of each base type, the names (`n : τ₀ → τ₁` with `τ₀` finite,
   §II-B.2), the honest function symbols and the attacker function symbols. Names and honest
   symbols are indexed by their types, so renaming names never changes the sort of a constructor
@@ -55,15 +58,30 @@ inductive Label where
   | finite
   /-- The carrier does not depend on the security parameter. -/
   | fixed
+  /-- Names of the type draw any one value with probability at most `2^{-cη}`, for some `c > 0`
+  (LICS23 App. A). -/
+  | large
 
 variable {B : Type}
 
 /-- A type has a label when its base types do: LICS23 lifts `finite` and `fixed` along arrows.
-Booleans are finite and fixed. -/
+Booleans are finite and fixed. `large` restricts the sampler of names of the type itself, which
+the samplers of other types do not determine, so Booleans and arrow types are not large. -/
 @[expose] def Ty.HasLabel (lab : B → Label → Prop) (l : Label) : Ty B → Prop
-  | .bool => True
+  | .bool => l ≠ .large
   | .base b => lab b l
-  | .arrow a b => a.HasLabel lab l ∧ b.HasLabel lab l
+  | .arrow a b => l ≠ .large ∧ a.HasLabel lab l ∧ b.HasLabel lab l
+
+/-- The curried type `τ₁ → … → τₙ → β` of a function of the tuple `τs`. -/
+@[expose] def Ty.arrows : List (Ty B) → Ty B → Ty B
+  | [], β => β
+  | τ :: τs, β => .arrow τ (Ty.arrows τs β)
+
+/-- Booleans and base types, whose values are bitstrings: the types at which a polynomial-time
+machine can test equality. -/
+@[expose] def Ty.IsGround : Ty B → Prop
+  | .arrow _ _ => False
+  | _ => True
 
 /-- A declaration environment: labelled base types, names, and honest and attacker function
 symbols. -/

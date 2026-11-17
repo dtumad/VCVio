@@ -120,6 +120,9 @@ variable {Γ : List (Kind B)} {a : Ty B}
 /-- Local implication. -/
 @[expose] def imp (φ ψ : FTerm D Γ .bool) : FTerm D Γ .bool := ite φ ψ tt
 
+/-- Local negation. -/
+@[expose] def not (φ : FTerm D Γ .bool) : FTerm D Γ .bool := ite φ ff tt
+
 /-- The conjunction of a list of local formulas; `true` for the empty list. -/
 @[expose] def conj : List (FTerm D Γ .bool) → FTerm D Γ .bool
   | [] => tt
@@ -170,6 +173,19 @@ variable {Γ : List (Kind B)} {τ : Ty B}
 @[expose] def all (τ : Ty B) (F : Form D (.loc τ :: Γ)) : Form D Γ :=
   .node (.inr (.all τ)) fun _ => F
 
+/-- Global conjunction. -/
+@[expose] def and (F G : Form D Γ) : Form D Γ := .node (.inr .and) (Fin.cases F fun _ => G)
+
+/-- Falsity. -/
+@[expose] def bot : Form D Γ := .node (.inr .bot) fun p => nomatch p
+
+/-- Global negation, `F ⇒ ⊥`. -/
+@[expose] def not (F : Form D Γ) : Form D Γ := imp F bot
+
+/-- Global existential quantification over random variables of type `τ`. -/
+@[expose] def ex (τ : Ty B) (F : Form D (.loc τ :: Γ)) : Form D Γ :=
+  .node (.inr (.ex τ)) fun _ => F
+
 /-- `const t`. -/
 @[expose] def const (t : FTerm D Γ τ) : Form D Γ := .node (.inr (.const τ)) fun _ => t
 
@@ -188,6 +204,12 @@ end Form
 Boolean random variable `φ` is false is negligible in the security parameter. -/
 @[expose] def Overwhelming (T : TapeModel) (φ : (η : ℕ) → T.Tape η → Bool) : Prop :=
   negligible fun η => Pr{let ρ ← $ᵗ (T.Tape η)}[φ η ρ = false]
+
+/-- The constant `1` is not negligible. -/
+theorem not_negligible_one : ¬ negligible fun _ : ℕ => (1 : ENNReal) := fun h => by
+  have h0 := h 0
+  simp only [pow_zero, one_mul] at h0
+  exact one_ne_zero (tendsto_nhds_unique tendsto_const_nhds h0)
 
 /-- A Boolean random variable that is false only where an overwhelming one is false is
 overwhelming. -/
@@ -292,6 +314,23 @@ variable {M : Model D} {C : AdvClass M} {Γ : List (Kind B)} {env : Env (Kind.Va
 theorem Form.holds_box {φ : FTerm D Γ .bool} :
     (Form.box φ).Holds M C env ↔ Overwhelming M.toTapeModel (φ.denote (fullInterp M C) env) :=
   Iff.rfl
+
+theorem Form.holds_imp {F G : Form D Γ} :
+    (Form.imp F G).Holds M C env ↔ (F.Holds M C env → G.Holds M C env) := Iff.rfl
+
+theorem Form.holds_and {F G : Form D Γ} :
+    (Form.and F G).Holds M C env ↔ F.Holds M C env ∧ G.Holds M C env := Iff.rfl
+
+theorem Form.not_holds_bot : ¬ (Form.bot : Form D Γ).Holds M C env := id
+
+theorem Form.holds_not {F : Form D Γ} : (Form.not F).Holds M C env ↔ ¬ F.Holds M C env :=
+  Iff.rfl
+
+theorem Form.holds_all {τ : Ty B} {F : Form D (.loc τ :: Γ)} :
+    (Form.all τ F).Holds M C env ↔ ∀ X : RV M τ, F.Holds M C (Env.cons X env) := Iff.rfl
+
+theorem Form.holds_ex {τ : Ty B} {F : Form D (.loc τ :: Γ)} :
+    (Form.ex τ F).Holds M C env ↔ ∃ X : RV M τ, F.Holds M C (Env.cons X env) := Iff.rfl
 
 @[simp] theorem FTerm.denote_ite {a : Ty B} (c : FTerm D Γ .bool) (t e : FTerm D Γ a) :
     (FTerm.ite c t e).denote (fullInterp M C) env =
