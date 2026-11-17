@@ -8,6 +8,7 @@ module
 public import SquirrelLogic.Model
 public import VCVio.OracleComp.SimSemantics.SimulateQ
 public import VCVio.OracleComp.QueryTracking.QueryBound.Basic
+public import SquirrelLogic.RunLog
 
 /-!
 # Machines: free programs over the tape and the inputs
@@ -234,10 +235,15 @@ end Run
 
 /-! ## Handlers -/
 
+/-- Answers to the inputs `τs` in a monad `m`: for each input of type `τ`, a computation answering
+a query with arguments `q` by a value of `Ty.res τ`. -/
+abbrev InputImpl (M : Model D) (η : ℕ) (τs : List (Ty B)) (m : Type → Type) : Type :=
+  Env (fun τ => Vals M η τ.args → m (τ.res.Value M.carrier η)) τs
+
 /-- A handler for the inputs `τs` into programs over the interface of `τs'`: for each input of
 type `τ`, a program answering a query with arguments `q` by a value of `Ty.res τ`. -/
 abbrev Handler (M : Model D) (η : ℕ) (τs τs' : List (Ty B)) : Type :=
-  Env (fun τ => Vals M η τ.args → OracleComp (M.Iface η τs') (τ.res.Value M.carrier η)) τs
+  InputImpl M η τs (OracleComp (M.Iface η τs'))
 
 /-- The query implementation of a handler: tape reads pass through, and input queries go to the
 handler. -/
@@ -314,6 +320,59 @@ theorem Machine.run_handle_of_evalsTo (A : Machine M τs β) {H : ∀ η, Handle
     {ρa : M.TapeA η} {e : Vals M η τs'} {e' : Vals M η τs} (h : (H η).EvalsTo ρa e e') :
     (A.handle H).run η ρa e = A.run η ρa e' :=
   h.evalWithAnswerFn_simulateQ (A η)
+
+/-! ## Running a machine inside a reduction
+
+A reduction of a cryptographic rule runs the adversary's machine as a program: it supplies the
+attacker tape and answers the machine's input queries, from values it computed or by computations
+that query the reduction's own oracle (a compiled Kleisli arrow, for instance). `Machine.simulate`
+is that handler composition, VCVio's `simulateQ` of `Model.answerIn`, and
+`Machine.simulateQ_simulate` the fusion: if the reduction's oracle runs every input answer as the
+values `e` answer it, the reduction sees the machine's run at `e`. Answering from values is the
+case `Machine.simulate_ofVals`. -/
+
+/-- Answer the inputs from values, in any monad. -/
+@[expose] def InputImpl.ofVals {m : Type → Type} [Pure m] (v : Vals M η τs) :
+    InputImpl M η τs m :=
+  fun _ x q => pure (Ty.apply (v _ x) q)
+
+/-- The answers of a machine's interface inside a reduction over the oracles `spec`: tape reads
+from the attacker tape `ρa` that the reduction drew, and input queries by `H`. -/
+@[expose] def Model.answerIn {ι : Type} {spec : OracleSpec ι} (M : Model D) (ρa : M.TapeA η)
+    (H : InputImpl M η τs (OracleComp spec)) : QueryImpl (M.Iface η τs) (OracleComp spec)
+  | .inl i => pure (M.readBit ρa i)
+  | .inr q => H q.1 q.2.1 q.2.2
+
+/-- Run a machine inside a reduction over the oracles `spec`: the machine's program, with its
+tape read from `ρa` and its inputs answered by `H` (VCVio's `simulateQ`). -/
+@[expose] def Machine.simulate {ι : Type} {spec : OracleSpec ι} (A : Machine M τs β) (η : ℕ)
+    (ρa : M.TapeA η) (H : InputImpl M η τs (OracleComp spec)) :
+    OracleComp spec (β.Value M.carrier η) :=
+  simulateQ (M.answerIn ρa H) (A η)
+
+/-- **Fusion.** If the reduction's oracle `impl` runs every input answer of `H` as the values `e`
+answer it, running the machine inside the reduction returns the machine's run at `ρa` and `e`. -/
+theorem Machine.simulateQ_simulate {ι : Type} {spec : OracleSpec ι} {m : Type → Type}
+    [Monad m] [LawfulMonad m] (impl : QueryImpl spec m) (A : Machine M τs β) {ρa : M.TapeA η}
+    {H : InputImpl M η τs (OracleComp spec)} {e : Vals M η τs}
+    (hH : ∀ τ x q, simulateQ impl (H τ x q) = pure (Ty.apply (e τ x) q)) :
+    simulateQ impl (A.simulate η ρa H) = pure (A.run η ρa e) := by
+  rw [simulate, ← QueryImpl.simulateQ_compose, run]
+  refine Eq.trans (congrArg (simulateQ · (A η)) (funext fun t => ?_))
+    (OracleComp.simulateQ_pure_comp _ _)
+  rcases t with i | ⟨τ, x, q⟩
+  · simp only [QueryImpl.apply_compose, Model.answerIn]
+    rfl
+  · exact hH τ x q
+
+/-- A machine run inside a reduction that answers its inputs from values returns its run. -/
+theorem Machine.simulate_ofVals {ι : Type} {spec : OracleSpec ι} (A : Machine M τs β)
+    (ρa : M.TapeA η) (e : Vals M η τs) :
+    (A.simulate η ρa (InputImpl.ofVals e) : OracleComp spec _) = pure (A.run η ρa e) := by
+  rw [simulate, run]
+  refine Eq.trans (congrArg (simulateQ · (A η)) (funext fun t => ?_))
+    (OracleComp.simulateQ_pure_comp _ _)
+  rcases t with i | q <;> rfl
 
 /-! ## The primitive constructions -/
 

@@ -255,7 +255,7 @@ theorem workedDerivation_sound {R : Model decl → Prop} {C : ∀ M : Model decl
     (hcpa : ∀ M : Model decl, M.RespectsLabels → R M →
       ∀ A : Machine M [.bool, msg, msg] .bool, (C M).mem A →
         negligible fun η => IND_CPA_OneTime_Advantage (encSymbols.scheme M η)
-          ProbCompRuntime.probComp (encSymbols.encReduction nTerm zeroTerm ctx A.test η)) :
+          ProbCompRuntime.probComp (encSymbols.encReduction nTerm zeroTerm ctx A η)) :
     Valid R C (Γ := []) []
       (.equiv (encSymbols.challenge nTerm ctx) (encSymbols.challenge zeroTerm ctx)) :=
   workedDerivation.sound R C (fun e (he : e = workedInstance) => he ▸

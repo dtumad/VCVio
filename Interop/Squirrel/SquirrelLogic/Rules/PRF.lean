@@ -40,8 +40,10 @@ of `m`), `⊢pptm` and a fresh name `n` of the hash type. Both come from VCVio's
   `PRFSymbols.fwd`, which answers coins and the tape from the drawn tapes and forwards each hash
   query to the PRF oracle, and log the queries (VCVio's `withQueryLog`). The first queries the
   oracle at the message's value; the second draws a fresh value with the sampler of the hash type.
-  Each runs the distinguisher on the vector and the challenge, and returns `false` if the message
-  was hashed before the challenge.
+  Each runs the distinguisher's machine (`Machine.simulate`) with the attacker tape it drew,
+  answering its input queries from the vector's values and the challenge, and returns `false` if
+  the message was hashed before the challenge. The machine's run fuses into the reduction
+  (`Machine.simulate_ofVals`), so the hops compute with its denotation (`Machine.test`).
 
 ## The proof, in three hops
 
@@ -128,31 +130,32 @@ variable {P M η} {τs : List (Ty B)}
 
 /-- The reduction with a challenge program `chal`: draw both tapes; run the compiled `u⃗` and `m`,
 logging their queries, with the handler `fwd`; obtain a challenge from `chal` at the message's
-value; and run the distinguisher on the vector followed by the challenge, with the attacker tape
-it drew. It returns `false` if the message was hashed before the challenge. -/
+value; and run the distinguishing machine `A` (`Machine.simulate`) with the attacker tape it drew,
+answering its input queries from the vector's values followed by the challenge. It returns `false`
+if the message was hashed before the challenge. -/
 @[expose] noncomputable def reductionWith (u : OVec P [] τs) (m : OTerm P [] P.msgTy)
-    (A : Distinguisher M (τs ++ [P.hTy]))
+    (A : Machine M (τs ++ [P.hTy]) .bool)
     (chal : P.Dom M η → OracleComp (PRFOracleSpec (P.Dom M η) (P.Rng M η)) (P.Rng M η)) :
     PRFAdversary (P.Dom M η) (P.Rng M η) :=
   (do
     let ρ ← liftComp ($ᵗ (M.Tape η)) (PRFOracleSpec (P.Dom M η) (P.Rng M η))
     let r ← simulateQ (P.fwd M η ρ) (P.prog M η u m).withQueryLog
     let y ← chal r.1.2
-    pure (A η (Env.append r.1.1 (Env.cons y Env.empty)) ρ.1 &&
-      !(@QueryLog.wasQueried _ _ (Classical.decEq _) r.2 (Sum.inr r.1.2))) :
+    let b ← A.simulate η ρ.1 (InputImpl.ofVals (Env.append r.1.1 (Env.cons y Env.empty)))
+    pure (b && !(@QueryLog.wasQueried _ _ (Classical.decEq _) r.2 (Sum.inr r.1.2))) :
     OracleComp (PRFOracleSpec (P.Dom M η) (P.Rng M η)) Bool)
 
 variable (η) in
 /-- **The first reduction**: the challenge is the PRF oracle at the message. -/
 @[expose] noncomputable def hashReduction (u : OVec P [] τs) (m : OTerm P [] P.msgTy)
-    (A : Distinguisher M (τs ++ [P.hTy])) : PRFAdversary (P.Dom M η) (P.Rng M η) :=
+    (A : Machine M (τs ++ [P.hTy]) .bool) : PRFAdversary (P.Dom M η) (P.Rng M η) :=
   reductionWith u m A fun x => functionQuery x
 
 variable (η) in
 /-- **The second reduction**: the challenge is drawn by the sampler of the hash type, as a fresh
 name of that type is. -/
 @[expose] noncomputable def freshReduction (u : OVec P [] τs) (m : OTerm P [] P.msgTy)
-    (A : Distinguisher M (τs ++ [P.hTy])) : PRFAdversary (P.Dom M η) (P.Rng M η) :=
+    (A : Machine M (τs ++ [P.hTy]) .bool) : PRFAdversary (P.Dom M η) (P.Rng M η) :=
   reductionWith u m A fun _ =>
     liftComp (M.sample η P.hTy <$> ($ᵗ (M.Coin η P.hTy))) (PRFOracleSpec (P.Dom M η) (P.Rng M η))
 
@@ -186,12 +189,12 @@ theorem simulateQ_prfRealQueryImpl_fwd (ρ : M.Tape η) (kc : M.Coin η P.keyTy)
 /-- The outcome of a reduction whose program ran at `ρ` and `kv`, with the challenge `y`: the
 distinguisher's output, unless the message was hashed before the challenge. -/
 @[expose] noncomputable def outcome (u : OVec P [] τs) (m : OTerm P [] P.msgTy)
-    (A : Distinguisher M (τs ++ [P.hTy])) (ρ : M.Tape η) (kv : P.keyTy.Value M.carrier η)
+    (A : Machine M (τs ++ [P.hTy]) .bool) (ρ : M.Tape η) (kv : P.keyTy.Value M.carrier η)
     (y : P.Rng M η) : Bool :=
-  A η (Env.append (run u m ρ kv).1.1 (Env.cons y Env.empty)) ρ.1 &&
+  A.test η (Env.append (run u m ρ kv).1.1 (Env.cons y Env.empty)) ρ.1 &&
     !(@QueryLog.wasQueried _ _ (Classical.decEq _) (run u m ρ kv).2 (Sum.inr (run u m ρ kv).1.2))
 
-variable (u : OVec P [] τs) (m : OTerm P [] P.msgTy) (A : Distinguisher M (τs ++ [P.hTy]))
+variable (u : OVec P [] τs) (m : OTerm P [] P.msgTy) (A : Machine M (τs ++ [P.hTy]) .bool)
 
 /-- **The first reduction in the real world** draws the key and both tapes, and hashes the
 message under the key. -/
@@ -201,8 +204,9 @@ theorem prEvent_prfRealExperiment_hashReduction :
         outcome u m A ρ (M.sample η P.keyTy kc)
           (M.fn η P.hOf (run u m ρ (M.sample η P.keyTy kc)).1.2 (M.sample η P.keyTy kc)) =
             true] := by
-  simp only [prfRealExperiment, hashReduction, reductionWith, simulateQ_bind, simulateQ_map,
-    simulateQ_prfRealQueryImpl_liftComp, simulateQ_prfRealQueryImpl_fwd, pure_bind, map_pure,
+  simp only [prfRealExperiment, hashReduction, reductionWith, Machine.simulate_ofVals,
+    simulateQ_bind, simulateQ_map, simulateQ_prfRealQueryImpl_liftComp,
+    simulateQ_prfRealQueryImpl_fwd, pure_bind, map_pure,
     simulateQ_prfRealQueryImpl_functionQuery, prEvent_norm]
   rfl
 
@@ -212,9 +216,9 @@ theorem prEvent_prfRealExperiment_freshReduction :
     Pr{let b ← (P.scheme M η).prfRealExperiment (freshReduction η u m A)}[b = true] =
       Pr{let kc ← $ᵗ (M.Coin η P.keyTy); let ρ ← $ᵗ (M.Tape η); let yc ← $ᵗ (M.Coin η P.hTy)}[
         outcome u m A ρ (M.sample η P.keyTy kc) (M.sample η P.hTy yc) = true] := by
-  simp only [prfRealExperiment, freshReduction, reductionWith, simulateQ_bind, simulateQ_map,
-    simulateQ_prfRealQueryImpl_liftComp, simulateQ_prfRealQueryImpl_fwd, pure_bind,
-    prEvent_norm]
+  simp only [prfRealExperiment, freshReduction, reductionWith, Machine.simulate_ofVals,
+    simulateQ_bind, simulateQ_map, simulateQ_prfRealQueryImpl_liftComp,
+    simulateQ_prfRealQueryImpl_fwd, pure_bind, prEvent_norm]
   rfl
 
 /-! ## The coupling with the tapes of the conclusion -/
@@ -312,8 +316,9 @@ theorem prEvent_prfIdealExperiment_hashReduction
     (hsel : ($ᵗ (P.Rng M η)) = M.sample η P.hTy <$> ($ᵗ (M.Coin η P.hTy))) :
     Pr{let b ← prfIdealExperiment (hashReduction η u m A)}[b = true] =
       Pr{let b ← prfIdealExperiment (freshReduction η u m A)}[b = true] := by
-  simp only [prfIdealExperiment, hashReduction, freshReduction, reductionWith, simulateQ_bind,
-    simulateQ_prfIdealQueryImpl_liftComp, StateT.run'_liftM_bind]
+  simp only [prfIdealExperiment, hashReduction, freshReduction, reductionWith,
+    Machine.simulate_ofVals, pure_bind, simulateQ_bind, simulateQ_prfIdealQueryImpl_liftComp,
+    StateT.run'_liftM_bind]
   refine prEvent_bind_congr _ _ _ _ _ fun ρ => ?_
   simp only [StateT.run'_eq, StateT.run_bind, simulateQ_pure,
     simulateQ_prfIdealQueryImpl_functionQuery, prEvent_norm]
@@ -399,8 +404,8 @@ theorem advantage_le (hU : M.UniformSampler P.hTy) {a : Ty B} (nn : D.Name a P.h
     (C : AdvClass M) (env : Env (Kind.Value M) [])
     (hnu : ∀ τ x, M.FreshAt (M.nameSlot nn i) ((P.close (u τ x)).denote (fullInterp M C) env))
     (hnm : M.FreshAt (M.nameSlot nn i) ((P.close m).denote (fullInterp M C) env))
-    (A : Distinguisher M (τs ++ [P.hTy])) :
-    advantage A (Vec.rv M C (Vec.snoc (P.closeVec u) (P.hashTerm (P.close m))) env)
+    (A : Machine M (τs ++ [P.hTy]) .bool) :
+    advantage A.test (Vec.rv M C (Vec.snoc (P.closeVec u) (P.hashTerm (P.close m))) env)
         (Vec.rv M C (Vec.snoc (P.closeVec u) (FTerm.name nn (FTerm.fn i))) env) η ≤
       P.prfAdv M η hU (hashReduction η u m A) + P.prfAdv M η hU (freshReduction η u m A) +
         Pr{let ρ ← $ᵗ (M.Tape η)}[(P.psiMsg u m).denote (fullInterp M C) env η ρ = false] := by
@@ -457,10 +462,11 @@ theorem advantage_le (hU : M.UniformSampler P.hTy) {a : Ty B} (nn : D.Name a P.h
   -- The events, as functions of the key's coin, the reductions' tapes and the challenge's bits.
   let kv : M.Coin η P.keyTy → P.keyTy.Value M.carrier η := M.sample η P.keyTy
   let Eh : M.Coin η P.keyTy → M.Tape η → Prop := fun kc ρ =>
-    A η (Env.append (run u m ρ (kv kc)).1.1
+    A.test η (Env.append (run u m ρ (kv kc)).1.1
       (Env.cons (M.fn η P.hOf (run u m ρ (kv kc)).1.2 (kv kc)) Env.empty)) ρ.1 = true
   let En : M.Coin η P.keyTy → M.Tape η → M.Coin η P.hTy → Prop := fun kc ρ yc =>
-    A η (Env.append (run u m ρ (kv kc)).1.1 (Env.cons (M.sample η P.hTy yc) Env.empty)) ρ.1 = true
+    A.test η (Env.append (run u m ρ (kv kc)).1.1 (Env.cons (M.sample η P.hTy yc) Env.empty)) ρ.1 =
+      true
   let Bad : M.Coin η P.keyTy → M.Tape η → Prop := fun kc ρ =>
     (@QueryLog.wasQueried _ _ (Classical.decEq _) (run u m ρ (kv kc)).2
       (Sum.inr (run u m ρ (kv kc)).1.2)) = true
@@ -511,25 +517,25 @@ theorem advantage_le (hU : M.UniformSampler P.hTy) {a : Ty B} (nn : D.Name a P.h
     rw [hrun]
     funext τ x
     exact close_apply_couple C env (u τ x) (hku τ x) (hnu τ x) kc ρ yc
-  have hph : Pr{let ρ ← $ᵗ (M.Tape η)}[A η (Vec.rv M C (Vec.snoc (P.closeVec u)
+  have hph : Pr{let ρ ← $ᵗ (M.Tape η)}[A.test η (Vec.rv M C (Vec.snoc (P.closeVec u)
       (P.hashTerm (P.close m))) env η ρ) ρ.1 = true] = Pr{let x ← T}[Eh x.1 x.2.1] := by
     refine (prEvent_uniformSample_update_update (β := M.TapeA η)
       (α := fun k : M.Slot η => M.Coin η k.1.2.1) (P.keySlot M η) (M.nameSlot nn i η) _).symm.trans
       (Eq.trans ?_ (hT fun kc ρ _ => Eh kc ρ))
     refine prEvent_bind_congr_of_support _ _ _ fun kc _ =>
       prEvent_bind_congr_of_support _ _ _ fun ρ _ => prEvent_congr _ _ _ fun yc => ?_
-    refine Iff.of_eq (congrArg (fun v => A η v ρ.1 = true) ?_)
+    refine Iff.of_eq (congrArg (fun v => A.test η v ρ.1 = true) ?_)
     rw [Vec.rv_snoc, P.denote_hashTerm]
     dsimp only [VecRV.snoc]
     rw [hcpl, keyVal_update_update hkn, close_apply_couple C env m hkm hnm kc ρ yc, hrun]
-  have hpn : Pr{let ρ ← $ᵗ (M.Tape η)}[A η (Vec.rv M C (Vec.snoc (P.closeVec u)
+  have hpn : Pr{let ρ ← $ᵗ (M.Tape η)}[A.test η (Vec.rv M C (Vec.snoc (P.closeVec u)
       (FTerm.name nn (FTerm.fn i))) env η ρ) ρ.1 = true] = Pr{let x ← T}[En x.1 x.2.1 x.2.2] := by
     refine (prEvent_uniformSample_update_update (β := M.TapeA η)
       (α := fun k : M.Slot η => M.Coin η k.1.2.1) (P.keySlot M η) (M.nameSlot nn i η) _).symm.trans
       (Eq.trans ?_ (hT fun kc ρ yc => En kc ρ yc))
     refine prEvent_bind_congr_of_support _ _ _ fun kc _ =>
       prEvent_bind_congr_of_support _ _ _ fun ρ _ => prEvent_congr _ _ _ fun yc => ?_
-    refine Iff.of_eq (congrArg (fun v => A η v ρ.1 = true) ?_)
+    refine Iff.of_eq (congrArg (fun v => A.test η v ρ.1 = true) ?_)
     rw [Vec.rv_snoc, FTerm.denote_name]
     dsimp only [VecRV.snoc]
     rw [hcpl]
@@ -613,8 +619,9 @@ and a name `n` of the hash type.
   names of the hash type are uniform there (`Model.UniformSampler`), so that `n(i)` is distributed
   as a random function's value.
 * `hprf` is the assumption, on the image of the class under the two named reductions
-  `PRFSymbols.hashReduction` and `PRFSymbols.freshReduction`: for every admitted machine, their
-  PRF advantages (`PRFSymbols.prfAdv`, VCVio's `prfAdvantage`) are negligible.
+  `PRFSymbols.hashReduction` and `PRFSymbols.freshReduction`, which run the admitted machine: for
+  every admitted machine, their PRF advantages (`PRFSymbols.prfAdv`, VCVio's `prfAdvantage`) are
+  negligible.
 
 At every `η` the advantage is at most the sum of the two PRF advantages and the probability that
 `ψ_msg` fails (`PRFSymbols.advantage_le`). -/
@@ -629,8 +636,8 @@ theorem equiv_prf (P : PRFSymbols D) {Θ : List (Form D [])} (u : OVec P [] τs)
       FTerm.Avoids M (fun η k => k = M.nameSlot nn i η) (P.close m))
     (hprf : ∀ M : Model D, M.RespectsLabels → R M → ∀ hU : M.UniformSampler P.hTy,
       ∀ A : Machine M (τs ++ [P.hTy]) .bool, (C M).mem A →
-        negligible (fun η => P.prfAdv M η hU (P.hashReduction η u m A.test)) ∧
-          negligible (fun η => P.prfAdv M η hU (P.freshReduction η u m A.test)))
+        negligible (fun η => P.prfAdv M η hU (P.hashReduction η u m A)) ∧
+          negligible (fun η => P.prfAdv M η hU (P.freshReduction η u m A)))
     (hmsg : Valid R C Θ (.box (P.psiMsg u m))) :
     Valid R C Θ (.equiv (Vec.snoc (P.closeVec u) (P.hashTerm (P.close m)))
       (Vec.snoc (P.closeVec u) (FTerm.name nn (FTerm.fn i))) ho) := by
@@ -641,7 +648,7 @@ theorem equiv_prf (P : PRFSymbols D) {Θ : List (Form D [])} (u : OVec P [] τs)
   obtain ⟨h₁, h₂⟩ := hprf M hl hRM hU A hA
   exact negligible_of_le (fun η => P.advantage_le hU nn i (P.keySlot_ne_nameSlot i hnk η) u m hg
     hmg hku hkm hpu hpm hfu hfm (C M) env (fun τ x => FTerm.Avoids.freshAt (hau τ x) (C M) env)
-    (FTerm.Avoids.freshAt ham (C M) env) A.test) (negligible_add (negligible_add h₁ h₂) hbox)
+    (FTerm.Avoids.freshAt ham (C M) env) A) (negligible_add (negligible_add h₁ h₂) hbox)
 
 /-- **PRF-Simple** (CCS26 Fig. 4 and Fig. 11, pp. 7 and 17): from `u⃗ ⊬ v` conclude
 `u⃗, h(m, k) ⊬ v`, derived as CCS26 derives it (p. 17): G.PRF on the vector `u⃗, v` gives
@@ -670,9 +677,9 @@ theorem nonDed_prf (P : PRFSymbols D) {Θ : List (Form D [])} {β : Ty B} (u : O
     (hprf : ∀ M : Model D, M.RespectsLabels → R M → ∀ hU : M.UniformSampler P.hTy,
       ∀ A : Machine M ((τs ++ [β]) ++ [P.hTy]) .bool, (C M).mem A →
         negligible (fun η => P.prfAdv M η hU
-          (P.hashReduction η (Env.append u (Env.cons v Env.empty)) m A.test)) ∧
+          (P.hashReduction η (Env.append u (Env.cons v Env.empty)) m A)) ∧
         negligible (fun η => P.prfAdv M η hU
-          (P.freshReduction η (Env.append u (Env.cons v Env.empty)) m A.test)))
+          (P.freshReduction η (Env.append u (Env.cons v Env.empty)) m A)))
     (hmsg : Valid R C Θ (.box (P.psiMsg (Env.append u (Env.cons v Env.empty)) m)))
     (h : Valid R C Θ (.nonDed (P.closeVec u) (P.close v) ho)) :
     Valid R C Θ (.nonDed (Vec.snoc (P.closeVec u) (P.hashTerm (P.close m))) (P.close v) ho') := by
@@ -741,8 +748,8 @@ machine have negligible PRF advantage. -/
       FTerm.Avoids M (fun η k => k = M.nameSlot e.nn e.i η) (e.P.close e.m)) ∧
     ∀ M : Model D, M.RespectsLabels → R M → ∀ hU : M.UniformSampler e.P.hTy,
       ∀ A : Machine M (e.τs ++ [e.P.hTy]) .bool, (C M).mem A →
-        negligible (fun η => e.P.prfAdv M η hU (e.P.hashReduction η e.u e.m A.test)) ∧
-          negligible (fun η => e.P.prfAdv M η hU (e.P.freshReduction η e.u e.m A.test))
+        negligible (fun η => e.P.prfAdv M η hU (e.P.hashReduction η e.u e.m A)) ∧
+          negligible (fun η => e.P.prfAdv M η hU (e.P.freshReduction η e.u e.m A))
 
 /-- The left vector of the conclusion, `u⃗, h(m, k)`. -/
 @[expose] def lhs : Vec D [] (e.τs ++ [e.P.hTy]) :=
