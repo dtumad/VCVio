@@ -46,9 +46,12 @@ can meet it (`WorkedEnc.lpad_advantage_eq_zero`).
   built from the variable, honest symbols and other names by application, conditionals and
   equality (`FTerm.Avoids.app`, `FTerm.Avoids.ite`, `EncSymbols.Avoids.name`, ...).
 * `EncSymbols.encReduction` is the named reduction. Given the public key it draws both tapes
-  itself, evaluates the messages and the context at the public key, and runs the distinguisher on
-  the challenge ciphertext with the attacker tape it drew. It never inverts the public key. If the
-  messages it evaluates have different lengths it submits the first twice.
+  itself, evaluates the messages and the context at the public key, and runs the distinguisher's
+  machine (`Machine.simulate`) with the attacker tape it drew, answering its input queries from the
+  public key, the challenge ciphertext and the context's values. It never inverts the public key.
+  If the messages it evaluates have different lengths it submits the first twice. Its last step
+  returns the machine's run (`EncSymbols.encReduction_distinguish`, from `Machine.simulate_ofVals`),
+  so the proof computes with the distinguisher's denotation (`Machine.test`).
 
 `EncSymbols.advantage_challenge` is the concrete statement: at every `η` the distinguisher's
 advantage between the two challenge vectors equals the one-time IND-CPA advantage of the
@@ -173,15 +176,16 @@ decryption, which the IND-CPA game never runs, rejects every ciphertext. -/
     pure (M.fn η E.encOf m (M.sample η E.coinTy rc) pk)
   decrypt _ _ := pure none
 
-/-- **The reduction** from a distinguisher of the challenge vectors to a one-time IND-CPA
-adversary. Given the public key, it draws both tapes, evaluates the two messages at the public
-key and keeps the key and the tapes; given the ciphertext, it evaluates the context at the public
-key and runs the distinguisher with the attacker tape it drew. If the two messages have different
-lengths it submits the first one twice, so the game is asked only about pairs of equal length
-(`encReduction_equalLength`); under `EqualLength` this never happens. -/
+/-- **The reduction** from a distinguishing machine of the challenge vectors to a one-time
+IND-CPA adversary. Given the public key, it draws both tapes, evaluates the two messages at the
+public key and keeps the key and the tapes; given the ciphertext, it evaluates the context at the
+public key and runs the machine `A` (`Machine.simulate`) with the attacker tape it drew, answering
+its input queries from the public key, the ciphertext and the context's values. If the two
+messages have different lengths it submits the first one twice, so the game is asked only about
+pairs of equal length (`encReduction_equalLength`); under `EqualLength` this never happens. -/
 @[expose] noncomputable def encReduction {M : Model D} {τs : List (Ty B)}
     (m₀ m₁ : FTerm D [.loc E.pkTy] E.msgTy) (u : Vec D [.loc E.pkTy] τs)
-    (A : Distinguisher M (E.pkTy :: E.cTy :: τs)) (η : ℕ) :
+    (A : Machine M (E.pkTy :: E.cTy :: τs) .bool) (η : ℕ) :
     IND_CPA_OneTime_Adversary (E.scheme M η) where
   State := E.pkTy.Value M.carrier η × M.Tape η
   chooseMessages pk := do
@@ -190,15 +194,26 @@ lengths it submits the first one twice, so the game is asked only about pairs of
       @ite _ (M.fn η E.lenOf (FTerm.evalAt M η ρ m₀ pk) =
           M.fn η E.lenOf (FTerm.evalAt M η ρ m₁ pk)) (Classical.propDecidable _)
         (FTerm.evalAt M η ρ m₁ pk) (FTerm.evalAt M η ρ m₀ pk), (pk, ρ))
-  distinguish st c := pure (A η
-    (Env.cons st.1 (Env.cons c fun _ x => FTerm.evalAt M η st.2 (u _ x) st.1)) st.2.1)
+  distinguish st c := A.simulate η st.2.1
+    (InputImpl.ofVals (Env.cons st.1 (Env.cons c fun _ x => FTerm.evalAt M η st.2 (u _ x) st.1)))
 
 variable {E}
+
+/-- The reduction's last step returns the machine's run on the public key, the ciphertext and the
+context's values: the fusion of its input answers into the run (`Machine.simulate_ofVals`). -/
+theorem encReduction_distinguish {M : Model D} {τs : List (Ty B)}
+    (m₀ m₁ : FTerm D [.loc E.pkTy] E.msgTy) (u : Vec D [.loc E.pkTy] τs)
+    (A : Machine M (E.pkTy :: E.cTy :: τs) .bool) (η : ℕ)
+    (st : (E.encReduction m₀ m₁ u A η).State) (c : E.cTy.Value M.carrier η) :
+    (E.encReduction m₀ m₁ u A η).distinguish st c =
+      pure (A.test η (Env.cons st.1 (Env.cons c fun _ x => FTerm.evalAt M η st.2 (u _ x) st.1))
+        st.2.1) :=
+  Machine.simulate_ofVals A _ _
 
 /-- The reduction submits only pairs of messages of equal length. -/
 theorem encReduction_equalLength {M : Model D} {τs : List (Ty B)}
     (m₀ m₁ : FTerm D [.loc E.pkTy] E.msgTy) (u : Vec D [.loc E.pkTy] τs)
-    (A : Distinguisher M (E.pkTy :: E.cTy :: τs)) (η : ℕ) :
+    (A : Machine M (E.pkTy :: E.cTy :: τs) .bool) (η : ℕ) :
     IND_CPA_OneTime_EqualLength (M.fn η E.lenOf) (E.encReduction m₀ m₁ u A η) := by
   intro pk z hz
   obtain ⟨ρ, -, hz⟩ := (mem_support_bind_iff _ _ _).1 hz
@@ -257,17 +272,18 @@ private theorem prEvent_branch (hkr : E.keyName ≠ E.coinName) {M : Model D} (C
     {τs : List (Ty B)} {m₀ m₁ : FTerm D [.loc E.pkTy] E.msgTy} {u : Vec D [.loc E.pkTy] τs}
     (hm₀ : E.Avoids M m₀) (hm₁ : E.Avoids M m₁) (hu : ∀ τ x, E.Avoids M (u τ x))
     (hlen : E.EqualLength M m₀ m₁)
-    (A : Distinguisher M (E.pkTy :: E.cTy :: τs)) (env : Env (Kind.Value M) []) (η : ℕ)
+    (A : Machine M (E.pkTy :: E.cTy :: τs) .bool) (env : Env (Kind.Value M) []) (η : ℕ)
     (b : Bool) :
     Pr{let z ← IND_CPA_OneTime_Branch (E.scheme M η) (E.encReduction m₀ m₁ u A η) b}[z = true] =
       Pr{let ρ ← $ᵗ (M.Tape η)}[
-        A η (Vec.rv M C (E.challenge (if b then m₀ else m₁) u) env η ρ) ρ.1 = true] := by
+        A.test η (Vec.rv M C (E.challenge (if b then m₀ else m₁) u) env η ρ) ρ.1 = true] := by
   classical
   have key := prEvent_uniformSample_update_update (β := M.TapeA η)
     (α := fun k : M.Slot η => M.Coin η k.1.2.1) (E.keySlot M η) (E.coinSlot M η)
-    (fun ρ : M.Tape η => A η (Vec.rv M C (E.challenge (if b then m₀ else m₁) u) env η ρ) ρ.1 = true)
+    (fun ρ : M.Tape η =>
+      A.test η (Vec.rv M C (E.challenge (if b then m₀ else m₁) u) env η ρ) ρ.1 = true)
   refine Eq.trans ?_ key
-  simp only [IND_CPA_OneTime_Branch, scheme, encReduction, prEvent_norm]
+  simp only [IND_CPA_OneTime_Branch, scheme, encReduction, Machine.simulate_ofVals, prEvent_norm]
   refine congrArg prEvent (bind_congr fun kc => bind_congr fun ρ => ?_)
   refine congrArg (· <$> _) (funext fun rc => ?_)
   have hks : E.keySlot M η ≠ E.coinSlot M η := fun h => hkr (congrArg Sigma.fst h)
@@ -286,7 +302,7 @@ private theorem prEvent_branch (hkr : E.keyName ≠ E.coinName) {M : Model D} (C
     (E.coinSlot M η) rc)
   simp only [pkVal, hk, hav hm₀, hav hm₁] at hg
   simp only [rv_challenge, pkVal, hk, hr, hav (hu _ _), ite_eq_left hg]
-  cases b <;> simp [hav hm₀, hav hm₁]
+  cases b <;> simp [hav hm₀, hav hm₁] <;> rfl
 
 /-- **The concrete statement.** At every `η`, a distinguisher's advantage between the two
 challenge vectors is the one-time IND-CPA advantage of `encReduction`, with factor one. -/
@@ -294,8 +310,8 @@ theorem advantage_challenge (hkr : E.keyName ≠ E.coinName) {M : Model D} (C : 
     {τs : List (Ty B)} {m₀ m₁ : FTerm D [.loc E.pkTy] E.msgTy} {u : Vec D [.loc E.pkTy] τs}
     (hm₀ : E.Avoids M m₀) (hm₁ : E.Avoids M m₁) (hu : ∀ τ x, E.Avoids M (u τ x))
     (hlen : E.EqualLength M m₀ m₁)
-    (A : Distinguisher M (E.pkTy :: E.cTy :: τs)) (env : Env (Kind.Value M) []) (η : ℕ) :
-    advantage A (Vec.rv M C (E.challenge m₀ u) env) (Vec.rv M C (E.challenge m₁ u) env) η =
+    (A : Machine M (E.pkTy :: E.cTy :: τs) .bool) (env : Env (Kind.Value M) []) (η : ℕ) :
+    advantage A.test (Vec.rv M C (E.challenge m₀ u) env) (Vec.rv M C (E.challenge m₁ u) env) η =
       IND_CPA_OneTime_Advantage (E.scheme M η) ProbCompRuntime.probComp
         (E.encReduction m₀ m₁ u A η) := by
   rw [IND_CPA_OneTime_Advantage_probComp_eq_absDiff,
@@ -319,8 +335,8 @@ where the messages and the context are closed by substituting `pk(nk)` for their
 * In every admitted model the two messages have equal length at every tape (`hR`,
   `EncSymbols.EqualLength`): BC14's guard `EQL(m₀, m₁)` holds surely.
 * `hcpa` is the assumption, about the image of the class under the named reduction
-  `EncSymbols.encReduction`: every admitted machine, as a distinguisher (`Machine.test`), becomes
-  a one-time IND-CPA adversary of negligible advantage against the scheme the model implements.
+  `EncSymbols.encReduction`: every admitted machine, run by the reduction, becomes a one-time
+  IND-CPA adversary of negligible advantage against the scheme the model implements.
 * `ProbCompRuntime.probComp` imposes no time or query bound on the reduction, so `hcpa` asserts
   security against the reductions of every admitted distinguisher, however slow. Efficiency
   enters only through the class: `hcpa` is plausible only when `C` admits efficient machines and
@@ -336,12 +352,12 @@ theorem Valid.equiv_enc (E : EncSymbols D) (hkr : E.keyName ≠ E.coinName)
     (hcpa : ∀ M : Model D, M.RespectsLabels → R M →
       ∀ A : Machine M (E.pkTy :: E.cTy :: τs) .bool, (C M).mem A →
         negligible fun η => IND_CPA_OneTime_Advantage (E.scheme M η) ProbCompRuntime.probComp
-          (E.encReduction m₀ m₁ u A.test η)) :
+          (E.encReduction m₀ m₁ u A η)) :
     Valid R C Θ (.equiv (E.challenge m₀ u) (E.challenge m₁ u) ho) := by
   intro M hl hRM env _
   obtain ⟨hm₀, hm₁, hu, hlen⟩ := hR M hRM
   exact Form.holds_equiv.2 fun A hA => negligible_of_le
-    (fun η => (EncSymbols.advantage_challenge hkr (C M) hm₀ hm₁ hu hlen A.test env η).le)
+    (fun η => (EncSymbols.advantage_challenge hkr (C M) hm₀ hm₁ hu hlen A env η).le)
     (hcpa M hl hRM A hA)
 
 /-! ## Instances, for derivations -/
@@ -371,6 +387,6 @@ distinguishers. -/
     ∀ M : Model D, M.RespectsLabels → R M →
       ∀ A : Machine M (e.E.pkTy :: e.E.cTy :: e.τs) .bool, (C M).mem A →
         negligible fun η => IND_CPA_OneTime_Advantage (e.E.scheme M η) ProbCompRuntime.probComp
-          (e.E.encReduction e.m₀ e.m₁ e.u A.test η)
+          (e.E.encReduction e.m₀ e.m₁ e.u A η)
 
 end SquirrelLogic
