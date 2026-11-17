@@ -153,7 +153,7 @@ theorem not_valid_freshL_n :
     ¬ Valid (· = longModel) (fun M => AdvClass.all M) (Γ := []) []
       (.nonDed (Vec.snoc (one (hT (hT aT))) (nm Name.n)) (nm Name.n)) := fun h =>
   not_nonDed_of_forall_eq (sndMachine longModel)
-    (AdvClass.all_mem_of_readsBelow_zero (Machine.readsBelow_input _ _))
+    (AdvClass.all_mem_input _ _)
     (fun _ _ => (AdvMachine.appVals_eval _ _).trans (Machine.run_input _ _ _))
     (Form.holds_nonDed.1 (h longModel longModel_respectsLabels rfl Env.empty (by simp)))
 

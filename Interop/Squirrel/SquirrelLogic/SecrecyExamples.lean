@@ -201,7 +201,7 @@ honest symbol. -/
   ((Machine.input .zero (Ty.isGround_base ())).app (Ty.isGround_base ())).fn Fn.h
 
 theorem hMachine_mem (M : Model decl) : (AdvClass.all M).mem (hMachine M) :=
-  AdvClass.all_mem_of_readsBelow_zero (((Machine.readsBelow_input _ _).app _).fn _)
+  (AdvClass.all M).fn_mem _ ((AdvClass.all M).app_mem _ (AdvClass.all_mem_input _ _))
 
 /-- In every model, against all machines, the hypothesis `adv(h)` holds: `hMachine` computes
 `h`. -/
@@ -237,7 +237,7 @@ theorem not_nonDed_of_forall_eq {M : Model decl} {τs : List (Ty Unit)} {β : Ty
   Machine.input .zero (Ty.isGround_base ())
 
 theorem idMachine_mem (M : Model decl) : (AdvClass.all M).mem (idMachine M) :=
-  AdvClass.all_mem_of_readsBelow_zero (Machine.readsBelow_input _ _)
+  AdvClass.all_mem_input _ _
 
 /-- `n ⊬ n` fails in `model`: the identity computes `n` from `n`. -/
 theorem not_valid_nonDed_n_n :
@@ -316,7 +316,7 @@ in `model` against all machines: the constant `true` guesses `b` with probabilit
 theorem freshR_needs_large :
     ¬ Valid (· = model) (fun M => AdvClass.all M) (Γ := []) [] (.nonDed Env.empty bT) := fun h => by
   have hn := Form.holds_nonDed.1 (h model model_respectsLabels rfl Env.empty (by simp))
-    (Machine.const true) (AdvClass.all_mem_of_readsBelow_zero (Machine.readsBelow_const _))
+    (Machine.const true) ((AdvClass.all _).const_mem _)
   refine not_negligible_one (negligible_of_le (fun η => ?_)
     (negligible_const_mul hn (c := 2) ENNReal.ofNat_ne_top))
   change 1 ≤ 2 * Pr{let ρ ← $ᵗ (model.Tape η)}[true = model.nameAt (D := decl) Name.b Fn.idx η ρ]

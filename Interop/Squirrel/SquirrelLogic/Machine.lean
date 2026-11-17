@@ -258,7 +258,7 @@ handler. -/
   fun η => simulateQ (H η).impl (A η)
 
 /-- A handler that, run at the tape `ρa` and the input values `e`, answers as the values `e'`. -/
-def Handler.EvalsTo (H : Handler M η τs τs') (ρa : M.TapeA η) (e : Vals M η τs')
+@[expose] def Handler.EvalsTo (H : Handler M η τs τs') (ρa : M.TapeA η) (e : Vals M η τs')
     (e' : Vals M η τs) : Prop :=
   ∀ τ x q, evalWithAnswerFn (M.answer ρa e) (H τ x q) = Ty.apply (e' τ x) q
 
@@ -514,6 +514,47 @@ theorem Model.readBit_shiftTape (n : ℕ) (ρa : M.TapeA η) (i : ℕ) :
 theorem Model.coinAt_shiftTape (τ : Ty B) (n m : ℕ) (ρa : M.TapeA η) :
     M.coinAt τ (M.shiftTape n ρa) m = M.coinAt τ ρa (n + m) :=
   funext fun j => (M.readBit_shiftTape n ρa (m + j)).trans (congrArg _ (Nat.add_assoc _ _ _).symm)
+
+/-- The `k` bits of the attacker tape from bit `n` on. The bit block of a name is the case
+`k = coinLen η τ` (`Model.coinAt`). -/
+@[expose] def Model.bitsAt (M : Model D) {η : ℕ} (ρa : M.TapeA η) (n k : ℕ) : Fin k → Bool :=
+  fun j => M.readBit ρa (n + j)
+
+/-- The attacker tape with the bits `[o, o + L)` replaced by `c`. -/
+@[expose] def Model.setBlock (M : Model D) {η : ℕ} (o : ℕ) (ρa : M.TapeA η) {L : ℕ}
+    (c : Fin L → Bool) : M.TapeA η :=
+  fun j => if h : o ≤ j.1 ∧ j.1 - o < L then c ⟨j.1 - o, h.2⟩ else ρa j
+
+theorem Model.readBit_setBlock_of_lt {o : ℕ} (ρa : M.TapeA η) {L : ℕ} (c : Fin L → Bool)
+    {i : ℕ} (hi : i < o) : M.readBit (M.setBlock o ρa c) i = M.readBit ρa i := by
+  unfold Model.readBit Model.setBlock
+  dsimp only
+  split_ifs <;> first | rfl | omega
+
+theorem Model.bitsAt_setBlock (o : ℕ) (ρa : M.TapeA η) {L : ℕ} (c : Fin L → Bool)
+    (h : o + L ≤ M.lenA η) : M.bitsAt (M.setBlock o ρa c) o L = c := by
+  funext j
+  unfold Model.bitsAt Model.readBit Model.setBlock
+  dsimp only
+  split_ifs with h₁ h₂
+  · exact congrArg c (Fin.ext (Nat.add_sub_cancel_left ..))
+  · exact absurd ⟨Nat.le_add_right _ _, by simp⟩ h₂
+  · omega
+
+theorem Model.setBlock_setBlock {o L : ℕ} (ρa : M.TapeA η) (c c' : Fin L → Bool) :
+    M.setBlock o (M.setBlock o ρa c) c' = M.setBlock o ρa c' := by
+  funext j
+  unfold Model.setBlock
+  split_ifs <;> rfl
+
+theorem Model.setBlock_bitsAt (o : ℕ) (ρa : M.TapeA η) (L : ℕ) :
+    M.setBlock o ρa (M.bitsAt ρa o L) = ρa := by
+  funext j
+  unfold Model.setBlock Model.bitsAt
+  split_ifs with h
+  · rw [Nat.add_sub_cancel' h.1]
+    simp [Model.readBit]
+  · rfl
 
 namespace Machine
 
