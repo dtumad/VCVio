@@ -48,8 +48,9 @@ abbrev slotS (η : ℕ) : model.Slot η := ⟨⟨.bool, .bool, Name.s⟩, false�
 
 /-- Flipping every bit of the honest tape. -/
 private def flipTape (η : ℕ) : model.TapeH η ≃ model.TapeH η :=
-  ⟨fun ρh k => !ρh k, fun ρh k => !ρh k, fun _ => funext fun _ => Bool.not_not _,
-    fun _ => funext fun _ => Bool.not_not _⟩
+  ⟨fun ρh k i => !ρh k i, fun ρh k i => !ρh k i,
+    fun _ => funext fun _ => funext fun _ => Bool.not_not _,
+    fun _ => funext fun _ => funext fun _ => Bool.not_not _⟩
 
 /-- The condition `enc s`, which is `s xor r`. -/
 @[expose] def parity : FTerm decl [] .bool := enc (pad .s)
@@ -75,11 +76,12 @@ theorem valid_flip (C : ∀ M : Model decl, AdvClass M) :
   refine Eq.trans ?_
     (SampleableType.prEvent_uniformSample_equiv ((Equiv.refl _).prodCongr (flipTape η)) _)
   refine prEvent_congr _ _ _ fun ρ => ?_
-  change A η (Env.cons (xor (ρ.2 (slotS η)) (ρ.2 (slotR η))) (Env.cons (ρ.2 (slotR η)) Env.empty))
+  change A η (Env.cons (xor (bit ρ.2 (slotS η)) (bit ρ.2 (slotR η)))
+      (Env.cons (bit ρ.2 (slotR η)) Env.empty))
       ρ.1 = true ↔
-    A η (Env.cons (xor (!ρ.2 (slotS η)) (!ρ.2 (slotR η)))
-      (Env.cons (xor true (!ρ.2 (slotR η))) Env.empty)) ρ.1 = true
-  cases ρ.2 (slotR η) <;> cases ρ.2 (slotS η) <;> rfl
+    A η (Env.cons (xor (!bit ρ.2 (slotS η)) (!bit ρ.2 (slotR η)))
+      (Env.cons (xor true (!bit ρ.2 (slotR η))) Env.empty)) ρ.1 = true
+  cases bit ρ.2 (slotR η) <;> cases bit ρ.2 (slotS η) <;> rfl
 
 /-- If1 at a random condition that both branches depend on: the first premise is Refl, the second
 is `valid_flip`. -/
@@ -91,10 +93,12 @@ theorem valid_if1_flip (C : ∀ M : Model decl, AdvClass M) :
 sides are different random variables. -/
 theorem denote_ite_parity (C : AdvClass model) (env : Env (Kind.Value model) []) (η : ℕ)
     (ρ : model.Tape η) :
-    (FTerm.ite parity (enc .tt) (pad .r)).denote (fullInterp model C) env η ρ = ρ.2 (slotS η) := by
-  change cond (xor (ρ.2 (slotS η)) (ρ.2 (slotR η))) (xor true (ρ.2 (slotR η))) (ρ.2 (slotR η)) =
-    ρ.2 (slotS η)
-  cases ρ.2 (slotR η) <;> cases ρ.2 (slotS η) <;> rfl
+    (FTerm.ite parity (enc .tt) (pad .r)).denote (fullInterp model C) env η ρ =
+      bit ρ.2 (slotS η) := by
+  change cond (xor (bit ρ.2 (slotS η)) (bit ρ.2 (slotR η))) (xor true (bit ρ.2 (slotR η)))
+      (bit ρ.2 (slotR η)) =
+    bit ρ.2 (slotS η)
+  cases bit ρ.2 (slotR η) <;> cases bit ρ.2 (slotS η) <;> rfl
 
 /-- `valid_if1_flip` as a one-step derivation from the hypothesis `flipForm`. -/
 @[expose] def if1Derivation : Derivation decl (fun _ => False) [flipForm] if1Form :=
@@ -107,15 +111,15 @@ theorem if1Derivation_sound (C : ∀ M : Model decl, AdvClass M) :
 
 /-- Twice the probability that the pad `r` is `true` is one. -/
 private theorem prEvent_padR_add_self (η : ℕ) :
-    Pr{let ρ ← $ᵗ (model.Tape η)}[ρ.2 (slotR η) = true] +
-      Pr{let ρ ← $ᵗ (model.Tape η)}[ρ.2 (slotR η) = true] = 1 := by
-  have hsym : Pr{let ρ ← $ᵗ (model.Tape η)}[ρ.2 (slotR η) = true] =
-      Pr{let ρ ← $ᵗ (model.Tape η)}[¬ ρ.2 (slotR η) = true] := by
+    Pr{let ρ ← $ᵗ (model.Tape η)}[bit ρ.2 (slotR η) = true] +
+      Pr{let ρ ← $ᵗ (model.Tape η)}[bit ρ.2 (slotR η) = true] = 1 := by
+  have hsym : Pr{let ρ ← $ᵗ (model.Tape η)}[bit ρ.2 (slotR η) = true] =
+      Pr{let ρ ← $ᵗ (model.Tape η)}[¬ bit ρ.2 (slotR η) = true] := by
     refine Eq.trans ?_ (SampleableType.prEvent_uniformSample_equiv
-      ((Equiv.refl _).prodCongr (flipTape η)) fun ρ => ¬ ρ.2 (slotR η) = true)
+      ((Equiv.refl _).prodCongr (flipTape η)) fun ρ => ¬ bit ρ.2 (slotR η) = true)
     refine prEvent_congr _ _ _ fun ρ => ?_
-    change _ ↔ ¬ (!ρ.2 (slotR η)) = true
-    cases ρ.2 (slotR η)
+    change _ ↔ ¬ (!bit ρ.2 (slotR η)) = true
+    cases bit ρ.2 (slotR η)
     · simp
     · exact iff_of_true rfl (by simp)
   nth_rw 2 [hsym]
@@ -136,7 +140,7 @@ theorem caseStudy_needs_condition :
     (fun _ e _ => e _ .zero) trivial
   refine not_negligible_one (negligible_of_le (fun η => ?_)
     (negligible_const_mul hM (c := 2) ENNReal.ofNat_ne_top))
-  set p := Pr{let ρ ← $ᵗ (model.Tape η)}[ρ.2 (slotR η) = true] with hp
+  set p := Pr{let ρ ← $ᵗ (model.Tape η)}[bit ρ.2 (slotR η) = true] with hp
   have hadv : advantage (fun _ e _ => e _ .zero) (Vec.rv model (AdvClass.all model)
       (Env.cons (FTerm.ite (pad .r) (enc .ff) (enc .tt)) Env.empty) Env.empty)
       (Vec.rv model (AdvClass.all model) (Env.cons (enc .ff) Env.empty) Env.empty) η =
@@ -144,11 +148,12 @@ theorem caseStudy_needs_condition :
     refine congrArg₂ ENNReal.absDiff ?_ ?_
     · refine (prEvent_congr _ _ (fun _ => True) fun ρ => iff_true_intro ?_).trans
         (OracleComp.prEvent_true_eq_one _)
-      change cond (ρ.2 (slotR η)) (xor false (ρ.2 (slotR η))) (xor true (ρ.2 (slotR η))) = true
-      cases ρ.2 (slotR η) <;> rfl
+      change cond (bit ρ.2 (slotR η)) (xor false (bit ρ.2 (slotR η)))
+        (xor true (bit ρ.2 (slotR η))) = true
+      cases bit ρ.2 (slotR η) <;> rfl
     · refine prEvent_congr _ _ _ fun ρ => ?_
-      change xor false (ρ.2 (slotR η)) = true ↔ _
-      cases ρ.2 (slotR η) <;> rfl
+      change xor false (bit ρ.2 (slotR η)) = true ↔ _
+      cases bit ρ.2 (slotR η) <;> rfl
   have hsum := prEvent_padR_add_self η
   rw [← hp] at hsum
   have hpt : p ≠ ⊤ := ne_top_of_le_ne_top ENNReal.one_ne_top (hsum ▸ le_add_self)
@@ -217,6 +222,6 @@ theorem guard_not_derivable :
     ¬ ConstTrue (Distinguisher.guard true (fun _ _ _ => true : Distinguisher model [])) :=
   ⟨fun h _ _ _ => h _ _ _, fun {_ _} _ {_} h _ _ _ => h _ _ _, fun {_ _} _ {_} h _ _ _ => h _ _ _,
     fun h _ _ _ => h _ _ _, fun {_ _} _ {_} h _ _ _ => h _ _ _,
-    fun h => Bool.false_ne_true (h 0 (Env.cons false Env.empty : Vals model 0 [.bool]) ())⟩
+    fun h => Bool.false_ne_true (h 0 (Env.cons false Env.empty : Vals model 0 [.bool]) Fin.elim0)⟩
 
 end SquirrelLogic.CaseStudy

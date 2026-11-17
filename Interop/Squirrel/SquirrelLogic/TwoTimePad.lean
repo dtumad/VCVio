@@ -54,14 +54,14 @@ inductive Name : Ty Empty → Ty Empty → Type where
   Att := Empty
   attTy f := f.elim
 
-/-- Coins are bits; a pad of type `bool` is its coin; encryption is `xor`. -/
+/-- Each name reads one bit, and a pad of type `bool` is that bit; encryption is `xor`. -/
 @[expose] noncomputable def model : Model decl where
-  TapeA _ := Unit
+  lenA _ := 0
   carrier b := b.elim
   nonempty b := b.elim
-  Coin _ _ := Bool
+  coinLen _ _ := 1
   sample η b := match b with
-    | .bool => id
+    | .bool => fun c => c 0
     | b => fun _ => Classical.choice (b.nonempty_value (fun b => b.elim) η)
   finite_index _ := fun n => match n with | .r | .s => inferInstanceAs (Finite Bool)
   fn η τ _ := match τ with
@@ -73,6 +73,9 @@ theorem model_respectsLabels : model.RespectsLabels := fun b => b.elim
 
 /-- The coordinate the pad `r` reads at index `false`. -/
 abbrev slotR (η : ℕ) : model.Slot η := ⟨⟨.bool, .bool, Name.r⟩, false⟩
+
+/-- The bit of the honest tape at a coordinate: every name reads one bit. -/
+abbrev bit {η : ℕ} (ρh : model.TapeH η) (k : model.Slot η) : Bool := ρh k ⟨0, Nat.one_pos⟩
 
 /-- A pad at index `false`. -/
 @[expose] def pad (n : Name .bool .bool) : FTerm decl [] .bool :=
@@ -86,7 +89,7 @@ abbrev slotR (η : ℕ) : model.Slot η := ⟨⟨.bool, .bool, Name.r⟩, false�
 theorem denote_enc (C : AdvClass model) (m : FTerm decl [] .bool)
     (env : Env (Kind.Value model) []) (η : ℕ) (ρ : model.Tape η) :
     (enc m).denote (fullInterp model C) env η ρ =
-      xor (m.denote (fullInterp model C) env η ρ) (ρ.2 (slotR η)) := rfl
+      xor (m.denote (fullInterp model C) env η ρ) (bit ρ.2 (slotR η)) := rfl
 
 /-- With a fresh pad, the two encryptions are indistinguishable for every class: flipping the
 tape maps one to the other. -/
@@ -99,13 +102,14 @@ theorem valid_fresh (C : ∀ M : Model decl, AdvClass M) :
     fun _ => Env.eq_empty _
   simp only [Vec.rv_cons, VecRV.cons, denote_enc, FTerm.denote_tt, FTerm.denote_ff, he]
   let flip : model.TapeH η ≃ model.TapeH η :=
-    ⟨fun ρh k => !ρh k, fun ρh k => !ρh k, fun _ => funext fun _ => Bool.not_not _,
-      fun _ => funext fun _ => Bool.not_not _⟩
+    ⟨fun ρh k i => !ρh k i, fun ρh k i => !ρh k i,
+      fun _ => funext fun _ => funext fun _ => Bool.not_not _,
+      fun _ => funext fun _ => funext fun _ => Bool.not_not _⟩
   refine Eq.trans ?_ (SampleableType.prEvent_uniformSample_equiv ((Equiv.refl _).prodCongr flip) _)
   refine prEvent_congr _ _ _ fun ρ => ?_
-  change A η (Env.cons (xor false (ρ.2 (slotR η))) Env.empty) ρ.1 = true ↔
-    A η (Env.cons (xor true (!ρ.2 (slotR η))) Env.empty) ρ.1 = true
-  cases ρ.2 (slotR η) <;> rfl
+  change A η (Env.cons (xor false (bit ρ.2 (slotR η))) Env.empty) ρ.1 = true ↔
+    A η (Env.cons (xor true (!bit ρ.2 (slotR η))) Env.empty) ρ.1 = true
+  cases bit ρ.2 (slotR η) <;> rfl
 
 /-- With the pad reused, testing the two entries for equality tells the vectors apart with
 advantage one. -/
@@ -119,7 +123,7 @@ theorem not_valid_reuse :
   simp only [advantage, Vec.rv_cons, VecRV.cons, Env.cons_zero, Env.cons_succ, denote_enc,
     FTerm.denote_tt, FTerm.denote_ff, decide_true, decide_eq_true_eq]
   rw [OracleComp.prEvent_true_eq_one, prEvent_eq_zero_of_forall_not _ _ fun ρ h => by
-    revert h; cases ρ.2 (slotR η) <;> exact fun h => Bool.noConfusion h,
+    revert h; cases bit ρ.2 (slotR η) <;> exact fun h => Bool.noConfusion h,
     ENNReal.absDiff_zero_right]
 
 /-- The permutation of names exchanging the two pads. -/

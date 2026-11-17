@@ -84,18 +84,18 @@ inductive Fn : Ty Empty → Type where
   Att := Empty
   attTy f := f.elim
 
-/-- Coins are bits. A key, a pad and a public key are a bit; the name `n` samples the message
-with length bit `false` and its coin as payload. `len` reads the length bit, `zero` and `one` have
-length bit `false`, and encryption is `enc`. -/
+/-- Each name reads one bit. A key, a pad and a public key are a bit; the name `n` samples the
+message with length bit `false` and its bit as payload. `len` reads the length bit, `zero` and
+`one` have length bit `false`, and encryption is `enc`. -/
 @[expose] noncomputable def model (enc : (Bool → Bool) → Bool → Bool → Bool → Bool) :
     Model decl where
-  TapeA _ := Unit
+  lenA _ := 0
   carrier b := b.elim
   nonempty b := b.elim
-  Coin _ _ := Bool
+  coinLen _ _ := 1
   sample η b := match b with
-    | .bool => id
-    | .arrow .bool .bool => fun c i => i && c
+    | .bool => fun c => c 0
+    | .arrow .bool .bool => fun c i => i && c 0
     | b => fun _ => Classical.choice (b.nonempty_value (fun b => b.elim) η)
   finite_index _ := fun n => match n with | .k | .r | .n => inferInstanceAs (Finite Bool)
   fn _ τ f := match τ, f with
@@ -177,12 +177,14 @@ theorem equalLength_one_zero (enc : (Bool → Bool) → Bool → Bool → Bool �
 theorem lpad_encrypt_evalDistEq (η : ℕ) (pk : Bool) (m : Bool → Bool) :
     (encSymbols.scheme (model lpad) η).encrypt pk m =ᵈ
       ((fun c i => bif i then c else m false) <$> ($ᵗ Bool : ProbComp Bool)) := by
-  change (do let rc ← ($ᵗ Bool : ProbComp Bool); pure (lpad m rc pk)) =ᵈ _
-  rw [bind_pure_comp, show (fun rc => lpad m rc pk) =
-    (fun c i => bif i then c else m false) ∘ xor (m true) from rfl, comp_map]
+  change (do let rc ← ($ᵗ (Fin 1 → Bool) : ProbComp (Fin 1 → Bool)); pure (lpad m (rc 0) pk)) =ᵈ _
+  rw [bind_pure_comp, show (fun rc : Fin 1 → Bool => lpad m (rc 0) pk) =
+    (fun c i => bif i then c else m false) ∘ (fun rc : Fin 1 → Bool => xor (m true) (rc 0))
+    from rfl, comp_map]
   refine (SampleableType.map_uniformSample_evalDistEq_of_bijective
-    ⟨fun a c h => ?_, fun c => ⟨xor (m true) c, ?_⟩⟩).map _
-  · cases hm : m true <;> cases a <;> cases c <;> simp_all
+    ⟨fun a c h => funext fun i => ?_, fun c => ⟨fun _ => xor (m true) c, ?_⟩⟩).map _
+  · rw [Subsingleton.elim (α := Fin 1) i 0]
+    cases hm : m true <;> cases ha : a 0 <;> cases hc : c 0 <;> simp_all
   · cases m true <;> cases c <;> rfl
 
 /-- For `lpad`, against an adversary that submits messages of equal length, the two branches of
