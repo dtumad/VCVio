@@ -9,6 +9,7 @@ public import SquirrelLogic.Rules.Local
 public import SquirrelLogic.Rules.Equiv
 public import SquirrelLogic.Rules.Enc
 public import SquirrelLogic.Rules.Rename
+public import SquirrelLogic.Rules.Fresh
 
 /-!
 # Derivations of global sequents
@@ -26,6 +27,11 @@ The encryption rule (`Valid.equiv_enc`) is a constructor, at the instances that 
 `enc` admits; its syntactic side condition, distinct key and coin names, is a premise of the
 constructor. `Derivation.sound` takes the semantic hypotheses of each admitted instance
 (`EncInstance.Holds`). With `enc` empty, derivations are those of the structural fragment.
+
+The secrecy rules of CCS26 Fig. 3 (Neg1, Neg2, Ineq, Trans, WeakL, WeakR, Rw-Equiv), `▷` from
+`adv` (`dedApps`) and FreshR (Fig. 11) are constructors. Rw-Equiv takes the ground type of its
+right side as a premise, and FreshR the label `large` and the freshness of its closed vector in
+every model (`FTerm.Avoids`), so both are sound in every model.
 -/
 
 public section
@@ -142,6 +148,50 @@ inductive Derivation (D : Decl B) (enc : EncInstance D → Prop) :
   | equivEnc {Θ : List (Form D [])} (e : EncInstance D) : enc e →
       e.E.keyName ≠ e.E.coinName →
       Derivation D enc Θ (.equiv (e.E.challenge e.m₀ e.u) (e.E.challenge e.m₁ e.u))
+  /-- Neg1 (CCS26 Fig. 3). -/
+  | notDed {Γ : List (Kind B)} {Θ : List (Form D Γ)} {τs : List (Ty B)} {β : Ty B}
+      {u : Vec D Γ τs} {v : FTerm D Γ β} :
+      Derivation D enc Θ (.nonDed u v) → Derivation D enc Θ (.not (.ded u v))
+  /-- Neg2 (CCS26 Fig. 3). -/
+  | notNonDed {Γ : List (Kind B)} {Θ : List (Form D Γ)} {τs : List (Ty B)} {β : Ty B}
+      {u : Vec D Γ τs} {v : FTerm D Γ β} :
+      Derivation D enc Θ (.ded u v) → Derivation D enc Θ (.not (.nonDed u v))
+  /-- Ineq (CCS26 Fig. 3). -/
+  | boxNotEq {Γ : List (Kind B)} {Θ : List (Form D Γ)} {τs : List (Ty B)} {β : Ty B}
+      {u : Vec D Γ τs} {v w : FTerm D Γ β} :
+      Derivation D enc Θ (.nonDed u v) → Derivation D enc Θ (.ded u w) →
+      Derivation D enc Θ (.box (FTerm.not (FTerm.eq v w)))
+  /-- Trans (CCS26 Fig. 3). -/
+  | dedTrans {Γ : List (Kind B)} {Θ : List (Form D Γ)} {τs : List (Ty B)} {β γ : Ty B}
+      {u : Vec D Γ τs} {v : FTerm D Γ β} {w : FTerm D Γ γ} :
+      Derivation D enc Θ (.ded u v) → Derivation D enc Θ (.ded (Env.cons v Env.empty) w) →
+      Derivation D enc Θ (.ded u w)
+  /-- WeakL (CCS26 Fig. 3). -/
+  | nonDedWeakL {Γ : List (Kind B)} {Θ : List (Form D Γ)} {τs : List (Ty B)} {β γ : Ty B}
+      {u : Vec D Γ τs} {v : FTerm D Γ β} {w : FTerm D Γ γ} :
+      Derivation D enc Θ (.nonDed u w) → Derivation D enc Θ (.ded u v) →
+      Derivation D enc Θ (.nonDed (Env.cons v Env.empty) w)
+  /-- WeakR (CCS26 Fig. 3). -/
+  | nonDedWeakR {Γ : List (Kind B)} {Θ : List (Form D Γ)} {τs : List (Ty B)} {β γ : Ty B}
+      {u : Vec D Γ τs} {v : FTerm D Γ β} {w : FTerm D Γ γ} :
+      Derivation D enc Θ (.nonDed u v) → Derivation D enc Θ (.ded (Env.cons w Env.empty) v) →
+      Derivation D enc Θ (.nonDed u w)
+  /-- Rw-Equiv (CCS26 Fig. 3), for a right side of Boolean or base type. -/
+  | nonDedRwEquiv {Γ : List (Kind B)} {Θ : List (Form D Γ)} {τs : List (Ty B)} {β : Ty B}
+      {u₁ u₂ : Vec D Γ τs} {v₁ v₂ : FTerm D Γ β} : β.IsGround →
+      Derivation D enc Θ (.nonDed u₂ v₂) →
+      Derivation D enc Θ (.equiv (Vec.snoc u₁ v₁) (Vec.snoc u₂ v₂)) →
+      Derivation D enc Θ (.nonDed u₁ v₁)
+  /-- `u⃗ ▷ f(u⃗)` from `adv(f)`. -/
+  | dedApps {Γ : List (Kind B)} {Θ : List (Form D Γ)} {τs : List (Ty B)} {β : Ty B}
+      {u : Vec D Γ τs} {f : FTerm D Γ (Ty.arrows τs β)} :
+      Derivation D enc Θ (.adv f) → Derivation D enc Θ (.ded u (FTerm.apps f u))
+  /-- FreshR (CCS26 Fig. 11), for a closed vector that avoids the name's coordinate in every
+  model. -/
+  | nonDedFreshR {Θ : List (Form D [])} {τs : List (Ty B)} {a b : Ty B} (u : Vec D [] τs)
+      (n : D.Name a b) (i : D.Fn a) : b.HasLabel D.labels .large →
+      (∀ M : Model D, ∀ τ x, (u τ x).Avoids M fun η k => k = M.nameSlot n i η) →
+      Derivation D enc Θ (.nonDed u (FTerm.name n (FTerm.fn i)))
 
 variable {D : Decl B}
 
@@ -175,6 +225,16 @@ theorem Derivation.sound {enc : EncInstance D → Prop} (R : Model D → Prop)
   | _, _, _, .equivRename r d => Valid.equiv_rename r (d.sound R C henc)
   | _, _, _, .equivRenameNames π u => Valid.equiv_renameNames_of_equiv π u
   | _, _, _, .equivEnc e he hkr => Valid.equiv_enc e.E hkr (henc e he).1 (henc e he).2
+  | _, _, _, .notDed d => Valid.not_ded (d.sound R C henc)
+  | _, _, _, .notNonDed d => Valid.not_nonDed (d.sound R C henc)
+  | _, _, _, .boxNotEq d₁ d₂ => Valid.box_not_eq (d₁.sound R C henc) (d₂.sound R C henc)
+  | _, _, _, .dedTrans d₁ d₂ => Valid.ded_trans (d₁.sound R C henc) (d₂.sound R C henc)
+  | _, _, _, .nonDedWeakL d₁ d₂ => Valid.nonDed_weakL (d₁.sound R C henc) (d₂.sound R C henc)
+  | _, _, _, .nonDedWeakR d₁ d₂ => Valid.nonDed_weakR (d₁.sound R C henc) (d₂.sound R C henc)
+  | _, _, _, .nonDedRwEquiv hβ d₁ d₂ =>
+    Valid.nonDed_rwEquiv hβ (d₁.sound R C henc) (d₂.sound R C henc)
+  | _, _, _, .dedApps d => Valid.ded_apps (d.sound R C henc)
+  | _, _, _, .nonDedFreshR _ n i hl hf => Valid.nonDed_freshR n i hl fun M _ => hf M
 
 /-- A worked derivation: from the hypothesis `∀̃ x. G`, conclude `G{x ↦ t}`. -/
 def Derivation.allInst {enc : EncInstance D → Prop} {Γ : List (Kind B)} {τ : Ty B}

@@ -1231,8 +1231,7 @@ App. C.2 (pp. 16–17) for FreshL and FreshR; LICS23 App. A for the label `large
   `deduceAdv g u v η = Pr_ρ[g(ρa)(u(ρ)) = v(ρ)]` and `deduceErr` is the probability of `≠`.
 - **Against the spike.** The spike's `deduceAdv uv f` (`Examples/SquirrelModel/Deduction.lean`)
   is the same probability for a VCVio adversary `f : α → ProbComp β` that draws fresh coins; here
-  `g` reads the shared attacker tape `ρa` (L10). The two agree when `ρa` is independent of `u`
-  and `v`, and differ for FreshL (below).
+  `g` reads the shared attacker tape `ρa` (L10). FreshL is where the two differ (below).
 
 ### The core rules (CCS26 Fig. 3)
 
@@ -1262,7 +1261,11 @@ whose proof is an inequality at every `η` with the reduction named.
 |---|---|---|---|
 | `comp_mem` | `AttackerFn.comp k f`: `f` then `k`, both on the shared `ρa` | Trans, WeakL, WeakR | `IsPPTOn.bind`; uniform PPT has it |
 | `eqTest_mem` | `Distinguisher.eqTest β` at ground `β` | Rw-Equiv, with `app_mem` and `adv_mem` | `decide_eq`; uniform PPT has it |
-| `applyConst_mem` | `AttackerFn.applyConst g x`: fix the first argument to `x η` | FreshL | non-uniform: polynomial advice or circuits have it for values of polynomial length; uniform PPT does not |
+
+Both are operations a machine performs on its input and its tape, so they restate directly on
+programs over a tape-reading interface. FreshR needs no field. Commit `0512ab73b` also added a
+field for FreshL, fixing an argument of an attacker function to an `η`-indexed value; that closure
+is non-uniform, and the next commit removes it (FreshL below).
 
 Rw-Equiv's distinguisher is derived, not a field: `Distinguisher.deduce g` is
 `((eqTest β).appArgs τs).adv g`, where `appArgs` applies `Distinguisher.app` once per argument
@@ -1282,3 +1285,148 @@ of base types and `Model.IsLarge M τ` says `∃ c > 0, ∀ η y, Pr_coin[sample
 - **Consequence.** `Model.trivial` respects every label but `large`. A type labelled `finite`,
   `fixed` and `large` has no model, so `Valid.not_box_ff`, `Valid.not_equiv_tt_ff` and the
   If1 countermodels now assume a declaration with no `large` base type.
+
+### FreshR (CCS26 Fig. 11, p. 17)
+
+```
+Valid.nonDed_freshR (n : D.Name a b) (i : D.Fn a) (hlarge : b.HasLabel D.labels .large)
+    (hfresh : ∀ M, R M → ∀ τ x, (u τ x).Avoids M fun η k => k = M.nameSlot n i η) :
+  Valid R C Θ (.nonDed u (FTerm.name n (FTerm.fn i)))
+```
+
+- **Bound at `η`** (`deduceAdv_nameAt_le`): if `u` does not read the coordinate of `n(i)`, every
+  attacker function, admitted or not, has `deduceAdv g u (n(i)) η ≤ ε`, where `ε` bounds the
+  probability of each value of the sampler. The proof overwrites the coordinate with a fresh coin
+  (`prEvent_uniformSample_prod_update`, new in `ProductTape.lean`), and for each tape the coin
+  hits the attacker's guess with probability at most `ε`. With `large`, `ε = 2^{-cη}`, which is
+  negligible (`negligible_two_rpow_neg_mul`).
+- **Indexed names.** CCS26 presents un-indexed names. Here the name is read at an honest symbol
+  `i`, a closed index, and freshness is for the one coordinate `M.nameSlot n i η` at each `η`.
+- **Freshness is semantic.** `FTerm.Avoids M S t` (`Avoids.lean`) says that `t`'s pointwise value
+  at every value of its free variables is the same at two honest tapes that agree outside the
+  coordinates `S η`. The encryption rule's `EncSymbols.Avoids` is now its instance at the key and
+  coin coordinates, and the constructor lemmas (`FTerm.avoids_var`, `avoids_fn`, `avoids_tt`,
+  `avoids_ff`, `Avoids.app`, `.ite`, `.eq`, `.not`, `.name`) serve both rules. `Model.FreshAt`
+  is the same condition on random variables, and `FTerm.Avoids.freshAt` passes from a closed term
+  to its random variable.
+- **Two forms.** `Valid.nonDed_freshR_of_freshAt` takes freshness of the random variables in every
+  admitted model where `Θ` holds, for any context, as CCS26's premise `E; Θ ⊢ [ψ^n_fresh(u)]` is
+  a judgment under `Θ`. `Valid.nonDed_freshR` is the closed-vector form with `FTerm.Avoids`; free
+  variables range over all random variables, which may read the name, so the syntactic form needs
+  a closed vector (CCS26's caption of Fig. 11 instead asks every declared variable to be a name
+  or adversarial).
+- The decidable side condition will be PolyFun's `Term.heads`, not at VCVio's pin `ea3b297`.
+
+### FreshL: not proved
+
+FreshL is `u ⊬ v ⟹ u, n ⊬ v` for `n` fresh in `u, v`. It is left open (L20), with a countermodel
+showing the freshness condition is needed.
+
+- **CCS26's proof** (App. C.2, p. 17) uses G.Equiv.Fresh, `u, n ∼ u, n_fresh` for a name
+  `n_fresh` occurring nowhere, and a function `f′` that, on input `u`, "simulates the sampling of
+  `n_fresh` from the adversarial randomness and then runs `f`". Rw-Equiv then moves from
+  `n_fresh` to `n`.
+- **Footnote 2** (p. 17): "we must ensure that `f′` has enough fresh randomness at its disposal in
+  the adversarial tape. This can be done by defining `f′` in a new model in which we extended the
+  size of the adversarial tape as needed. Then, since the secrecy property `u ⊬ v` is assumed to
+  hold in any model, we can apply consider it in the extended model."
+- **What it leaves out.** The premise is the judgment `E; Θ ⊢ u ⊬ v`, true in models of `Θ` only,
+  and the footnote does not show that `Θ` holds in the extended model. Atoms whose meaning
+  quantifies over machines, `∼` and `adv` and through them `⊬` and `▷`, are evaluated there
+  against machines that read the longer tape. Whether a hypothesis true in the smaller model
+  stays true is not argued; we have not settled it either way.
+- **What bounds the bits the terms read.** LICS23 (§II-A.3) takes the tapes to be a pair
+  `(ρa, ρh)` of finite bitstrings of model-chosen length, and its machines for `adv` and `∼`
+  (§II-C.1, Fig. 2) have a randomness input tape for `ρa` and a query tape for higher-order
+  arguments. The caption of CCS26 Fig. 11 asks every declared variable to be a name or
+  adversarial (`E; Θ ⊢ adv(v)`): that is what bounds which bits of `ρa` the terms read, so that
+  `f′` can sample from bits further along.
+- **Here.** A model's attacker tape is a fixed finite type, possibly a single point, and the class
+  of machines is chosen per model (`C : ∀ M, AdvClass M`), so there is no extended model to move
+  to, nor a relation between the classes of two models. Averaging over the name's coin would
+  bound the success by that of the attacker function with the name's argument fixed to a best
+  value at each `η`, but admitting that function is a non-uniform closure (advice), which this
+  development does not adopt. The route that follows the papers needs attacker functions as
+  programs over a tape-reading interface, with the number of bits they read bounded, so that
+  `f′` reads bits beyond them.
+- **Check.** `SecrecyExamples.freshL_needs_freshness`: `⊬ n` with nothing on the left holds by
+  FreshR, and `n ⊬ n`, which adds `n` although it is not fresh on the right, fails.
+
+### Checks (`SecrecyExamples.lean`)
+
+The declaration has one base type `msg` labelled `large`, names `k, m, n : bool → msg` and
+`b : bool → bool`, the honest index `idx : bool` and `h : msg → msg`. In `model`, `msg` at `η` is
+the bitstrings of length `η`, every name draws a uniform value of its type, and `h` is the
+identity; `msg` is large with `c = 1` (`model_isLarge`, from `card_vector`).
+
+| Check | Shows |
+|---|---|
+| `workedDerivation`, `workedDerivation_sound` | from `adv(h)`: FreshR gives `k ⊬ n`; `▷` from `adv` gives `k ▷ h(k)` and `h(k) ▷ h(h(k))`; Trans gives `k ▷ h(h(k))`; WeakL gives `h(h(k)) ⊬ n`, sound by `Derivation.sound` |
+| `valid_advH`, `valid_worked` | the hypothesis holds in `model` against all machines, so the conclusion does |
+| `not_valid_nonDed_hhn_n` | `h(h(n)) ⊬ n` fails in `model`: the conclusion is not trivially true |
+| `nonDed_not_trans` | `n ⊬ m` and `m ⊬ n` hold, `n ⊬ n` fails (CCS26 §3.2, p. 6) |
+| `freshL_needs_freshness` | `⊬ n` holds and `n ⊬ n` fails |
+| `freshR_needs_large` | the Boolean name `b` is fresh in the empty vector, and `⊬ b` fails: the constant `true` guesses it with probability one half |
+
+The rules of Fig. 3 have no countermodel of their own here: each is an inequality at every `η`
+whose terms are all present.
+
+### Derivations
+
+`Derivation` gains `notDed`, `notNonDed`, `boxNotEq`, `dedTrans`, `nonDedWeakL`, `nonDedWeakR`,
+`nonDedRwEquiv` (with the ground type of its right side as a premise), `dedApps` and
+`nonDedFreshR` (with `large` and freshness in every model as premises), each sound in one line.
+The type of `Derivation` is unchanged.
+
+### Build and checks
+
+- **Build.** `LEAN_NUM_THREADS=4 lake build SquirrelLogic` succeeds with no warnings.
+- **Axioms.** `#print axioms` from a scratch file outside the repository on 40 declarations: the
+  rules, their semantic laws and bounds, `Form.holds_nonDed`, `Form.holds_ded`,
+  `prEvent_uniformSample_prod_update`, `negligible_two_rpow_neg_mul`, `AdvClass.all`,
+  `Derivation.sound`, every check above and four M0 headlines. They use only `propext`,
+  `Classical.choice` and `Quot.sound`.
+- **Forbidden tactics, comment fences, line length.** No `sorry`, `stop` or `native_decide`; the
+  fence check passes; no line exceeds 100 characters.
+
+| File | Content |
+|---|---|
+| `Secrecy.lean` (new) | `deduceAdv`, `deduceErr`, `NonDed`, `Ded`, the bounds at `η`, `Distinguisher.deduce`, the laws |
+| `Rules/Secrecy.lean` (new) | `FTerm.apps`, `Form.nonDed`, `Form.ded`, their readings, the `Valid` rules of Fig. 3, `Valid.ded_apps` |
+| `Avoids.lean` (new) | `FTerm.Avoids`, its constructor lemmas, `Model.FreshAt` |
+| `Rules/Fresh.lean` (new) | `negligible_two_rpow_neg_mul`, `Model.nameAt`, FreshR |
+| `SecrecyExamples.lean` (new) | the model, the worked derivation, the countermodels |
+| `Syntax.lean`, `Model.lean` | `Label.large`, `Ty.arrows`, `Ty.IsGround`, `Model.IsLarge`, `Ty.appVals`, `Ty.postcomp`, `Model.nameSlot` |
+| `Indist.lean`, `Global.lean` | `AttackerFn.comp`, `Distinguisher.eqTest`, `comp_mem`, `eqTest_mem`; `Form.and`, `Form.ex`, `Form.bot`, `Form.not`, `FTerm.not`; `not_negligible_one` moves here |
+| `Rules/Enc.lean` and its checks | `EncSymbols.Avoids` is an instance of `FTerm.Avoids` |
+
+### Problems hit
+
+1. **Implicit declarations.** A name of the example's own inductive type, passed where
+   `Decl.Name ?D a b` is expected with `D` not yet known, makes elaboration time out; giving
+   `(D := decl)` fixes it.
+2. **`nomatch z, w`** parses as a match on two discriminants; a lambda ending in `nomatch` inside
+   an anonymous constructor needs parentheses.
+3. **Coin types.** `model.Coin η .bool` is `Bool` only up to unfolding, so `rw` with lemmas about
+   `$ᵗ Bool` fails on the instance; `refine` with the type given explicitly works.
+4. **`rw` through definitional unfolding.** `Nat.card_congr e` records `e`'s inferred type, not
+   its ascription; the two types must be passed as named arguments.
+
+### What remains
+
+- **FreshL** (L20), after attacker functions become programs over a tape-reading interface.
+- **Rw-Oracle and Pc-Oracle** need `adv` at order two (L2, L11).
+- **Syntactic freshness** through `Term.heads`, after the PolyFun pin moves.
+- **Part 2 (PRF rules).** CCS26's PRF rules (Fig. 4, Fig. 11, App. C.3) state the PRF assumption
+  through named reductions whose distinguishers query an oracle `o_h^k = λx. h(x, k)`; the ψ
+  conditions (`ψ_PRF,key`, `ψ_PRF,msg`) say the key occurs only as the key of `h` and that the
+  message was never hashed before. Both need a reading of terms as programs that query the
+  oracle, so that a reduction can answer the queries from its own game; the coupling and
+  avoidance lemmas here carry over to the key's coordinate.
+
+### Ledger
+
+- **L10** records that `⊬` and `▷` read the shared tape and that FreshL is where it matters.
+- **New rows**: L18 (the predicates as derived formulas, curried tuples), L19 (the label `large`),
+  L20 (FreshL and CCS26's footnote 2), L21 (Rw-Equiv at ground types), L22 (FreshR's semantic
+  side condition, closed for this fragment).

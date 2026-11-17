@@ -156,7 +156,7 @@ theorem keyName_ne_coinName : encSymbols.keyName ≠ encSymbols.coinName := by
 /-- `n` reads neither the key nor the coins, in every model: it reads its own coordinate. -/
 theorem avoids_n (M : Model decl) : encSymbols.Avoids M nTerm := by
   refine EncSymbols.Avoids.name (E := encSymbols) (M := M) Name.n ?_ ?_
-    (EncSymbols.avoids_fn _) <;> intro h <;> cases h
+    (FTerm.avoids_fn _) <;> intro h <;> cases h
 
 /-- The context reads neither the key nor the coins, in every model. -/
 theorem avoids_ctx (M : Model decl) : ∀ τ x, encSymbols.Avoids M (ctx τ x)
@@ -256,7 +256,7 @@ theorem workedDerivation_sound {R : Model decl → Prop} {C : ∀ M : Model decl
     Valid R C (Γ := []) []
       (.equiv (encSymbols.challenge nTerm ctx) (encSymbols.challenge zeroTerm ctx)) :=
   workedDerivation.sound R C fun e (he : e = workedInstance) => he ▸
-    ⟨fun M hM => ⟨avoids_n M, EncSymbols.avoids_fn _, avoids_ctx M, hlen M hM⟩, hcpa⟩
+    ⟨fun M hM => ⟨avoids_n M, FTerm.avoids_fn _, avoids_ctx M, hlen M hM⟩, hcpa⟩
 
 /-- **Satisfiability, for a scheme that leaks lengths.** In the model of `lpad`, the length fact
 holds and the IND-CPA hypothesis holds against every distinguisher, so the worked derivation's
@@ -271,7 +271,7 @@ theorem valid_worked_lpad :
 
 /-- **A scheme that leaks the message still fails.** For `leak`, the conclusion of the rule for
 the messages `one` and `zero` fails against every distinguisher, although they have equal lengths
-(`equalLength_one_zero`) and meet the side conditions (`EncSymbols.avoids_fn`). -/
+(`equalLength_one_zero`) and meet the side conditions (`FTerm.avoids_fn`). -/
 theorem not_valid_leak :
     ¬ Valid (· = model leak) (fun M => AdvClass.all M) (Γ := []) []
       (.equiv (encSymbols.challenge oneTerm Env.empty)
