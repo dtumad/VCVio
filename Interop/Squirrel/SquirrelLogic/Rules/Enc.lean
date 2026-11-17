@@ -22,14 +22,18 @@ the secret key only through the public key:
 pk(nk), enc(m₀; r, pk(nk)), u⃗ ∼ pk(nk), enc(m₁; r, pk(nk)), u⃗
 ```
 
-It differs from EncCCA1 in three ways. There is no decryption, so IND-CPA replaces IND-CCA1. The
-messages are values of one type, and the scheme's message space is that whole type, so BC14's
-equal-length guard `EQL(u, u′)` is not needed. Both sides use the same coin name, which is BC14's
-pair `r, r′` up to name renaming. LICS23's G.CCA1 (Prop. 19) is the real-or-zero form of the same
-rule, against `aenc (zero (len m))`.
+It differs from EncCCA1 in three ways. There is no decryption, so IND-CPA replaces IND-CCA1. Both
+sides use the same coin name, which is BC14's pair `r, r′` up to name renaming. And BC14's guard
+`if EQL(u, u′) then … else u″`, which compares lengths, becomes a side condition: the two
+messages have equal length (`lenOf`) at every tape (`EncSymbols.EqualLength`), so the guard always
+takes its first branch. This is how LICS23's G.CCA1 (Prop. 19), the real-or-zero form of the rule,
+gets equal lengths: its second message `zero (len m)` has the length of the first in every model.
+The reduction submits only pairs of equal length (`EncSymbols.encReduction_equalLength`), so the
+IND-CPA hypothesis is about adversaries the standard game admits, and a scheme that leaks lengths
+can meet it (`WorkedEnc.lpad_advantage_eq_zero`).
 
 * `EncSymbols D` names the scheme in a declaration: a key name `nk` and a coin name `r`, each at
-  an honest constant index, and honest symbols `pkOf` and `encOf`.
+  an honest constant index, and honest symbols `pkOf`, `encOf` and `lenOf`.
 * `EncSymbols.scheme E M η` is the scheme a model implements: key generation draws the key
   coordinate's coin and applies `pkOf` to its sample, and encryption draws the coin coordinate's
   coin and applies `encOf`.
@@ -37,10 +41,13 @@ rule, against `aenc (zero (len m))`.
   closed by substituting `pk(nk)` (`EncSymbols.challenge`). This is BC14's constraint that the
   secret key occur only in decryption position, with no decryption: `nk` occurs only under `pk`.
   The freshness constraints are semantic (`EncSymbols.Avoids`): the values of the messages and the
-  context do not depend on the key coordinate or the coin coordinate of the honest tape.
+  context do not depend on the key coordinate or the coin coordinate of the honest tape. They hold
+  in every model for terms built from the variable, honest symbols and other names by application,
+  conditionals and equality (`EncSymbols.Avoids.app`, `Avoids.ite`, `Avoids.name`, ...).
 * `EncSymbols.encReduction` is the named reduction. Given the public key it draws both tapes
   itself, evaluates the messages and the context at the public key, and runs the distinguisher on
-  the challenge ciphertext with the attacker tape it drew. It never inverts the public key.
+  the challenge ciphertext with the attacker tape it drew. It never inverts the public key. If the
+  messages it evaluates have different lengths it submits the first twice.
 
 `EncSymbols.advantage_challenge` is the concrete statement: at every `η` the distinguisher's
 advantage between the two challenge vectors equals the one-time IND-CPA advantage of the
@@ -62,8 +69,8 @@ open IPFunctor IPFunctor.ScopedSignature AsymmEncAlg
 variable {B : Type} {D : Decl B}
 
 /-- The symbols of an asymmetric encryption scheme in a declaration: a key name and a coin name,
-each at an honest constant index, the public key of a key, and the encryption of a message with
-coins under a public key. -/
+each at an honest constant index, the public key of a key, the encryption of a message with coins
+under a public key, and the length of a message, which encryption may reveal. -/
 structure EncSymbols (D : Decl B) where
   /-- The index type of the key name. -/
   keyIdx : Ty B
@@ -79,6 +86,8 @@ structure EncSymbols (D : Decl B) where
   msgTy : Ty B
   /-- The type of ciphertexts. -/
   cTy : Ty B
+  /-- The type of message lengths. -/
+  lenTy : Ty B
   /-- The key name `nk`. -/
   nk : D.Name keyIdx keyTy
   /-- The index at which the key name is read. -/
@@ -91,6 +100,8 @@ structure EncSymbols (D : Decl B) where
   pkOf : D.Fn (.arrow keyTy pkTy)
   /-- Encryption of a message with coins under a public key. -/
   encOf : D.Fn (.arrow msgTy (.arrow coinTy (.arrow pkTy cTy)))
+  /-- The length of a message (BC14's `EQL` compares it). -/
+  lenOf : D.Fn (.arrow msgTy lenTy)
 
 namespace EncSymbols
 
@@ -138,6 +149,17 @@ coordinates. -/
     (∀ k, k ≠ E.keySlot M η → k ≠ E.coinSlot M η → ρh k = ρh' k) →
       ∀ x, FTerm.evalAt M η (ρa, ρh) t x = FTerm.evalAt M η (ρa, ρh') t x
 
+/-- The public key at `η` that an honest tape determines: `pkOf` of the key coordinate's sample. -/
+@[expose] def pkVal (M : Model D) (η : ℕ) (ρh : M.TapeH η) : E.pkTy.Value M.carrier η :=
+  M.fn η E.pkOf (M.sample η E.keyTy (ρh (E.keySlot M η)))
+
+/-- The two messages have the same length at every tape, read at the tape's public key. This is
+BC14's guard `EQL(u, u′)` holding surely, as in LICS23's G.CCA1, whose second message
+`zero (len m)` has the length of the first in every model. -/
+@[expose] def EqualLength (M : Model D) (m₀ m₁ : FTerm D [.loc E.pkTy] E.msgTy) : Prop :=
+  ∀ η (ρ : M.Tape η), M.fn η E.lenOf (FTerm.evalAt M η ρ m₀ (E.pkVal M η ρ.2)) =
+    M.fn η E.lenOf (FTerm.evalAt M η ρ m₁ (E.pkVal M η ρ.2))
+
 /-- The scheme a model implements at `η`: key generation draws a key coin and applies `pkOf` to
 its sample, and encryption draws a coin and applies `encOf`. There is no secret key, and
 decryption, which the IND-CPA game never runs, rejects every ciphertext. -/
@@ -155,7 +177,9 @@ decryption, which the IND-CPA game never runs, rejects every ciphertext. -/
 /-- **The reduction** from a distinguisher of the challenge vectors to a one-time IND-CPA
 adversary. Given the public key, it draws both tapes, evaluates the two messages at the public
 key and keeps the key and the tapes; given the ciphertext, it evaluates the context at the public
-key and runs the distinguisher with the attacker tape it drew. -/
+key and runs the distinguisher with the attacker tape it drew. If the two messages have different
+lengths it submits the first one twice, so the game is asked only about pairs of equal length
+(`encReduction_equalLength`); under `EqualLength` this never happens. -/
 @[expose] noncomputable def encReduction {M : Model D} {τs : List (Ty B)}
     (m₀ m₁ : FTerm D [.loc E.pkTy] E.msgTy) (u : Vec D [.loc E.pkTy] τs)
     (A : Distinguisher M (E.pkTy :: E.cTy :: τs)) (η : ℕ) :
@@ -163,11 +187,88 @@ key and runs the distinguisher with the attacker tape it drew. -/
   State := E.pkTy.Value M.carrier η × M.Tape η
   chooseMessages pk := do
     let ρ ← $ᵗ (M.Tape η)
-    pure (FTerm.evalAt M η ρ m₀ pk, FTerm.evalAt M η ρ m₁ pk, (pk, ρ))
+    pure (FTerm.evalAt M η ρ m₀ pk,
+      @ite _ (M.fn η E.lenOf (FTerm.evalAt M η ρ m₀ pk) =
+          M.fn η E.lenOf (FTerm.evalAt M η ρ m₁ pk)) (Classical.propDecidable _)
+        (FTerm.evalAt M η ρ m₁ pk) (FTerm.evalAt M η ρ m₀ pk), (pk, ρ))
   distinguish st c := pure (A η
     (Env.cons st.1 (Env.cons c fun _ x => FTerm.evalAt M η st.2 (u _ x) st.1)) st.2.1)
 
 variable {E}
+
+/-- The reduction submits only pairs of messages of equal length. -/
+theorem encReduction_equalLength {M : Model D} {τs : List (Ty B)}
+    (m₀ m₁ : FTerm D [.loc E.pkTy] E.msgTy) (u : Vec D [.loc E.pkTy] τs)
+    (A : Distinguisher M (E.pkTy :: E.cTy :: τs)) (η : ℕ) :
+    IND_CPA_OneTime_EqualLength (M.fn η E.lenOf) (E.encReduction m₀ m₁ u A η) := by
+  intro pk z hz
+  obtain ⟨ρ, -, hz⟩ := (mem_support_bind_iff _ _ _).1 hz
+  obtain rfl := (mem_support_pure_iff _ _).1 hz
+  dsimp only
+  split_ifs with h
+  · exact h
+  · rfl
+
+/-! ## The side condition, by construction
+
+`Avoids` holds of the public-key variable, of honest symbols and the Boolean constants, of names
+other than the key and coin names, and is closed under application, conditionals and equality. So
+a message or context built from these satisfies it in every model. -/
+
+section Avoids
+
+variable {M : Model D}
+
+/-- The public-key variable reads no honest coordinate. -/
+theorem avoids_var : E.Avoids M (Term.var .zero : FTerm D [.loc E.pkTy] E.pkTy) :=
+  fun _ _ _ _ _ _ => rfl
+
+/-- An honest symbol reads no honest coordinate. -/
+theorem avoids_fn {τ : Ty B} (f : D.Fn τ) : E.Avoids M (FTerm.fn f) :=
+  fun _ _ _ _ _ _ => rfl
+
+/-- `true` reads no honest coordinate. -/
+theorem avoids_tt : E.Avoids M FTerm.tt := fun _ _ _ _ _ _ => rfl
+
+/-- `false` reads no honest coordinate. -/
+theorem avoids_ff : E.Avoids M FTerm.ff := fun _ _ _ _ _ _ => rfl
+
+/-- Application of terms that avoid the two coordinates avoids them. -/
+theorem Avoids.app {a b : Ty B} {f : FTerm D [.loc E.pkTy] (.arrow a b)}
+    {t : FTerm D [.loc E.pkTy] a} (hf : E.Avoids M f) (ht : E.Avoids M t) :
+    E.Avoids M (FTerm.app f t) := fun η ρa ρh ρh' h x => by
+  change FTerm.evalAt M η (ρa, ρh) f x (FTerm.evalAt M η (ρa, ρh) t x) =
+    FTerm.evalAt M η (ρa, ρh') f x (FTerm.evalAt M η (ρa, ρh') t x)
+  rw [hf η ρa ρh ρh' h x, ht η ρa ρh ρh' h x]
+
+/-- A conditional of terms that avoid the two coordinates avoids them. -/
+theorem Avoids.ite {a : Ty B} {c : FTerm D [.loc E.pkTy] .bool} {t e : FTerm D [.loc E.pkTy] a}
+    (hc : E.Avoids M c) (ht : E.Avoids M t) (he : E.Avoids M e) :
+    E.Avoids M (FTerm.ite c t e) := fun η ρa ρh ρh' h x => by
+  change cond (FTerm.evalAt M η (ρa, ρh) c x) (FTerm.evalAt M η (ρa, ρh) t x)
+      (FTerm.evalAt M η (ρa, ρh) e x) =
+    cond (FTerm.evalAt M η (ρa, ρh') c x) (FTerm.evalAt M η (ρa, ρh') t x)
+      (FTerm.evalAt M η (ρa, ρh') e x)
+  rw [hc η ρa ρh ρh' h x, ht η ρa ρh ρh' h x, he η ρa ρh ρh' h x]
+
+/-- An equality of terms that avoid the two coordinates avoids them. -/
+theorem Avoids.eq {a : Ty B} {t t' : FTerm D [.loc E.pkTy] a} (ht : E.Avoids M t)
+    (ht' : E.Avoids M t') : E.Avoids M (FTerm.eq t t') :=
+  Avoids.app (Avoids.app (fun _ _ _ _ _ _ => rfl) ht) ht'
+
+/-- A name other than the key and coin names, at an index that avoids the two coordinates, reads
+neither: it reads its own coordinate. -/
+theorem Avoids.name {a b : Ty B} (n : D.Name a b)
+    (hk : (⟨a, b, n⟩ : (a : Ty B) × (b : Ty B) × D.Name a b) ≠ E.keyName)
+    (hr : (⟨a, b, n⟩ : (a : Ty B) × (b : Ty B) × D.Name a b) ≠ E.coinName)
+    {i : FTerm D [.loc E.pkTy] a} (hi : E.Avoids M i) : E.Avoids M (FTerm.name n i) :=
+  fun η ρa ρh ρh' h x => by
+  change M.sample η b (ρh ⟨⟨a, b, n⟩, FTerm.evalAt M η (ρa, ρh) i x⟩) =
+    M.sample η b (ρh' ⟨⟨a, b, n⟩, FTerm.evalAt M η (ρa, ρh') i x⟩)
+  rw [hi η ρa ρh ρh' h x, h _ (fun he => hk (congrArg Sigma.fst he))
+    (fun he => hr (congrArg Sigma.fst he))]
+
+end Avoids
 
 /-- The challenge vector at `(η, ρ)`: the public key of the key coordinate's sample, the
 encryption of the message read at that public key with the coin coordinate's sample, and the
@@ -176,13 +277,10 @@ theorem rv_challenge {M : Model D} (C : AdvClass M) {τs : List (Ty B)}
     (m : FTerm D [.loc E.pkTy] E.msgTy) (u : Vec D [.loc E.pkTy] τs)
     (env : Env (Kind.Value M) []) (η : ℕ) (ρ : M.Tape η) :
     Vec.rv M C (E.challenge m u) env η ρ =
-      Env.cons (M.fn η E.pkOf (M.sample η E.keyTy (ρ.2 (E.keySlot M η))))
-        (Env.cons (M.fn η E.encOf
-            (FTerm.evalAt M η ρ m (M.fn η E.pkOf (M.sample η E.keyTy (ρ.2 (E.keySlot M η)))))
-            (M.sample η E.coinTy (ρ.2 (E.coinSlot M η)))
-            (M.fn η E.pkOf (M.sample η E.keyTy (ρ.2 (E.keySlot M η)))))
-          fun _ x => FTerm.evalAt M η ρ (u _ x)
-            (M.fn η E.pkOf (M.sample η E.keyTy (ρ.2 (E.keySlot M η))))) := by
+      Env.cons (E.pkVal M η ρ.2)
+        (Env.cons (M.fn η E.encOf (FTerm.evalAt M η ρ m (E.pkVal M η ρ.2))
+            (M.sample η E.coinTy (ρ.2 (E.coinSlot M η))) (E.pkVal M η ρ.2))
+          fun _ x => FTerm.evalAt M η ρ (u _ x) (E.pkVal M η ρ.2)) := by
   funext τ x
   cases x with
   | zero => rfl
@@ -198,6 +296,7 @@ coin, written into the reduction's honest tape, make it uniform. -/
 private theorem prEvent_branch (hkr : E.keyName ≠ E.coinName) {M : Model D} (C : AdvClass M)
     {τs : List (Ty B)} {m₀ m₁ : FTerm D [.loc E.pkTy] E.msgTy} {u : Vec D [.loc E.pkTy] τs}
     (hm₀ : E.Avoids M m₀) (hm₁ : E.Avoids M m₁) (hu : ∀ τ x, E.Avoids M (u τ x))
+    (hlen : E.EqualLength M m₀ m₁)
     (A : Distinguisher M (E.pkTy :: E.cTy :: τs)) (env : Env (Kind.Value M) []) (η : ℕ)
     (b : Bool) :
     Pr{let z ← IND_CPA_OneTime_Branch (E.scheme M η) (E.encReduction m₀ m₁ u A η) b}[z = true] =
@@ -221,7 +320,10 @@ private theorem prEvent_branch (hkr : E.keyName ≠ E.coinName) {M : Model D} (C
       FTerm.evalAt M η (ρ.1, Function.update (Function.update ρ.2 (E.keySlot M η) kc)
         (E.coinSlot M η) rc) t x = FTerm.evalAt M η ρ t x := fun ht x =>
     ht η ρ.1 _ ρ.2 (fun k h₁ h₂ => by rw [Function.update_of_ne h₂, Function.update_of_ne h₁]) x
-  simp only [rv_challenge, hk, hr, hav (hu _ _)]
+  have hg := hlen η (ρ.1, Function.update (Function.update ρ.2 (E.keySlot M η) kc)
+    (E.coinSlot M η) rc)
+  simp only [pkVal, hk, hav hm₀, hav hm₁] at hg
+  simp only [rv_challenge, pkVal, hk, hr, hav (hu _ _), ite_eq_left hg]
   cases b <;> simp [hav hm₀, hav hm₁]
 
 /-- **The concrete statement.** At every `η`, a distinguisher's advantage between the two
@@ -229,12 +331,13 @@ challenge vectors is the one-time IND-CPA advantage of `encReduction`, with fact
 theorem advantage_challenge (hkr : E.keyName ≠ E.coinName) {M : Model D} (C : AdvClass M)
     {τs : List (Ty B)} {m₀ m₁ : FTerm D [.loc E.pkTy] E.msgTy} {u : Vec D [.loc E.pkTy] τs}
     (hm₀ : E.Avoids M m₀) (hm₁ : E.Avoids M m₁) (hu : ∀ τ x, E.Avoids M (u τ x))
+    (hlen : E.EqualLength M m₀ m₁)
     (A : Distinguisher M (E.pkTy :: E.cTy :: τs)) (env : Env (Kind.Value M) []) (η : ℕ) :
     advantage A (Vec.rv M C (E.challenge m₀ u) env) (Vec.rv M C (E.challenge m₁ u) env) η =
       IND_CPA_OneTime_Advantage (E.scheme M η) ProbCompRuntime.probComp
         (E.encReduction m₀ m₁ u A η) := by
-  rw [IND_CPA_OneTime_Advantage_probComp_eq_absDiff, prEvent_branch hkr C hm₀ hm₁ hu A env η,
-    prEvent_branch hkr C hm₀ hm₁ hu A env η]
+  rw [IND_CPA_OneTime_Advantage_probComp_eq_absDiff,
+    prEvent_branch hkr C hm₀ hm₁ hu hlen A env η, prEvent_branch hkr C hm₀ hm₁ hu hlen A env η]
   rfl
 
 end EncSymbols
@@ -251,6 +354,8 @@ where the messages and the context are closed by substituting `pk(nk)` for their
 * The key and coin names are distinct (`hkr`), and in every admitted model the messages and the
   context read neither the key coordinate nor the coin coordinate (`hR`): `nk` occurs only under
   `pk`, and `r` is fresh.
+* In every admitted model the two messages have equal length at every tape (`hR`,
+  `EncSymbols.EqualLength`): BC14's guard `EQL(m₀, m₁)` holds surely.
 * `hcpa` is the assumption, about the image of the class under the named reduction
   `EncSymbols.encReduction`: every admitted distinguisher becomes a one-time IND-CPA adversary of
   negligible advantage against the scheme the model implements.
@@ -263,16 +368,17 @@ The proof is `EncSymbols.advantage_challenge`, an equality at every `η`. -/
 theorem Valid.equiv_enc (E : EncSymbols D) (hkr : E.keyName ≠ E.coinName)
     {R : Model D → Prop} {C : ∀ M : Model D, AdvClass M} {Θ : List (Form D [])}
     {τs : List (Ty B)} {m₀ m₁ : FTerm D [.loc E.pkTy] E.msgTy} {u : Vec D [.loc E.pkTy] τs}
-    (hR : ∀ M, R M → E.Avoids M m₀ ∧ E.Avoids M m₁ ∧ ∀ τ x, E.Avoids M (u τ x))
+    (hR : ∀ M, R M →
+      E.Avoids M m₀ ∧ E.Avoids M m₁ ∧ (∀ τ x, E.Avoids M (u τ x)) ∧ E.EqualLength M m₀ m₁)
     (hcpa : ∀ M : Model D, M.RespectsLabels → R M →
       ∀ A : Distinguisher M (E.pkTy :: E.cTy :: τs), (C M).distinguishes A →
         negligible fun η => IND_CPA_OneTime_Advantage (E.scheme M η) ProbCompRuntime.probComp
           (E.encReduction m₀ m₁ u A η)) :
     Valid R C Θ (.equiv (E.challenge m₀ u) (E.challenge m₁ u)) := by
   intro M hl hRM env _
-  obtain ⟨hm₀, hm₁, hu⟩ := hR M hRM
+  obtain ⟨hm₀, hm₁, hu, hlen⟩ := hR M hRM
   exact Form.holds_equiv.2 fun A hA => negligible_of_le
-    (fun η => (EncSymbols.advantage_challenge hkr (C M) hm₀ hm₁ hu A env η).le)
+    (fun η => (EncSymbols.advantage_challenge hkr (C M) hm₀ hm₁ hu hlen A env η).le)
     (hcpa M hl hRM A hA)
 
 /-! ## Instances, for derivations -/
@@ -295,7 +401,8 @@ admitted model, and one-time IND-CPA security against the reductions of the admi
 distinguishers. -/
 @[expose] def EncInstance.Holds (R : Model D → Prop) (C : ∀ M : Model D, AdvClass M)
     (e : EncInstance D) : Prop :=
-  (∀ M, R M → e.E.Avoids M e.m₀ ∧ e.E.Avoids M e.m₁ ∧ ∀ τ x, e.E.Avoids M (e.u τ x)) ∧
+  (∀ M, R M → e.E.Avoids M e.m₀ ∧ e.E.Avoids M e.m₁ ∧ (∀ τ x, e.E.Avoids M (e.u τ x)) ∧
+      e.E.EqualLength M e.m₀ e.m₁) ∧
     ∀ M : Model D, M.RespectsLabels → R M →
       ∀ A : Distinguisher M (e.E.pkTy :: e.E.cTy :: e.τs), (C M).distinguishes A →
         negligible fun η => IND_CPA_OneTime_Advantage (e.E.scheme M η) ProbCompRuntime.probComp

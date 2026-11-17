@@ -16,8 +16,8 @@ import VCVio.OracleComp.Constructions.SampleableType.Measure
 The declaration is `TwoTimePad.decl`: two pads `r` and `s : bool → bool` and one honest symbol of
 each type. `encSymbols nk` reads it as an encryption scheme with key name `nk` and coin name `r`,
 both at index `false`; keys, coins, public keys, messages and ciphertexts are bits.
-`encModel enc` interprets the public key of a key as the key and encryption as `enc`. The messages
-are `true` and `false` and the context is empty.
+`encModel enc` interprets the public key of a key as the key, encryption as `enc`, and gives every
+message the same length. The messages are `true` and `false` and the context is empty.
 
 * `padInstance_holds`, `valid_enc_pad`: for the one-time pad `enc m r pk = m xor r`, the
   hypotheses of `Valid.equiv_enc` hold together against every distinguisher, so the rule
@@ -53,15 +53,18 @@ open IPFunctor IPFunctor.ScopedSignature AsymmEncAlg TwoTimePad
   pkTy := .bool
   msgTy := .bool
   cTy := .bool
+  lenTy := .arrow .bool .bool
   nk := nk
   ik := ()
   nr := Name.r
   ir := ()
   pkOf := ()
   encOf := ()
+  lenOf := ()
 
 /-- Coins are bits and a pad of type `bool` is its coin; the honest constant of type `bool` is
-`false`, the public key of a key is the key, and encryption is `enc`. -/
+`false`, the public key of a key is the key, encryption is `enc`, and every message has the same
+length. -/
 @[expose] noncomputable def encModel (enc : Bool → Bool → Bool → Bool) : Model decl where
   TapeA _ := Unit
   carrier b := b.elim
@@ -75,6 +78,7 @@ open IPFunctor IPFunctor.ScopedSignature AsymmEncAlg TwoTimePad
     | .bool => false
     | .arrow .bool .bool => id
     | .arrow .bool (.arrow .bool (.arrow .bool .bool)) => enc
+    | .arrow .bool (.arrow .bool .bool) => fun _ => id
     | τ => Classical.choice (τ.nonempty_value (fun b => b.elim) η)
   att _ f := f.elim
 
@@ -87,13 +91,10 @@ theorem encModel_respectsLabels (enc : Bool → Bool → Bool → Bool) :
 /-- A scheme that leaks the message. -/
 @[expose] def leaky (m _ _ : Bool) : Bool := m
 
-/-- A constant reads no coordinate of the honest tape. -/
-theorem avoids_tt (nk : Name .bool .bool) (M : Model decl) :
-    (encSymbols nk).Avoids M FTerm.tt := fun _ _ _ _ _ _ => rfl
-
-/-- A constant reads no coordinate of the honest tape. -/
-theorem avoids_ff (nk : Name .bool .bool) (M : Model decl) :
-    (encSymbols nk).Avoids M FTerm.ff := fun _ _ _ _ _ _ => rfl
+/-- Every message has the same length in these models. -/
+theorem equalLength (nk : Name .bool .bool) (enc : Bool → Bool → Bool → Bool)
+    (m₀ m₁ : FTerm decl [.loc .bool] .bool) : (encSymbols nk).EqualLength (encModel enc) m₀ m₁ :=
+  fun _ _ => rfl
 
 /-- The pads `s` and `r` are distinct names. -/
 theorem keyName_ne_coinName : (encSymbols .s).keyName ≠ (encSymbols .s).coinName := by
@@ -138,7 +139,8 @@ theorem pad_advantage_eq_zero (nk : Name .bool .bool) (η : ℕ)
 together against every distinguisher. -/
 theorem padInstance_holds :
     padInstance.Holds (fun M => M = encModel pad) fun M => AdvClass.all M :=
-  ⟨fun M _ => ⟨avoids_tt _ M, avoids_ff _ M, fun _ x => nomatch x⟩, fun M _ hM A _ => by
+  ⟨fun M hM => ⟨EncSymbols.avoids_tt, EncSymbols.avoids_ff, (fun _ x => nomatch x),
+    hM ▸ equalLength .s pad _ _⟩, fun M _ hM A _ => by
     subst hM
     exact negligible_of_zero fun η => pad_advantage_eq_zero .s η _⟩
 
@@ -166,7 +168,8 @@ theorem encDerivation_sound :
 
 /-- **The IND-CPA hypothesis is needed.** For a scheme that leaks the message, the conclusion
 fails against every distinguisher, though the names are distinct and the side conditions hold
-(`keyName_ne_coinName`, `avoids_tt`, `avoids_ff`): the ciphertext is the message. -/
+(`keyName_ne_coinName`, `EncSymbols.avoids_tt`, `EncSymbols.avoids_ff`, `equalLength`): the
+ciphertext is the message. -/
 theorem not_valid_enc_leaky :
     ¬ Valid (fun M => M = encModel leaky) (fun M => AdvClass.all M) (Γ := []) []
       (.equiv ((encSymbols .s).challenge .tt Env.empty)
@@ -180,8 +183,8 @@ theorem not_valid_enc_leaky :
   · exact (prEvent_eq_zero_of_forall_not _ _ fun _ h => Bool.noConfusion h).symm
 
 /-- **The names must be distinct.** With the key name equal to the coin name, the one-time pad
-meets the side conditions and the IND-CPA hypothesis (`avoids_tt`, `avoids_ff`,
-`pad_advantage_eq_zero`), but the
+meets the side conditions and the IND-CPA hypothesis (`EncSymbols.avoids_tt`,
+`EncSymbols.avoids_ff`, `equalLength`, `pad_advantage_eq_zero`), but the
 conclusion fails against every distinguisher: the public key is the pad, and the exclusive or of
 the two entries is the message. -/
 theorem not_valid_enc_keyIsCoin :
@@ -208,9 +211,9 @@ theorem not_valid_enc_keyIsCoin :
 
 /-- **The coins must be fresh.** With the coins themselves in the context, the one-time pad has
 distinct names and meets the IND-CPA hypothesis (`keyName_ne_coinName`, `pad_advantage_eq_zero`),
-and the messages meet the side condition (`avoids_tt`, `avoids_ff`), but the context reads the
-coin coordinate, and the conclusion fails against every distinguisher: the exclusive or of the
-ciphertext and the coins is the message. -/
+and the messages meet the side conditions (`EncSymbols.avoids_tt`, `equalLength`), but the
+context reads the coin coordinate, and the conclusion fails against every distinguisher: the
+exclusive or of the ciphertext and the coins is the message. -/
 theorem not_valid_enc_coinReused :
     ¬ Valid (fun M => M = encModel pad) (fun M => AdvClass.all M) (Γ := []) []
       (.equiv ((encSymbols .s).challenge .tt coinCtx)

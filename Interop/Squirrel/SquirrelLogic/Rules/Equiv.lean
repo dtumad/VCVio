@@ -19,7 +19,8 @@ assumption, sound over `Valid` for every model restriction and every adversary c
   (G.Equiv:FA-App, two entries may be replaced by the application of one to the other). BC14's
   FA for an honest symbol `f` is `equiv_fn` followed by `equiv_app`;
 * `Valid.equiv_tail` (Restr), `Valid.equiv_dup` (Dup), `Valid.equiv_ite` (If);
-* `Valid.equiv_rewrite`: rewriting an entry under an overwhelming equality `[t = t']`.
+* `Valid.equiv_rewrite`: rewriting an entry under an overwhelming equality `[t = t']`;
+* `Valid.equiv_eq_self` (BC14's Eq1): `EQ(t, t)` may be replaced by `true`.
 
 Each rule reads its premise and conclusion through `Form.holds_equiv` and applies one law of
 `SquirrelLogic.Indist`, whose proof is a named reduction and an equality of advantages at every
@@ -120,6 +121,18 @@ permutes, projects and duplicates entries. -/
 theorem equiv_rename {τs' : List (Ty B)} (r : Renaming τs' τs) (h : Valid R C Θ (.equiv u v)) :
     Valid R C Θ (.equiv (Env.rename r u) (Env.rename r v)) :=
   fun M hl hR env hΘ => Form.holds_equiv.2 ((Form.holds_equiv.1 (h M hl hR env hΘ)).rename r)
+
+/-- **Eq1** (BC14 Fig. 2): `EQ(t, t), u⃗ ∼ true, u⃗`. The two vectors have the same values at
+every tape. -/
+theorem equiv_eq_self (t : FTerm D Γ τ) (u : Vec D Γ τs) :
+    Valid R C Θ (.equiv (Env.cons (FTerm.eq t t) u) (Env.cons FTerm.tt u)) := by
+  intro M _ _ env _
+  refine Form.holds_equiv.2 fun A _ => negligible_of_zero fun η => ENNReal.absDiff_eq_zero.2 ?_
+  have h : Vec.rv M (C M) (Env.cons (FTerm.eq t t) u) env =
+      Vec.rv M (C M) (Env.cons FTerm.tt u) env := by
+    simp only [Vec.rv_cons, FTerm.denote_eq, FTerm.denote_tt]
+    congr 1
+  rw [h]
 
 /-- **FA** (BC14) for an honest symbol of arrow type: FA-Fn, then FA-App. -/
 theorem equiv_fa {b : Ty B} (f : D.Fn (.arrow a b)) {t s : FTerm D Γ a}

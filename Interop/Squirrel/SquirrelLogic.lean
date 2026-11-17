@@ -16,3 +16,4 @@ public import SquirrelLogic.Derivation
 public import SquirrelLogic.Examples
 public import SquirrelLogic.TwoTimePad
 public import SquirrelLogic.EncExamples
+public import SquirrelLogic.WorkedEnc
