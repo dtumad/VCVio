@@ -29,6 +29,11 @@ The encryption rule (`Valid.equiv_enc`) is a constructor, at the instances that 
 `enc` admits; its syntactic side condition, distinct key and coin names, is a premise of the
 constructor. `Derivation.sound` takes the semantic hypotheses of each admitted instance
 (`EncInstance.Holds`). With `enc` empty, derivations are those of the structural fragment.
+G.PRF (`Valid.equiv_prf`) is a constructor in the same way, at the instances that the parameter
+`prf` admits (`equivPRF`), with its syntactic side conditions (`PRFInstance.Syntactic`) and
+`[ψ_msg]` as premises; `Derivation.sound` takes the semantic hypotheses of each admitted instance
+(`PRFInstance.Holds`). PRF-Simple is derived from G.PRF, Perm, FreshL and Rw-Equiv as CCS26
+derives it (`Derivation.nonDedPRF`), so it is not a constructor.
 
 The secrecy rules of CCS26 Fig. 3 (Neg1, Neg2, Ineq, Trans, WeakL, WeakR, Rw-Equiv), `▷` from
 `adv` (`dedApps`), FreshR and FreshL (Fig. 11) are constructors. Rw-Equiv takes the ground type of

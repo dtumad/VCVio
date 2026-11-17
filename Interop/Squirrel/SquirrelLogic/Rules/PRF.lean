@@ -12,9 +12,65 @@ public import VCVio.CryptoFoundations.PRF
 import SquirrelLogic.ProductTape
 import VCVio.OracleComp.EvalDist.Measure
 import VCVio.OracleComp.Constructions.SampleableType.Measure
+import VCVio.OracleComp.QueryTracking.RandomOracle.DependentTable
 
 /-!
-# The PRF rule without an oracle on the left
+# The PRF rules without an oracle on the left
+
+LICS23's G.PRF (p. 29) and CCS26's G.PRF and PRF-Simple (Fig. 4 and Fig. 11, pp. 7 and 17):
+
+```
+u⃗, h(m, k) ∼ u⃗, n                      (G.PRF)
+u⃗ ⊬ v  ⟹  u⃗, h(m, k) ⊬ v               (PRF-Simple)
+```
+
+under `ψ_key` (the key occurs only as the key of `h`), `[ψ_msg]` (no other hash with key `k` is
+of `m`), `⊢pptm` and a fresh name `n` of the hash type. Both come from VCVio's PRF game
+(`prfAdvantage`) through named reductions.
+
+* `PRFSymbols.scheme P M η` is the PRF that a model implements: the key is the bit block of the
+  key name, drawn uniformly, and `eval kc x = h(x, k)` at the key's sample.
+* `Model.UniformSampler M τ`: names of the hash type are uniform, so that a fresh name is
+  distributed as a random function's value; `Model.uniformSampler` is then VCVio's canonical
+  sampler of the hash type, the one the lazily sampled random function uses
+  (`PRFSymbols.prfAdv`).
+* **The reductions** `PRFSymbols.hashReduction` and `PRFSymbols.freshReduction` are
+  `PRFAdversary` programs built by handler composition: they draw both tapes, run the compiled
+  vector and message (`PRFSymbols.prog`, `SquirrelLogic.Compile`) through the handler
+  `PRFSymbols.fwd`, which answers coins and the tape from the drawn tapes and forwards each hash
+  query to the PRF oracle, and log the queries (VCVio's `withQueryLog`). The first queries the
+  oracle at the message's value; the second draws a fresh value with the sampler of the hash type.
+  Each runs the distinguisher on the vector and the challenge, and returns `false` if the message
+  was hashed before the challenge.
+
+## The proof, in three hops
+
+1. **Real world** (`prEvent_prfRealExperiment_hashReduction`,
+   `prEvent_prfRealExperiment_freshReduction`): against the keyed hash, the forwarded run is the
+   run with the answers of the tapes and the key (`simulateQ_prfRealQueryImpl_fwd`), which the
+   adequacy of the compiled reading turns into the ordinary reading. Writing the PRF key into the
+   key's coordinate and the fresh value into `n`'s coordinate is a uniform tape
+   (`prEvent_uniformSample_update_update`), at which the conclusion's vectors have those values
+   (`close_apply_couple`).
+2. **Ideal world** (`prEvent_prfIdealExperiment_hashReduction`): against a lazily sampled random
+   function, the two reductions output `true` equally often. The function's cache grows only at
+   logged messages (`eq_none_of_mem_support_run`), so where the message was not logged its value
+   is a fresh draw, as the second reduction's challenge is.
+3. **The bad event**: where `ψ_msg` holds, the compiled run never hashes the message
+   (`PRFSymbols.cbv_guard`), so the guard of the reductions costs at most `Pr[¬ψ_msg]`.
+
+`PRFSymbols.advantage_le` is the concrete statement: at every `η` the advantage is at most the two
+PRF advantages plus `Pr[ψ_msg = false]`. `Valid.equiv_prf` is G.PRF, `Valid.nonDed_prf` is
+PRF-Simple, derived from G.PRF, Perm, FreshL and Rw-Equiv as CCS26 derives it (p. 17), and
+`PRFInstance` packages G.PRF's data for derivations. `PRFSymbols.prfAdv_eq_zero_of_bijective`: a
+hash that is a uniform function under a uniform key, on a finite domain, has PRF advantage zero.
+
+## The fragment
+
+The vector and the message are closed terms with calls, first order, in the `⊢pptm` fragment,
+with entries of Boolean or base type: the distinguisher receives values, not functions, and
+`ψ_msg` is generated without binders. Higher-order entries and the oracle `o_h^k` on the left are
+part 3's rules (PRF.R, PRF.L).
 -/
 
 public section
@@ -295,6 +351,42 @@ theorem prfAdv_eq (hU : M.UniformSampler P.hTy) (adv : PRFAdversary (P.Dom M η)
   change MeasureTheory.Measure.boolDist _ _ = _
   rw [MeasureTheory.Measure.boolDist, prEvent_eq_evalDist_singleton,
     prEvent_eq_evalDist_singleton]
+
+/-- **A perfect PRF.** If the hash under a uniform key is a uniform function on a finite domain,
+every distinguisher has PRF advantage zero: the real experiment draws a uniform function table,
+and the lazily sampled random function has the law of one
+(`OracleComp.evalDist_simulateQ_romImpl_run'_eq_completeTable`). -/
+theorem prfAdv_eq_zero_of_bijective (hU : M.UniformSampler P.hTy) [Finite (P.Dom M η)]
+    (hb : Function.Bijective fun (kc : M.Coin η P.keyTy) (x : P.Dom M η) =>
+      M.fn η P.hOf x (M.sample η P.keyTy kc))
+    (adv : PRFAdversary (P.Dom M η) (P.Rng M η)) : P.prfAdv M η hU adv = 0 := by
+  let _ : DecidableEq (P.Dom M η) := Classical.decEq _
+  let _ : Fintype (P.Dom M η) := Fintype.ofFinite _
+  let rng : SampleableType (P.Rng M η) := M.uniformSampler P.hTy hU η
+  let _ : SampleableType (P.Dom M η → P.Rng M η) :=
+    @SampleableType.piOfFintype _ _ (fun _ : P.Dom M η => P.Rng M η)
+      (fun _ => Fintype.ofFinite _) fun _ => inferInstance
+  let X : (P.Dom M η → P.Rng M η) → ProbComp Bool := fun g =>
+    simulateQ (unifFwdAnswerImpl (QueryImpl.ofFn (completeTable ∅ g))) adv
+  have hreal : (P.scheme M η).prfRealExperiment adv =ᵈ ($ᵗ (P.Dom M η → P.Rng M η)) >>= X := by
+    refine EvalDistEq.trans ?_
+      ((SampleableType.map_uniformSample_evalDistEq_of_bijective hb).bind_left X)
+    rw [bind_map_left]
+    refine EvalDistEq.bind_right _ fun kc => ?_
+    have himpl : (P.scheme M η).prfRealQueryImpl kc = unifFwdAnswerImpl (QueryImpl.ofFn
+        (completeTable ∅ fun x => M.fn η P.hOf x (M.sample η P.keyTy kc))) := by
+      funext t
+      rcases t with n | x
+      · rfl
+      · rfl
+    change simulateQ _ adv =ᵈ X _
+    rw [himpl]
+  have hideal : @prfIdealExperiment _ _ (Classical.decEq _) rng adv =ᵈ
+      ($ᵗ (P.Dom M η → P.Rng M η)) >>= X :=
+    let _ : MeasurableSpace Bool := ⊤
+    EvalDistEq.of_evalDist_eq (evalDist_simulateQ_romImpl_run'_eq_completeTable adv ∅)
+  rw [prfAdv_eq, ENNReal.absDiff_eq_zero]
+  exact (hreal.prEvent_eq _).trans (hideal.prEvent_eq _).symm
 
 /-- **G.PRF at `η`** (LICS23 p. 29; CCS26 Fig. 11 and App. C.3). The advantage of a distinguisher
 between `u⃗, h(m, k)` and `u⃗, n(i)` is at most the PRF advantages of the two named reductions
