@@ -15,7 +15,10 @@ A model of a declaration environment (LICS23 §II-A.2, §II-A.3, §II-B) gives, 
 parameter `η`,
 
 * each base type a nonempty set of bitstrings: a domain with its injective encoding;
-* finite, nonempty sets of attacker and honest random tapes, `TapeA η` and `TapeH η`;
+* the attacker tape, a bitstring `ρa` of model-chosen length `lenA η` (`Model.TapeA`; LICS23
+  §II-A.3 takes both tapes to be finite bitstrings "long enough" for the machines considered);
+* for each type, the number of honest-tape bits a name of that type reads and a sampler mapping
+  those bits to a value;
 * each name a function of its index and the honest tape;
 * each honest function symbol a value, and each attacker function symbol a function of the
   attacker tape.
@@ -26,10 +29,12 @@ parameter `η`,
 needs a decidable test. Equality and the quantifiers range over function spaces, so they decide
 their propositions classically.
 
-Names follow LICS23 §II-B.2 structurally: the honest tape is a product with one uniform coin per
-name and index, a name reads its own coordinate, and names of one type share a sampler. So
-samplings for distinct name-index pairs are independent and those of one type are identically
-distributed. That samplers run in polynomial time is not a restriction here.
+Names follow LICS23 §II-B.2 structurally: the honest tape is a product with one uniform bit block
+per name and index, a name reads its own block and runs the sampler of its type on it, and names
+of one type share a sampler. So samplings for distinct name-index pairs are independent and those
+of one type are identically distributed; and a machine that reads the same number of bits from
+its own tape and runs the sampler produces a name's distribution. That samplers run in
+polynomial time is not a restriction here.
 
 ## Main results
 
@@ -39,8 +44,10 @@ distributed. That samplers run in polynomial time is not a restriction here.
 * `denote_eq_app_of_eq`: function application is a congruence for local equality;
 * `Ty.finite_value`, `Ty.value_eq_of_fixed`, `Model.isLarge_of_hasLabel`: what the labels give.
 
-`Ty.appVals` applies a curried function of a tuple (`Ty.arrows`) to a vector of values, and
-`Ty.postcomp` composes after it; they read CCS26's attacker functions of tuples.
+`Ty.appVals` applies a curried function of a tuple (`Ty.arrows`) to a vector of values,
+`Ty.curryVals` is its inverse, and `Ty.postcomp` composes after it; they read CCS26's attacker
+functions of tuples. `Ty.apply` and `Ty.curry` do the same for the argument spine `Ty.args` of a
+type, with result `Ty.res`: this is how a machine queries an input of order at most one.
 -/
 
 public section
@@ -86,6 +93,151 @@ variable {B : Type}
   | [], _, _ => rfl
   | _ :: _, g, e => Ty.appVals_postcomp k (g (e _ .zero)) _
 
+/-- A curried function of the tuple `τs`, from a function of a vector of arguments: the inverse
+of `Ty.appVals`. -/
+@[expose] def Ty.curryVals {carrier : B → ℕ → Set (List Bool)} {η : ℕ} {β : Ty B} :
+    {τs : List (Ty B)} → (Env (Ty.Value carrier η) τs → β.Value carrier η) →
+      (Ty.arrows τs β).Value carrier η
+  | [], g => g Env.empty
+  | _ :: _, g => fun x => Ty.curryVals fun e => g (Env.cons x e)
+
+/-- A vector is its first entry followed by the rest. -/
+theorem Env.cons_head_tail {S : Type} {V : S → Type} {a : S} {Γ : List S}
+    (e : Env V (a :: Γ)) : Env.cons (e _ .zero) (fun _ x => e _ (.succ x)) = e := by
+  funext b x
+  cases x <;> rfl
+
+@[simp] theorem Ty.appVals_curryVals {carrier : B → ℕ → Set (List Bool)} {η : ℕ} {β : Ty B} :
+    ∀ {τs : List (Ty B)} (g : Env (Ty.Value carrier η) τs → β.Value carrier η)
+      (e : Env (Ty.Value carrier η) τs), Ty.appVals (Ty.curryVals g) e = g e
+  | [], g, e => by rw [Env.eq_empty e]; rfl
+  | _ :: _, g, e => by
+    rw [← Env.cons_head_tail e, Ty.appVals_cons]
+    exact Ty.appVals_curryVals (fun e' => g (Env.cons _ e')) _
+
+theorem Ty.postcomp_curryVals {carrier : B → ℕ → Set (List Bool)} {η : ℕ} {β γ : Ty B}
+    (k : β.Value carrier η → γ.Value carrier η) :
+    ∀ {τs : List (Ty B)} (g : Env (Ty.Value carrier η) τs → β.Value carrier η),
+      Ty.postcomp k (Ty.curryVals g) = Ty.curryVals (k ∘ g)
+  | [], _ => rfl
+  | _ :: _, g => funext fun x => Ty.postcomp_curryVals k fun e => g (Env.cons x e)
+
+/-! ## Argument spines
+
+A value of `τ = a₁ → … → aₖ → b`, with `b` a Boolean or base type, is used by applying it to all
+its arguments: `Ty.args τ = [a₁, …, aₖ]` and `Ty.res τ = b`. A machine queries an input of type
+`τ` with a vector of `Ty.args τ` and receives a value of `Ty.res τ` (LICS23 §II-C.1, the query
+tape). `τ` has order at most one when its arguments are Booleans or base types (`Ty.order`). -/
+
+/-- The argument types of `τ`. -/
+@[expose] def Ty.args : Ty B → List (Ty B)
+  | .arrow a b => a :: b.args
+  | _ => []
+
+/-- The type of `τ` applied to all its arguments: a Boolean or base type. -/
+@[expose] def Ty.res : Ty B → Ty B
+  | .arrow _ b => b.res
+  | τ => τ
+
+/-- The order of a type: Booleans and base types have order zero, and `a → b` has order
+`max (order a + 1) (order b)`. -/
+@[expose] def Ty.order : Ty B → ℕ
+  | .arrow a b => max (a.order + 1) b.order
+  | _ => 0
+
+/-- Types of order zero are the Boolean and base types. -/
+theorem Ty.isGround_iff_order_eq_zero : ∀ {τ : Ty B}, τ.IsGround ↔ τ.order = 0
+  | .bool => iff_of_true trivial rfl
+  | .base _ => iff_of_true trivial rfl
+  | .arrow _ _ => iff_of_false id (by simp [Ty.order])
+
+/-- The argument of a function of order at most one is a Boolean or base type. -/
+theorem Ty.isGround_of_order_arrow_le_one {a b : Ty B} (h : (Ty.arrow a b).order ≤ 1) :
+    a.IsGround :=
+  Ty.isGround_iff_order_eq_zero.2 (by simp only [Ty.order] at h; omega)
+
+section Spine
+
+variable {carrier : B → ℕ → Set (List Bool)} {η : ℕ}
+
+/-- Apply a value of `τ` to all its arguments. -/
+@[expose] def Ty.apply : {τ : Ty B} → τ.Value carrier η → Env (Ty.Value carrier η) τ.args →
+    τ.res.Value carrier η
+  | .bool, v, _ => v
+  | .base _, v, _ => v
+  | .arrow _ b, f, q => Ty.apply (τ := b) (f (q _ .zero)) fun _ x => q _ (.succ x)
+
+/-- The value of `τ` whose application to every argument vector is `g`: the inverse of
+`Ty.apply`. -/
+@[expose] def Ty.curry : {τ : Ty B} → (Env (Ty.Value carrier η) τ.args → τ.res.Value carrier η) →
+    τ.Value carrier η
+  | .bool, g => g Env.empty
+  | .base _, g => g Env.empty
+  | .arrow _ b, g => fun x => Ty.curry (τ := b) fun q => g (Env.cons x q)
+
+@[simp] theorem Ty.apply_curry : ∀ {τ : Ty B}
+    (g : Env (Ty.Value carrier η) τ.args → τ.res.Value carrier η) (q : Env _ τ.args),
+    Ty.apply (Ty.curry g) q = g q
+  | .bool, g, q => by rw [Env.eq_empty q]; rfl
+  | .base _, g, q => by rw [Env.eq_empty q]; rfl
+  | .arrow a b, g, q =>
+    (Ty.apply_curry (τ := b) (fun q' => g (Env.cons (q _ .zero) q')) _).trans
+      (congrArg g (Env.cons_head_tail (Γ := b.args) (a := a) q))
+
+@[simp] theorem Ty.curry_apply : ∀ {τ : Ty B} (v : τ.Value carrier η),
+    Ty.curry (Ty.apply v) = v
+  | .bool, _ => rfl
+  | .base _, _ => rfl
+  | .arrow _ b, f => funext fun x => by
+    change Ty.curry (τ := b) (fun q => Ty.apply (f x) q) = f x
+    exact Ty.curry_apply (f x)
+
+/-- The arguments of a Boolean or base type: none. -/
+@[expose] def Ty.groundArgs : {τ : Ty B} → τ.IsGround → Env (Ty.Value carrier η) τ.args
+  | .bool, _ => Env.empty
+  | .base _, _ => Env.empty
+  | .arrow _ _, h => h.elim
+
+/-- A Boolean or base type is its own result type. -/
+@[expose] def Ty.ofRes : {τ : Ty B} → τ.IsGround → τ.res.Value carrier η → τ.Value carrier η
+  | .bool, _, v => v
+  | .base _, _, v => v
+  | .arrow _ _, h, _ => h.elim
+
+@[simp] theorem Ty.ofRes_apply_groundArgs : ∀ {τ : Ty B} (h : τ.IsGround) (v : τ.Value carrier η),
+    Ty.ofRes h (Ty.apply v (Ty.groundArgs h)) = v
+  | .bool, _, _ => rfl
+  | .base _, _, _ => rfl
+  | .arrow _ _, h, _ => h.elim
+
+/-- The arguments of `τ₁ → … → τₙ → ρ`, split into those of the tuple and those of `ρ`. -/
+@[expose] def Ty.splitArgs {ρ : Ty B} : (as : List (Ty B)) →
+    Env (Ty.Value carrier η) (Ty.arrows as ρ).args →
+      Env (Ty.Value carrier η) as × Env (Ty.Value carrier η) ρ.args
+  | [], q => (Env.empty, q)
+  | _ :: as, q =>
+    let r := Ty.splitArgs as fun _ x => q _ (.succ x)
+    (Env.cons (q _ .zero) r.1, r.2)
+
+/-- `τ₁ → … → τₙ → ρ` and `ρ` have the same result type. -/
+@[expose] def Ty.resArrows {ρ : Ty B} : (as : List (Ty B)) → ρ.res.Value carrier η →
+    (Ty.arrows as ρ).res.Value carrier η
+  | [], v => v
+  | _ :: as, v => Ty.resArrows as v
+
+/-- Applying a curried function of the tuple `as` and of `ρ`'s arguments to the arguments of
+`τ₁ → … → τₙ → ρ` applies it to the two parts of the split. -/
+theorem Ty.apply_curryVals_curry {ρ : Ty B} : ∀ (as : List (Ty B))
+    (F : Env (Ty.Value carrier η) as → Env (Ty.Value carrier η) ρ.args → ρ.res.Value carrier η)
+    (q : Env (Ty.Value carrier η) (Ty.arrows as ρ).args),
+    Ty.apply (Ty.curryVals (β := ρ) fun a => Ty.curry (F a)) q =
+      Ty.resArrows as (F (Ty.splitArgs as q).1 (Ty.splitArgs as q).2)
+  | [], F, q => Ty.apply_curry (F Env.empty) q
+  | _ :: as, F, q =>
+    Ty.apply_curryVals_curry as (fun a => F (Env.cons (q _ .zero) a)) fun _ x => q _ (.succ x)
+
+end Spine
+
 /-- Random tapes: finite, nonempty sets for the attacker and for honest samplings. The uniform
 distribution on them is VCVio's `$ᵗ`. -/
 structure TapeModel where
@@ -103,40 +255,47 @@ attribute [instance] TapeModel.sampleableA TapeModel.sampleableH
 /-- Both tapes. -/
 abbrev TapeModel.Tape (T : TapeModel) (η : ℕ) : Type := T.TapeA η × T.TapeH η
 
-/-- A model of a declaration environment. The honest tape is not a field: it is the product of
-one coin per name and index (`Model.TapeH`), and a name reads its own coordinate. -/
+/-- A model of a declaration environment (LICS23 §II-A.3, §II-B). The tapes are bitstrings, as in
+LICS23: the attacker tape `ρa` has a model-chosen length `lenA η`, and the honest tape is not a
+field but the product of one bit block per name and index (`Model.TapeH`), which the name reads
+and passes to the sampler of its type. -/
 structure Model (D : Decl B) where
-  /-- The attacker's random tapes. -/
-  TapeA : ℕ → Type
-  /-- Attacker tapes are finite and nonempty, with their uniform sampler. -/
-  [sampleableA : ∀ η, SampleableType (TapeA η)]
+  /-- The length of the attacker tape at `η`. -/
+  lenA : ℕ → ℕ
   /-- Each base type is a nonempty set of bitstrings at each `η`. -/
   carrier : B → ℕ → Set (List Bool)
   /-- Carriers are nonempty. -/
   nonempty : ∀ b η, (carrier b η).Nonempty
-  /-- The coins of the sampler for names of type `b`. -/
-  Coin : ℕ → Ty B → Type
-  /-- Coins are finite and nonempty, with their uniform sampler. -/
-  [sampleableCoin : ∀ η b, SampleableType (Coin η b)]
-  /-- The sampler for names of type `b`: names of one type follow one distribution. -/
-  sample : ∀ η (b : Ty B), Coin η b → b.Value carrier η
+  /-- The number of honest-tape bits that a name of type `b` reads. -/
+  coinLen : ℕ → Ty B → ℕ
+  /-- The sampler for names of type `b`, run on the name's bits: names of one type follow one
+  distribution. -/
+  sample : ∀ η (b : Ty B), (Fin (coinLen η b) → Bool) → b.Value carrier η
   /-- Name indices are finite in the model. -/
   finite_index : ∀ η {a b : Ty B}, D.Name a b → Finite (a.Value carrier η)
   /-- An honest function symbol is a fixed value at each `η`. -/
   fn : ∀ η {τ : Ty B}, D.Fn τ → τ.Value carrier η
   /-- An attacker function symbol is computed from the attacker tape. -/
-  att : ∀ η (f : D.Att), TapeA η → (D.attTy f).Value carrier η
-
-attribute [instance] Model.sampleableA Model.sampleableCoin
+  att : ∀ η (f : D.Att), (Fin (lenA η) → Bool) → (D.attTy f).Value carrier η
 
 variable {D : Decl B}
+
+/-- The attacker tape at `η`: a bitstring of length `lenA η` (LICS23 §II-A.3). -/
+abbrev Model.TapeA (M : Model D) (η : ℕ) : Type := Fin (M.lenA η) → Bool
+
+/-- The bit block that a name of type `τ` reads at `η`. -/
+abbrev Model.Coin (M : Model D) (η : ℕ) (τ : Ty B) : Type := Fin (M.coinLen η τ) → Bool
+
+/-- Bit `i` of the attacker tape; past its end, `false`. -/
+@[expose] def Model.readBit (M : Model D) {η : ℕ} (ρa : M.TapeA η) (i : ℕ) : Bool :=
+  if h : i < M.lenA η then ρa ⟨i, h⟩ else false
 
 /-- The coordinates of the honest tape at `η`: a name with its types, and an index. -/
 abbrev Model.Slot (M : Model D) (η : ℕ) : Type :=
   (n : (a : Ty B) × (b : Ty B) × D.Name a b) × n.1.Value M.carrier η
 
-/-- The honest tape at `η`: an independent coin for every name and index (LICS23 §II-B.2). It is
-reducible, so that lemmas about uniform dependent products, such as
+/-- The honest tape at `η`: an independent bit block for every name and index (LICS23 §II-B.2).
+It is reducible, so that lemmas about uniform dependent products, such as
 `prEvent_uniformSample_update_update`, apply to it and rewriting inside them stays type-correct. -/
 @[expose, reducible] def Model.TapeH (M : Model D) (η : ℕ) : Type :=
   (k : M.Slot η) → M.Coin η k.1.2.1

@@ -62,16 +62,17 @@ open IPFunctor IPFunctor.ScopedSignature AsymmEncAlg TwoTimePad
   encOf := ()
   lenOf := ()
 
-/-- Coins are bits and a pad of type `bool` is its coin; the honest constant of type `bool` is
+/-- Each name reads one bit, and a pad of type `bool` is that bit; the honest constant of type
+`bool` is
 `false`, the public key of a key is the key, encryption is `enc`, and every message has the same
 length. -/
 @[expose] noncomputable def encModel (enc : Bool → Bool → Bool → Bool) : Model decl where
-  TapeA _ := Unit
+  lenA _ := 0
   carrier b := b.elim
   nonempty b := b.elim
-  Coin _ _ := Bool
+  coinLen _ _ := 1
   sample η b := match b with
-    | .bool => id
+    | .bool => fun c => c 0
     | b => fun _ => Classical.choice (b.nonempty_value (fun b => b.elim) η)
   finite_index _ := fun n => match n with | .r | .s => inferInstanceAs (Finite Bool)
   fn η τ _ := match τ with
@@ -81,6 +82,11 @@ length. -/
     | .arrow .bool (.arrow .bool .bool) => fun _ => id
     | τ => Classical.choice (τ.nonempty_value (fun b => b.elim) η)
   att _ f := f.elim
+
+/-- The bit of the honest tape at a coordinate: every name reads one bit. -/
+abbrev encBit {enc : Bool → Bool → Bool → Bool} {η : ℕ} (ρh : (encModel enc).TapeH η)
+    (k : (encModel enc).Slot η) : Bool :=
+  ρh k ⟨0, Nat.one_pos⟩
 
 theorem encModel_respectsLabels (enc : Bool → Bool → Bool → Bool) :
     (encModel enc).RespectsLabels := fun b => b.elim
@@ -108,11 +114,12 @@ theorem pad_branch_evalDistEq (nk : Name .bool .bool) (η : ℕ)
     IND_CPA_OneTime_Branch _ adv b =ᵈ IND_CPA_OneTime_Branch _ adv true := by
   have hmask : ∀ pk m, ((encSymbols nk).scheme (encModel pad) η).encrypt pk m =ᵈ
       ($ᵗ Bool : ProbComp Bool) := fun pk m => by
-    change (do let rc ← ($ᵗ Bool : ProbComp Bool); pure (xor m rc)) =ᵈ _
+    change (do let rc ← ($ᵗ (Fin 1 → Bool) : ProbComp (Fin 1 → Bool)); pure (xor m (rc 0))) =ᵈ _
     rw [bind_pure_comp]
     refine SampleableType.map_uniformSample_evalDistEq_of_bijective
-      ⟨fun a c h => ?_, fun c => ⟨xor m c, ?_⟩⟩
-    · cases m <;> cases a <;> cases c <;> simp_all
+      ⟨fun a c h => funext fun i => ?_, fun c => ⟨fun _ => xor m c, ?_⟩⟩
+    · rw [Subsingleton.elim (α := Fin 1) i 0]
+      cases m <;> cases ha : a 0 <;> cases hc : c 0 <;> simp_all
     · cases m <;> cases c <;> rfl
   unfold IND_CPA_OneTime_Branch
   refine EvalDistEq.bind_right _ fun ⟨pk, _⟩ => EvalDistEq.bind_right _ fun ⟨m₁, m₂, st⟩ => ?_
@@ -197,13 +204,13 @@ theorem not_valid_enc_keyIsCoin :
   simp only [advantage, EncSymbols.rv_challenge, Env.cons_succ, Env.cons_zero]
   refine (ENNReal.absDiff_zero_right 1).symm.trans (congrArg₂ ENNReal.absDiff ?_ ?_)
   · refine (OracleComp.prEvent_eq_one_of_forall_mem_support _ _ fun ρ _ => ?_).symm
-    change xor (ρ.2 ((encSymbols .r).keySlot (encModel pad) η))
-      (xor true (ρ.2 ((encSymbols .r).keySlot (encModel pad) η))) = true
-    cases ρ.2 ((encSymbols .r).keySlot (encModel pad) η) <;> rfl
+    change xor (encBit ρ.2 ((encSymbols .r).keySlot (encModel pad) η))
+      (xor true (encBit ρ.2 ((encSymbols .r).keySlot (encModel pad) η))) = true
+    cases encBit ρ.2 ((encSymbols .r).keySlot (encModel pad) η) <;> rfl
   · refine (prEvent_eq_zero_of_forall_not _ _ fun ρ => ?_).symm
-    change xor (ρ.2 ((encSymbols .r).keySlot (encModel pad) η))
-      (xor false (ρ.2 ((encSymbols .r).keySlot (encModel pad) η))) ≠ true
-    cases ρ.2 ((encSymbols .r).keySlot (encModel pad) η) <;> exact Bool.false_ne_true
+    change xor (encBit ρ.2 ((encSymbols .r).keySlot (encModel pad) η))
+      (xor false (encBit ρ.2 ((encSymbols .r).keySlot (encModel pad) η))) ≠ true
+    cases encBit ρ.2 ((encSymbols .r).keySlot (encModel pad) η) <;> exact Bool.false_ne_true
 
 /-- The coins `r`, as a context entry in which the public key is free but unused. -/
 @[expose] def coinCtx : Vec decl [.loc .bool] [.bool] :=
@@ -224,12 +231,12 @@ theorem not_valid_enc_coinReused :
   simp only [advantage, EncSymbols.rv_challenge, Env.cons_succ, Env.cons_zero]
   refine (ENNReal.absDiff_zero_right 1).symm.trans (congrArg₂ ENNReal.absDiff ?_ ?_)
   · refine (OracleComp.prEvent_eq_one_of_forall_mem_support _ _ fun ρ _ => ?_).symm
-    change xor (xor true (ρ.2 ((encSymbols .s).coinSlot (encModel pad) η)))
-      (ρ.2 ((encSymbols .s).coinSlot (encModel pad) η)) = true
-    cases ρ.2 ((encSymbols .s).coinSlot (encModel pad) η) <;> rfl
+    change xor (xor true (encBit ρ.2 ((encSymbols .s).coinSlot (encModel pad) η)))
+      (encBit ρ.2 ((encSymbols .s).coinSlot (encModel pad) η)) = true
+    cases encBit ρ.2 ((encSymbols .s).coinSlot (encModel pad) η) <;> rfl
   · refine (prEvent_eq_zero_of_forall_not _ _ fun ρ => ?_).symm
-    change xor (xor false (ρ.2 ((encSymbols .s).coinSlot (encModel pad) η)))
-      (ρ.2 ((encSymbols .s).coinSlot (encModel pad) η)) ≠ true
-    cases ρ.2 ((encSymbols .s).coinSlot (encModel pad) η) <;> exact Bool.false_ne_true
+    change xor (xor false (encBit ρ.2 ((encSymbols .s).coinSlot (encModel pad) η)))
+      (encBit ρ.2 ((encSymbols .s).coinSlot (encModel pad) η)) ≠ true
+    cases encBit ρ.2 ((encSymbols .s).coinSlot (encModel pad) η) <;> exact Bool.false_ne_true
 
 end SquirrelLogic.EncExamples
