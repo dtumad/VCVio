@@ -8,6 +8,7 @@ public import SquirrelLogic.Model
 public import SquirrelLogic.Machine
 public import SquirrelLogic.RandomVariable
 public import SquirrelLogic.Indist
+public import SquirrelLogic.TapeBounds
 public import SquirrelLogic.Global
 public import SquirrelLogic.Secrecy
 public import SquirrelLogic.Avoids

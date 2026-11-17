@@ -17,7 +17,7 @@ public import SquirrelLogic.Rules.Fresh
 Derivations in the fragment of LICS23 proved sound in `SquirrelLogic.Global` and
 `SquirrelLogic.Rules`, as data: each constructor is one rule, indexed by the context, the
 hypotheses and the conclusion. `Derivation.sound` maps every derivation to validity over every
-model restriction and every adversary class, one rule lemma per constructor. Name renaming is the
+model restriction and every class of machines, one rule lemma per constructor. Name renaming is the
 constructor for a bijection of names (`Valid.equiv_renameNames_of_equiv`), which holds in every
 model. BC14's If1 (`equivIf1`) is sound by the case split (`equivCaseStudy`), but is a
 constructor of its own: deriving it would rewrite `if c' then z else z` to `z`, and the fragment
@@ -32,6 +32,10 @@ The secrecy rules of CCS26 Fig. 3 (Neg1, Neg2, Ineq, Trans, WeakL, WeakR, Rw-Equ
 `adv` (`dedApps`) and FreshR (Fig. 11) are constructors. Rw-Equiv takes the ground type of its
 right side as a premise, and FreshR the label `large` and the freshness of its closed vector in
 every model (`FTerm.Avoids`), so both are sound in every model.
+
+Formulas carry the order bounds of CSF24 and CCS26 (`Ty.IndistOrder`, `Ty.AdvOrder`,
+`Ty.SecrecyOrder`). A constructor's conclusion carries the bound derived from its premises', and
+a constructor that adds an entry or starts from no premise takes the conclusion's bound.
 -/
 
 public section
@@ -215,7 +219,8 @@ inductive Derivation (D : Decl B) (enc : EncInstance D → Prop) :
 variable {D : Decl B}
 
 /-- **Soundness** of the fragment: a derivable sequent is valid for every restriction on models
-and every adversary class under which the admitted encryption instances meet their hypotheses. -/
+and every class of machines under which the admitted encryption instances meet their
+hypotheses. -/
 theorem Derivation.sound {enc : EncInstance D → Prop} (R : Model D → Prop)
     (C : ∀ M : Model D, AdvClass M) (henc : ∀ e, enc e → e.Holds R C) :
     {Γ : List (Kind B)} → {Θ : List (Form D Γ)} → {F : Form D Γ} →

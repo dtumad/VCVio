@@ -11,17 +11,17 @@ import VCVio.OracleComp.EvalDist.Measure
 /-!
 # Satisfiability checks and a derived rule
 
-* `Model.trivial D` interprets every base type as the single empty bitstring, over one-element
-  tapes; it respects every label but `large` (`Model.trivial_respectsLabels`), so for a
+* `Model.trivial D` interprets every base type as the single empty bitstring, over empty tapes;
+  it respects every label but `large` (`Model.trivial_respectsLabels`), so for a
   declaration with no `large` base type validity does not quantify over an empty class of
   models. A `large` base type has a carrier that grows with `η`, which a type labelled `finite` and
   `fixed` cannot have, so some declarations have no model.
 * `Valid.not_box_ff`: `[false]` is not valid, so validity is not trivial either.
 * `Valid.all_inst`: instantiating a valid global universal, derived from G.Cut, G.L-∀̃ and
   G.Axiom.
-* `Valid.not_equiv_tt_ff`: `true ∼ false` is not valid against all distinguishers, so the rules
-  about `∼` do not hold vacuously.
-
+* `Valid.not_equiv_tt_ff`: `true ∼ false` is not valid against `AdvClass.all`, the machines with
+  a polynomial read bound: the machine that returns its input (`Machine.input`) has advantage one.
+  So the rules about `∼` do not hold vacuously.
 -/
 
 public section

@@ -22,7 +22,7 @@ each reading its own uniform bit of the honest tape. Then:
 * `TwoTimePad.valid_fresh`: `enc false r ∼ enc true r` holds against every class of
   distinguishers (the pad is fresh);
 * `TwoTimePad.not_valid_reuse`: `enc false r, enc false r ∼ enc true r, enc false r` fails
-  against the class of all distinguishers (the pad is reused): testing the two entries for
+  against the class of all machines (the pad is reused): testing the two entries for
   equality has advantage one;
 * `TwoTimePad.valid_swap`: `r false ∼ s false`, an instance of name renaming at the
   permutation exchanging `r` and `s`, which reads a different coordinate of the tape.

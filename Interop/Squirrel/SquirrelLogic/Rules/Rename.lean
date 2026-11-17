@@ -17,7 +17,7 @@ their types, so `π` preserves types and the renaming needs no casts.
 
 The rule holds wherever renaming the names is a bijection `σ` of the honest tapes: `n` reads
 from `σ ρh` what `π n` reads from `ρh` (`Model.RenamesNames`). The uniform distribution is
-invariant under `σ`, so every distinguisher has advantage zero. Every model has such a `σ` for a
+invariant under `σ`, so every machine has advantage zero. Every model has such a `σ` for a
 bijective renaming (`Model.renamesNames`): the honest tape has one coordinate per name and
 index, and `σ` permutes the coordinates (`Model.tapePerm`). So `Valid.equiv_renameNames_of_equiv`
 holds in every model.
