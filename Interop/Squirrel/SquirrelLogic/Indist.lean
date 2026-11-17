@@ -38,9 +38,12 @@ advantage at every `η`; the case split (`Indist.caseStudy`, with BC14's If1 as 
 The closure fields of `AdvClass` are the program constructions of `SquirrelLogic.Machine`:
 relabelling the inputs, running one machine to answer another's input queries (substitution into
 a handler), querying an input at another input, answering by an honest symbol, branching on a
-Boolean input, Boolean constants, and the equality test; and a polynomial bound on the tape
-positions a machine reads. The reductions of the rules are built from them (`AdvClass.adv_mem`,
-`AdvClass.ite_mem`, `AdvClass.guard_mem`, …).
+Boolean input, Boolean constants, the equality test, reading the tape a polynomial offset further
+along, and the samplers of names whose bit blocks have polynomial length (`Model.PolyCoins`); and
+a polynomial bound on the tape positions a machine reads. The reductions of the rules are built
+from them (`AdvClass.adv_mem`, `AdvClass.ite_mem`, `AdvClass.guard_mem`, `AdvClass.freshL_mem`,
+…). No field admits an `η`-indexed constant: offsets are polynomials, and the only values a field
+supplies are Booleans, the model's honest symbols and the model's samplers.
 
 `AdvClass.all` admits every machine with a polynomial read bound and meets every field: the
 information-theoretic class of the satisfiability models and countermodels.
@@ -165,6 +168,12 @@ theorem AdvMachine.eval_comp' {β γ : Ty B} (k : AdvMachine M [β] γ) (f : Adv
 
 /-! ## The class of machines -/
 
+/-- The bit blocks of names of type `τ` have polynomial length. LICS23 (§II-B.2, p. 6) interprets
+a name as a sampling computable in polynomial time, which reads polynomially many bits; FreshL's
+reduction runs the sampler (`Machine.sampler`) on as many bits of the attacker tape. -/
+@[expose] def Model.PolyCoins (M : Model D) (τ : Ty B) : Prop :=
+  ∃ p : Polynomial ℕ, ∀ η, M.coinLen η τ ≤ p.eval η
+
 /-- The machines of a model, admitted for `adv` and `∼`: a predicate on machines, closed under the
 program constructions of `SquirrelLogic.Machine`, with a polynomial bound on the tape positions
 that each machine reads. Each field names the rules it serves and the property of a class of
@@ -213,11 +222,27 @@ structure AdvClass (M : Model D) where
   (`AdvClass.deduce_mem`). It is not asked at arrow types, whose equality no machine tests.
   Polynomial time: equality of bitstrings (cslib-frontier's `decide_eq`). -/
   eqTest_mem {β : Ty B} (hβ : β.IsGround) : mem (Machine.eqTest hβ : Machine M [β, β] .bool)
-  /-- Each admitted machine reads the attacker tape below a polynomial (`Machine.ReadsBelow`). No
-  rule proved so far uses it; FreshL will, to sample a fresh name from bits that the terms do not
-  read (CCS26 App. C.2, footnote 2). Polynomial time: LICS23's machines read `ρa` from a tape
-  (§II-C.1), so a machine running in time `t(η)` reads below `t(η)`; with random access to the
-  tape this is a query bound on the tape interface (VCVio's `AllQueriesSatisfy`). -/
+  /-- Reading the tape a polynomial offset further along (`Machine.shift`): FreshL
+  (`AdvClass.freshL_mem`), whose reduction draws the fresh name from bits above the read bounds of
+  the attacker machine and of the terms (CCS26 App. C.2, p. 17). The offset is a polynomial, a
+  finite object, so the closure is uniform. Polynomial time: computing `p(η)` from `1^η` and adding
+  it to each tape index, a handler of the tape interface of polynomial cost per query
+  (`OracleComp.Complexity.closeHandler` with a `HandlerCertificate`). -/
+  shift_mem {τs : List (Ty B)} {β : Ty B} (p : Polynomial ℕ) {A : Machine M τs β} :
+    mem A → mem (A.shift fun η => p.eval η)
+  /-- The sampler of names of a type of order at most one whose bit blocks have polynomial length
+  (`Machine.sampler`, `Model.PolyCoins`): FreshL (`AdvClass.freshL_mem`), whose reduction runs it
+  to draw the fresh name. Polynomial time: LICS23 (§II-B.2, p. 6) interprets names as
+  polynomial-time samplings, so the machine reading `coinLen η b` bits and running the sampler is
+  polynomial-time. Like `fn_mem` for honest symbols, this is a compatibility condition between the
+  model and the class: VCVio's `PureCertificate` for the sampler (cslib-frontier's `IsPPTOn`),
+  sequenced after the tape reads by `IsOraclePPTBy.bind`. -/
+  sampler_mem {b : Ty B} (hb : b.order ≤ 1) : M.PolyCoins b → mem (Machine.sampler b hb)
+  /-- Each admitted machine reads the attacker tape below a polynomial (`Machine.ReadsBelow`):
+  FreshL (`AdvClass.NonDed.freshL`) samples the fresh name from bits above it (CCS26 App. C.2,
+  footnote 2). Polynomial time: LICS23's machines read `ρa` from a tape (§II-C.1), so a machine
+  running in time `t(η)` reads below `t(η)`; with random access to the tape this is a query bound
+  on the tape interface (VCVio's `AllQueriesSatisfy`). -/
   readBound_mem {τs : List (Ty B)} {β : Ty B} {A : Machine M τs β} :
     mem A → ∃ p : Polynomial ℕ, A.ReadsBelow fun η => p.eval η
 
@@ -236,6 +261,8 @@ closure field. -/
     (hp.mono fun η => by simp).branch (hq.mono fun η => by simp)⟩
   const_mem _ := ⟨0, Machine.readsBelow_const _⟩
   eqTest_mem hβ := ⟨0, Machine.readsBelow_eqTest hβ⟩
+  shift_mem p := fun ⟨q, hq⟩ => ⟨p + q, (hq.shift _).mono fun η => by simp⟩
+  sampler_mem hb := fun ⟨p, hp⟩ => ⟨p, (Machine.readsBelow_sampler _ hb).mono hp⟩
   readBound_mem h := h
 
 /-- A machine that never reads the tape is in `AdvClass.all`. -/
@@ -279,6 +306,12 @@ theorem comp_mem {β γ : Ty B} {k : AdvMachine M [β] γ} {f : AdvMachine M τs
 theorem deduce_mem {β : Ty B} (hβ : β.IsGround) {g : AdvMachine M τs β} (hg : C.mem g) :
     C.mem (Machine.deduce hβ g) :=
   C.subst_mem (C.rename_mem _ (C.eqTest_mem hβ)) (C.rename_mem _ hg)
+
+/-- The reduction of FreshL is admitted, at a polynomial offset, for a name type whose bit blocks
+have polynomial length. -/
+theorem freshL_mem (p : Polynomial ℕ) {β : Ty B} (hb : b.order ≤ 1) (hc : M.PolyCoins b)
+    {g : AdvMachine M (τs ++ [b]) β} (hg : C.mem g) : C.mem (g.freshL (fun η => p.eval η) hb) :=
+  C.subst_mem (C.rename_mem _ hg) (C.rename_mem _ (C.shift_mem p (C.sampler_mem hb hc)))
 
 end AdvClass
 

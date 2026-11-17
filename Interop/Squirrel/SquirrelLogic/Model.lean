@@ -160,6 +160,15 @@ theorem Ty.isGround_of_order_arrow_le_one {a b : Ty B} (h : (Ty.arrow a b).order
     a.IsGround :=
   Ty.isGround_iff_order_eq_zero.2 (by simp only [Ty.order] at h; omega)
 
+/-- The arguments of a type of order at most one are Boolean or base types. -/
+theorem Ty.isGround_of_mem_args : ∀ {τ : Ty B}, τ.order ≤ 1 → ∀ σ ∈ τ.args, σ.IsGround
+  | .bool, _, _, h => absurd h List.not_mem_nil
+  | .base _, _, _, h => absurd h List.not_mem_nil
+  | .arrow a b, hτ, σ, hσ => by
+    rcases List.mem_cons.1 hσ with rfl | hσ
+    · exact Ty.isGround_of_order_arrow_le_one hτ
+    · exact Ty.isGround_of_mem_args (le_trans (le_max_right _ _) hτ) σ hσ
+
 section Spine
 
 /-- The entries of `u⃗ ∼ v⃗` have order at most one (CSF24 App. A; CCS26 §3.1, p. 6). -/
