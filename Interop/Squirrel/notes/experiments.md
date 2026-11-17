@@ -2012,3 +2012,221 @@ equal, on the right the second is a fresh name, equal to the first with probabil
 
 L3 is closed for this fragment; L6, L7, L10 and L14 are updated; L25 (the `⊢pptm` fragment of the
 compiled reading) and L26 (`ψ_msg` for first-order terms) are new.
+
+## M1, part 3a: oracle rules
+
+This work was done on top of `2a91b5f30`, in commits `02c81e97e` (reductions run machines),
+`7e401e139` (query bounds and the guess), `d5e9fe222` (Rw-Oracle and Pc-Oracle), `cf96da92d` (a
+docstring), `d017751fe` (the checks) and the commit that adds these notes. Sources: CCS26 Fig. 3
+(p. 7) and App. C.1 (pp. 15–16), the authors' PDF pinned in `../SOURCES.md`; LICS23 §II-C.
+
+### Reductions run machines
+
+- **What changed.** `EncSymbols.encReduction` and `PRFSymbols.reductionWith` (so `hashReduction`
+  and `freshReduction`) take the admitted machine itself, not its denotation, and run its program:
+  `Machine.simulate A η ρa H := simulateQ (M.answerIn ρa H) (A η)`, where `Model.answerIn` answers
+  tape reads from the tape the reduction drew and input queries by `H : InputImpl M η τs m`, a
+  computation per input in the reduction's own oracle computations. Ground inputs are answered from
+  the values the reduction computed (`InputImpl.ofVals`); an order-1 input can be answered by a
+  computation that queries the reduction's oracle, such as a compiled Kleisli arrow.
+- **Fusion.** `Machine.simulateQ_simulate`: if the reduction's oracle `impl` runs every answer of
+  `H` as the values `e` answer it, `simulateQ impl (A.simulate η ρa H) = pure (A.run η ρa e)`. The
+  value case is `Machine.simulate_ofVals`, from `OracleComp.simulateQ_pure_comp` (the monad
+  morphism `pure` commutes with the fold). `EncSymbols.encReduction_distinguish` is the encryption
+  reduction's last step. The existing proofs carry over by adding `Machine.simulate_ofVals` to
+  their `simp` sets; `A.test` replaces `A` in the bounds.
+- **Hypotheses.** `hcpa` (`Valid.equiv_enc`, `EncInstance.Holds`, `WorkedEnc.workedDerivation_sound`)
+  and `hprf` (`Valid.equiv_prf`, `Valid.nonDed_prf`, `PRFInstance.Holds`) quantify over
+  `encReduction … A η` and `hashReduction η u m A` for admitted machines `A`.
+- **Why this is the polynomial-functor point.** A machine is a free program over the polynomial
+  interface `tapeSpec + inSpec`; a reduction is the substitution of handlers into it (`simulateQ`,
+  PolyFun's `liftM`), and its semantics is a fold, so every fact about a reduction is a fact about
+  handler composition (`QueryImpl.simulateQ_compose`) and its fusion with an evaluation. Efficiency
+  is closure of the class under that substitution: a polynomial-time instance certifies a reduction
+  by a certificate for each handler (VCVio's `closeHandler`, `HandlerCertificate`), which needs the
+  adversary's program inside the reduction, not its denotation. The same reading gives the guess
+  below: a logging handler substituted into the attacker's program.
+
+### Query bounds and the guess
+
+- **The field.** `Machine.QueryBound A q`: on every path, at every `η`, at most `q η` queries to
+  the inputs (VCVio's `IsQueryBoundP` at `Sum.isRight`; tape reads are not counted). Counting all
+  inputs together is equivalent, up to the number of inputs, to a bound per input.
+  `AdvClass.queryBound_mem` asks a polynomial bound of every member; its polynomial-time
+  counterpart is that time bounds query count. Every construction keeps a bound: a handler whose
+  answers make at most `k` input queries multiplies a bound by `k`
+  (`OracleComp.isQueryBoundP_simulateQ`), so `rename` keeps `q`, `app` gives `2q`, `subst` gives
+  `q·(q_K + 1)`, `branch` `1 + q_x + q_y`.
+- **The guess.** `Machine.guess off k ha A d` reads `k η` bits of the tape from `off η` as a number
+  `j < 2^{k η}` (`bitsEquiv`, a bijection), runs `A` logging its queries (`withQueryLog`), and
+  returns the argument of the `j`-th query to its first input, an oracle `a → b` with `a` Boolean or
+  base, or `d`'s value (`Machine.run_guess`). Running `A` to the end and reading the log gives the
+  output of CCS26's `A_j`, which stops at the `j`-th call. `AdvClass.guess_mem` admits it at
+  `off = p(η)`, `k = ⌈log₂ q(η)⌉` for polynomials `p`, `q`: a uniform closure, since both are
+  computed from finite objects. Its polynomial-time counterpart is a logging handler of constant
+  cost per query (`closeHandler`), which forwards answers rather than copying them (L2).
+- **Exact uniformity.** `sum_prEvent_eq_two_pow_mul`: if the events `E j` read ρa only below `off`
+  and `off + k ≤ lenA`, then `Σ_{j < 2^k} Pr[E j] = 2^k · Pr[E (the j that the bits [off, off+k)
+  spell)]`. The proof is one involution of (bits, tape), `(c, ρa) ↦ (bits of ρa, ρa with the block
+  set to c)`, as FreshL's swap. `two_pow_clog_le`: `2^⌈log₂ n⌉ ≤ 2n + 1`.
+- **The bound** (`prEvent_faultyAt_le`): `Pr[the run with o makes a faulty query] ≤ 2^⌈log₂ q(η)⌉ ·
+  Pr[the guess, run with o, returns a point where o and o′ differ]`, at every `η` with
+  `p(η) + ⌈log₂ q(η)⌉ ≤ lenA η`, where `p` bounds the reads of the attacker machine and the terms.
+  This is CCS26's step 2 with `2^⌈log₂ q⌉` in place of `q`; the bound on the guess is
+  `Pr[guess hits] ≥ Pr[some query hits] / 2^⌈log₂ q(η)⌉ ≥ Pr[some query hits] / (2q(η) + 1)`.
+- **No non-uniform guess.** `j` is read from the tape inside the machine; no `j` is chosen per `η`.
+- **The default.** CCS26's `A_j` returns "a default value empty". Carriers need not contain the
+  empty bitstring and no field supplies an `η`-indexed constant, so the reduction draws its default
+  with the model's sampler for `a` (`Machine.sampler`), admitted under `Model.PolyCoins a` (L28).
+
+### Rw-Oracle and Pc-Oracle (`Rules/Oracle.lean`)
+
+```
+Valid.nonDed_rwOracle_of ha hβ (hoβ : oβ = o₁ ∨ oβ = o₂) hR hread
+    (h : Valid R C Θ (.nonDed (Vec.snoc u o₂) v ho₂))
+    (hagree : Valid R C Θ (Form.oracleAgree u oβ o₁ o₂ hd)) :
+  Valid R C Θ (.nonDed (Vec.snoc u o₁) v ho₁)
+```
+
+with `Form.oracleAgree u oβ o₁ o₂ = ∀̃ m. (u⃗, oβ ▷ m) ⇒̃ [o₁(m) = o₂(m)]`, `hR : ∀ M, R M →
+M.LongTapes ∧ M.PolyCoins a`, and `hread`: `u⃗`, `o₁`, `o₂` read ρa below a polynomial under `Θ`.
+`Valid.nonDed_rwOracle` is Fig. 3's case `oβ = o₁`.
+
+- **Per `η`** (`AdvClass.NonDed.rwOracle`): `deduceAdv g (u⃗, o₁) v η ≤ deduceAdv g (u⃗, o₂) v η +
+  2^⌈log₂ q(η)⌉ · Pr[o₁(m) ≠ o₂(m)]`, at every `η` where the bits fit, with `m` the output of the
+  named reduction `AdvMachine.rwGuess p q ha hβ g` run on `u⃗, oβ`, `p` the sum of the read bounds and
+  `q` the attacker machine's query bound. Asymptotically `(2q + 1)·negl` is negligible.
+- **Step 1** (`deduceAdv_le_add_faulty`): on each tape, the machine with the oracle first
+  (`AdvMachine.withOracleFirst`) runs the same with `o₁` and `o₂` unless the run with `oβ` queries a
+  point where they differ (`Machine.run_cons_eq_of_firstArgs`, from
+  `OracleComp.evalWithAnswerFn_eq_of_forall_mem_runLog`). Identical until bad is pointwise here: a
+  machine's only randomness is ρa, so no `AgreeUntilBad` coupling is needed. One faulty event, that
+  of the run with `oβ`, bounds both directions, which is the double rule.
+- **Step 2** is the guessing bound; the premise, at `m := rwGuess(u⃗, oβ)`, for which `u⃗, oβ ▷ m`
+  holds with the reduction as witness, makes its success negligible.
+- **Ground right side.** `v` is Boolean or base: a deduction of a function is an equality at every
+  argument, and the guess cannot know which argument's run is faulty (as for Rw-Equiv, L21).
+- **Shared tape.** The guess draws `j` above the reads of `g` and of `u⃗`, `o₁`, `o₂`, so the terms
+  need read bounds and the tapes must be long: FreshL's conditions (L20, L24). CCS26 says only "a
+  part of `ρa` further away".
+- **Pc-Oracle** (`AdvClass.NonDed.pcOracle`, `Valid.nonDed_pcOracle`) is derived from `β = 2` as
+  App. C.1 derives it: with `o′ = λx. if x ≠ m then o(x) else w` (`FTerm.puncture`, the paper's
+  λ-term; `FTerm.denote_puncture` reads it as `RV.puncture`), a message deducible from `u⃗, o′` is
+  not `m` by Ineq from `u⃗, o′ ⊬ m`, and `o`, `o′` agree away from `m`.
+
+### L2: answer sizes
+
+The reduction never computes `o₁` or `o₂`. It runs the attacker machine through a handler that
+forwards each oracle query to its own oracle input and keeps the argument; answers are typed values
+the handler passes on. So no premise on answer sizes, and no `⊢pptm` premise on the oracles, is
+needed: the efficiency obligation is the closure field `guess_mem`, whose polynomial-time
+counterpart charges a constant per forwarded query. In the paper's machine model `A_j` copies each
+answer onto `A`'s tape, which is where answer sizes enter; a class that charges for copying would
+meet `guess_mem` only under a size premise. L2 is closed with that reading.
+
+### Derivations
+
+`Derivation` gains `nonDedRwOracle` (the double rule, over models where `R₀` gives long tapes and
+`PolyCoins a`, with the read bounds as premises) and `nonDedPcOracle`. Pc-Oracle is a constructor:
+deriving it from `nonDedRwOracle` concludes the agreement premise by Ineq under the hypothesis
+`u⃗, o′ ▷ m`, and the fragment has no rule to introduce a hypothesis under `⇒̃`.
+
+### Checks (`OracleExamples.lean`)
+
+In `FreshLExamples.longModel` (tapes of `2^η` bits, `h` the identity), with `hideO = λx. if x ≠ m
+then h(x) else n` and `leakO = λx. if x ≠ a then h(x) else n`:
+
+| Check | Shows |
+|---|---|
+| `valid_rwOracleWorked` | Rw-Oracle at `β = 2`: from `h ⊬ n` (FreshR) and the agreement at every message deducible from `h` (FreshR `h ⊬ m`, Ineq), `hideO ⊬ n`; every hypothesis holds jointly against `AdvClass.all`, and FreshR does not give the conclusion, since `hideO` reads `n` |
+| `valid_rwOracleFig3` | Fig. 3's form: from `hideO ⊬ k` and the agreement at every message deducible from `h`, `h ⊬ k` |
+| `rwOracle_needs_agree` | with `leakO`, `h ⊬ n` and every side condition hold, `leakO ⊬ n` fails (`queryAtA` queries the oracle at `a` and gets `n` on every tape), so the agreement premise fails at both `β`: the oracles differ at a deducible point |
+| `valid_pcOracleWorked` | Pc-Oracle with `o′ = λx. if x ≠ m then hideO(x) else m`, the identity: FreshR gives `o′ ⊬ n` and `o′ ⊬ m`, and Pc-Oracle gives `hideO ⊬ n` |
+| `queryBound_input`, `not_queryBound_input_zero` | the query bound counts: the input projection meets it at `1` and not at `0` |
+
+`AdvClass.all` meets `queryBound_mem` and `guess_mem` (it is an `AdvClass`), so the fields are
+satisfiable jointly with every other field. The FreshL countermodel's generated class
+(`FreshLCountermodel.genClass`) is closed under the guess too; its invariant now also says that on
+clean inputs every query has clean arguments (`Gen.clean_argsClean`), since the guess returns an
+argument.
+
+### Statements that changed
+
+- `encReduction`, `reductionWith`, `hashReduction`, `freshReduction`, `outcome` and
+  `PRFSymbols.advantage_le` take a machine; `advantage_challenge` bounds `advantage A.test`.
+- `AdvClass` has two more fields; `AdvClass.all` asks read and query bounds;
+  `all_mem_of_readsBelow_zero` takes a query bound, and `AdvClass.all_mem_input` is new.
+- `Handler` is `InputImpl` at the machine's own interface; `Handler.EvalsTo` is exposed.
+- `PRFSymbols.runLog` and its lemmas are now `OracleComp.runLog` (`RunLog.lean`).
+- FreshL's tape-block operations are `Model.setBlock` and `Model.bitsAt` in `Machine.lean`.
+
+### Candidates for VCVio core
+
+`RunLog.lean` is interface-independent: `OracleComp.runLog`, `runLog_bind`, `runLog_query`,
+`simulateQ_pure_comp`, `evalWithAnswerFn_eq_of_forall_mem_runLog` (identical until bad on a path),
+`length_filterMap_runLog_le`, `forall_mem_runLog_simulateQ`, `runLog_eq_of_allQueriesSatisfy`,
+`isQueryBoundP_simulateQ`, `isQueryBoundP_withQueryLog`, `allQueriesSatisfy_withQueryLog`,
+`isQueryBoundP_bind_le`. From the spike, `GuessQuery.lean`'s `guessQuery` is the ProbComp analogue
+of `Machine.guess`; its sum over query positions is `prEvent_exists_finset_le` here, and
+`OracleRules.lean`'s identical-until-bad through `AgreeUntilBad` is not needed for deterministic
+runs. `sum_prEvent_eq_two_pow_mul` is generic in the tape model up to the block operations.
+
+### Problems hit
+
+1. **Classical decisions in rewrites.** `FTerm.eq` reads as `@decide _ (Classical.propDecidable P)`
+   with `P` fixed at elaboration; `simp`'s definitional steps change the decided proposition but not
+   the instance, after which `rw` fails ("motive is not type correct"). Rewriting `cond (cond
+   (decide P) false true) t e` into `ite` first (`cond_cond_decide`) and splitting with `split_ifs`
+   works.
+2. **`nomatch x, y`** inside anonymous constructors again parsed as two discriminants.
+3. **Implicit declarations** again: `Valid.nonDed_freshR x …` with the example's own `Name` timed
+   out until given `(D := decl)`.
+4. **Unexposed definitions.** `Handler.EvalsTo` had to be exposed to be applied in another module.
+5. **Elaboration order.** Bounds of sequenced programs need the continuation's bound given
+   (`isQueryBoundP_bind_le (m := …)`), and handler lemmas need the program unfolded first
+   (`unfold Machine.app Machine.handle`) so the handler is known.
+
+### Build and checks
+
+- **Build.** `LEAN_NUM_THREADS=3 lake build SquirrelLogic` succeeds with no warnings.
+- **Axioms.** The scratch file of step 1b, extended by 54 headlines of this part, prints the axioms
+  of 271 declarations and sweeps all 2687 declarations of the library's modules: only `propext`,
+  `Classical.choice` and `Quot.sound` occur.
+- **Forbidden tactics, comment fences, line length.** No `sorry`, `admit`, `stop` or
+  `native_decide`; the fence check passes; no line exceeds 100 characters, and no file 1500 lines.
+
+| File | Content |
+|---|---|
+| `RunLog.lean` (new) | the run log, fusion, identical until bad, query bounds through handlers and logs |
+| `Guess.lean` (new) | `Machine.QueryBound` and its construction lemmas, `Machine.guess`, `run_guess`, `sum_prEvent_eq_two_pow_mul` |
+| `Rules/Oracle.lean` (new) | `rwGuess`, steps 1 and 2, `AdvClass.NonDed.rwOracle`, `.pcOracle`, `Form.oracleAgree`, `FTerm.puncture`, the rules |
+| `OracleExamples.lean` (new) | the checks above |
+| `Machine.lean` | `InputImpl`, `Model.answerIn`, `Machine.simulate` and fusion, `Model.bitsAt`, `Model.setBlock` |
+| `Indist.lean` | `queryBound_mem`, `guess_mem`, `AdvClass.all` with query bounds |
+| `Rules/Enc.lean`, `Rules/PRF.lean` | the reductions run machines |
+| `Derivation.lean` | `nonDedRwOracle`, `nonDedPcOracle` |
+| `FreshLCountermodel.lean` | `Gen.guess`, `Gen.clean_argsClean` |
+
+### What remains (part 3b)
+
+PRF.R and PRF.L-eq/sec/⊤ (CCS26 Fig. 4, App. C.3, pp. 18–20) put `o_h^k = λx. h(x, k)` on the left.
+They need:
+
+- **The oracle as a compiled arrow.** The reduction answers the attacker machine's queries to the
+  oracle input by running `o_h^k`'s compiled Kleisli arrow (`Compile.lean`), which queries the PRF
+  oracle: an `InputImpl` into `PRFOracleSpec` built from `simulateQ (fwd ρ)`, and its fusion
+  through `Machine.simulateQ_simulate` with `simulateQ_prfRealQueryImpl_fwd` and `CRel` at the
+  arrow type (Kleisli application of a related arrow to embedded ground arguments).
+- **ψ_msg for the attacker's queries.** The challenge must not be hashed by the attacker's own
+  oracle queries, which happen after the challenge is fixed: in the ideal world those queries
+  make the challenge's value consistent, so PRF.L needs the bad event "the attacker queries `m`",
+  bounded by a guessing reduction as here (the guess's log of oracle arguments is the query log),
+  with `u⃗, o_h^k ⊬ m` as the premise that bounds it.
+- **Higher-order entries in G.PRF** and `ψ_msg` with binders (L26), for the oracle term `λx. h(x, k)`.
+- **The bound** will carry a factor `2^⌈log₂ q(η)⌉` from the guess, as Rw-Oracle's does.
+
+### Ledger
+
+L2 is closed with the efficiency obligation in `guess_mem`; L10, L11, L14 and L18 are updated; L27
+(the uniform guess and its factor), L28 (the default value and `PolyCoins a`) and L29 (the double
+rule, ground right side, Pc-Oracle as a constructor) are new.
