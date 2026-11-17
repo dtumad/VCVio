@@ -34,6 +34,11 @@ first entry has the given value, and at every `η` the advantage is at most the 
 (`advantage_cons_cond_le`). These are the concrete statements. `AdvClass` carries one closure
 field per reduction shape, used only by the rules that need that shape.
 
+The rules for the secrecy predicates `⊬` and `▷` (`SquirrelLogic.Secrecy`) add three shapes:
+post-composition of attacker functions that share `ρa` (`AttackerFn.comp`), the equality test of
+two values (`Distinguisher.eqTest`), and fixing the first argument of an attacker function to an
+`η`-indexed value (`AttackerFn.applyConst`). The last is a non-uniform closure.
+
 The empty class meets every closure field, and then `Indist` holds of any two vectors: a statement
 `C.Indist u v` is exactly as strong as `C`. `AdvClass.all` admits every distinguisher.
 -/
@@ -66,6 +71,23 @@ variable {η : ℕ} {a b τ : Ty B} {τs : List (Ty B)}
 @[expose] def Vals.tail (e : Vals M η (τ :: τs)) : Vals M η τs := fun _ x => e _ (.succ x)
 
 /-! ## Named reductions -/
+
+namespace AttackerFn
+
+/-- Post-composition of an attacker function of the tuple `τs` with an attacker function `k`,
+both reading the same attacker tape: the reduction of Trans, WeakL and WeakR (CCS26 Fig. 3). -/
+@[expose] def comp {τs : List (Ty B)} {β γ : Ty B} (k : AttackerFn M (.arrow β γ))
+    (f : AttackerFn M (Ty.arrows τs β)) : AttackerFn M (Ty.arrows τs γ) :=
+  fun η ρa => Ty.postcomp (k η ρa) (f η ρa)
+
+/-- An attacker function with its first argument fixed to an `η`-indexed value: the reduction of
+FreshL (CCS26 Fig. 11), with the value of the fresh name at its best coin. -/
+@[expose] def applyConst {σ τ : Ty B} (g : AttackerFn M (.arrow σ τ))
+    (x : (η : ℕ) → σ.Value M.carrier η) : AttackerFn M τ :=
+  fun η ρa => g η ρa (x η)
+
+end AttackerFn
+
 
 namespace Distinguisher
 
@@ -100,6 +122,12 @@ otherwise return `false`. The two halves of a case split on `b` are `guard true`
 @[expose] def guard (c : Bool) (A : Distinguisher M τs) : Distinguisher M (.bool :: τs) :=
   fun η e ρa => (e _ .zero == c) && A η e.tail ρa
 
+/-- The test whether two values are equal: the base of the distinguisher of Rw-Equiv
+(CCS26 Fig. 3), which applies an attacker function to the left part of a vector and tests the
+result against the last entry. -/
+@[expose] noncomputable def eqTest (β : Ty B) : Distinguisher M [β, β] :=
+  fun _ e _ => @decide (e _ .zero = e _ (.succ .zero)) (Classical.propDecidable _)
+
 end Distinguisher
 
 /-- The advantage of a distinguisher between two vectors at `η`, over uniform tapes. -/
@@ -111,7 +139,7 @@ end Distinguisher
 /-! ## The class of machines -/
 
 /-- The machines of a model: attacker computations for `adv`, distinguishers for `∼`, and one
-closure field for each reduction shape of the structural rules about `∼`. -/
+closure field for each reduction shape of the structural rules about `∼`, `⊬` and `▷`. -/
 structure AdvClass (M : Model D) where
   /-- Admitted attacker computations. -/
   computes : {τ : Ty B} → AttackerFn M τ → Prop
@@ -139,6 +167,25 @@ structure AdvClass (M : Model D) where
   (`CaseStudy.guard_not_derivable`). -/
   guard_mem {τs : List (Ty B)} (c : Bool) {A : Distinguisher M τs} :
     distinguishes A → distinguishes (A.guard c)
+  /-- Trans, WeakL and WeakR for `⊬` and `▷` (`AdvClass.Ded.trans`, `AdvClass.NonDed.weakL`,
+  `AdvClass.NonDed.weakR`): post-composing an admitted attacker function of a tuple with an
+  admitted attacker function, both reading the shared attacker tape, is admitted. A
+  polynomial-time class has it, as it has sequential composition (cslib-frontier's
+  `IsPPTOn.bind`); a uniform one does. -/
+  comp_mem {τs : List (Ty B)} {β γ : Ty B} {k : AttackerFn M (.arrow β γ)}
+    {f : AttackerFn M (Ty.arrows τs β)} : computes k → computes f → computes (k.comp f)
+  /-- Rw-Equiv (`AdvClass.NonDed.rwEquiv`): the equality test at a Boolean or base type. A
+  polynomial-time class has it, uniform or not, since values of these types are bitstrings
+  (cslib-frontier's `decide_eq`). It is not asked at arrow types, whose equality no machine
+  tests. -/
+  eqTest_mem {β : Ty B} : β.IsGround → distinguishes (Distinguisher.eqTest β)
+  /-- FreshL (`AdvClass.NonDed.freshL`): fixing the first argument of an admitted attacker
+  function to an `η`-indexed value gives an admitted attacker function. This closure is
+  non-uniform. A uniform polynomial-time class lacks it, since the values can encode an
+  undecidable set of parameters; a class of polynomial-size circuits, or of polynomial-time
+  machines with polynomial advice, has it for values of polynomial length. -/
+  applyConst_mem {σ τ : Ty B} {g : AttackerFn M (.arrow σ τ)}
+    (x : (η : ℕ) → σ.Value M.carrier η) : computes g → computes (g.applyConst x)
 
 namespace AdvClass
 
@@ -152,6 +199,9 @@ namespace AdvClass
   ite_mem _ := trivial
   rename_mem := by intros; trivial
   guard_mem := by intros; trivial
+  comp_mem _ _ := trivial
+  eqTest_mem _ := trivial
+  applyConst_mem _ _ := trivial
 
 /-- `adv t` (LICS23 Fig. 2): an admitted attacker computation agrees with `t` everywhere. -/
 @[expose] def Adv (C : AdvClass M) (X : RV M τ) : Prop :=

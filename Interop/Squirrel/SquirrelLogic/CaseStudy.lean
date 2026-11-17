@@ -29,9 +29,9 @@ Checks of `Valid.equiv_caseStudy` and BC14's If1 (`Valid.equiv_if1`). The model 
   condition `r`, both premises hold and the conclusion fails: `if r then r else !r` is always
   `true`, and returning the entry has advantage one half against `r`. The condition must sit
   beside each branch, because the reductions `guard true` and `guard false` read it.
-* `if1_needs_second`, `if1_needs_first`: in every model of every declaration, against all
-  distinguishers, one premise holds by Refl at an instance whose conclusion is `true ∼ false`.
-  So neither premise may be dropped.
+* `if1_needs_second`, `if1_needs_first`: in every model of every declaration with no `large` base
+  type, against all distinguishers, one premise holds by Refl at an instance whose conclusion is
+  `true ∼ false`. So neither premise may be dropped.
 * `guard_not_derivable`: the constant-`true` distinguishers are closed under the reductions
   `app`, `fn`, `adv`, `ite` and `rename`, and not under `guard true`. So `AdvClass.guard_mem`
   does not follow from the other closure fields.
@@ -166,12 +166,12 @@ variable {B : Type} {D : Decl B}
 /-- If1 without its second premise is unsound: its first premise `false, false ∼ false, false`
 holds by Refl, and its conclusion `if false then false else true ∼ false` fails against all
 distinguishers. -/
-theorem if1_needs_second :
+theorem if1_needs_second (hD : ∀ b, ¬ D.labels b .large) :
     Valid (D := D) (fun _ => True) AdvClass.all (Γ := []) []
         (.equiv (Env.cons .ff (Env.cons .ff Env.empty)) (Env.cons .ff (Env.cons .ff Env.empty))) ∧
       ¬ Valid (D := D) (fun _ => True) AdvClass.all (Γ := []) []
         (.equiv (Env.cons (FTerm.ite .ff .ff .tt) Env.empty) (Env.cons .ff Env.empty)) :=
-  ⟨Valid.equiv_refl _, fun h => Valid.not_equiv_tt_ff fun M hl hR env hΘ => by
+  ⟨Valid.equiv_refl _, fun h => Valid.not_equiv_tt_ff hD fun M hl hR env hΘ => by
     have hI := Form.holds_equiv.1 (h M hl hR env hΘ)
     simp only [Vec.rv_cons, FTerm.denote_ite, FTerm.denote_ff, FTerm.denote_tt,
       Bool.cond_false] at hI
@@ -180,12 +180,12 @@ theorem if1_needs_second :
 /-- If1 without its first premise is unsound: its second premise `true, false ∼ true, false`
 holds by Refl, and its conclusion `if true then true else false ∼ false` fails against all
 distinguishers. -/
-theorem if1_needs_first :
+theorem if1_needs_first (hD : ∀ b, ¬ D.labels b .large) :
     Valid (D := D) (fun _ => True) AdvClass.all (Γ := []) []
         (.equiv (Env.cons .tt (Env.cons .ff Env.empty)) (Env.cons .tt (Env.cons .ff Env.empty))) ∧
       ¬ Valid (D := D) (fun _ => True) AdvClass.all (Γ := []) []
         (.equiv (Env.cons (FTerm.ite .tt .tt .ff) Env.empty) (Env.cons .ff Env.empty)) :=
-  ⟨Valid.equiv_refl _, fun h => Valid.not_equiv_tt_ff fun M hl hR env hΘ => by
+  ⟨Valid.equiv_refl _, fun h => Valid.not_equiv_tt_ff hD fun M hl hR env hΘ => by
     have hI := Form.holds_equiv.1 (h M hl hR env hΘ)
     simp only [Vec.rv_cons, FTerm.denote_ite, FTerm.denote_ff, FTerm.denote_tt,
       Bool.cond_true] at hI

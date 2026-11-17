@@ -46,7 +46,7 @@ inductive Name : Ty Empty → Ty Empty → Type where
 @[expose] def decl : Decl Empty where
   labels b := b.elim
   Name := Name
-  nameDom_finite := fun n => match n with | .r | .s => trivial
+  nameDom_finite := fun n => match n with | .r | .s => nofun
   finite_names := Finite.of_injective (β := Bool)
     (fun n => match n with | ⟨_, _, .r⟩ => true | ⟨_, _, .s⟩ => false)
     fun | ⟨_, _, .r⟩, ⟨_, _, .r⟩, _ => rfl | ⟨_, _, .s⟩, ⟨_, _, .s⟩, _ => rfl
