@@ -43,6 +43,11 @@ the input values and the tape; the reductions of the logic's rules (`Machine.ite
 `Machine.guard`, `Machine.adv`, `AdvMachine.comp`, `Machine.deduce`, `AdvMachine.freshL`) are built
 from them, and their `run` lemmas follow.
 
+A reduction runs a machine as a program (`Machine.simulate`): it supplies the attacker tape and
+answers the input queries in its own oracle computations (`Model.answerIn`), and the fusion lemma
+`Machine.simulateQ_simulate` says that the run collapses to the machine's run at the values the
+answers compute.
+
 `Machine.ReadsBelow A b` says that every tape read of `A`, on every path, is below `b η`
 (VCVio's `AllQueriesSatisfy`); then `A`'s run depends on `ρa` only through those bits
 (`Machine.run_eq_of_readsBelow`). Each construction preserves a common read bound.

@@ -19,13 +19,14 @@ primitive:
 `f` has the curried type `Ty.arrows τs β` and is applied to the vector `u⃗` by `FTerm.apps`.
 `Form.holds_nonDed` and `Form.holds_ded` read them as `AdvClass.NonDed` and `AdvClass.Ded`.
 
-The rules of CCS26 Fig. 3 (p. 7) other than Rw-Oracle and Pc-Oracle, which need `adv` at order
-two, are `Valid.not_ded` (Neg1), `Valid.not_nonDed` (Neg2), `Valid.box_not_eq` (Ineq),
-`Valid.ded_trans` (Trans), `Valid.nonDed_weakL` (WeakL), `Valid.nonDed_weakR` (WeakR) and
-`Valid.nonDed_rwEquiv` (Rw-Equiv). A term in the middle of Trans or WeakL is on the right of a
-`▷`, so it is a single term, written as the vector `[v]`. `Valid.ded_apps` concludes `u⃗ ▷ f(u⃗)`
-from `adv(f)`, the definition of `▷` with its witness. Each rule applies one law of
-`SquirrelLogic.Secrecy`, whose proof is an inequality at every `η` with the reduction named.
+The rules of CCS26 Fig. 3 (p. 7) other than Rw-Oracle and Pc-Oracle, which are in
+`SquirrelLogic.Rules.Oracle`, are `Valid.not_ded` (Neg1), `Valid.not_nonDed` (Neg2),
+`Valid.box_not_eq` (Ineq), `Valid.ded_trans` (Trans), `Valid.nonDed_weakL` (WeakL),
+`Valid.nonDed_weakR` (WeakR) and `Valid.nonDed_rwEquiv` (Rw-Equiv). A term in the middle of
+Trans or WeakL is on the right of a `▷`, so it is a single term, written as the vector `[v]`.
+`Valid.ded_apps` concludes `u⃗ ▷ f(u⃗)` from `adv(f)`, the definition of `▷` with its witness.
+Each rule applies one law of `SquirrelLogic.Secrecy`, whose proof is an inequality at every `η`
+with the reduction named.
 
 CCS26 (§3.1, p. 6) defines `adv` only for terms of order at most two, so `u⃗` and `v` have order
 at most one; `Form.nonDed` and `Form.ded` carry this bound (`Ty.SecrecyOrder`), and the attacker
