@@ -22,6 +22,7 @@ public import SquirrelLogic.Rules.Enc
 public import SquirrelLogic.Rules.Secrecy
 public import SquirrelLogic.Rules.Fresh
 public import SquirrelLogic.Rules.FreshL
+public import SquirrelLogic.Rules.PRF
 public import SquirrelLogic.Derivation
 public import SquirrelLogic.Examples
 public import SquirrelLogic.TwoTimePad

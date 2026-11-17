@@ -386,7 +386,7 @@ theorem advantage_le_add_prEvent_ne (u u' v : VecRV M τs) (η : ℕ) :
     ⟨step u u' fun _ => id, step u' u fun _ h he => h he.symm⟩) le_rfl
 
 /-- `absDiff` is subadditive along sums. -/
-private theorem absDiff_add_add_le (a b c d : ENNReal) :
+theorem absDiff_add_add_le (a b c d : ENNReal) :
     ENNReal.absDiff (a + b) (c + d) ≤ ENNReal.absDiff a c + ENNReal.absDiff b d := by
   obtain ⟨hac, hca⟩ := ENNReal.absDiff_le_iff.1 (le_refl (ENNReal.absDiff a c))
   obtain ⟨hbd, hdb⟩ := ENNReal.absDiff_le_iff.1 (le_refl (ENNReal.absDiff b d))

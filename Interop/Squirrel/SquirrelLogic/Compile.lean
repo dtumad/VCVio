@@ -401,6 +401,19 @@ theorem snd_denote_guardInterp_iff (Q : P.Dom M η → Prop) {Γ : List (Kind B)
       rw [fst_denote_guardInterp]
       exact and_comm
 
+/-- For a term without the key name, the paired reading is the same at two honest tapes that
+agree on every coordinate not belonging to the key name. -/
+theorem guardInterp_eq_of_keyFree {ρa : M.TapeA η} {ρh ρh' : M.TapeH η}
+    (hρ : ∀ k : M.Slot η, k.1 ≠ P.keyName → ρh k = ρh' k) (Q : P.Dom M η → Prop)
+    {Γ : List (Kind B)} {s : Kind B} (t : P.oSig.Term Γ s) (ht : P.KeyFree t)
+    (e : Env (fun s => Kind.PtValue M η s × Prop) Γ) :
+    t.denote (P.guardInterp (ρa, ρh) kv Q) e = t.denote (P.guardInterp (ρa, ρh') kv Q) e := by
+  refine Term.denote_eq_of_every _ _ (fun op hop next => ?_) t ht e
+  rcases op with o | o
+  · exact congrArg (·, _) (interp_eq_of_keyFreeOp hρ o hop _)
+  · cases o
+    rfl
+
 /-! ## The fundamental lemma at the paired reading -/
 
 section Guard
