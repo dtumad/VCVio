@@ -174,6 +174,27 @@ stands for. -/
       | _, .inl o, next => .liftBind (.inl o) next
       | _, .inr .call, next => P.hashTerm (next ())
 
+variable {P} in
+@[simp] theorem close_fn {Γ : List (Kind B)} {τ : Ty B} (f : D.Fn τ) :
+    P.close (OTerm.fn (P := P) (Γ := Γ) f) = FTerm.fn f :=
+  congrArg (IFreeM.liftBind _) (funext fun p => p.elim0)
+
+variable {P} in
+@[simp] theorem close_app {Γ : List (Kind B)} {a b : Ty B} (f : OTerm P Γ (.arrow a b))
+    (x : OTerm P Γ a) : P.close (OTerm.app f x) = FTerm.app (P.close f) (P.close x) :=
+  congrArg (IFreeM.liftBind _) (funext fun p => Fin.cases rfl (fun _ => rfl) p)
+
+variable {P} in
+@[simp] theorem close_name {Γ : List (Kind B)} {a b : Ty B} (n : D.Name a b) (i : OTerm P Γ a) :
+    P.close (OTerm.name n i) = FTerm.name n (P.close i) := by
+  rw [OTerm.name, close_app]
+  exact congrArg (FTerm.app · _) (congrArg (IFreeM.liftBind _) (funext fun p => p.elim0))
+
+variable {P} in
+@[simp] theorem close_call {Γ : List (Kind B)} (t : OTerm P Γ P.msgTy) :
+    P.close (OTerm.call t) = P.hashTerm (P.close t) :=
+  rfl
+
 /-- Close every entry of a vector. -/
 @[expose] def closeVec {Γ : List (Kind B)} {τs : List (Ty B)} (u : OVec P Γ τs) : Vec D Γ τs :=
   fun _ x => P.close (u _ x)
@@ -327,6 +348,31 @@ theorem fst_callsAux {Γ : List (Kind B)} {s : Kind B} (t : P.oSig.Term Γ s) :
     · cases o <;> exact congrArg (IFreeM.liftBind _) (funext ih)
     · cases o
       exact congrArg (IFreeM.liftBind _) (funext ih)
+
+@[simp] theorem calls_fn {Γ : List (Kind B)} {τ : Ty B} (f : D.Fn τ) :
+    P.calls (OTerm.fn (P := P) (Γ := Γ) f) = [] :=
+  rfl
+
+@[simp] theorem calls_app {Γ : List (Kind B)} {a b : Ty B} (f : OTerm P Γ (.arrow a b))
+    (x : OTerm P Γ a) : P.calls (OTerm.app f x) = P.calls f ++ P.calls x :=
+  rfl
+
+@[simp] theorem calls_name {Γ : List (Kind B)} {a b : Ty B} (n : D.Name a b) (i : OTerm P Γ a) :
+    P.calls (OTerm.name n i) = P.calls i :=
+  rfl
+
+@[simp] theorem calls_call {Γ : List (Kind B)} (t : OTerm P Γ P.msgTy) :
+    P.calls (OTerm.call t) = t :: P.calls t := by
+  change (P.callsAux t).1 :: P.calls t = _
+  rw [fst_callsAux]
+
+@[simp] theorem vecCalls_cons {Γ : List (Kind B)} {τ : Ty B} {τs : List (Ty B)}
+    (t : OTerm P Γ τ) (u : OVec P Γ τs) :
+    P.vecCalls (Env.cons t u : OVec P Γ (τ :: τs)) = P.calls t ++ P.vecCalls u :=
+  rfl
+
+@[simp] theorem vecCalls_nil {Γ : List (Kind B)} (u : OVec P Γ []) : P.vecCalls u = [] :=
+  rfl
 
 theorem mem_vecCalls {Γ : List (Kind B)} {t' : OTerm P Γ P.msgTy} :
     ∀ {τs : List (Ty B)} {u : OVec P Γ τs},
