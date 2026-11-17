@@ -1014,3 +1014,195 @@ Against BC14 Fig. 2 and the plan's M0 row:
   conditional for lengths that differ on some tapes, syntactic side conditions, and the
   real-or-zero form.
 - **L16** gains the derivation constructor as an anchor.
+
+## M0, part 6: the case split (If1)
+
+This work was done on top of `1479346bc`.
+
+### Build and checks
+
+- **Build.** `LEAN_NUM_THREADS=4 lake build SquirrelLogic` succeeds with no warnings.
+- **Axioms.** `#print axioms`, from a scratch file outside the repository, on 21 declarations: the
+  new ones below, `AdvClass.all`, `Derivation.sound`, and earlier rules and checks
+  (`Valid.equiv_ite`, `Valid.equiv_enc`, `WorkedEnc.workedDerivation_sound`,
+  `WorkedEnc.valid_worked_lpad`, `TwoTimePad.not_valid_reuse`, `Valid.not_equiv_tt_ff`). They use
+  only `propext`, `Classical.choice` and `Quot.sound`.
+- **Forbidden tactics, comment fences, line length.** No `sorry`, `stop` or `native_decide`; the
+  fence check passes; no Lean line exceeds 100 characters.
+
+| File | Content | Lines | Code lines |
+|---|---|---|---|
+| `CaseStudy.lean` (new) | a satisfying instance, a derivation, three countermodels, the field's independence | 222 | 135 |
+| `Indist.lean` (changed) | `Distinguisher.guard`, `guard_mem`, the per-`η` bound, `Indist.caseStudy`, `Indist.if1` | 367 | 197 |
+| `Rules/Equiv.lean` (changed) | `Valid.equiv_caseStudy`, `Valid.equiv_if1` | 177 | 101 |
+| `Derivation.lean` (changed) | `equivCaseStudy`, `equivIf1` | 185 | 122 |
+
+### The sources
+
+All three were checked on 2026-11-16, the papers in the PDFs pinned in `../SOURCES.md`.
+
+- **BC14's If1** (§7, Fig. 2, sound by Prop. 2) is
+  `b, w⃗, x ∼ b, w⃗, z ∧ b, w⃗, y ∼ b, w⃗, z ⟶ w⃗, if b then x else y ∼ w⃗, z`. The condition and
+  the context are the same on both sides. Part 5 quoted it with `w⃗′` on the right, which is not
+  BC14's statement.
+- **LICS23's G.Case-Study:ITE** (Fig. 8): from `u⃗l, bl, sl ∼ u⃗r, br, sr` and
+  `u⃗l, bl, tl ∼ u⃗r, br, tr`, conclude `u⃗l, if bl then sl else tl ∼ u⃗r, if br then sr else tr`.
+  Each side has its own condition. Prop. 11 calls the structural rules straightforward and refers
+  to BC14 for their proofs; it gives none for this rule.
+- **The tool's `cs φ`** (tactic `case_study`, `documentation/sphinx/source/proofs.rst` at
+  `ebef0aca4f`) projects the conditionals on one pattern `φ` on both sides: from
+  `equiv(if φ then t1 else t2, if φ then u1 else u2)` it leaves `equiv(φ, t1, u1)` and
+  `equiv(φ, t2, u2)`.
+
+### BC14's proof and the factor
+
+- BC14 sets `p1 = Pr[A(w⃗, if b then x else y)]` and `p2 = Pr[A(w⃗, z)]`, and splits each on `b`:
+  `p1 = p^x_{1,1} + p^y_{1,2}` and `p2 = p^z_{1,1} + p^z_{1,2}`.
+- Its machine `B1` runs `A` when `b = 1` and otherwise flips a coin. BC14 gives its success
+  probability as `1/4 + p^x_{1,1}`, which holds only when `Pr[b = 1] = 1/2`. In general the coin
+  adds `Pr[b ≠ 1]/2` on both sides, and that cancels because `b` is the same on both sides. With
+  different conditions, as in G.Case-Study:ITE, it does not cancel.
+- Its inequality `|p1 − p2| ≤ |p^x_{1,1} − p^z_{1,1}| + |p^y_{1,2} − p^z_{1,2}|` has factor one.
+  The factor two appears only in its conclusion, which names one of the two machines: one of them
+  has advantage at least `ε/2`.
+- Here the two reductions return `false` instead of flipping, and the bound keeps the sum. So the
+  factor is one, and the conditions may differ:
+
+  ```
+  advantage_cons_cond_le (A : Distinguisher M (a :: τs)) (b b' : RV M .bool)
+      (x y x' y' : RV M a) (u v : VecRV M τs) (η : ℕ) :
+    advantage A (VecRV.cons (fun η ρ => cond (b η ρ) (x η ρ) (y η ρ)) u)
+        (VecRV.cons (fun η ρ => cond (b' η ρ) (x' η ρ) (y' η ρ)) v) η ≤
+      advantage (A.guard true) (VecRV.cons b (VecRV.cons x u))
+          (VecRV.cons b' (VecRV.cons x' v)) η +
+        advantage (A.guard false) (VecRV.cons b (VecRV.cons y u))
+          (VecRV.cons b' (VecRV.cons y' v)) η
+  ```
+
+- **The proof.** `Pr[A(if b then x else y, u⃗)] = Pr[b ∧ A(x, u⃗)] + Pr[¬b ∧ A(y, u⃗)]`, by
+  VCVio's `prEvent_eq_prEvent_and_add_prEvent_and_not` and a case split on `b` at each tape
+  (private `prEvent_cons_cond`). Then `absDiff (a + b) (c + d) ≤ absDiff a c + absDiff b d`
+  (private `absDiff_add_add_le`, 5 lines). `ToMathlib/Data/ENNReal/AbsDiff.lean` has no such
+  lemma, and it belongs there.
+
+### The rules
+
+```
+Valid.equiv_caseStudy
+    (h₁ : Valid R C Θ (.equiv (Env.cons c (Env.cons t u)) (Env.cons c' (Env.cons s v))))
+    (h₂ : Valid R C Θ (.equiv (Env.cons c (Env.cons t' u)) (Env.cons c' (Env.cons s' v)))) :
+  Valid R C Θ (.equiv (Env.cons (FTerm.ite c t t') u) (Env.cons (FTerm.ite c' s s') v))
+
+Valid.equiv_if1
+    (h₁ : Valid R C Θ (.equiv (Env.cons c (Env.cons x u)) (Env.cons c' (Env.cons z v))))
+    (h₂ : Valid R C Θ (.equiv (Env.cons c (Env.cons y u)) (Env.cons c' (Env.cons z v)))) :
+  Valid R C Θ (.equiv (Env.cons (FTerm.ite c x y) u) (Env.cons z v))
+```
+
+- `Indist.caseStudy` is `negligible_of_le` at the per-`η` bound, with `negligible_add`.
+  `Indist.if1` is the case split with both right-hand branches `z`, then `Bool.cond_self`. Each
+  `Valid` rule takes 5 lines.
+- **If1 is stated more generally than in BC14.** The right side's condition `c'` and context `v⃗`
+  are free; BC14's rule is the instance `c' = c`, `v⃗ = u⃗`.
+- **Positions.** As for every rule here, the entries acted on come first, where LICS23 and BC14
+  put them last. Perm moves them.
+
+### The closure field
+
+`guard_mem (c : Bool) : distinguishes A → distinguishes (A.guard c)`, where
+`Distinguisher.guard c A η e ρa := (e _ .zero == c) && A η e.tail ρa`. So `guard true` is
+`D₁(b, v⃗) = b && D(v⃗)` and `guard false` is `D₂(b, v⃗) = !b && D(v⃗)`; one field with a
+parameter covers both.
+
+- **No derivation from the other fields.** `ite_mem` and `rename_mem` were tried first. Each of
+  the five other reductions changes the input and then runs `A`, so it maps a constant
+  distinguisher to a constant one. But `guard true` of the constant-`true` distinguisher returns
+  `false` when the condition is `false`. `CaseStudy.guard_not_derivable` proves this: the
+  constant-`true` distinguishers are closed under the five reductions and not under `guard true`.
+- Any class of polynomial-time machines is closed under `guard`. `AdvClass.all` meets it by
+  `by intros; trivial`.
+
+| Field | Reduction | Used by |
+|---|---|---|
+| `app_mem` | `Distinguisher.app` | FA-App |
+| `fn_mem` | `Distinguisher.fn f` | FA-Fn, and through it BC14 FA |
+| `adv_mem` | `Distinguisher.adv g` (needs `computes g`) | FA-Adv |
+| `ite_mem` | `Distinguisher.ite` | FA for `if` |
+| `rename_mem` | `Distinguisher.rename r` | Perm, Restr, Dup |
+| `guard_mem` | `Distinguisher.guard c`: test the rest when the Boolean first entry is `c`, else return `false` | G.Case-Study:ITE, If1 |
+
+### Checks (`CaseStudy.lean`)
+
+The model is `TwoTimePad.model`: the pads `r` and `s` are independent uniform bits,
+`enc m = m xor r`, and the condition `parity` is `enc s`, which is `s xor r`.
+
+| Check | Shows |
+|---|---|
+| `valid_flip` | `parity, r ∼ parity, enc true` for every class: flipping both tape bits keeps `parity` and maps `r` to `!r` |
+| `valid_if1_flip`, `denote_ite_parity` | If1 with its first premise Refl and its second `valid_flip`: `if parity then enc true else r ∼ enc true`, whose sides are the different random variables `s` and `!r` |
+| `if1Derivation`, `if1Derivation_sound` | the same as one derivation step from the hypothesis `flipForm`, closed by `Derivation.sound` and `valid_flip` |
+| `caseStudy_needs_condition` | the tempting variant whose premises leave out the condition is unsound: `enc true ∼ enc false` and `enc false ∼ enc false` hold, and `if r then enc false else enc true ∼ enc false` fails with advantage one half, since its left side is always `true` and its right side is `r` |
+| `if1_needs_second`, `if1_needs_first` | in every model of every declaration, each premise alone holds by Refl at an instance whose conclusion is `true ∼ false` |
+| `guard_not_derivable` | `guard_mem` does not follow from the other five fields |
+
+`caseStudy_needs_condition` never computes `Pr[r] = 1/2`. It shows `Pr[r] + Pr[r] = 1`, by the
+flip and `prEvent_add_prEvent_not_eq_prEvent_true`, then `1 ≤ 2 · advantage`, and concludes with
+`negligible_const_mul` and `not_negligible_one`.
+
+### Derivations
+
+`Derivation` gains `equivCaseStudy` and `equivIf1`, each sound in one line. `equivIf1` is not
+derived from `equivCaseStudy`: that would rewrite `if c' then z else z` to `z`, and every rule of
+the fragment that concludes a local formula `[φ]` needs one as a premise or a hypothesis.
+
+### Problems hit
+
+1. **`rfl` does not prove an `Iff`** whose sides agree only after `cond` reduces. After `cases`
+   on the condition, `simp` and then `rfl` close it. `simp` leaves `true = true` stated at the
+   coin type, and `decide` rejects such goals ("free variables").
+2. **Field binders, again.** In `guard_not_derivable`, `fun _ h _ _ _` bound the implicit `A` to
+   `h` after the explicit `f`. Writing every binder (`fun {_ _} _ {_} h _ _ _`) fixed it.
+3. **Dot notation fails** on a lambda ascribed as a `Distinguisher`; `Distinguisher.guard true
+   (fun …)` works.
+4. **Elaboration order.** `Env.cons false Env.empty` needs the ascription
+   `Vals model 0 [.bool]`.
+5. **Deprecations.** `cond_true` and `cond_false` are deprecated for `Bool.cond_true` and
+   `Bool.cond_false`.
+
+### M0 against the plan
+
+| Plan row item | Lean | Derivation constructor |
+|---|---|---|
+| FA | `Valid.equiv_fn`, `Valid.equiv_app`, `Valid.equiv_adv`; BC14's FA is `Valid.equiv_fa`; FA for `if` is `Valid.equiv_ite` | `equivFn`, `equivApp`, `equivAdv`, `equivIte` |
+| Refl, Sym, Trans | `Valid.equiv_refl`, `Valid.equiv_symm`, `Valid.equiv_trans` | `equivRefl`, `equivSymm`, `equivTrans` |
+| Restr | `Valid.equiv_tail`, `Valid.equiv_rename` (with Perm), `Valid.equiv_dup` | `equivTail`, `equivRename`, `equivDup` |
+| If | `Valid.equiv_if1` (BC14's If1), `Valid.equiv_caseStudy` (LICS23) | `equivIf1`, `equivCaseStudy` |
+| Eq | `Valid.equiv_eq_self` (Eq1) | `equivEqSelf` |
+| Name renaming | `Valid.equiv_renameNames_of_equiv` | `equivRenameNames` |
+| CCA1 without decryption | `Valid.equiv_enc` | `equivEnc` |
+
+| Headline item | Status |
+|---|---|
+| `Base.sound` | met by `Derivation.sound`, which now covers the case split and If1 |
+| worked `pk, enc(n), n ∼ pk, enc(0), n` | met (part 5) |
+| countermodel with reused randomness | met (part 5) |
+
+Every item of the M0 row is a constructor of `Derivation`, sound by `Derivation.sound`, with a
+satisfiability check and a countermodel for each new rule family.
+
+Still missing from BC14 Fig. 2:
+
+- **EncKP** (key privacy).
+- **EncCCA1 with decryption**: IND-CCA1, with the side conditions `sk ⋢d v⃗` (secret keys only in
+  decryption position) and `nodec`.
+- **EncCCA1's guard as a conditional** `if EQL(u, u′) then {u}ʳ else u″` in the conclusion. Here
+  the guard is a side condition that must hold at every tape (L17).
+- **Indcong** for a curried `n`-ary symbol is FA-Fn and then FA-App once per argument; it is not
+  stated as one lemma.
+
+### Ledger
+
+- **L7** records that LICS23 omits the proof of G.Case-Study:ITE, and that BC14's proof of If1
+  is sound for its form, with the slip in `B1`'s probability; the rule is proved for the
+  first-order fragment with factor one. L7 stays open for `⊢pptm` and the other sketched proofs.
+- No row is added: `guard_mem` is a closure field like the others, within L14.
