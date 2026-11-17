@@ -745,3 +745,166 @@ The leaky-scheme check and the `Derivation` constructor wait for the rule.
 ### Ledger
 
 No row changes in this part. The CCA1 row waits for the rule.
+
+## M0, part 4: the encryption rule
+
+This work was done on top of `bf694ae97`.
+
+### Build and checks
+
+- **Build.** `LEAN_NUM_THREADS=4 lake build SquirrelLogic` succeeds with no warnings.
+- **Axioms.** `#print axioms`, from a scratch file outside the repository, on 32 declarations: the
+  new ones below and the earlier rules and checks that the change to `Model.TapeH` reaches
+  (renaming, `TwoTimePad`, `Valid.not_equiv_tt_ff`, `Valid.equiv_rewrite`, `Valid.local_all`).
+  They use only `propext`, `Classical.choice` and `Quot.sound`; `Derivation.allInst` uses only
+  `propext`.
+- **Forbidden tactics.** There is no `sorry`, `stop` or `native_decide`.
+- **Comment fences.** The check passes. No Lean line exceeds 100 characters.
+
+| File | Content | Lines | Code lines |
+|---|---|---|---|
+| `OneTimeGame.lean` (new) | the game's shape, generic over `AsymmEncAlg` | 59 | 28 |
+| `Rules/Enc.lean` (new) | `EncSymbols`, `scheme`, `encReduction`, the per-`η` equality, the rule, `EncInstance` | 304 | 150 |
+| `EncExamples.lean` (new) | satisfiability, three countermodels, a derivation | 232 | 142 |
+| `ProductTape.lean` (changed) | the coupling at two coordinates | 158 | 122 |
+| `Global.lean` (changed) | `FTerm.name`, `FTerm.evalAt`, `FTerm.denote_substOne_apply` | 423 | 230 |
+| `Model.lean` (changed) | `Model.TapeH` reducible | 272 | 142 |
+| `Derivation.lean` (changed) | the parameter `enc` and the constructor `equivEnc` | 151 | 96 |
+
+### The rule
+
+```
+Valid.equiv_enc (E : EncSymbols D) (hkr : E.keyName ≠ E.coinName)
+    (hR : ∀ M, R M → E.Avoids M m₀ ∧ E.Avoids M m₁ ∧ ∀ τ x, E.Avoids M (u τ x))
+    (hcpa : ∀ M : Model D, M.RespectsLabels → R M →
+      ∀ A : Distinguisher M (E.pkTy :: E.cTy :: τs), (C M).distinguishes A →
+        negligible fun η => IND_CPA_OneTime_Advantage (E.scheme M η) ProbCompRuntime.probComp
+          (E.encReduction m₀ m₁ u A η)) :
+  Valid R C Θ (.equiv (E.challenge m₀ u) (E.challenge m₁ u))
+```
+
+- **The symbols.** `EncSymbols D` bundles a key name `nk` and a coin name `nr`, each read at an
+  honest constant index (`ik`, `ir`), and honest symbols `pkOf` and `encOf`. An honest constant
+  index covers BC14's atomic names and any finite index type, and its value is the same on every
+  tape. The slots are `E.keySlot M η` and `E.coinSlot M η`.
+- **The vectors.** `E.challenge m u` is `pk(nk), enc(m{x ↦ pk(nk)}; r, pk(nk)),
+  u⃗{x ↦ pk(nk)}`, for `m : FTerm D [.loc E.pkTy] E.msgTy` and `u : Vec D [.loc E.pkTy] τs`. The
+  sequent is closed (`Θ : List (Form D [])`): a free variable of the ambient context would make
+  the reduction depend on its value.
+- **The side condition** `E.Avoids M t` says that `t`'s value, at every value of its free
+  variable, agrees on honest tapes that agree outside the two slots. Agreement replaces
+  "invariant under `Function.update`", so the statement needs no decidable equality on slots.
+  `hR` states it in every admitted model, as a restriction, as renaming does.
+- **The scheme.** `E.scheme M η` has `SK := Unit`: key generation draws the key coin and returns
+  `pkOf` of its sample, and encryption draws the coin and applies `encOf`. Decryption rejects
+  every ciphertext. The IND-CPA game never runs it.
+- **The reduction** `E.encReduction m₀ m₁ u A η`. `chooseMessages pk` draws `ρ ← $ᵗ (M.Tape η)`
+  and returns `(m₀ at (pk, ρ), m₁ at (pk, ρ), (pk, ρ))`. `distinguish (pk, ρ) c` runs
+  `A η (pk, c, u⃗ at (pk, ρ)) ρ.1`. It never inverts `pk`.
+- **The factor is one.** `EncSymbols.advantage_challenge`:
+
+  ```
+  advantage A (Vec.rv M C (E.challenge m₀ u) env) (Vec.rv M C (E.challenge m₁ u) env) η =
+    IND_CPA_OneTime_Advantage (E.scheme M η) ProbCompRuntime.probComp (E.encReduction m₀ m₁ u A η)
+  ```
+
+  VCVio's advantage is the bias `|Pr[win] − Pr[lose]| = 2·|Pr[win] − ½|`, which is the distance
+  between the two branches. BC14's Prop. 3 loses a factor of two only because its IND-CCA1
+  advantage is `|Pr[win] − ½|`.
+
+### The proof
+
+1. **The game's shape** (`OneTimeGame.lean`, generic):
+   `IND_CPA_OneTime_Advantage_probComp_eq_absDiff encAlg adv : IND_CPA_OneTime_Advantage encAlg
+   ProbCompRuntime.probComp adv = absDiff Pr[branch true = true] Pr[branch false = true]`, with
+   `IND_CPA_OneTime_Branch encAlg adv b` the game at a fixed hidden bit. The proof rewrites the
+   game into the hidden-bit shape (`bind_congr`, `cases b`, `simp`), then applies VCVio's
+   `evalDist_boolBias_bind_uniformBool` (`SecExp/Measure.lean`, the `ProbComp` form of
+   `evalDist_boolBias_bind_coin`), `boolDist` and `prEvent_eq_evalDist_singleton`. It is 6 lines.
+2. **Terms to values.** `FTerm.denote_substOne_apply`: a term with one free variable, closed by
+   a closed term, means at `(η, ρ)` the open term read at the closed term's value (`denote_substOne`
+   and `eval_denote_fullInterp`). `EncSymbols.rv_challenge` reads the challenge vector this way.
+3. **The coupling.** `prEvent_uniformSample_update_update`: draw `c₀`, then `ρ ← $ᵗ (β × Π)`,
+   then `c₁`, and overwrite the coordinates `i₀`, `i₁` of `ρ.2`; the pair is uniform. This is the
+   game's order: key coin, the reduction's tapes, encryption coin. It needs no distinctness of
+   the coordinates. The proof chains `EvalDistEq` steps: `EvalDistEq.bind_bind_swap`,
+   `SampleableType.uniformSample_prod_eq_bind`, and the one-coordinate lemma twice, in
+   distribution form (`update_uniformSample_evalDistEq`).
+4. **One branch** (`prEvent_branch`, private): the game's branch is `Pr{kc; ρ; rc}[A … = true]`
+   after unfolding, and pointwise its value is the challenge vector at
+   `(ρ.1, update (update ρ.2 key kc) coin rc)`. This step uses `hkr` (the key slot survives the
+   coin update) and the side conditions, then the coupling. It is 20 lines.
+5. **The rule** is `negligible_of_le` with the per-`η` equality.
+
+### Checks (`EncExamples.lean`)
+
+The declaration is `TwoTimePad.decl`, with key name `s` (or `r`), coin name `r`, everything of
+type `bool`, and `encModel enc` reading the public key of a key as the key.
+
+| Check | Shows |
+|---|---|
+| `padInstance_holds`, `valid_enc_pad` | the one-time pad meets every hypothesis against `AdvClass.all`; its IND-CPA advantage is zero for every adversary (`pad_advantage_eq_zero`, from `pad_branch_evalDistEq`) |
+| `not_valid_enc_leaky` | `enc m r pk = m`: side conditions and distinct names hold, the conclusion fails with advantage one. The IND-CPA hypothesis is needed |
+| `not_valid_enc_keyIsCoin` | key name = coin name, one-time pad: side conditions and IND-CPA hold, the conclusion fails. `hkr` is needed |
+| `not_valid_enc_coinReused` | the coin in the context, one-time pad: the conclusion fails. The freshness side condition is needed |
+| `encDerivation`, `encDerivation_sound` | the rule as a derivation step; `Derivation.sound`'s hypothesis discharged by `padInstance_holds` |
+
+The pad's zero advantage is proved on the VCVio side, independently of the per-`η` equality: in
+each branch, `xor m <$> $ᵗ Bool =ᵈ $ᵗ Bool`, by
+`SampleableType.map_uniformSample_evalDistEq_of_bijective`.
+
+### Derivations
+
+`Derivation D enc` gains a parameter `enc : EncInstance D → Prop`, the admitted instances of the
+rule. `EncInstance` bundles the symbols, the messages and the context. The constructor `equivEnc`
+takes `enc e` and the syntactic premise `hkr`. `Derivation.sound R C henc` takes
+`henc : ∀ e, enc e → e.Holds R C`, where `EncInstance.Holds` is the pair `hR`, `hcpa`. With
+`enc` empty this is the earlier fragment. A hypothesis over every instance would have been
+unsatisfiable for any declaration with an insecure triple of symbols of the right types.
+
+### Problems hit
+
+1. **`Model.TapeH` had to become reducible.** The coupling lemma is stated over `∀ i, α i`. With
+   `TapeH` semireducible, goals mixed `M.TapeH η` with the Π-type, were type-correct only at
+   default transparency, and `rw` and `simp` failed ("not type-correct under the implicit
+   transparency"). The fix was `@[expose, reducible]`; the docstring says why. `keySlot`, `coinSlot`
+   are `abbrev`s for the same reason (`(E.keySlot M η).1.2.1` must reduce to `E.keyTy`), and so is
+   the example's `encSymbols` (`(encSymbols nk).msgTy` must reduce to `.bool`).
+2. **`decl.Name` is not `Name` at reducible transparency.** `encSymbols` takes
+   `nk : TwoTimePad.Name .bool .bool`, not `decl.Name .bool .bool`, and the honest symbol `()`
+   stays type-incorrect at instance transparency. So the countermodels close their goals with
+   `refine`/`exact` (default transparency) and `change`, not `rw`.
+3. **`rw` with a `rfl` argument.** In `rw [prEvent_congr _ _ _ fun _ => iff_true_intro rfl]` the
+   `rfl` is elaborated before the predicate is known and unifies it with `?a = ?a`. Splitting the
+   goal with `congrArg₂ ENNReal.absDiff` and using `exact` fixed it.
+4. **`EvalDistEq` is not exposed**, so `fun p => …` does not prove `mx =ᵈ my`; use
+   `EvalDistEq.of_forall_prEvent_eq` and `h.prEvent_eq p`.
+5. **`do` blocks inside parentheses** do not mix `;` and newlines.
+6. **Citations.** The part 2 design cited BC14 §4. The rule is BC14 §7, Fig. 2, axiom EncCCA1,
+   sound by Prop. 3; its proof's reduction also draws every name except the key itself. LICS23's
+   G.CCA1 is Prop. 19, in real-or-zero form. Both were checked in the pinned PDFs on 2026-11-16.
+
+### Ledger
+
+- **L17** (new): BC14's EncCCA1 without decryption, left-or-right, closed for this fragment.
+  Still open there: decryption (IND-CCA1), the equal-length guard for messages of varying length,
+  syntactic side conditions, and the real-or-zero form.
+- **L7** notes the CCA1 part; it stays open.
+- **L10**: the encryption reduction draws `ρa` itself and recomputes the whole vector, so for
+  such rules the shared reading costs nothing.
+- **L14**: `ProbCompRuntime.probComp` bounds nothing; efficiency enters only through the
+  hypothesis on the image of the class.
+
+### Suggested changes to the plan
+
+- **M0's worked derivation is now in reach.** For `pk, enc(n), n ∼ pk, enc(0), n`, the side
+  conditions for a name `n` other than `nk` and `r`, and for honest constants, hold in every
+  model. Two generic lemmas would give them: a name at a constant index other than the two
+  avoids both slots, and `Avoids` is closed under application. Then the derivation needs no
+  restriction `R`, and only `hcpa` remains as a hypothesis.
+- **Syntactic side conditions** replace `hR` once A3's `Term.heads` is at the pin: "no name but
+  `nk` under `pkOf`, and no `nr`" implies `Avoids`.
+- **The equal-length guard.** For message types whose values vary in length, the hypothesis
+  quantifies over unequal pairs too, which real schemes do not meet. BC14's `EQL` guard, or a
+  `fixed`-labelled message type, would remove that.
+- **`OneTimeGame.lean`** is a candidate for VCVio core, beside `IND_CPA_OneTime_Advantage`.

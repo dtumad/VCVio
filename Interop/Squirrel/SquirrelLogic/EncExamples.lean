@@ -1,0 +1,232 @@
+/-
+Copyright (c) 2026 Devon Tuma. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Devon Tuma
+-/
+module
+
+public import SquirrelLogic.Derivation
+public import SquirrelLogic.TwoTimePad
+import VCVio.OracleComp.EvalDist.Measure
+import VCVio.OracleComp.Constructions.SampleableType.Measure
+
+/-!
+# Checks of the encryption rule
+
+The declaration is `TwoTimePad.decl`: two pads `r` and `s : bool → bool` and one honest symbol of
+each type. `encSymbols nk` reads it as an encryption scheme with key name `nk` and coin name `r`,
+both at index `false`; keys, coins, public keys, messages and ciphertexts are bits.
+`encModel enc` interprets the public key of a key as the key and encryption as `enc`. The messages
+are `true` and `false` and the context is empty.
+
+* `padInstance_holds`, `valid_enc_pad`: for the one-time pad `enc m r pk = m xor r`, the
+  hypotheses of `Valid.equiv_enc` hold together against every distinguisher, so the rule
+  concludes `pk, enc(true; r, pk) ∼ pk, enc(false; r, pk)`. The IND-CPA hypothesis holds because
+  the two branches of the game are equal in distribution (`pad_branch_evalDistEq`), so every
+  adversary has advantage zero (`pad_advantage_eq_zero`). `encDerivation` is the same conclusion
+  as a one-step derivation, and `encDerivation_sound` discharges the hypothesis of
+  `Derivation.sound`.
+* `not_valid_enc_leaky`: for the scheme `enc m r pk = m`, which leaks the message, the conclusion
+  fails against every distinguisher, although the side conditions hold. So the IND-CPA hypothesis
+  is needed.
+* `not_valid_enc_keyIsCoin`: with the key name equal to the coin name, the conclusion fails for the
+  one-time pad, although the side conditions and the IND-CPA hypothesis hold. So the names must be
+  distinct: the coins must be fresh with respect to the key.
+* `not_valid_enc_coinReused`: with the coins in the context, the conclusion fails for the one-time
+  pad, although the names are distinct and the IND-CPA hypothesis holds. So the context must not
+  read the coin coordinate (`EncSymbols.Avoids`).
+-/
+
+public section
+
+namespace SquirrelLogic.EncExamples
+
+open IPFunctor IPFunctor.ScopedSignature AsymmEncAlg TwoTimePad
+
+/-- `TwoTimePad.decl` as an encryption scheme with key name `nk` and coin name `r`. Every type is
+`bool`, both indices are the honest constant of type `bool`. -/
+@[expose, reducible] def encSymbols (nk : Name .bool .bool) : EncSymbols decl where
+  keyIdx := .bool
+  keyTy := .bool
+  coinIdx := .bool
+  coinTy := .bool
+  pkTy := .bool
+  msgTy := .bool
+  cTy := .bool
+  nk := nk
+  ik := ()
+  nr := Name.r
+  ir := ()
+  pkOf := ()
+  encOf := ()
+
+/-- Coins are bits and a pad of type `bool` is its coin; the honest constant of type `bool` is
+`false`, the public key of a key is the key, and encryption is `enc`. -/
+@[expose] noncomputable def encModel (enc : Bool → Bool → Bool → Bool) : Model decl where
+  TapeA _ := Unit
+  carrier b := b.elim
+  nonempty b := b.elim
+  Coin _ _ := Bool
+  sample η b := match b with
+    | .bool => id
+    | b => fun _ => Classical.choice (b.nonempty_value (fun b => b.elim) η)
+  finite_index _ := fun n => match n with | .r | .s => inferInstanceAs (Finite Bool)
+  fn η τ _ := match τ with
+    | .bool => false
+    | .arrow .bool .bool => id
+    | .arrow .bool (.arrow .bool (.arrow .bool .bool)) => enc
+    | τ => Classical.choice (τ.nonempty_value (fun b => b.elim) η)
+  att _ f := f.elim
+
+theorem encModel_respectsLabels (enc : Bool → Bool → Bool → Bool) :
+    (encModel enc).RespectsLabels := fun b => b.elim
+
+/-- The one-time pad. -/
+@[expose] def pad (m r _ : Bool) : Bool := xor m r
+
+/-- A scheme that leaks the message. -/
+@[expose] def leaky (m _ _ : Bool) : Bool := m
+
+/-- A constant reads no coordinate of the honest tape. -/
+theorem avoids_tt (nk : Name .bool .bool) (M : Model decl) :
+    (encSymbols nk).Avoids M FTerm.tt := fun _ _ _ _ _ _ => rfl
+
+/-- A constant reads no coordinate of the honest tape. -/
+theorem avoids_ff (nk : Name .bool .bool) (M : Model decl) :
+    (encSymbols nk).Avoids M FTerm.ff := fun _ _ _ _ _ _ => rfl
+
+/-- The pads `s` and `r` are distinct names. -/
+theorem keyName_ne_coinName : (encSymbols .s).keyName ≠ (encSymbols .s).coinName := by
+  intro h
+  cases h
+
+/-- For the one-time pad, the two branches of the one-time IND-CPA game are equal in
+distribution, for every adversary and either key name: a uniform bit masks the message. -/
+theorem pad_branch_evalDistEq (nk : Name .bool .bool) (η : ℕ)
+    (adv : IND_CPA_OneTime_Adversary ((encSymbols nk).scheme (encModel pad) η)) (b : Bool) :
+    IND_CPA_OneTime_Branch _ adv b =ᵈ IND_CPA_OneTime_Branch _ adv true := by
+  have hmask : ∀ pk m, ((encSymbols nk).scheme (encModel pad) η).encrypt pk m =ᵈ
+      ($ᵗ Bool : ProbComp Bool) := fun pk m => by
+    change (do let rc ← ($ᵗ Bool : ProbComp Bool); pure (xor m rc)) =ᵈ _
+    rw [bind_pure_comp]
+    refine SampleableType.map_uniformSample_evalDistEq_of_bijective
+      ⟨fun a c h => ?_, fun c => ⟨xor m c, ?_⟩⟩
+    · cases m <;> cases a <;> cases c <;> simp_all
+    · cases m <;> cases c <;> rfl
+  unfold IND_CPA_OneTime_Branch
+  refine EvalDistEq.bind_right _ fun ⟨pk, _⟩ => EvalDistEq.bind_right _ fun ⟨m₁, m₂, st⟩ => ?_
+  exact ((hmask pk _).trans (hmask pk _).symm).bind_left _
+
+/-- The one-time pad is perfectly one-time IND-CPA secure: every adversary has advantage zero,
+for either key name. -/
+theorem pad_advantage_eq_zero (nk : Name .bool .bool) (η : ℕ)
+    (adv : IND_CPA_OneTime_Adversary ((encSymbols nk).scheme (encModel pad) η)) :
+    IND_CPA_OneTime_Advantage ((encSymbols nk).scheme (encModel pad) η)
+      ProbCompRuntime.probComp adv = 0 := by
+  rw [IND_CPA_OneTime_Advantage_probComp_eq_absDiff,
+    (pad_branch_evalDistEq nk η adv false).prEvent_eq, ENNReal.absDiff_self]
+
+/-- The instance with key name `s`, messages `true` and `false`, and the empty context. -/
+@[expose] def padInstance : EncInstance decl where
+  E := encSymbols .s
+  τs := []
+  m₀ := .tt
+  m₁ := .ff
+  u := Env.empty
+
+/-- **Satisfiability.** For the one-time pad, the semantic hypotheses of `Valid.equiv_enc` hold
+together against every distinguisher. -/
+theorem padInstance_holds :
+    padInstance.Holds (fun M => M = encModel pad) fun M => AdvClass.all M :=
+  ⟨fun M _ => ⟨avoids_tt _ M, avoids_ff _ M, fun _ x => nomatch x⟩, fun M _ hM A _ => by
+    subst hM
+    exact negligible_of_zero fun η => pad_advantage_eq_zero .s η _⟩
+
+/-- The rule at the one-time pad: `pk, enc(true; r, pk) ∼ pk, enc(false; r, pk)` against every
+distinguisher. -/
+theorem valid_enc_pad :
+    Valid (fun M => M = encModel pad) (fun M => AdvClass.all M) (Γ := []) []
+      (.equiv ((encSymbols .s).challenge .tt Env.empty)
+        ((encSymbols .s).challenge .ff Env.empty)) :=
+  Valid.equiv_enc (encSymbols .s) keyName_ne_coinName padInstance_holds.1 padInstance_holds.2
+
+/-- A one-step derivation by the encryption rule, admitting only `padInstance`. -/
+@[expose] def encDerivation :
+    Derivation decl (· = padInstance) (Γ := []) []
+      (.equiv ((encSymbols .s).challenge .tt Env.empty)
+        ((encSymbols .s).challenge .ff Env.empty)) :=
+  .equivEnc padInstance rfl keyName_ne_coinName
+
+/-- `Derivation.sound` applies to `encDerivation`: its hypothesis is `padInstance_holds`. -/
+theorem encDerivation_sound :
+    Valid (fun M => M = encModel pad) (fun M => AdvClass.all M) (Γ := []) []
+      (.equiv ((encSymbols .s).challenge .tt Env.empty)
+        ((encSymbols .s).challenge .ff Env.empty)) :=
+  encDerivation.sound _ _ fun _ he => he ▸ padInstance_holds
+
+/-- **The IND-CPA hypothesis is needed.** For a scheme that leaks the message, the conclusion
+fails against every distinguisher, though the names are distinct and the side conditions hold
+(`keyName_ne_coinName`, `avoids_tt`, `avoids_ff`): the ciphertext is the message. -/
+theorem not_valid_enc_leaky :
+    ¬ Valid (fun M => M = encModel leaky) (fun M => AdvClass.all M) (Γ := []) []
+      (.equiv ((encSymbols .s).challenge .tt Env.empty)
+        ((encSymbols .s).challenge .ff Env.empty)) := fun h => by
+  have hM := Form.holds_equiv.1 (h (encModel leaky) (encModel_respectsLabels _) rfl Env.empty
+    (by simp)) (fun _ e _ => e _ (.succ .zero)) trivial
+  refine not_negligible_one (negligible_of_le (fun η => le_of_eq ?_) hM)
+  simp only [advantage, EncSymbols.rv_challenge, Env.cons_succ, Env.cons_zero]
+  refine (ENNReal.absDiff_zero_right 1).symm.trans (congrArg₂ ENNReal.absDiff ?_ ?_)
+  · exact (OracleComp.prEvent_eq_one_of_forall_mem_support _ _ fun _ _ => rfl).symm
+  · exact (prEvent_eq_zero_of_forall_not _ _ fun _ h => Bool.noConfusion h).symm
+
+/-- **The names must be distinct.** With the key name equal to the coin name, the one-time pad
+meets the side conditions and the IND-CPA hypothesis (`avoids_tt`, `avoids_ff`,
+`pad_advantage_eq_zero`), but the
+conclusion fails against every distinguisher: the public key is the pad, and the exclusive or of
+the two entries is the message. -/
+theorem not_valid_enc_keyIsCoin :
+    ¬ Valid (fun M => M = encModel pad) (fun M => AdvClass.all M) (Γ := []) []
+      (.equiv ((encSymbols .r).challenge .tt Env.empty)
+        ((encSymbols .r).challenge .ff Env.empty)) := fun h => by
+  have hM := Form.holds_equiv.1 (h (encModel pad) (encModel_respectsLabels _) rfl Env.empty
+    (by simp)) (fun _ e _ => xor (e _ .zero) (e _ (.succ .zero))) trivial
+  refine not_negligible_one (negligible_of_le (fun η => le_of_eq ?_) hM)
+  simp only [advantage, EncSymbols.rv_challenge, Env.cons_succ, Env.cons_zero]
+  refine (ENNReal.absDiff_zero_right 1).symm.trans (congrArg₂ ENNReal.absDiff ?_ ?_)
+  · refine (OracleComp.prEvent_eq_one_of_forall_mem_support _ _ fun ρ _ => ?_).symm
+    change xor (ρ.2 ((encSymbols .r).keySlot (encModel pad) η))
+      (xor true (ρ.2 ((encSymbols .r).keySlot (encModel pad) η))) = true
+    cases ρ.2 ((encSymbols .r).keySlot (encModel pad) η) <;> rfl
+  · refine (prEvent_eq_zero_of_forall_not _ _ fun ρ => ?_).symm
+    change xor (ρ.2 ((encSymbols .r).keySlot (encModel pad) η))
+      (xor false (ρ.2 ((encSymbols .r).keySlot (encModel pad) η))) ≠ true
+    cases ρ.2 ((encSymbols .r).keySlot (encModel pad) η) <;> exact Bool.false_ne_true
+
+/-- The coins `r`, as a context entry in which the public key is free but unused. -/
+@[expose] def coinCtx : Vec decl [.loc .bool] [.bool] :=
+  Env.cons (FTerm.name Name.r (FTerm.fn (D := decl) ())) Env.empty
+
+/-- **The coins must be fresh.** With the coins themselves in the context, the one-time pad has
+distinct names and meets the IND-CPA hypothesis (`keyName_ne_coinName`, `pad_advantage_eq_zero`),
+and the messages meet the side condition (`avoids_tt`, `avoids_ff`), but the context reads the
+coin coordinate, and the conclusion fails against every distinguisher: the exclusive or of the
+ciphertext and the coins is the message. -/
+theorem not_valid_enc_coinReused :
+    ¬ Valid (fun M => M = encModel pad) (fun M => AdvClass.all M) (Γ := []) []
+      (.equiv ((encSymbols .s).challenge .tt coinCtx)
+        ((encSymbols .s).challenge .ff coinCtx)) := fun h => by
+  have hM := Form.holds_equiv.1 (h (encModel pad) (encModel_respectsLabels _) rfl Env.empty
+    (by simp)) (fun _ e _ => xor (e _ (.succ .zero)) (e _ (.succ (.succ .zero)))) trivial
+  refine not_negligible_one (negligible_of_le (fun η => le_of_eq ?_) hM)
+  simp only [advantage, EncSymbols.rv_challenge, Env.cons_succ, Env.cons_zero]
+  refine (ENNReal.absDiff_zero_right 1).symm.trans (congrArg₂ ENNReal.absDiff ?_ ?_)
+  · refine (OracleComp.prEvent_eq_one_of_forall_mem_support _ _ fun ρ _ => ?_).symm
+    change xor (xor true (ρ.2 ((encSymbols .s).coinSlot (encModel pad) η)))
+      (ρ.2 ((encSymbols .s).coinSlot (encModel pad) η)) = true
+    cases ρ.2 ((encSymbols .s).coinSlot (encModel pad) η) <;> rfl
+  · refine (prEvent_eq_zero_of_forall_not _ _ fun ρ => ?_).symm
+    change xor (xor false (ρ.2 ((encSymbols .s).coinSlot (encModel pad) η)))
+      (ρ.2 ((encSymbols .s).coinSlot (encModel pad) η)) ≠ true
+    cases ρ.2 ((encSymbols .s).coinSlot (encModel pad) η) <;> exact Bool.false_ne_true
+
+end SquirrelLogic.EncExamples
