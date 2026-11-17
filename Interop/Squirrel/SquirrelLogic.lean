@@ -27,3 +27,4 @@ public import SquirrelLogic.WorkedEnc
 public import SquirrelLogic.CaseStudy
 public import SquirrelLogic.SecrecyExamples
 public import SquirrelLogic.FreshLExamples
+public import SquirrelLogic.FreshLCountermodel

@@ -63,6 +63,20 @@ theorem negligible_two_rpow_neg_mul {c : ℝ} (hc : 0 < c) :
 @[expose] def Model.nameAt (M : Model D) (n : D.Name a b) (i : D.Fn a) : RV M b :=
   fun η ρ => M.name η n (M.fn η i) ρ.2
 
+/-- The name `n(i)` over uniform tapes follows its sampler on a uniform bit block: the marginal of
+the honest tape's coordinate. -/
+theorem prEvent_nameAt (n : D.Name a b) (i : D.Fn a) (η : ℕ) (q : b.Value M.carrier η → Prop) :
+    Pr{let ρ ← $ᵗ (M.Tape η)}[q (M.nameAt n i η ρ)] =
+      Pr{let c ← $ᵗ (M.Coin η b)}[q (M.sample η b c)] := by
+  classical
+  have h := prEvent_uniformSample_prod_update (β := M.TapeA η)
+    (α := fun k : M.Slot η => M.Coin η k.1.2.1) (M.nameSlot n i η)
+    fun ρ => q (M.nameAt n i η ρ)
+  simp only [Model.nameAt, Model.name, Function.update_self] at h
+  exact h.symm.trans ((SampleableType.prEvent_uniformSample_prod (α := M.Coin η b)
+    (β := M.Tape η) fun z => q (M.sample η b z.1)).symm.trans
+    (SampleableType.prEvent_uniformSample_fst (β := M.Tape η) fun c => q (M.sample η b c)))
+
 /-- **FreshR at `η`.** If the vector `u` does not read the coordinate of `n(i)`, every attacker
 function computes `n(i)` from `u` with probability at most a bound `ε` on the probability of each
 value of the sampler. -/
