@@ -1430,3 +1430,186 @@ The type of `Derivation` is unchanged.
 - **New rows**: L18 (the predicates as derived formulas, curried tuples), L19 (the label `large`),
   L20 (FreshL and CCS26's footnote 2), L21 (Rw-Equiv at ground types), L22 (FreshR's semantic
   side condition, closed for this fragment).
+
+## M1, step 1b: machines over polynomial interfaces
+
+This work was done on top of `f4c467596`, in commits `847b2002e` (tapes and machines),
+`ce431975b` (the class over machines and the order bounds), `7b0504e02` (read bounds and long
+tapes) and the commit that adds these notes. Sources: LICS23, the author report pinned in
+`../SOURCES.md`; CCS26 §3.1 (p. 6) and App. C.2 (pp. 16–17); CSF24 App. A as cited in L11.
+
+### Tapes as in LICS23
+
+- **The attacker tape is a bitstring.** `Model.TapeA M η := Fin (M.lenA η) → Bool`, uniform, with
+  `Model.readBit` returning `false` past its end. LICS23 §II-B (p. 5): `T^a_{M,η}` and
+  `T^h_{M,η}` are "finite set[s] of bit-strings of the same length called random tapes".
+- **Names read bit blocks.** A name of type `τ` reads `Model.Coin M η τ := Fin (M.coinLen η τ) →
+  Bool` and runs `M.sample η τ` on it. LICS23 p. 6: "a name value requires at most a finite
+  number of bits from `ρh`", so a model with "large enough honest tapes for names to draw their
+  randomness" exists. The honest tape is still the product of one block per name and index, so
+  independence stays structural (L12) and the coupling lemmas of `ProductTape.lean` apply
+  unchanged. A machine that reads `coinLen` bits of its own tape and runs the sampler produces a
+  name's distribution: this is what FreshL's reduction will do.
+- **Examples.** Every example model has `lenA = 0`. Names read one bit in `TwoTimePad`,
+  `EncExamples` and `WorkedEnc` (abbreviations `TwoTimePad.bit`, `EncExamples.encBit`), `η` bits
+  for `msg` in `SecrecyExamples` (the sampler is `List.ofFn`, injective, so `msg` is `large` with
+  `c = 1` as before; `model_isLarge` is re-proved from `Fintype.card_fun`), and none in
+  `Model.trivial`.
+
+### Machines (`Machine.lean`)
+
+- **Interfaces are polynomial functors.** `Model.Iface M η τs := tapeSpec + M.inSpec η τs`, VCVio's
+  sum of oracle specifications. A tape query `i` returns bit `i`; a query to an input of type `τ`
+  carries values for all of `τ`'s arguments (`Ty.args τ`) and is answered by a value of
+  `Ty.res τ`. A Boolean or base input is queried with no arguments. LICS23 Fig. 2 and §II-C.2
+  (p. 7): base values are written on input tapes as encodings, functions are given by handles
+  that the machine queries "using its query tape", and "handles are similar to oracles". Here
+  every input is an oracle; LICS23's handles for partial applications are not modelled, since a
+  query supplies all arguments, which suffices for inputs of order at most one.
+- **Machines are free programs.** `Machine M τs β := (η : ℕ) → OracleComp (M.Iface η τs) (β.Value
+  …)`, and `Machine.run A η ρa e` interprets the interface at `Id` by `Model.answer ρa e` (VCVio's
+  `evalWithAnswerFn`, that is `simulateQ`). Machines are families over `η`; uniformity is the
+  class's business.
+- **Deep and shallow, in the small.** The function-level types stay as the semantics:
+  `Machine.test : Machine M τs .bool → Distinguisher M τs` and `AdvMachine.eval : AdvMachine M τs β
+  → AttackerFn M (Ty.arrows τs β)`, where `AdvMachine M τs β := Machine M (τs ++ β.args) β.res`
+  takes the tuple and `β`'s arguments as inputs and is curried by `Ty.curryVals` and `Ty.curry`.
+  Advantages, `deduceAdv` and every bound at `η` are still computed on functions; machines enter
+  only through `run` lemmas (`Machine.test_app : (A.app ha).test = A.test.app`, …,
+  `AdvMachine.eval_comp'`), so the M0 and part-1 proofs changed by one rewrite each.
+- **Handlers.** Every construction is `Machine.handle H A := fun η => simulateQ (H η).impl (A η)`
+  for a handler of the input interface into programs over another interface (PolyFun's `liftM`,
+  VCVio's `closeHandler`). All `run` lemmas go through one fact, `Handler.EvalsTo.
+  evalWithAnswerFn_simulateQ`: a handler that answers as the values `e'` turns a run at `e` into a
+  run at `e'`. The constructions: `rename` (forward each query along a renaming), `app` (answer an
+  input of type `b` by querying the input of type `a → b` at the value of the input of type `a`),
+  `fn` (answer by an honest symbol), `subst` (answer the first input, of type `as → ρ`, by running
+  a machine on the query's arguments and the remaining inputs), and, outside the handler form,
+  `branch`, `const`, `eqTest` and `input`. The reductions of the rules are built from them:
+  `ite`, `guard`, `adv`, `AdvMachine.comp` and `deduce`.
+- **Problems hit.** `Ty.args (Ty.arrows τs β)` is stuck for a variable `τs`, so the substitution
+  splits the arguments by recursion on `as` (`Ty.splitArgs`, `Ty.resArrows`,
+  `Ty.apply_curryVals_curry`) rather than by a cast. Terms that are type-correct only up to
+  unfolding `Ty.arrows [] β` or `Ty.args` defeat `rw` ("not type-correct under the implicit
+  transparency"); the proofs chain `Eq.trans` instead. Dot notation puts the receiver at the first
+  explicit argument of type `Machine`, so `subst` and `adv` take the outer machine first.
+
+### The class (`Indist.lean`)
+
+`AdvClass M` is a predicate `mem` on machines with these fields:
+
+| Field | Construction | Rules | Polynomial-time counterpart |
+|---|---|---|---|
+| `rename_mem` | `Machine.rename` | Perm, Restr, Dup; inside FA-Adv, If, the case split, Trans, WeakL, WeakR, Rw-Equiv | `closeHandler` with a forwarding dispatcher of constant cost |
+| `subst_mem` | `Machine.subst` | FA-Adv (`adv_mem`), Trans, WeakL, WeakR (`comp_mem`), Rw-Equiv (`deduce_mem`) | `closeHandler` with a `HandlerCertificate`; `IsOraclePPTBy.bind` |
+| `app_mem` | `Machine.app` | FA-App | a handler making two queries per query |
+| `fn_mem` | `Machine.fn` | FA-Fn, BC14's FA | honest symbols are polynomial-time (LICS23); `PureCertificate` |
+| `branch_mem` | `Machine.branch` | If (`ite_mem`), the case split (`guard_mem`) | `IsOraclePPTBy.bind` with a two-way continuation |
+| `const_mem` | `Machine.const` | the case split | `PureCertificate` of a constant |
+| `eqTest_mem` | `Machine.eqTest` (ground types) | Rw-Equiv | bitstring equality (cslib-frontier's `decide_eq`) |
+| `readBound_mem` | — | none yet; FreshL | a machine reading `ρa` from a tape in time `t` reads below `t`; `AllQueriesSatisfy` |
+
+- **Why not one substitution field.** A substitution whose handlers are member machines receives
+  the query's arguments as inputs; a handler that forwards a query (relabelling) or adds an
+  argument to it (FA-App) would have to read those inputs back, which needs them to be Boolean or
+  base values, and cannot forward a higher-order argument at all. So relabelling and querying an
+  input at another input stay fields; they are the shapes the task named. `subst` takes over the
+  old `adv_mem` and `comp_mem`, and `branch` with `const` the old `ite_mem` and `guard_mem`; the
+  number of reduction fields goes from eight to seven, each one program construction.
+- **Rw-Equiv no longer needs `app`.** Its reduction runs `g` with the left part of the vector
+  forwarded (`subst` and `rename`) and compares with the last entry, so it never reads a
+  higher-order entry.
+- **`guard_not_derivable` is retired.** It showed that `guard` did not follow from five
+  reductions that only change the input. `guard` is now derived (`AdvClass.guard_mem` from
+  `branch_mem` and `const_mem`), so the statement no longer separates fields. It is replaced by
+  `CaseStudy.guard_changes_output`, which records why the case split needs a construction that
+  changes the output.
+- **`AdvClass.all`** admits every machine with a polynomial read bound; each construction preserves
+  a common bound (`Machine.ReadsBelow.rename`, `.subst`, `.branch`, …), so it meets every field.
+  Every countermodel's machine reads no tape bit (`AdvClass.all_mem_of_readsBelow_zero`).
+- **Semantics.** `C.Adv X` holds when an admitted `AdvMachine` evaluates to `X` everywhere;
+  `C.Indist u v` quantifies over admitted machines returning a Boolean; `NonDed` and `Ded`
+  quantify over admitted `AdvMachine`s. `⊬` and `▷` remain derived formulas.
+
+### The order bounds
+
+- **In the syntax.** `GlobalOp.adv τs β (h : Ty.AdvOrder τs β)` and `GlobalOp.equiv τs (h :
+  Ty.IndistOrder τs)`, so an atom outside the fragment cannot be written; `Form.nonDed` and
+  `Form.ded` carry `Ty.SecrecyOrder τs β` (entries and right side of order at most one), from which
+  the bound of their `adv` follows (`Ty.SecrecyOrder.advOrder`). CCS26 §3.1 (p. 6): "the predicate
+  `adv(·)` is only defined for terms of order at most 2, and therefore `u` and `v` must in turn be
+  of order at most 1". Each constructor takes the bound as a last argument whose default,
+  `of_decide_eq_true rfl`, proves it by evaluation for concrete types (`decide` refuses the free
+  base-type variable of generic declarations).
+- **The semantics stays total.** Machines exist for inputs of every type; the bounds are needed
+  where a reduction reads an input: FA-App's argument is a Boolean or base type
+  (`Ty.IndistOrder.isGround_app`), as `Machine.app` fetches it.
+- **Rules.** A rule's conclusion carries the bound derived from its premise's (`.tail`, `.app`,
+  `.ite`, `.dup`, `.rename`); a rule that adds an entry or has no premise (Refl, FA-Fn, FA-Adv,
+  Eq1, name renaming, `ded_apps`, FreshR) takes the conclusion's bound. `equiv_fa` takes the bound
+  of its intermediate vector explicitly, since FA-Fn's added symbol must have a ground argument.
+  `EncInstance` has a field `order`.
+
+### Read bounds and long tapes (`TapeBounds.lean`)
+
+- `Machine.ReadsBelow A b`: every tape query of `A`, on every path, is below `b η` (VCVio's
+  `AllQueriesSatisfy`). `Machine.ReadsBelow.run_eq` and `AdvMachine.eval_eq_of_readsBelow`: the
+  run depends on `ρa` only through those bits.
+- `RV.ReadsBelow X b`: `X` depends on `ρa` only through its bits below `b η`.
+  `RV.readsBelow_of_eval` and `AdvClass.Adv.readsBelow`: an `adv` term has a polynomial bound,
+  its machine's.
+- `Model.LongTapes M`: `∀ p : Polynomial ℕ, ∀ᶠ η in atTop, p.eval η < M.lenA η`. LICS23 p. 17:
+  random tapes are infinite in the base logic and finite here, which "is, however, not
+  restrictive", since one can build "a model in our sense with long enough finite tapes (for each
+  `η`)". CCS26's footnote 2 extends the tape "as needed". Not imposed anywhere.
+- **Checks.** `Machine.readsBelow_readZero_one` and `Machine.not_readsBelow_readZero_zero`: the
+  machine reading bit `0` reads below `1` and not below `0`.
+
+### Statements that changed
+
+- Every `∼`, `adv`, `⊬` and `▷` formula carries its order bound, so formulas outside the fragment
+  of CSF24 and CCS26 are gone; the rules hold for every formula that can be written. `⊬` and `▷`
+  previously existed at every type.
+- `AdvClass.Indist.app` takes `a.IsGround`; `AdvClass.Indist.adv` and `Valid.equiv_adv` take a term
+  of type `Ty.arrows τs₀ β` (every type is one, with `τs₀ = []`).
+- `deduceAdv_le_add_advantage` takes `β.IsGround` and an `AdvMachine`, and bounds by the advantage
+  of `(Machine.deduce hβ g).test`; `Distinguisher.appArgs`, `Distinguisher.deduce` and
+  `AdvClass.appArgs_mem` are gone.
+- `Valid.equiv_enc`, `EncInstance.Holds` and `WorkedEnc.workedDerivation_sound` state the IND-CPA
+  hypothesis for every admitted machine, at the reduction `EncSymbols.encReduction … A.test`. The
+  reduction still draws `ρa` itself, now a uniform bitstring, and is named.
+- `CaseStudy.guard_not_derivable` is replaced by `CaseStudy.guard_changes_output` (above).
+- `SecrecyExamples.not_nonDed_of_forall_eq` takes an admitted machine instead of a function; the
+  countermodels use `SecrecyExamples.idMachine`, `hMachine`, `EncExamples.xorMachine`,
+  `Machine.input`, `Machine.eqTest` and `Machine.const`.
+
+### What FreshL needs
+
+- **Definitions.** `Machine.ReadsBelow`, `RV.ReadsBelow`, `AdvClass.Adv.readsBelow`,
+  `AdvClass.readBound_mem`, `Model.LongTapes`, and `ProductTape.lean` for the coupling.
+- **The reduction.** From an admitted `g : AdvMachine M (τs ++ [b]) β` against `u, n ⊬ v`, build
+  `g' : AdvMachine M τs β` that answers the input `n` (`Machine.subst` at `as = []`) by a machine
+  reading the bits `[B η, B η + coinLen η b)` and running `M.sample η b`, with `B` a polynomial
+  above the read bounds of `g` and of the terms. Over uniform `ρa`, those bits are independent of
+  the bits below `B η`, so `g'` against `u ⊬ v` succeeds as `g` does against `u, n_fresh ⊬ v`;
+  `G.Equiv.Fresh` and Rw-Equiv move from `n_fresh` to `n` (CCS26 App. C.2).
+- **Missing pieces.** A closure field admitting the sampling machine (reading bits at a polynomial
+  offset and running the sampler); polynomial `coinLen` and polynomial-time samplers as model
+  conditions (L12); `LongTapes` as a hypothesis on `R`, so that `B η + coinLen η b ≤ lenA η`
+  eventually; read bounds for the terms `u`, `v`: `adv` terms have them, names read no `ρa`, but
+  attacker symbols (`Model.att`) are arbitrary functions of `ρa` and need a model condition or the
+  side condition of CCS26 Fig. 11's caption; and a satisfiability model with `LongTapes`.
+
+### Build and checks
+
+- **Build.** `LEAN_NUM_THREADS=4 lake build SquirrelLogic` succeeds with no warnings.
+- **Axioms.** A scratch file outside the repository prints the axioms of 113 headlines (every
+  rule, `Derivation.sound`, the worked derivations, the satisfiability models and countermodels,
+  the `run` and read-bound lemmas) and sweeps all 1599 declarations of the library's modules: only
+  `propext`, `Classical.choice` and `Quot.sound` occur.
+- **Forbidden tactics, comment fences, line length.** No `sorry`, `admit`, `stop` or
+  `native_decide`; the fence check passes; no line exceeds 100 characters.
+
+### Ledger
+
+L10, L11, L12, L14 and L20 are updated, and L23 (long tapes) is new.
