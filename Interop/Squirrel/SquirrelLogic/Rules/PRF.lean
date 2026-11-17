@@ -559,49 +559,6 @@ end PRFSymbols
 
 /-! ## The rules -/
 
-section Vectors
-
-variable {S : Type} {V : S → Type}
-
-/-- A property of every entry of two vectors holds of every entry of their concatenation. -/
-theorem Env.forall_append {Γ : List S} {p : ∀ a, V a → Prop} :
-    ∀ {Ξ : List S} {ξ : Env V Ξ} {η : Env V Γ}, (∀ a x, p a (ξ a x)) → (∀ a x, p a (η a x)) →
-      ∀ a x, p a (Env.append ξ η a x)
-  | [], _, _, _, hη => hη
-  | _ :: _, _, _, hξ, hη => fun a x => by
-    cases x with
-    | zero => exact hξ _ .zero
-    | succ x => exact Env.forall_append (fun _ y => hξ _ y.succ) hη a x
-
-/-- The renaming that exchanges the last two entries of `(Ξ ++ [b]) ++ [c]`. -/
-@[expose] def swapLast (Ξ : List S) (b c : S) : Renaming ((Ξ ++ [b]) ++ [c]) ((Ξ ++ [c]) ++ [b]) :=
-  Env.append (Env.append (fun _ x => renameInl (Γ := [b]) _ (renameInl (Γ := [c]) _ x))
-      (Env.cons (renameInr (Ξ ++ [c]) _ .zero) Env.empty))
-    (Env.cons (renameInl (Γ := [b]) _ (renameInr Ξ _ .zero)) Env.empty)
-
-theorem Env.append_renameInl {Ξ Γ : List S} (ξ : Env V Ξ) (η : Env V Γ) {a : S}
-    (z : ScopedVar Ξ a) : Env.append ξ η a (renameInl a z) = ξ a z :=
-  congrFun (congrFun (Env.rename_renameInl_append ξ η) a) z
-
-theorem rename_swapLast {Ξ : List S} {b c : S} (w : Env V Ξ) (x : V c) (y : V b) :
-    Env.rename (swapLast Ξ b c)
-        (Env.append (Env.append w (Env.cons x Env.empty)) (Env.cons y Env.empty)) =
-      Env.append (Env.append w (Env.cons y Env.empty)) (Env.cons x Env.empty) := by
-  rw [swapLast, Env.rename_append_renaming, Env.rename_append_renaming]
-  congr 2
-  · funext a z
-    exact (Env.append_renameInl _ _ _).trans (Env.append_renameInl _ _ _)
-  · funext a z
-    cases z with
-    | zero => exact Env.append_renameInr _ _ _ _
-    | succ z => exact nomatch z
-  · funext a z
-    cases z with
-    | zero => exact (Env.append_renameInl _ _ _).trans (Env.append_renameInr _ _ _ _)
-    | succ z => exact nomatch z
-
-end Vectors
-
 theorem PRFSymbols.closeVec_append (P : PRFSymbols D) {Γ : List (Kind B)} {τs' : List (Ty B)} :
     ∀ {τs : List (Ty B)} (u : OVec P Γ τs) (w : OVec P Γ τs'),
       P.closeVec (Env.append u w) = Env.append (P.closeVec u) (P.closeVec w)
