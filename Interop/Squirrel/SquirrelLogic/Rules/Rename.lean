@@ -107,10 +107,10 @@ theorem denote_renameNames_closed (C : AdvClass M) {η : ℕ} {σ : M.TapeH η �
   rw [Env.eq_empty (evalEnv M η ρ env), Env.eq_empty (evalEnv M η (ρ.1, σ ρ.2) env)]
 
 /-- **Name renaming.** In models where renaming names is a bijection of the honest tapes, a
-closed vector is indistinguishable from its renaming: every distinguisher has advantage zero. -/
+closed vector is indistinguishable from its renaming: every machine has advantage zero. -/
 theorem Valid.equiv_renameNames {R : Model D → Prop} {C : ∀ M : Model D, AdvClass M}
     (hR : ∀ M, R M → M.RenamesNames π) {Θ : List (Form D [])} {τs : List (Ty B)}
-    (u : Vec D [] τs) : Valid R C Θ (.equiv u (u.renameNames π)) := by
+    (u : Vec D [] τs) {ho : Ty.IndistOrder τs} : Valid R C Θ (.equiv u (u.renameNames π) ho) := by
   intro M _ hRM env _
   refine Form.holds_equiv.2 fun A _ => negligible_of_zero fun η => ENNReal.absDiff_eq_zero.2 ?_
   obtain ⟨σ, hσ⟩ := hR M hRM η
@@ -119,13 +119,14 @@ theorem Valid.equiv_renameNames {R : Model D → Prop} {C : ∀ M : Model D, Adv
     fun ρ => funext fun _ => funext fun x => denote_renameNames_closed (C M) hσ ρ (u _ x) env
   simp only [hrv]
   exact (SampleableType.prEvent_uniformSample_equiv ((Equiv.refl _).prodCongr σ)
-    fun ρ => A η (Vec.rv M (C M) u env η ρ) ρ.1 = true).symm
+    fun ρ => A.test η (Vec.rv M (C M) u env η ρ) ρ.1 = true).symm
 
 /-- **Name renaming**, in every model: a closed vector is indistinguishable from its renaming
 along a bijection of names. -/
 theorem Valid.equiv_renameNames_of_equiv {R : Model D → Prop} {C : ∀ M : Model D, AdvClass M}
     (π : ∀ {a b : Ty B}, D.Name a b ≃ D.Name a b) {Θ : List (Form D [])} {τs : List (Ty B)}
-    (u : Vec D [] τs) : Valid R C Θ (.equiv u (u.renameNames fun n => π n)) :=
+    (u : Vec D [] τs) {ho : Ty.IndistOrder τs} :
+    Valid R C Θ (.equiv u (u.renameNames fun n => π n) ho) :=
   Valid.equiv_renameNames (fun M _ => M.renamesNames π) u
 
 end SquirrelLogic

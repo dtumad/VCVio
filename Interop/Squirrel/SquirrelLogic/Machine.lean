@@ -327,12 +327,19 @@ its remaining inputs are those of the result. -/
   let y ← fetch (.succ .zero) hβ
   pure (@decide (x = y) (Classical.propDecidable _))
 
+/-- Return the value of a Boolean or base input. -/
+@[expose] def input (y : ScopedVar τs a) (ha : a.IsGround) : Machine M τs a := fun _ => fetch y ha
+
 variable {ρa : M.TapeA η}
 
 @[simp] theorem evalWithAnswerFn_fetch (e : Vals M η τs) (y : ScopedVar τs a) (ha : a.IsGround) :
     evalWithAnswerFn (M.answer ρa e) (fetch y ha) = e a y := by
   rw [fetch, evalWithAnswerFn_map]
   exact Ty.ofRes_apply_groundArgs ha _
+
+theorem run_input (y : ScopedVar τs a) (ha : a.IsGround) (e : Vals M η τs) :
+    (input y ha : Machine M τs a).run η ρa e = e a y :=
+  evalWithAnswerFn_fetch e y ha
 
 theorem run_rename (r : Renaming τs τs') (A : Machine M τs β) (e : Vals M η τs') :
     (A.rename r).run η ρa e = A.run η ρa (Env.rename r e) :=
@@ -612,6 +619,10 @@ theorem ReadsBelow.branch {x y : Machine M τs β} (hx : x.ReadsBelow bd) (hy : 
 
 theorem readsBelow_const (c : Bool) : (const c : Machine M τs .bool).ReadsBelow bd :=
   fun _ => allQueriesSatisfy_pure _ _
+
+theorem readsBelow_input (y : ScopedVar τs a) (ha : a.IsGround) :
+    (input y ha : Machine M τs a).ReadsBelow bd :=
+  fun _ => allQueriesSatisfy_fetch _ ha _
 
 theorem readsBelow_eqTest (hβ : β.IsGround) : (eqTest hβ : Machine M [β, β] .bool).ReadsBelow bd :=
   fun _ => allQueriesSatisfy_bind (allQueriesSatisfy_fetch _ hβ _) fun _ =>

@@ -9,38 +9,41 @@ public import SquirrelLogic.RandomVariable
 public import SquirrelLogic.Machine
 public import VCVio.CryptoFoundations.Asymptotics.Negligible
 public import ToMathlib.Data.ENNReal.AbsDiff
+public import Mathlib.Algebra.Polynomial.Eval.Defs
 import VCVio.EvalDist.ProbabilityBounds
 
 /-!
-# Indistinguishability over a class of distinguishers
+# Indistinguishability over a class of machines
 
-LICS23's `u⃗ ∼ v⃗` (§II-C) says that no polynomial-time machine tells the two vectors apart. The
-machines read the attacker tape `ρa`, and their inputs at `η` are values of `⟦τ⟧_η`, whose type
-depends on `η`. Here:
+LICS23's `u⃗ ∼ v⃗` (§II-C, Fig. 2) says that no polynomial-time machine tells the two vectors
+apart, and `adv(t)` that some polynomial-time machine computes `t`. The machines read the attacker
+tape `ρa`, and their inputs at `η` are values of `⟦τ⟧_η`, whose type depends on `η`. Here the
+machines are those of `SquirrelLogic.Machine`, free programs over the tape and the inputs:
 
-* `Vals M η τs` is a vector of values at `η`, an environment over the types `τs`;
-  `VecRV M τs` is a vector of random variables;
-* `Distinguisher M τs` tests a vector of values at each `η`, reading `ρa`;
-* `advantage A u v η` is `|Pr[A(u) = 1] − Pr[A(v) = 1]|` over uniform tapes;
-* `AdvClass M` is the class of admitted machines, a parameter. `C.Indist u v` says every admitted
-  distinguisher has negligible advantage, and `C.Adv X` says an admitted attacker computation
-  equals `X` everywhere.
+* `advantage A u v η` is `|Pr[A(u) = 1] − Pr[A(v) = 1]|` over uniform tapes, for a distinguisher
+  `A` given as a function (`Distinguisher`);
+* `AdvClass M` is the class of admitted machines, a predicate on machines with closure fields.
+  `C.Indist u v` says that every admitted machine returning a Boolean has negligible advantage as
+  a distinguisher (`Machine.test`), and `C.Adv X` that an admitted machine computes `X`
+  everywhere (`AdvMachine.eval`).
 
-Each structural rule about `∼` reduces an adversary against its conclusion to adversaries against
-its premises, and the reductions are named. Five of them (`Distinguisher.app`, `.fn`, `.adv`,
-`.ite`, `.rename`) change a vector before running the given distinguisher, and the advantage is
-unchanged at every `η`. The case split (`Indist.caseStudy`, with BC14's If1 as `Indist.if1`) uses
-`Distinguisher.guard true` and `.guard false`, which run the distinguisher only when a Boolean
-first entry has the given value, and at every `η` the advantage is at most the sum of theirs
-(`advantage_cons_cond_le`). These are the concrete statements. `AdvClass` carries one closure
-field per reduction shape, used only by the rules that need that shape.
+Each structural rule about `∼` reduces a machine against its conclusion to machines against its
+premises. The reductions are named twice: as functions of the input values (`Distinguisher.app`,
+`.fn`, `.adv`, `.ite`, `.rename`, `.guard`), on which the advantage is computed, and as machines
+(`Machine.app`, …), whose `test` is that function (`Machine.test_app`, …). The first five keep the
+advantage at every `η`; the case split (`Indist.caseStudy`, with BC14's If1 as `Indist.if1`) uses
+`guard true` and `guard false`, and at every `η` the advantage is at most the sum of theirs
+(`advantage_cons_cond_le`). These are the concrete statements.
 
-The rules for the secrecy predicates `⊬` and `▷` (`SquirrelLogic.Secrecy`) add two shapes, each
-an operation a machine performs: running one attacker function after another on the shared tape
-`ρa` (`AttackerFn.comp`), and testing two values for equality (`Distinguisher.eqTest`).
+The closure fields of `AdvClass` are the program constructions of `SquirrelLogic.Machine`:
+relabelling the inputs, running one machine to answer another's input queries (substitution into
+a handler), querying an input at another input, answering by an honest symbol, branching on a
+Boolean input, Boolean constants, and the equality test; and a polynomial bound on the tape
+positions a machine reads. The reductions of the rules are built from them (`AdvClass.adv_mem`,
+`AdvClass.ite_mem`, `AdvClass.guard_mem`, …).
 
-The empty class meets every closure field, and then `Indist` holds of any two vectors: a statement
-`C.Indist u v` is exactly as strong as `C`. `AdvClass.all` admits every distinguisher.
+`AdvClass.all` admits every machine with a polynomial read bound and meets every field: the
+information-theoretic class of the satisfiability models and countermodels.
 -/
 
 public section
@@ -119,72 +122,163 @@ end Distinguisher
   ENNReal.absDiff (Pr{let ρ ← $ᵗ (M.Tape η)}[A η (u η ρ) ρ.1 = true])
     (Pr{let ρ ← $ᵗ (M.Tape η)}[A η (v η ρ) ρ.1 = true])
 
+/-! ## Machines as distinguishers -/
+
+namespace Machine
+
+variable {τs' : List (Ty B)}
+
+theorem test_input (y : ScopedVar τs .bool) :
+    (input y Ty.isGround_bool : Machine M τs .bool).test = fun _ e _ => e .bool y :=
+  funext fun _ => funext fun _ => funext fun _ => run_input y Ty.isGround_bool _
+
+theorem test_rename (r : Renaming τs τs') (A : Machine M τs .bool) :
+    (A.rename r).test = A.test.rename r :=
+  funext fun _ => funext fun _ => funext fun _ => run_rename r A _
+
+theorem test_app (ha : a.IsGround) (A : Machine M (b :: τs) .bool) :
+    (A.app ha).test = A.test.app :=
+  funext fun _ => funext fun _ => funext fun _ => run_app ha A _
+
+theorem test_fn (f : D.Fn τ) (A : Machine M (τ :: τs) .bool) : (A.fn f).test = A.test.fn f :=
+  funext fun _ => funext fun _ => funext fun _ => run_fn f A _
+
+theorem test_adv {τs₀ : List (Ty B)} {β : Ty B} (A : Machine M (Ty.arrows τs₀ β :: τs) .bool)
+    (g : AdvMachine M τs₀ β) : (A.adv g).test = A.test.adv g.eval :=
+  funext fun _ => funext fun _ => funext fun _ => run_adv A g _
+
+theorem test_ite (A : Machine M (a :: τs) .bool) : A.ite.test = A.test.ite :=
+  funext fun _ => funext fun _ => funext fun _ => run_ite A _
+
+theorem test_guard (c : Bool) (A : Machine M τs .bool) : (A.guard c).test = A.test.guard c :=
+  funext fun _ => funext fun _ => funext fun _ => run_guard c A _
+
+theorem test_eqTest {β : Ty B} (hβ : β.IsGround) :
+    (eqTest hβ : Machine M [β, β] .bool).test = Distinguisher.eqTest β :=
+  funext fun _ => funext fun _ => funext fun _ => run_eqTest hβ _
+
+end Machine
+
+theorem AdvMachine.eval_comp' {β γ : Ty B} (k : AdvMachine M [β] γ) (f : AdvMachine M τs β) :
+    (k.comp f).eval = k.eval.comp f.eval :=
+  funext fun _ => funext fun ρa => k.eval_comp f ρa
+
 /-! ## The class of machines -/
 
-/-- The machines of a model: attacker computations for `adv`, distinguishers for `∼`, and one
-closure field for each reduction shape of the structural rules about `∼`, `⊬` and `▷`. -/
+/-- The machines of a model, admitted for `adv` and `∼`: a predicate on machines, closed under the
+program constructions of `SquirrelLogic.Machine`, with a polynomial bound on the tape positions
+that each machine reads. Each field names the rules it serves and the property of a class of
+polynomial-time machines that gives it. -/
 structure AdvClass (M : Model D) where
-  /-- Admitted attacker computations. -/
-  computes : {τ : Ty B} → AttackerFn M τ → Prop
-  /-- Admitted distinguishers. -/
-  distinguishes : {τs : List (Ty B)} → Distinguisher M τs → Prop
-  /-- FA-App (`Valid.equiv_app`). -/
-  app_mem {a b : Ty B} {τs : List (Ty B)} {A : Distinguisher M (b :: τs)} :
-    distinguishes A → distinguishes (A.app (a := a))
-  /-- FA-Fn (`Valid.equiv_fn`). -/
-  fn_mem {τ : Ty B} {τs : List (Ty B)} (f : D.Fn τ) {A : Distinguisher M (τ :: τs)} :
-    distinguishes A → distinguishes (A.fn f)
-  /-- FA-Adv (`Valid.equiv_adv`). -/
-  adv_mem {τ : Ty B} {τs : List (Ty B)} {g : AttackerFn M τ} {A : Distinguisher M (τ :: τs)} :
-    computes g → distinguishes A → distinguishes (A.adv g)
-  /-- If (`Valid.equiv_ite`). -/
-  ite_mem {a : Ty B} {τs : List (Ty B)} {A : Distinguisher M (a :: τs)} :
-    distinguishes A → distinguishes A.ite
-  /-- Perm, Restr and Dup: every reindexing of a vector (`Valid.equiv_rename`,
-  `Valid.equiv_tail`, `Valid.equiv_dup`). -/
-  rename_mem {τs τs' : List (Ty B)} (r : Renaming τs' τs) {A : Distinguisher M τs'} :
-    distinguishes A → distinguishes (A.rename r)
-  /-- The case split (`Valid.equiv_caseStudy`, `Valid.equiv_if1`). The other reductions only
-  change the vector before running `A`, so they map constant distinguishers to constant ones,
-  and `guard` does not: this field does not follow from the others
-  (`CaseStudy.guard_not_derivable`). -/
-  guard_mem {τs : List (Ty B)} (c : Bool) {A : Distinguisher M τs} :
-    distinguishes A → distinguishes (A.guard c)
-  /-- Trans, WeakL and WeakR for `⊬` and `▷` (`AdvClass.Ded.trans`, `AdvClass.NonDed.weakL`,
-  `AdvClass.NonDed.weakR`): post-composing an admitted attacker function of a tuple with an
-  admitted attacker function, both reading the shared attacker tape, is admitted. A
-  polynomial-time class has it, as it has sequential composition (cslib-frontier's
-  `IsPPTOn.bind`); a uniform one does. -/
-  comp_mem {τs : List (Ty B)} {β γ : Ty B} {k : AttackerFn M (.arrow β γ)}
-    {f : AttackerFn M (Ty.arrows τs β)} : computes k → computes f → computes (k.comp f)
-  /-- Rw-Equiv (`AdvClass.NonDed.rwEquiv`): the equality test at a Boolean or base type. A
-  polynomial-time class has it, uniform or not, since values of these types are bitstrings
-  (cslib-frontier's `decide_eq`). It is not asked at arrow types, whose equality no machine
-  tests. -/
-  eqTest_mem {β : Ty B} : β.IsGround → distinguishes (Distinguisher.eqTest β)
+  /-- The admitted machines. -/
+  mem : {τs : List (Ty B)} → {β : Ty B} → Machine M τs β → Prop
+  /-- Relabelling the inputs (`Machine.rename`): Perm, Restr and Dup (`Valid.equiv_rename`,
+  `Valid.equiv_tail`, `Valid.equiv_dup`), and through the derived reductions FA-Adv, If, the case
+  split, Trans, WeakL, WeakR and Rw-Equiv. Polynomial time: closing the input interface through
+  the handler that forwards each query along the renaming, a single query per query
+  (`OracleComp.Complexity.closeHandler` with a dispatcher of constant cost). -/
+  rename_mem {τs τs' : List (Ty B)} {β : Ty B} (r : Renaming τs τs') {A : Machine M τs β} :
+    mem A → mem (A.rename r)
+  /-- Substitution into a handler (`Machine.subst`): the queries to the first input are answered
+  by running an admitted machine on the query's arguments and the remaining inputs, on the same
+  attacker tape. FA-Adv (`AdvClass.adv_mem`), Trans, WeakL and WeakR (`AdvClass.comp_mem`) and
+  Rw-Equiv (`AdvClass.deduce_mem`). Polynomial time: VCVio's proof-bearing handler closure,
+  `OracleComp.Complexity.closeHandler` with a `HandlerCertificate` for the handler, and the
+  sequencing of `IsOraclePPTBy.bind`; answers are values of Boolean or base types, whose size is
+  polynomial. -/
+  subst_mem {as : List (Ty B)} {ρ : Ty B} {τs : List (Ty B)} {β : Ty B}
+    {A : Machine M (Ty.arrows as ρ :: τs) β} {K : Machine M (as ++ (ρ.args ++ τs)) ρ.res} :
+    mem A → mem K → mem (A.subst K)
+  /-- Querying an input at another input (`Machine.app`): FA-App (`Valid.equiv_app`). The input
+  read is of a Boolean or base type, as in every vector of order at most one. Polynomial time: a
+  handler making two queries per query. -/
+  app_mem {a b : Ty B} {τs : List (Ty B)} {β : Ty B} (ha : a.IsGround)
+    {A : Machine M (b :: τs) β} : mem A → mem (A.app ha)
+  /-- Answering an input by an honest symbol (`Machine.fn`): FA-Fn (`Valid.equiv_fn`), and
+  through it BC14's FA. Polynomial time: LICS23 interprets honest symbols by polynomial-time
+  functions, so the handler is a pure polynomial-time function of the query (VCVio's
+  `PureCertificate`). -/
+  fn_mem {τ : Ty B} {τs : List (Ty B)} {β : Ty B} (f : D.Fn τ) {A : Machine M (τ :: τs) β} :
+    mem A → mem (A.fn f)
+  /-- Branching on a Boolean input (`Machine.branch`): If (`AdvClass.ite_mem`) and the case split
+  (`AdvClass.guard_mem`). Polynomial time: one query, then either machine (`IsOraclePPTBy.bind`
+  with a two-way continuation). -/
+  branch_mem {τs : List (Ty B)} {β : Ty B} {x y : Machine M τs β} :
+    mem x → mem y → mem (Machine.branch x y)
+  /-- The Boolean constants (`Machine.const`): the case split (`AdvClass.guard_mem`), whose
+  reduction returns `false` when the condition fails. Polynomial time: `PureCertificate` of a
+  constant. -/
+  const_mem {τs : List (Ty B)} (c : Bool) : mem (Machine.const c : Machine M τs .bool)
+  /-- The equality test at a Boolean or base type (`Machine.eqTest`): Rw-Equiv
+  (`AdvClass.deduce_mem`). It is not asked at arrow types, whose equality no machine tests.
+  Polynomial time: equality of bitstrings (cslib-frontier's `decide_eq`). -/
+  eqTest_mem {β : Ty B} (hβ : β.IsGround) : mem (Machine.eqTest hβ : Machine M [β, β] .bool)
+  /-- Each admitted machine reads the attacker tape below a polynomial (`Machine.ReadsBelow`). No
+  rule proved so far uses it; FreshL will, to sample a fresh name from bits that the terms do not
+  read (CCS26 App. C.2, footnote 2). Polynomial time: LICS23's machines read `ρa` from a tape
+  (§II-C.1), so a machine running in time `t(η)` reads below `t(η)`; with random access to the
+  tape this is a query bound on the tape interface (VCVio's `AllQueriesSatisfy`). -/
+  readBound_mem {τs : List (Ty B)} {β : Ty B} {A : Machine M τs β} :
+    mem A → ∃ p : Polynomial ℕ, A.ReadsBelow fun η => p.eval η
 
 namespace AdvClass
 
-/-- Every machine. -/
+/-- Every machine with a polynomial read bound: the information-theoretic class, which meets every
+closure field. -/
 @[expose] def all (M : Model D) : AdvClass M where
-  computes _ := True
-  distinguishes _ := True
-  app_mem _ := trivial
-  fn_mem := by intros; trivial
-  adv_mem := by intros; trivial
-  ite_mem _ := trivial
-  rename_mem := by intros; trivial
-  guard_mem := by intros; trivial
-  comp_mem _ _ := trivial
-  eqTest_mem _ := trivial
+  mem A := ∃ p : Polynomial ℕ, A.ReadsBelow fun η => p.eval η
+  rename_mem r := fun ⟨p, hp⟩ => ⟨p, hp.rename r⟩
+  subst_mem := fun ⟨p, hp⟩ ⟨q, hq⟩ => ⟨p + q,
+    (hp.mono fun η => by simp).subst (hq.mono fun η => by simp)⟩
+  app_mem ha := fun ⟨p, hp⟩ => ⟨p, hp.app ha⟩
+  fn_mem f := fun ⟨p, hp⟩ => ⟨p, hp.fn f⟩
+  branch_mem := fun ⟨p, hp⟩ ⟨q, hq⟩ => ⟨p + q,
+    (hp.mono fun η => by simp).branch (hq.mono fun η => by simp)⟩
+  const_mem _ := ⟨0, Machine.readsBelow_const _⟩
+  eqTest_mem hβ := ⟨0, Machine.readsBelow_eqTest hβ⟩
+  readBound_mem h := h
 
-/-- `adv t` (LICS23 Fig. 2): an admitted attacker computation agrees with `t` everywhere. -/
-@[expose] def Adv (C : AdvClass M) (X : RV M τ) : Prop :=
-  ∃ g, C.computes g ∧ ∀ η ρ, X η ρ = g η ρ.1
+/-- A machine that never reads the tape is in `AdvClass.all`. -/
+theorem all_mem_of_readsBelow_zero {τs : List (Ty B)} {β : Ty B} {A : Machine M τs β}
+    (h : A.ReadsBelow fun _ => 0) : (all M).mem A :=
+  ⟨0, by simpa using h⟩
 
-/-- `u⃗ ∼ v⃗` (LICS23 Fig. 2): every admitted distinguisher has negligible advantage. -/
+/-- `adv t` (LICS23 Fig. 2), at the type `τ₁ → … → τₙ → β`: an admitted machine with inputs `τs`
+and the arguments of `β` computes `t` everywhere. -/
+@[expose] def Adv (C : AdvClass M) {β : Ty B} (X : RV M (Ty.arrows τs β)) : Prop :=
+  ∃ A : AdvMachine M τs β, C.mem A ∧ ∀ η ρ, X η ρ = A.eval η ρ.1
+
+/-- `u⃗ ∼ v⃗` (LICS23 Fig. 2): every admitted machine returning a Boolean has negligible
+advantage. -/
 @[expose] def Indist (C : AdvClass M) (u v : VecRV M τs) : Prop :=
-  ∀ A, C.distinguishes A → negligible (advantage A u v)
+  ∀ A : Machine M τs .bool, C.mem A → negligible (advantage A.test u v)
+
+variable (C : AdvClass M)
+
+/-- The reduction of FA-Adv is admitted. -/
+theorem adv_mem {τs₀ : List (Ty B)} {β γ : Ty B} {A : Machine M (Ty.arrows τs₀ β :: τs) γ}
+    {g : AdvMachine M τs₀ β} (hA : C.mem A) (hg : C.mem g) : C.mem (A.adv g) :=
+  C.subst_mem hA (C.rename_mem _ hg)
+
+/-- The reduction of If is admitted. -/
+theorem ite_mem {β : Ty B} {A : Machine M (a :: τs) β} (hA : C.mem A) : C.mem A.ite :=
+  C.branch_mem (C.rename_mem _ hA) (C.rename_mem _ hA)
+
+/-- The reductions of the case split are admitted. -/
+theorem guard_mem (c : Bool) {A : Machine M τs .bool} (hA : C.mem A) : C.mem (A.guard c) := by
+  cases c
+  · exact C.branch_mem (C.const_mem false) hA
+  · exact C.branch_mem hA (C.const_mem false)
+
+/-- The reduction of Trans, WeakL and WeakR is admitted. -/
+theorem comp_mem {β γ : Ty B} {k : AdvMachine M [β] γ} {f : AdvMachine M τs β} (hk : C.mem k)
+    (hf : C.mem f) : C.mem (k.comp f) :=
+  C.subst_mem (C.rename_mem _ hk) (C.rename_mem _ hf)
+
+/-- The reduction of Rw-Equiv is admitted. -/
+theorem deduce_mem {β : Ty B} (hβ : β.IsGround) {g : AdvMachine M τs β} (hg : C.mem g) :
+    C.mem (Machine.deduce hβ g) :=
+  C.subst_mem (C.rename_mem _ (C.eqTest_mem hβ)) (C.rename_mem _ hg)
 
 end AdvClass
 
@@ -313,40 +407,39 @@ theorem Indist.trans (h₁ : C.Indist u v) (h₂ : C.Indist v w) : C.Indist u w 
   fun A hA => negligible_of_le (fun _ => ENNReal.absDiff_triangle _ _ _)
     (negligible_add (h₁ A hA) (h₂ A hA))
 
-/-- FA-App, by the reduction `Distinguisher.app`. -/
-theorem Indist.app {u v : VecRV M (.arrow a b :: a :: τs)} (h : C.Indist u v) :
+/-- FA-App, by the reduction `Machine.app`, for an argument of a Boolean or base type. -/
+theorem Indist.app (ha : a.IsGround) {u v : VecRV M (.arrow a b :: a :: τs)} (h : C.Indist u v) :
     C.Indist u.app v.app := fun A hA => by
-  rw [advantage_app]
-  exact h A.app (C.app_mem hA)
+  rw [advantage_app, ← Machine.test_app ha]
+  exact h _ (C.app_mem ha hA)
 
-/-- FA-Fn, by the reduction `Distinguisher.fn`. -/
+/-- FA-Fn, by the reduction `Machine.fn`. -/
 theorem Indist.fn (f : D.Fn τ) (h : C.Indist u v) :
     C.Indist (VecRV.cons (fun η _ => M.fn η f) u) (VecRV.cons (fun η _ => M.fn η f) v) :=
   fun A hA => by
-  rw [advantage_fn]
-  exact h (A.fn f) (C.fn_mem f hA)
+  rw [advantage_fn, ← Machine.test_fn]
+  exact h _ (C.fn_mem f hA)
 
-/-- FA-Adv, by the reduction `Distinguisher.adv` at the attacker computation that `adv`
-provides. -/
-theorem Indist.adv {X : RV M τ} (hX : C.Adv X) (h : C.Indist u v) :
-    C.Indist (VecRV.cons X u) (VecRV.cons X v) := by
+/-- FA-Adv, by the reduction `Machine.adv` at the machine that `adv` provides. -/
+theorem Indist.adv {τs₀ : List (Ty B)} {β : Ty B} {X : RV M (Ty.arrows τs₀ β)} (hX : C.Adv X)
+    (h : C.Indist u v) : C.Indist (VecRV.cons X u) (VecRV.cons X v) := by
   obtain ⟨g, hg, hXg⟩ := hX
-  obtain rfl : X = fun η ρ => g η ρ.1 := funext fun η => funext (hXg η)
+  obtain rfl : X = fun η ρ => g.eval η ρ.1 := funext fun η => funext (hXg η)
   intro A hA
-  rw [advantage_adv]
-  exact h (A.adv g) (C.adv_mem hg hA)
+  rw [advantage_adv, ← Machine.test_adv]
+  exact h _ (C.adv_mem hA hg)
 
-/-- If, by the reduction `Distinguisher.ite`. -/
+/-- If, by the reduction `Machine.ite`. -/
 theorem Indist.ite {u v : VecRV M (.bool :: a :: a :: τs)} (h : C.Indist u v) :
     C.Indist u.ite v.ite := fun A hA => by
-  rw [advantage_ite]
-  exact h A.ite (C.ite_mem hA)
+  rw [advantage_ite, ← Machine.test_ite]
+  exact h _ (C.ite_mem hA)
 
-/-- Perm, by the reduction `Distinguisher.rename`. -/
+/-- Perm, by the reduction `Machine.rename`. -/
 theorem Indist.rename {τs' : List (Ty B)} (r : Renaming τs' τs) (h : C.Indist u v) :
     C.Indist (u.rename r) (v.rename r) := fun A hA => by
-  rw [advantage_rename]
-  exact h (A.rename r) (C.rename_mem r hA)
+  rw [advantage_rename, ← Machine.test_rename]
+  exact h _ (C.rename_mem r hA)
 
 /-- Restr: `Distinguisher.rename` at the renaming that skips the first position. -/
 theorem Indist.tail {u v : VecRV M (τ :: τs)} (h : C.Indist u v) : C.Indist u.tail v.tail :=
@@ -360,17 +453,17 @@ theorem Indist.dup {u v : VecRV M (τ :: τs)} (h : C.Indist u v) : C.Indist u.d
   rw [hu u, hu v]
   exact h.rename _
 
-/-- Case split (LICS23's G.Case-Study:ITE), by the reductions `Distinguisher.guard true` and
-`Distinguisher.guard false`: if `b, x, u⃗ ∼ b', x', v⃗` and `b, y, u⃗ ∼ b', y', v⃗`, then
+/-- Case split (LICS23's G.Case-Study:ITE), by the reductions `Machine.guard true` and
+`Machine.guard false`: if `b, x, u⃗ ∼ b', x', v⃗` and `b, y, u⃗ ∼ b', y', v⃗`, then
 `if b then x else y, u⃗ ∼ if b' then x' else y', v⃗`. -/
 theorem Indist.caseStudy {b b' : RV M .bool} {x y x' y' : RV M a} {u v : VecRV M τs}
     (h₁ : C.Indist (VecRV.cons b (VecRV.cons x u)) (VecRV.cons b' (VecRV.cons x' v)))
     (h₂ : C.Indist (VecRV.cons b (VecRV.cons y u)) (VecRV.cons b' (VecRV.cons y' v))) :
     C.Indist (VecRV.cons (fun η ρ => cond (b η ρ) (x η ρ) (y η ρ)) u)
       (VecRV.cons (fun η ρ => cond (b' η ρ) (x' η ρ) (y' η ρ)) v) := fun A hA =>
-  negligible_of_le (advantage_cons_cond_le A b b' x y x' y' u v)
-    (negligible_add (h₁ (A.guard true) (C.guard_mem true hA))
-      (h₂ (A.guard false) (C.guard_mem false hA)))
+  negligible_of_le (advantage_cons_cond_le A.test b b' x y x' y' u v)
+    (negligible_add (Machine.test_guard true A ▸ h₁ _ (C.guard_mem true hA))
+      (Machine.test_guard false A ▸ h₂ _ (C.guard_mem false hA)))
 
 /-- BC14's If1, from the case split with both right-hand branches `z`: if `b, x, u⃗ ∼ b', z, v⃗`
 and `b, y, u⃗ ∼ b', z, v⃗`, then `if b then x else y, u⃗ ∼ z, v⃗`. -/
@@ -378,14 +471,16 @@ theorem Indist.if1 {b b' : RV M .bool} {x y z : RV M a} {u v : VecRV M τs}
     (h₁ : C.Indist (VecRV.cons b (VecRV.cons x u)) (VecRV.cons b' (VecRV.cons z v)))
     (h₂ : C.Indist (VecRV.cons b (VecRV.cons y u)) (VecRV.cons b' (VecRV.cons z v))) :
     C.Indist (VecRV.cons (fun η ρ => cond (b η ρ) (x η ρ) (y η ρ)) u) (VecRV.cons z v) := by
-  simpa only [Bool.cond_self] using h₁.caseStudy h₂
+  have h := Indist.caseStudy (x' := z) (y' := z) h₁ h₂
+  rwa [show (fun η ρ => cond (b' η ρ) (z η ρ) (z η ρ)) = z from
+    funext fun _ => funext fun _ => Bool.cond_self _ _] at h
 
 /-- Rewriting under an overwhelming equality: if `u` and `u'` differ with negligible probability,
 `u` is indistinguishable from whatever `u'` is. -/
 theorem Indist.of_negligible_ne {u' : VecRV M τs}
     (hne : negligible fun η => Pr{let ρ ← $ᵗ (M.Tape η)}[u η ρ ≠ u' η ρ]) (h : C.Indist u' v) :
     C.Indist u v :=
-  fun A hA => negligible_of_le (fun η => advantage_le_add_prEvent_ne A u u' v η)
+  fun A hA => negligible_of_le (fun η => advantage_le_add_prEvent_ne A.test u u' v η)
     (negligible_add (h A hA) hne)
 
 end AdvClass

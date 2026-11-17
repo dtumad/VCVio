@@ -22,9 +22,12 @@ propositions:
 
 * `[φ]` is `Overwhelming`: over uniform tapes, the probability that `φ` is false is negligible;
 * `const t` is `RV.IsConst`;
-* `adv t` and `u⃗ ∼ v⃗` are read through `C : AdvClass M` (`SquirrelLogic.Indist`), a parameter
-  standing for LICS23's polynomial-time machines. The vectors of `∼` are environments of terms
-  (`Vec`), so that they are extended and shortened by `Env.cons` and `Vals.tail`.
+* `adv t` and `u⃗ ∼ v⃗` are read through `C : AdvClass M` (`SquirrelLogic.Indist`), a class of
+  machines standing for LICS23's polynomial-time machines. The vectors of `∼` are environments of
+  terms (`Vec`), so that they are extended and shortened by `Env.cons` and `Vals.tail`. As in
+  CSF24 and CCS26 (§3.1, p. 6), `adv` applies to terms of order at most two and `∼` to vectors of
+  order at most one: the constructors carry these bounds (`Ty.AdvOrder`, `Ty.IndistOrder`), which
+  their default argument proves by evaluation for concrete types.
 
 `Valid R C Θ F` is the validity of the global sequent `Θ ⊢ F` (LICS23 §III): `F` holds in every
 model respecting the labels and the restriction `R`, at every value of the variables, wherever
@@ -69,29 +72,32 @@ inductive GlobalOp (B : Type) : Kind B → Type where
   | box : GlobalOp B .glob
   /-- `const t`: the term is a constant. -/
   | const (τ : Ty B) : GlobalOp B .glob
-  /-- `adv t`: the attacker computes the term. -/
-  | adv (τ : Ty B) : GlobalOp B .glob
-  /-- `u⃗ ∼ v⃗` for vectors of terms of the types `τs`. -/
-  | equiv (τs : List (Ty B)) : GlobalOp B .glob
+  /-- `adv t` for a term of type `τ₁ → … → τₙ → β` of order at most two: the attacker computes
+  the term. -/
+  | adv (τs : List (Ty B)) (β : Ty B) (h : Ty.AdvOrder τs β) : GlobalOp B .glob
+  /-- `u⃗ ∼ v⃗` for vectors of terms of the types `τs`, of order at most one. -/
+  | equiv (τs : List (Ty B)) (h : Ty.IndistOrder τs) : GlobalOp B .glob
 
 /-- The global constructors. Quantifiers bind one variable of a local sort; `[·]`, `const`,
 `adv` and `∼` take local terms; the connectives take global formulas. The arguments of `∼` are
-its two sides at each position of the vector. -/
+its two sides at each position of the vector. The constructors `adv` and `∼` carry the order
+bounds of CSF24 and CCS26 (§3.1, p. 6), so that an atom outside the fragment cannot be written. -/
 @[expose, reducible] def globalSig (B : Type) : ScopedSignature (Kind B) where
   Op := GlobalOp B
   Arg o := match o with
     | .top | .bot => Fin 0
     | .and | .or | .imp => Fin 2
-    | .all _ | .ex _ | .box | .const _ | .adv _ => Fin 1
-    | .equiv τs => Bool × (τ : Ty B) × ScopedVar τs τ
+    | .all _ | .ex _ | .box | .const _ | .adv _ _ _ => Fin 1
+    | .equiv τs _ => Bool × (τ : Ty B) × ScopedVar τs τ
   binders o := match o with
     | .all τ | .ex τ => fun _ => [.loc τ]
     | _ => fun _ => []
   sort o := match o with
     | .top | .bot | .and | .or | .imp | .all _ | .ex _ => fun _ => .glob
     | .box => fun _ => .loc .bool
-    | .const τ | .adv τ => fun _ => .loc τ
-    | .equiv _ => fun p => .loc p.2.1
+    | .const τ => fun _ => .loc τ
+    | .adv τs β _ => fun _ => .loc (Ty.arrows τs β)
+    | .equiv _ _ => fun p => .loc p.2.1
 
 /-- Local and global constructors together. -/
 @[expose, reducible] def fullSig (D : Decl B) : ScopedSignature (Kind B) :=
@@ -189,12 +195,15 @@ variable {Γ : List (Kind B)} {τ : Ty B}
 /-- `const t`. -/
 @[expose] def const (t : FTerm D Γ τ) : Form D Γ := .node (.inr (.const τ)) fun _ => t
 
-/-- `adv t`. -/
-@[expose] def adv (t : FTerm D Γ τ) : Form D Γ := .node (.inr (.adv τ)) fun _ => t
+/-- `adv t`, for a term of type `τ₁ → … → τₙ → β` of order at most two. -/
+@[expose] def adv {τs : List (Ty B)} {β : Ty B} (t : FTerm D Γ (Ty.arrows τs β))
+    (h : Ty.AdvOrder τs β := by exact of_decide_eq_true rfl) : Form D Γ :=
+  .node (.inr (.adv τs β h)) fun _ => t
 
-/-- `u⃗ ∼ v⃗`. -/
-@[expose] def equiv {τs : List (Ty B)} (u v : Vec D Γ τs) : Form D Γ :=
-  .node (.inr (.equiv τs)) fun p => bif p.1 then v _ p.2.2 else u _ p.2.2
+/-- `u⃗ ∼ v⃗`, for vectors of order at most one. -/
+@[expose] def equiv {τs : List (Ty B)} (u v : Vec D Γ τs)
+    (h : Ty.IndistOrder τs := by exact of_decide_eq_true rfl) : Form D Γ :=
+  .node (.inr (.equiv τs h)) fun p => bif p.1 then v _ p.2.2 else u _ p.2.2
 
 end Form
 
@@ -244,8 +253,8 @@ value in `⋂_η ⟦τ⟧_η`; `Ty.Same` agrees with that at base types and at a
   | _, .ex τ, next => ∃ X : RV M τ, next 0 (Env.single X)
   | _, .box, next => Overwhelming M.toTapeModel (next 0 Env.empty)
   | _, .const _, next => RV.IsConst (next 0 Env.empty)
-  | _, .adv _, next => C.Adv (next 0 Env.empty)
-  | _, .equiv _, next => C.Indist (fun η ρ _ x => next (false, ⟨_, x⟩) Env.empty η ρ)
+  | _, .adv _ _ _, next => C.Adv (next 0 Env.empty)
+  | _, .equiv _ _, next => C.Indist (fun η ρ _ x => next (false, ⟨_, x⟩) Env.empty η ρ)
       (fun η ρ _ x => next (true, ⟨_, x⟩) Env.empty η ρ)
 
 /-- Local constructors as random variables, global ones as propositions. -/
@@ -386,12 +395,13 @@ theorem denote_weaken_cons {V : Kind B → Type} (alg : Interpretation (fullSig 
   funext η ρ σ x
   cases x <;> rfl
 
-theorem Form.holds_adv {τ : Ty B} {t : FTerm D Γ τ} :
-    (Form.adv t).Holds M C env ↔ C.Adv (t.denote (fullInterp M C) env) :=
+theorem Form.holds_adv {τs : List (Ty B)} {β : Ty B} {t : FTerm D Γ (Ty.arrows τs β)}
+    {h : Ty.AdvOrder τs β} :
+    (Form.adv t h).Holds M C env ↔ C.Adv (t.denote (fullInterp M C) env) :=
   Iff.rfl
 
-theorem Form.holds_equiv {τs : List (Ty B)} {u v : Vec D Γ τs} :
-    (Form.equiv u v).Holds M C env ↔ C.Indist (u.rv M C env) (v.rv M C env) :=
+theorem Form.holds_equiv {τs : List (Ty B)} {u v : Vec D Γ τs} {h : Ty.IndistOrder τs} :
+    (Form.equiv u v h).Holds M C env ↔ C.Indist (u.rv M C env) (v.rv M C env) :=
   Iff.rfl
 
 end Reading
