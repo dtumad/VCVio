@@ -1,6 +1,7 @@
 module
 
 public import SquirrelLogic.Sum
+public import SquirrelLogic.MonadicReading
 public import SquirrelLogic.ProductTape
 public import SquirrelLogic.OneTimeGame
 public import SquirrelLogic.Syntax
@@ -12,6 +13,8 @@ public import SquirrelLogic.TapeBounds
 public import SquirrelLogic.Global
 public import SquirrelLogic.Secrecy
 public import SquirrelLogic.Avoids
+public import SquirrelLogic.OracleTerm
+public import SquirrelLogic.Compile
 public import SquirrelLogic.Rules.Local
 public import SquirrelLogic.Rules.Equiv
 public import SquirrelLogic.Rules.Rename
