@@ -67,14 +67,16 @@ theorem Valid.all_inst {R : Model D → Prop} {C : ∀ M : Model D, AdvClass M}
   h.cut (all_left t (ax List.mem_cons_self))
 
 /-- `true ∼ false` is not valid against the class of all machines, for a declaration with no
-`large` base type: the distinguisher that returns its input has advantage one. -/
+`large` base type: the machine that returns its input has advantage one. -/
 theorem Valid.not_equiv_tt_ff (hD : ∀ b, ¬ D.labels b .large) :
     ¬ Valid (D := D) (fun _ => True) AdvClass.all (Γ := []) []
       (.equiv (Env.cons .tt Env.empty) (Env.cons .ff Env.empty)) := fun h => by
   have hM := Form.holds_equiv.1 (h (Model.trivial D) (Model.trivial_respectsLabels hD) trivial
-    Env.empty (by simp)) (fun _ e _ => e _ .zero) trivial
+    Env.empty (by simp)) (Machine.input .zero Ty.isGround_bool)
+    (AdvClass.all_mem_of_readsBelow_zero (Machine.readsBelow_input _ _))
   refine not_negligible_one (negligible_of_le (fun η => le_of_eq ?_) hM)
-  simp only [advantage, Vec.rv_cons, VecRV.cons, Env.cons_zero, FTerm.denote_tt, FTerm.denote_ff]
+  simp only [advantage, Machine.test, Machine.run_input, Vec.rv_cons, VecRV.cons, Env.cons_zero,
+    FTerm.denote_tt, FTerm.denote_ff]
   rw [OracleComp.prEvent_true_eq_one,
     prEvent_eq_zero_of_forall_not _ _ fun _ h => Bool.noConfusion h, ENNReal.absDiff_zero_right]
 

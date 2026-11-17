@@ -26,6 +26,10 @@ two, are `Valid.not_ded` (Neg1), `Valid.not_nonDed` (Neg2), `Valid.box_not_eq` (
 `▷`, so it is a single term, written as the vector `[v]`. `Valid.ded_apps` concludes `u⃗ ▷ f(u⃗)`
 from `adv(f)`, the definition of `▷` with its witness. Each rule applies one law of
 `SquirrelLogic.Secrecy`, whose proof is an inequality at every `η` with the reduction named.
+
+CCS26 (§3.1, p. 6) defines `adv` only for terms of order at most two, so `u⃗` and `v` have order
+at most one; `Form.nonDed` and `Form.ded` carry this bound (`Ty.SecrecyOrder`), and the attacker
+function's bound follows (`Ty.SecrecyOrder.advOrder`).
 -/
 
 public section
@@ -53,14 +57,17 @@ variable {B : Type} {D : Decl B} {Γ : List (Kind B)} {τs : List (Ty B)} {β γ
 @[expose] def Vec.snoc (u : Vec D Γ τs) (v : FTerm D Γ β) : Vec D Γ (τs ++ [β]) :=
   Env.append u (Env.cons v Env.empty)
 
-/-- `u⃗ ⊬ v` (CCS26 §3.1): `∀̃ f. adv(f) ⇒̃ [¬ (f(u⃗) = v)]`. -/
-@[expose] def Form.nonDed (u : Vec D Γ τs) (v : FTerm D Γ β) : Form D Γ :=
-  .all (Ty.arrows τs β) (.imp (.adv (Term.var .zero))
+/-- `u⃗ ⊬ v` (CCS26 §3.1): `∀̃ f. adv(f) ⇒̃ [¬ (f(u⃗) = v)]`, for `u⃗` and `v` of order at most
+one, so that `f` has order at most two. -/
+@[expose] def Form.nonDed (u : Vec D Γ τs) (v : FTerm D Γ β)
+    (h : Ty.SecrecyOrder τs β := by exact of_decide_eq_true rfl) : Form D Γ :=
+  .all (Ty.arrows τs β) (.imp (.adv (Term.var .zero) h.advOrder)
     (.box (FTerm.not (FTerm.eq (FTerm.apps (Term.var .zero) (u.weaken _)) (v.weaken _)))))
 
-/-- `u⃗ ▷ v` (CCS26 §3.1): `∃̃ f. adv(f) ∧̃ [f(u⃗) = v]`. -/
-@[expose] def Form.ded (u : Vec D Γ τs) (v : FTerm D Γ β) : Form D Γ :=
-  .ex (Ty.arrows τs β) (.and (.adv (Term.var .zero))
+/-- `u⃗ ▷ v` (CCS26 §3.1): `∃̃ f. adv(f) ∧̃ [f(u⃗) = v]`, for `u⃗` and `v` of order at most one. -/
+@[expose] def Form.ded (u : Vec D Γ τs) (v : FTerm D Γ β)
+    (h : Ty.SecrecyOrder τs β := by exact of_decide_eq_true rfl) : Form D Γ :=
+  .ex (Ty.arrows τs β) (.and (.adv (Term.var .zero) h.advOrder)
     (.box (FTerm.eq (FTerm.apps (Term.var .zero) (u.weaken _)) (v.weaken _))))
 
 /-! ## Semantics -/
@@ -123,10 +130,10 @@ private theorem denote_eq_apps (u : Vec D Γ τs) (v : FTerm D Γ β) (X : RV M 
   rw [FTerm.denote_eq, FTerm.denote_apps, Vec.rv_weaken, denote_weaken_cons]
   rfl
 
-/-- `u⃗ ⊬ v` holds when no admitted attacker function computes `v` from `u⃗` with
+/-- `u⃗ ⊬ v` holds when no admitted attacker machine computes `v` from `u⃗` with
 non-negligible probability. -/
-theorem Form.holds_nonDed {u : Vec D Γ τs} {v : FTerm D Γ β} :
-    (Form.nonDed u v).Holds M C env ↔
+theorem Form.holds_nonDed {u : Vec D Γ τs} {v : FTerm D Γ β} {ho : Ty.SecrecyOrder τs β} :
+    (Form.nonDed u v ho).Holds M C env ↔
       C.NonDed (u.rv M C env) (v.denote (fullInterp M C) env) := by
   have hX : ∀ X : RV M (Ty.arrows τs β), Overwhelming M.toTapeModel
       ((FTerm.not (FTerm.eq (FTerm.apps (Term.var .zero) (u.weaken (.loc (Ty.arrows τs β))))
@@ -138,13 +145,13 @@ theorem Form.holds_nonDed {u : Vec D Γ τs} {v : FTerm D Γ β} :
     exact cond_decide_eq_false_iff
   refine ⟨fun h g hg => (hX _).1 (h _ ⟨g, hg, fun _ _ => rfl⟩), fun h X hXg => ?_⟩
   obtain ⟨g, hg, hXg⟩ := hXg
-  obtain rfl : X = fun η ρ => g η ρ.1 := funext fun η => funext (hXg η)
+  obtain rfl : X = fun η ρ => g.eval η ρ.1 := funext fun η => funext (hXg η)
   exact (hX _).2 (h g hg)
 
-/-- `u⃗ ▷ v` holds when some admitted attacker function computes `v` from `u⃗` with overwhelming
+/-- `u⃗ ▷ v` holds when some admitted attacker machine computes `v` from `u⃗` with overwhelming
 probability. -/
-theorem Form.holds_ded {u : Vec D Γ τs} {v : FTerm D Γ β} :
-    (Form.ded u v).Holds M C env ↔ C.Ded (u.rv M C env) (v.denote (fullInterp M C) env) := by
+theorem Form.holds_ded {u : Vec D Γ τs} {v : FTerm D Γ β} {ho : Ty.SecrecyOrder τs β} :
+    (Form.ded u v ho).Holds M C env ↔ C.Ded (u.rv M C env) (v.denote (fullInterp M C) env) := by
   have hX : ∀ X : RV M (Ty.arrows τs β), Overwhelming M.toTapeModel
       ((FTerm.eq (FTerm.apps (Term.var .zero) (u.weaken (.loc (Ty.arrows τs β))))
         (v.weaken (.loc (Ty.arrows τs β)))).denote (fullInterp M C) (Env.cons X env)) ↔
@@ -154,8 +161,8 @@ theorem Form.holds_ded {u : Vec D Γ τs} {v : FTerm D Γ β} :
     rw [denote_eq_apps]
     exact @decide_eq_false_iff_not _ (Classical.propDecidable _)
   refine ⟨fun ⟨X, ⟨g, hg, hXg⟩, hbox⟩ => ⟨g, hg, ?_⟩, fun ⟨g, hg, herr⟩ =>
-    ⟨fun η ρ => g η ρ.1, ⟨g, hg, fun _ _ => rfl⟩, (hX _).2 herr⟩⟩
-  obtain rfl : X = fun η ρ => g η ρ.1 := funext fun η => funext (hXg η)
+    ⟨fun η ρ => g.eval η ρ.1, ⟨g, hg, fun _ _ => rfl⟩, (hX _).2 herr⟩⟩
+  obtain rfl : X = fun η ρ => g.eval η ρ.1 := funext fun η => funext (hXg η)
   exact (hX _).1 hbox
 
 end Reading
@@ -168,17 +175,20 @@ variable {R : Model D → Prop} {C : ∀ M : Model D, AdvClass M} {Θ : List (Fo
   {u : Vec D Γ τs} {v w : FTerm D Γ β}
 
 /-- **Neg1** (CCS26 Fig. 3): from `u⃗ ⊬ v`, conclude `¬ (u⃗ ▷ v)`. -/
-theorem not_ded (h : Valid R C Θ (.nonDed u v)) : Valid R C Θ (.not (.ded u v)) :=
+theorem not_ded {ho : Ty.SecrecyOrder τs β} (h : Valid R C Θ (.nonDed u v ho)) :
+    Valid R C Θ (.not (.ded u v ho)) :=
   fun M hl hR env hΘ => Form.holds_not.2 fun hd =>
     (Form.holds_nonDed.1 (h M hl hR env hΘ)).not_ded (Form.holds_ded.1 hd)
 
 /-- **Neg2** (CCS26 Fig. 3): from `u⃗ ▷ v`, conclude `¬ (u⃗ ⊬ v)`. -/
-theorem not_nonDed (h : Valid R C Θ (.ded u v)) : Valid R C Θ (.not (.nonDed u v)) :=
+theorem not_nonDed {ho : Ty.SecrecyOrder τs β} (h : Valid R C Θ (.ded u v ho)) :
+    Valid R C Θ (.not (.nonDed u v ho)) :=
   fun M hl hR env hΘ => Form.holds_not.2 fun hn =>
     (Form.holds_ded.1 (h M hl hR env hΘ)).not_nonDed (Form.holds_nonDed.1 hn)
 
 /-- **Ineq** (CCS26 Fig. 3): from `u⃗ ⊬ v` and `u⃗ ▷ w`, conclude `[v ≠ w]`. -/
-theorem box_not_eq (h : Valid R C Θ (.nonDed u v)) (h' : Valid R C Θ (.ded u w)) :
+theorem box_not_eq {ho : Ty.SecrecyOrder τs β} (h : Valid R C Θ (.nonDed u v ho))
+    (h' : Valid R C Θ (.ded u w ho)) :
     Valid R C Θ (.box (FTerm.not (FTerm.eq v w))) := fun M hl hR env hΘ => by
   refine Form.holds_box.2 (negligible_of_le (fun η => prEvent_mono _ _ _ fun ρ hρ => ?_)
     ((Form.holds_nonDed.1 (h M hl hR env hΘ)).negligible_eq (Form.holds_ded.1 (h' M hl hR env hΘ))))
@@ -187,23 +197,28 @@ theorem box_not_eq (h : Valid R C Θ (.nonDed u v)) (h' : Valid R C Θ (.ded u w
   exact cond_decide_eq_false_iff.1 hρ
 
 /-- **Trans** (CCS26 Fig. 3): from `u⃗ ▷ v` and `v ▷ w`, conclude `u⃗ ▷ w`. -/
-theorem ded_trans {w : FTerm D Γ γ} (h₁ : Valid R C Θ (.ded u v))
-    (h₂ : Valid R C Θ (.ded (Env.cons v Env.empty) w)) : Valid R C Θ (.ded u w) := by
+theorem ded_trans {w : FTerm D Γ γ} {ho₁ : Ty.SecrecyOrder τs β} {ho₂ : Ty.SecrecyOrder [β] γ}
+    (h₁ : Valid R C Θ (.ded u v ho₁)) (h₂ : Valid R C Θ (.ded (Env.cons v Env.empty) w ho₂)) :
+    Valid R C Θ (.ded u w ⟨ho₁.1, ho₂.2⟩) := by
   intro M hl hR env hΘ
   have h₂' := Form.holds_ded.1 (h₂ M hl hR env hΘ)
   rw [Vec.rv_single] at h₂'
   exact Form.holds_ded.2 ((Form.holds_ded.1 (h₁ M hl hR env hΘ)).trans h₂')
 
 /-- **WeakL** (CCS26 Fig. 3): from `u⃗ ⊬ w` and `u⃗ ▷ v`, conclude `v ⊬ w`. -/
-theorem nonDed_weakL {w : FTerm D Γ γ} (h : Valid R C Θ (.nonDed u w))
-    (h' : Valid R C Θ (.ded u v)) : Valid R C Θ (.nonDed (Env.cons v Env.empty) w) := by
+theorem nonDed_weakL {w : FTerm D Γ γ} {ho₁ : Ty.SecrecyOrder τs γ}
+    {ho₂ : Ty.SecrecyOrder τs β} (h : Valid R C Θ (.nonDed u w ho₁))
+    (h' : Valid R C Θ (.ded u v ho₂)) :
+    Valid R C Θ (.nonDed (Env.cons v Env.empty) w ⟨.single ho₂.2, ho₁.2⟩) := by
   intro M hl hR env hΘ
   rw [Form.holds_nonDed, Vec.rv_single]
   exact (Form.holds_nonDed.1 (h M hl hR env hΘ)).weakL (Form.holds_ded.1 (h' M hl hR env hΘ))
 
 /-- **WeakR** (CCS26 Fig. 3): from `u⃗ ⊬ v` and `w ▷ v`, conclude `u⃗ ⊬ w`. -/
-theorem nonDed_weakR {w : FTerm D Γ γ} (h : Valid R C Θ (.nonDed u v))
-    (h' : Valid R C Θ (.ded (Env.cons w Env.empty) v)) : Valid R C Θ (.nonDed u w) := by
+theorem nonDed_weakR {w : FTerm D Γ γ} {ho₁ : Ty.SecrecyOrder τs β}
+    {ho₂ : Ty.SecrecyOrder [γ] β} (h : Valid R C Θ (.nonDed u v ho₁))
+    (h' : Valid R C Θ (.ded (Env.cons w Env.empty) v ho₂)) :
+    Valid R C Θ (.nonDed u w ⟨ho₁.1, ho₂.1.head⟩) := by
   intro M hl hR env hΘ
   have h'' := Form.holds_ded.1 (h' M hl hR env hΘ)
   rw [Vec.rv_single] at h''
@@ -212,16 +227,18 @@ theorem nonDed_weakR {w : FTerm D Γ γ} (h : Valid R C Θ (.nonDed u v))
 /-- **Rw-Equiv** (CCS26 Fig. 3), for a right side of Boolean or base type: from `u⃗₂ ⊬ v₂` and
 `u⃗₁, v₁ ∼ u⃗₂, v₂`, conclude `u⃗₁ ⊬ v₁`. -/
 theorem nonDed_rwEquiv (hβ : β.IsGround) {u₁ u₂ : Vec D Γ τs} {v₁ v₂ : FTerm D Γ β}
-    (h : Valid R C Θ (.nonDed u₂ v₂))
-    (h' : Valid R C Θ (.equiv (Vec.snoc u₁ v₁) (Vec.snoc u₂ v₂))) :
-    Valid R C Θ (.nonDed u₁ v₁) := fun M hl hR env hΘ => by
+    {ho : Ty.SecrecyOrder τs β} {hoE : Ty.IndistOrder (τs ++ [β])}
+    (h : Valid R C Θ (.nonDed u₂ v₂ ho))
+    (h' : Valid R C Θ (.equiv (Vec.snoc u₁ v₁) (Vec.snoc u₂ v₂) hoE)) :
+    Valid R C Θ (.nonDed u₁ v₁ ho) := fun M hl hR env hΘ => by
   have hI := Form.holds_equiv.1 (h' M hl hR env hΘ)
   rw [Vec.rv_snoc, Vec.rv_snoc] at hI
   exact Form.holds_nonDed.2 ((Form.holds_nonDed.1 (h M hl hR env hΘ)).rwEquiv hβ hI)
 
 /-- `u⃗ ▷ f(u⃗)` when `adv(f)`: the definition of `▷`, with `f` as the witness. -/
-theorem ded_apps {f : FTerm D Γ (Ty.arrows τs β)} (hf : Valid R C Θ (.adv f)) :
-    Valid R C Θ (.ded u (FTerm.apps f u)) := fun M hl hR env hΘ => by
+theorem ded_apps {f : FTerm D Γ (Ty.arrows τs β)} {ha : Ty.AdvOrder τs β}
+    {ho : Ty.SecrecyOrder τs β} (hf : Valid R C Θ (.adv f ha)) :
+    Valid R C Θ (.ded u (FTerm.apps f u) ho) := fun M hl hR env hΘ => by
   obtain ⟨g, hg, hfg⟩ := Form.holds_adv.1 (hf M hl hR env hΘ)
   refine Form.holds_ded.2 ⟨g, hg, negligible_of_zero fun η =>
     prEvent_eq_zero_of_forall_not _ _ fun ρ hρ => hρ ?_⟩

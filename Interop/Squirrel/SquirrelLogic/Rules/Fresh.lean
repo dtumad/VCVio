@@ -89,12 +89,12 @@ theorem deduceAdv_nameAt_le (n : D.Name a b) (i : D.Fn a) (g : AttackerFn M (Ty.
   exact le_of_eq_of_le (prEvent_congr _ _ _ fun _ => eq_comm) (hε (Ty.appVals (g η ρ.1) (u η ρ)))
 
 /-- **FreshR**, semantically: a name of a large type is secret from every vector that does not
-read its coordinate, against every attacker function. -/
+read its coordinate, against every attacker machine, admitted or not. -/
 theorem AdvClass.nonDed_nameAt (C : AdvClass M) (n : D.Name a b) (i : D.Fn a)
     (hb : M.IsLarge b) {u : VecRV M τs} (hu : M.FreshAt (M.nameSlot n i) u) :
     C.NonDed u (M.nameAt n i) := fun g _ => by
   obtain ⟨c, hc, hle⟩ := hb
-  exact negligible_of_le (fun η => deduceAdv_nameAt_le n i g hu η (hle η))
+  exact negligible_of_le (fun η => deduceAdv_nameAt_le n i g.eval hu η (hle η))
     (negligible_two_rpow_neg_mul hc)
 
 namespace Valid
@@ -105,20 +105,21 @@ variable {R : Model D → Prop} {C : ∀ M : Model D, AdvClass M}
 type of `n` is labelled `large` and, in every admitted model where `Θ` holds, the vector `u⃗` does
 not read the coordinate of `n(i)`. -/
 theorem nonDed_freshR_of_freshAt {Γ : List (Kind B)} {Θ : List (Form D Γ)} {u : Vec D Γ τs}
-    (n : D.Name a b) (i : D.Fn a) (hlarge : b.HasLabel D.labels .large)
+    {ho : Ty.SecrecyOrder τs b} (n : D.Name a b) (i : D.Fn a)
+    (hlarge : b.HasLabel D.labels .large)
     (hfresh : ∀ M : Model D, M.RespectsLabels → R M → ∀ env,
       (∀ θ ∈ Θ, θ.Holds M (C M) env) → M.FreshAt (M.nameSlot n i) (u.rv M (C M) env)) :
-    Valid R C Θ (.nonDed u (FTerm.name n (FTerm.fn i))) := fun M hl hR env hΘ =>
+    Valid R C Θ (.nonDed u (FTerm.name n (FTerm.fn i)) ho) := fun M hl hR env hΘ =>
   Form.holds_nonDed.2 ((C M).nonDed_nameAt n i (M.isLarge_of_hasLabel hl hlarge)
     (hfresh M hl hR env hΘ))
 
 /-- **FreshR** (CCS26 Fig. 11, p. 17), for a closed vector: `u⃗ ⊬ n(i)` when the type of `n` is
 labelled `large` and, in every admitted model, every term of `u⃗` avoids the coordinate of
 `n(i)`. -/
-theorem nonDed_freshR {Θ : List (Form D [])} {u : Vec D [] τs} (n : D.Name a b) (i : D.Fn a)
-    (hlarge : b.HasLabel D.labels .large)
+theorem nonDed_freshR {Θ : List (Form D [])} {u : Vec D [] τs} {ho : Ty.SecrecyOrder τs b}
+    (n : D.Name a b) (i : D.Fn a) (hlarge : b.HasLabel D.labels .large)
     (hfresh : ∀ M, R M → ∀ τ x, (u τ x).Avoids M fun η k => k = M.nameSlot n i η) :
-    Valid R C Θ (.nonDed u (FTerm.name n (FTerm.fn i))) :=
+    Valid R C Θ (.nonDed u (FTerm.name n (FTerm.fn i)) ho) :=
   nonDed_freshR_of_freshAt n i hlarge fun M _ hR env _ =>
     Vec.freshAt_rv (hfresh M hR) (C M) env
 

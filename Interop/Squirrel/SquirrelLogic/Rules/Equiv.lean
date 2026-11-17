@@ -27,7 +27,10 @@ assumption, sound over `Valid` for every model restriction and every adversary c
 Each rule reads its premises and conclusion through `Form.holds_equiv` and applies one law of
 `SquirrelLogic.Indist`, whose proof is a named reduction and an equality of advantages at every
 `η`; for the case split it is two named reductions and a bound by the sum of their advantages.
-The vector entries that rules act on are the first ones.
+The vector entries that rules act on are the first ones. Every vector has order at most one
+(`Ty.IndistOrder`); a rule's conclusion carries the bound derived from its premise's, and a rule
+that adds an entry (`equiv_fn`, `equiv_adv`) takes the conclusion's bound, so that the added term
+has order at most one.
 -/
 
 public section
@@ -42,53 +45,63 @@ variable {B : Type} {D : Decl B} {R : Model D → Prop} {C : ∀ M : Model D, Ad
 namespace Valid
 
 /-- **Refl.** -/
-theorem equiv_refl (u : Vec D Γ τs) : Valid R C Θ (.equiv u u) :=
+theorem equiv_refl (u : Vec D Γ τs) {h : Ty.IndistOrder τs} : Valid R C Θ (.equiv u u h) :=
   fun _ _ _ _ _ => Form.holds_equiv.2 (AdvClass.Indist.refl _)
 
 /-- **Sym.** -/
-theorem equiv_symm (h : Valid R C Θ (.equiv u v)) : Valid R C Θ (.equiv v u) :=
+theorem equiv_symm {ho : Ty.IndistOrder τs} (h : Valid R C Θ (.equiv u v ho)) :
+    Valid R C Θ (.equiv v u ho) :=
   fun M hl hR env hΘ => Form.holds_equiv.2 (Form.holds_equiv.1 (h M hl hR env hΘ)).symm
 
 /-- **Trans.** -/
-theorem equiv_trans (h₁ : Valid R C Θ (.equiv u v)) (h₂ : Valid R C Θ (.equiv v w)) :
-    Valid R C Θ (.equiv u w) := fun M hl hR env hΘ => Form.holds_equiv.2 <|
+theorem equiv_trans {ho : Ty.IndistOrder τs} (h₁ : Valid R C Θ (.equiv u v ho))
+    (h₂ : Valid R C Θ (.equiv v w ho)) : Valid R C Θ (.equiv u w ho) :=
+  fun M hl hR env hΘ => Form.holds_equiv.2 <|
   (Form.holds_equiv.1 (h₁ M hl hR env hΘ)).trans (Form.holds_equiv.1 (h₂ M hl hR env hΘ))
 
 /-- **G.Equiv:FA-App.** Two entries may be replaced by the application of the first to the
-second. -/
+second. The order bound makes the argument a Boolean or base type, which the reduction
+`Machine.app` reads. -/
 theorem equiv_app {b : Ty B} {t s : FTerm D Γ (.arrow a b)} {t' s' : FTerm D Γ a}
-    (h : Valid R C Θ (.equiv (Env.cons t (Env.cons t' u)) (Env.cons s (Env.cons s' v)))) :
-    Valid R C Θ (.equiv (Env.cons (FTerm.app t t') u) (Env.cons (FTerm.app s s') v)) := by
+    {ho : Ty.IndistOrder (.arrow a b :: a :: τs)}
+    (h : Valid R C Θ (.equiv (Env.cons t (Env.cons t' u)) (Env.cons s (Env.cons s' v)) ho)) :
+    Valid R C Θ (.equiv (Env.cons (FTerm.app t t') u) (Env.cons (FTerm.app s s') v)
+      ho.app) := by
   intro M hl hR env hΘ
   have hI := Form.holds_equiv.1 (h M hl hR env hΘ)
   simp only [Form.holds_equiv, Vec.rv_cons] at hI ⊢
-  exact hI.app
+  exact hI.app ho.isGround_app
 
 /-- **FA-Fn.** An honest symbol may be added. -/
-theorem equiv_fn (f : D.Fn τ) (h : Valid R C Θ (.equiv u v)) :
-    Valid R C Θ (.equiv (Env.cons (FTerm.fn f) u) (Env.cons (FTerm.fn f) v)) := by
+theorem equiv_fn {ho : Ty.IndistOrder (τ :: τs)} (f : D.Fn τ)
+    (h : Valid R C Θ (.equiv u v ho.tail)) :
+    Valid R C Θ (.equiv (Env.cons (FTerm.fn f) u) (Env.cons (FTerm.fn f) v) ho) := by
   intro M hl hR env hΘ
   simp only [Form.holds_equiv, Vec.rv_cons, FTerm.denote_fn]
   exact (Form.holds_equiv.1 (h M hl hR env hΘ)).fn f
 
 /-- **G.Equiv:FA-Adv.** A term the attacker computes may be added. -/
-theorem equiv_adv {t : FTerm D Γ τ} (ht : Valid R C Θ (.adv t)) (h : Valid R C Θ (.equiv u v)) :
-    Valid R C Θ (.equiv (Env.cons t u) (Env.cons t v)) := by
+theorem equiv_adv {τs₀ : List (Ty B)} {β : Ty B} {t : FTerm D Γ (Ty.arrows τs₀ β)}
+    {ha : Ty.AdvOrder τs₀ β} {ho : Ty.IndistOrder (Ty.arrows τs₀ β :: τs)}
+    (ht : Valid R C Θ (.adv t ha)) (h : Valid R C Θ (.equiv u v ho.tail)) :
+    Valid R C Θ (.equiv (Env.cons t u) (Env.cons t v) ho) := by
   intro M hl hR env hΘ
   simp only [Form.holds_equiv, Vec.rv_cons]
   exact (Form.holds_equiv.1 (h M hl hR env hΘ)).adv (Form.holds_adv.1 (ht M hl hR env hΘ))
 
 /-- **Restr.** An entry may be dropped. -/
-theorem equiv_tail {t s : FTerm D Γ τ} (h : Valid R C Θ (.equiv (Env.cons t u) (Env.cons s v))) :
-    Valid R C Θ (.equiv u v) := by
+theorem equiv_tail {t s : FTerm D Γ τ} {ho : Ty.IndistOrder (τ :: τs)}
+    (h : Valid R C Θ (.equiv (Env.cons t u) (Env.cons s v) ho)) :
+    Valid R C Θ (.equiv u v ho.tail) := by
   intro M hl hR env hΘ
   have hI := Form.holds_equiv.1 (h M hl hR env hΘ)
   simp only [Vec.rv_cons] at hI
   exact Form.holds_equiv.2 hI.tail
 
 /-- **Dup.** An entry may be duplicated. -/
-theorem equiv_dup {t s : FTerm D Γ τ} (h : Valid R C Θ (.equiv (Env.cons t u) (Env.cons s v))) :
-    Valid R C Θ (.equiv (Env.cons t (Env.cons t u)) (Env.cons s (Env.cons s v))) := by
+theorem equiv_dup {t s : FTerm D Γ τ} {ho : Ty.IndistOrder (τ :: τs)}
+    (h : Valid R C Θ (.equiv (Env.cons t u) (Env.cons s v) ho)) :
+    Valid R C Θ (.equiv (Env.cons t (Env.cons t u)) (Env.cons s (Env.cons s v)) ho.dup) := by
   intro M hl hR env hΘ
   have hI := Form.holds_equiv.1 (h M hl hR env hΘ)
   simp only [Form.holds_equiv, Vec.rv_cons] at hI ⊢
@@ -96,9 +109,11 @@ theorem equiv_dup {t s : FTerm D Γ τ} (h : Valid R C Θ (.equiv (Env.cons t u)
 
 /-- **If.** A condition and two branches may be replaced by the conditional. -/
 theorem equiv_ite {c c' : FTerm D Γ .bool} {t t' s s' : FTerm D Γ a}
+    {ho : Ty.IndistOrder (.bool :: a :: a :: τs)}
     (h : Valid R C Θ (.equiv (Env.cons c (Env.cons t (Env.cons t' u)))
-      (Env.cons c' (Env.cons s (Env.cons s' v))))) :
-    Valid R C Θ (.equiv (Env.cons (FTerm.ite c t t') u) (Env.cons (FTerm.ite c' s s') v)) := by
+      (Env.cons c' (Env.cons s (Env.cons s' v))) ho)) :
+    Valid R C Θ (.equiv (Env.cons (FTerm.ite c t t') u) (Env.cons (FTerm.ite c' s s') v)
+      ho.ite) := by
   intro M hl hR env hΘ
   have hI := Form.holds_equiv.1 (h M hl hR env hΘ)
   simp only [Form.holds_equiv, Vec.rv_cons] at hI ⊢
@@ -107,12 +122,14 @@ theorem equiv_ite {c c' : FTerm D Γ .bool} {t t' s s' : FTerm D Γ a}
 /-- **G.Case-Study:ITE** (LICS23 Fig. 8; the tool's `cs` with one condition on both sides). A
 conditional splits into its branches, each beside the condition: from `c, t, u⃗ ∼ c', s, v⃗` and
 `c, t', u⃗ ∼ c', s', v⃗`, conclude `if c then t else t', u⃗ ∼ if c' then s else s', v⃗`. The
-reductions are `Distinguisher.guard true` and `.guard false`, and the advantage is at most the sum
+reductions are `Machine.guard true` and `.guard false`, and the advantage is at most the sum
 of the two premises' advantages at every `η` (`advantage_cons_cond_le`). -/
 theorem equiv_caseStudy {c c' : FTerm D Γ .bool} {t t' s s' : FTerm D Γ a}
-    (h₁ : Valid R C Θ (.equiv (Env.cons c (Env.cons t u)) (Env.cons c' (Env.cons s v))))
-    (h₂ : Valid R C Θ (.equiv (Env.cons c (Env.cons t' u)) (Env.cons c' (Env.cons s' v)))) :
-    Valid R C Θ (.equiv (Env.cons (FTerm.ite c t t') u) (Env.cons (FTerm.ite c' s s') v)) := by
+    {ho : Ty.IndistOrder (.bool :: a :: τs)}
+    (h₁ : Valid R C Θ (.equiv (Env.cons c (Env.cons t u)) (Env.cons c' (Env.cons s v)) ho))
+    (h₂ : Valid R C Θ (.equiv (Env.cons c (Env.cons t' u)) (Env.cons c' (Env.cons s' v)) ho)) :
+    Valid R C Θ (.equiv (Env.cons (FTerm.ite c t t') u) (Env.cons (FTerm.ite c' s s') v)
+      ho.tail) := by
   intro M hl hR env hΘ
   have hI₁ := Form.holds_equiv.1 (h₁ M hl hR env hΘ)
   have hI₂ := Form.holds_equiv.1 (h₂ M hl hR env hΘ)
@@ -123,9 +140,10 @@ theorem equiv_caseStudy {c c' : FTerm D Γ .bool} {t t' s s' : FTerm D Γ a}
 `if c then x else y, u⃗ ∼ z, v⃗`. BC14 states it with one condition and one context on both sides
 (`c' = c`, `v⃗ = u⃗`), an instance. It is the case split with both right-hand branches `z`. -/
 theorem equiv_if1 {c c' : FTerm D Γ .bool} {x y z : FTerm D Γ a}
-    (h₁ : Valid R C Θ (.equiv (Env.cons c (Env.cons x u)) (Env.cons c' (Env.cons z v))))
-    (h₂ : Valid R C Θ (.equiv (Env.cons c (Env.cons y u)) (Env.cons c' (Env.cons z v)))) :
-    Valid R C Θ (.equiv (Env.cons (FTerm.ite c x y) u) (Env.cons z v)) := by
+    {ho : Ty.IndistOrder (.bool :: a :: τs)}
+    (h₁ : Valid R C Θ (.equiv (Env.cons c (Env.cons x u)) (Env.cons c' (Env.cons z v)) ho))
+    (h₂ : Valid R C Θ (.equiv (Env.cons c (Env.cons y u)) (Env.cons c' (Env.cons z v)) ho)) :
+    Valid R C Θ (.equiv (Env.cons (FTerm.ite c x y) u) (Env.cons z v) ho.tail) := by
   intro M hl hR env hΘ
   have hI₁ := Form.holds_equiv.1 (h₁ M hl hR env hΘ)
   have hI₂ := Form.holds_equiv.1 (h₂ M hl hR env hΘ)
@@ -135,8 +153,9 @@ theorem equiv_if1 {c c' : FTerm D Γ .bool} {x y z : FTerm D Γ a}
 /-- **Rewriting under an overwhelming equality.** If `[t = t']`, an entry `t` may be replaced by
 `t'`. LICS23's G.Rewrite, for an equivalence atom. -/
 theorem equiv_rewrite {t t' : FTerm D Γ τ} {w : Vec D Γ (τ :: τs)}
-    (heq : Valid R C Θ (.box (FTerm.eq t t')))
-    (h : Valid R C Θ (.equiv (Env.cons t' u) w)) : Valid R C Θ (.equiv (Env.cons t u) w) := by
+    {ho : Ty.IndistOrder (τ :: τs)} (heq : Valid R C Θ (.box (FTerm.eq t t')))
+    (h : Valid R C Θ (.equiv (Env.cons t' u) w ho)) :
+    Valid R C Θ (.equiv (Env.cons t u) w ho) := by
   intro M hl hR env hΘ
   have hI := Form.holds_equiv.1 (h M hl hR env hΘ)
   simp only [Form.holds_equiv, Vec.rv_cons] at hI ⊢
@@ -149,14 +168,15 @@ theorem equiv_rewrite {t t' : FTerm D Γ τ} {w : Vec D Γ (τ :: τs)}
 
 /-- **Perm.** Reindexing both vectors along one map of positions that preserves types; this
 permutes, projects and duplicates entries. -/
-theorem equiv_rename {τs' : List (Ty B)} (r : Renaming τs' τs) (h : Valid R C Θ (.equiv u v)) :
-    Valid R C Θ (.equiv (Env.rename r u) (Env.rename r v)) :=
+theorem equiv_rename {τs' : List (Ty B)} {ho : Ty.IndistOrder τs} (r : Renaming τs' τs)
+    (h : Valid R C Θ (.equiv u v ho)) :
+    Valid R C Θ (.equiv (Env.rename r u) (Env.rename r v) (ho.rename r)) :=
   fun M hl hR env hΘ => Form.holds_equiv.2 ((Form.holds_equiv.1 (h M hl hR env hΘ)).rename r)
 
 /-- **Eq1** (BC14 Fig. 2): `EQ(t, t), u⃗ ∼ true, u⃗`. The two vectors have the same values at
 every tape. -/
-theorem equiv_eq_self (t : FTerm D Γ τ) (u : Vec D Γ τs) :
-    Valid R C Θ (.equiv (Env.cons (FTerm.eq t t) u) (Env.cons FTerm.tt u)) := by
+theorem equiv_eq_self (t : FTerm D Γ τ) (u : Vec D Γ τs) {ho : Ty.IndistOrder (.bool :: τs)} :
+    Valid R C Θ (.equiv (Env.cons (FTerm.eq t t) u) (Env.cons FTerm.tt u) ho) := by
   intro M _ _ env _
   refine Form.holds_equiv.2 fun A _ => negligible_of_zero fun η => ENNReal.absDiff_eq_zero.2 ?_
   have h : Vec.rv M (C M) (Env.cons (FTerm.eq t t) u) env =
@@ -165,12 +185,13 @@ theorem equiv_eq_self (t : FTerm D Γ τ) (u : Vec D Γ τs) :
     congr 1
   rw [h]
 
-/-- **FA** (BC14) for an honest symbol of arrow type: FA-Fn, then FA-App. -/
-theorem equiv_fa {b : Ty B} (f : D.Fn (.arrow a b)) {t s : FTerm D Γ a}
-    (h : Valid R C Θ (.equiv (Env.cons t u) (Env.cons s v))) :
+/-- **FA** (BC14) for an honest symbol of arrow type: FA-Fn, then FA-App. The order bound `ho`
+of the intermediate vector makes the symbol's argument a Boolean or base type. -/
+theorem equiv_fa {b : Ty B} (ho : Ty.IndistOrder (.arrow a b :: a :: τs)) (f : D.Fn (.arrow a b))
+    {t s : FTerm D Γ a} (h : Valid R C Θ (.equiv (Env.cons t u) (Env.cons s v) ho.tail)) :
     Valid R C Θ (.equiv (Env.cons (FTerm.app (FTerm.fn f) t) u)
-      (Env.cons (FTerm.app (FTerm.fn f) s) v)) :=
-  (equiv_fn f h).equiv_app
+      (Env.cons (FTerm.app (FTerm.fn f) s) v) ho.app) :=
+  (equiv_fn (ho := ho) f h).equiv_app
 
 end Valid
 

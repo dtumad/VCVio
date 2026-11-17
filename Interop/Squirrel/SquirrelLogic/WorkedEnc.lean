@@ -238,6 +238,7 @@ theorem lpad_advantage_unequalAdv (η : ℕ) :
   m₀ := nTerm
   m₁ := zeroTerm
   u := ctx
+  order := by decide
 
 /-- **The worked derivation of M0**: `pk(k), enc(n; r), n ∼ pk(k), enc(zero; r), n`, one step of
 the encryption rule. -/
@@ -252,16 +253,16 @@ in every admitted model, and IND-CPA for the image of the class under the named 
 theorem workedDerivation_sound {R : Model decl → Prop} {C : ∀ M : Model decl, AdvClass M}
     (hlen : ∀ M, R M → encSymbols.EqualLength M nTerm zeroTerm)
     (hcpa : ∀ M : Model decl, M.RespectsLabels → R M →
-      ∀ A : Distinguisher M [.bool, msg, msg], (C M).distinguishes A →
+      ∀ A : Machine M [.bool, msg, msg] .bool, (C M).mem A →
         negligible fun η => IND_CPA_OneTime_Advantage (encSymbols.scheme M η)
-          ProbCompRuntime.probComp (encSymbols.encReduction nTerm zeroTerm ctx A η)) :
+          ProbCompRuntime.probComp (encSymbols.encReduction nTerm zeroTerm ctx A.test η)) :
     Valid R C (Γ := []) []
       (.equiv (encSymbols.challenge nTerm ctx) (encSymbols.challenge zeroTerm ctx)) :=
   workedDerivation.sound R C fun e (he : e = workedInstance) => he ▸
     ⟨fun M hM => ⟨avoids_n M, FTerm.avoids_fn _, avoids_ctx M, hlen M hM⟩, hcpa⟩
 
 /-- **Satisfiability, for a scheme that leaks lengths.** In the model of `lpad`, the length fact
-holds and the IND-CPA hypothesis holds against every distinguisher, so the worked derivation's
+holds and the IND-CPA hypothesis holds against every machine, so the worked derivation's
 conclusion is valid there. -/
 theorem valid_worked_lpad :
     Valid (· = model lpad) (fun M => AdvClass.all M) (Γ := []) []
@@ -272,14 +273,18 @@ theorem valid_worked_lpad :
       (EncSymbols.encReduction_equalLength _ _ _ _ _)
 
 /-- **A scheme that leaks the message still fails.** For `leak`, the conclusion of the rule for
-the messages `one` and `zero` fails against every distinguisher, although they have equal lengths
+the messages `one` and `zero` fails against the machine that queries the ciphertext at `true`,
+although they have equal lengths
 (`equalLength_one_zero`) and meet the side conditions (`FTerm.avoids_fn`). -/
 theorem not_valid_leak :
     ¬ Valid (· = model leak) (fun M => AdvClass.all M) (Γ := []) []
       (.equiv (encSymbols.challenge oneTerm Env.empty)
         (encSymbols.challenge zeroTerm Env.empty)) := fun h => by
   have hM := Form.holds_equiv.1 (h (model leak) (model_respectsLabels _) rfl Env.empty
-    (by simp)) (fun _ e _ => e _ (.succ .zero) true) trivial
+    (by simp)) (fun _ => Machine.ask ⟨encSymbols.cTy, .succ .zero, Env.cons true Env.empty⟩)
+    (AdvClass.all_mem_of_readsBelow_zero fun _ => allQueriesSatisfy_ask _ _)
+  replace hM : negligible (advantage (fun _ e _ => e _ (.succ .zero) true :
+      Distinguisher (model leak) [encSymbols.pkTy, encSymbols.cTy]) _ _) := hM
   refine not_negligible_one (negligible_of_le (fun η => le_of_eq ?_) hM)
   simp only [advantage, EncSymbols.rv_challenge, Env.cons_succ, Env.cons_zero]
   refine (ENNReal.absDiff_zero_right 1).symm.trans (congrArg₂ ENNReal.absDiff ?_ ?_)
