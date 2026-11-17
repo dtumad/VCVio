@@ -5,7 +5,7 @@ Authors: Devon Tuma
 -/
 module
 
-public import SquirrelLogic.Global
+public import SquirrelLogic.Avoids
 public import SquirrelLogic.OneTimeGame
 import SquirrelLogic.ProductTape
 import VCVio.OracleComp.EvalDist.Measure
@@ -40,10 +40,11 @@ can meet it (`WorkedEnc.lpad_advantage_eq_zero`).
 * The messages and the context are terms with one free variable standing for the public key,
   closed by substituting `pk(nk)` (`EncSymbols.challenge`). This is BC14's constraint that the
   secret key occur only in decryption position, with no decryption: `nk` occurs only under `pk`.
-  The freshness constraints are semantic (`EncSymbols.Avoids`): the values of the messages and the
-  context do not depend on the key coordinate or the coin coordinate of the honest tape. They hold
-  in every model for terms built from the variable, honest symbols and other names by application,
-  conditionals and equality (`EncSymbols.Avoids.app`, `Avoids.ite`, `Avoids.name`, ...).
+  The freshness constraints are semantic (`EncSymbols.Avoids`, the instance of `FTerm.Avoids` at
+  the key and coin coordinates): the values of the messages and the context do not depend on the
+  key coordinate or the coin coordinate of the honest tape. They hold in every model for terms
+  built from the variable, honest symbols and other names by application, conditionals and
+  equality (`FTerm.Avoids.app`, `FTerm.Avoids.ite`, `EncSymbols.Avoids.name`, ...).
 * `EncSymbols.encReduction` is the named reduction. Given the public key it draws both tapes
   itself, evaluates the messages and the context at the public key, and runs the distinguisher on
   the challenge ciphertext with the attacker tape it drew. It never inverts the public key. If the
@@ -143,11 +144,9 @@ a context whose free variable `x` stands for the public key. -/
 
 /-- A term reads neither the key coordinate nor the coin coordinate of the honest tape: at every
 value of its free variable, its value depends only on the attacker tape and the other honest
-coordinates. -/
-@[expose] def Avoids (M : Model D) {τ : Ty B} (t : FTerm D [.loc E.pkTy] τ) : Prop :=
-  ∀ η ρa (ρh ρh' : M.TapeH η),
-    (∀ k, k ≠ E.keySlot M η → k ≠ E.coinSlot M η → ρh k = ρh' k) →
-      ∀ x, FTerm.evalAt M η (ρa, ρh) t x = FTerm.evalAt M η (ρa, ρh') t x
+coordinates (`FTerm.Avoids`). -/
+abbrev Avoids (M : Model D) {τ : Ty B} (t : FTerm D [.loc E.pkTy] τ) : Prop :=
+  FTerm.Avoids M (fun η k => k = E.keySlot M η ∨ k = E.coinSlot M η) t
 
 /-- The public key at `η` that an honest tape determines: `pkOf` of the key coordinate's sample. -/
 @[expose] def pkVal (M : Model D) (η : ℕ) (ρh : M.TapeH η) : E.pkTy.Value M.carrier η :=
@@ -212,49 +211,13 @@ theorem encReduction_equalLength {M : Model D} {τs : List (Ty B)}
 /-! ## The side condition, by construction
 
 `Avoids` holds of the public-key variable, of honest symbols and the Boolean constants, of names
-other than the key and coin names, and is closed under application, conditionals and equality. So
-a message or context built from these satisfies it in every model. -/
+other than the key and coin names, and is closed under application, conditionals and equality
+(`FTerm.avoids_var`, `FTerm.avoids_fn`, `FTerm.Avoids.app`, ...). So a message or context built
+from these satisfies it in every model. -/
 
 section Avoids
 
 variable {M : Model D}
-
-/-- The public-key variable reads no honest coordinate. -/
-theorem avoids_var : E.Avoids M (Term.var .zero : FTerm D [.loc E.pkTy] E.pkTy) :=
-  fun _ _ _ _ _ _ => rfl
-
-/-- An honest symbol reads no honest coordinate. -/
-theorem avoids_fn {τ : Ty B} (f : D.Fn τ) : E.Avoids M (FTerm.fn f) :=
-  fun _ _ _ _ _ _ => rfl
-
-/-- `true` reads no honest coordinate. -/
-theorem avoids_tt : E.Avoids M FTerm.tt := fun _ _ _ _ _ _ => rfl
-
-/-- `false` reads no honest coordinate. -/
-theorem avoids_ff : E.Avoids M FTerm.ff := fun _ _ _ _ _ _ => rfl
-
-/-- Application of terms that avoid the two coordinates avoids them. -/
-theorem Avoids.app {a b : Ty B} {f : FTerm D [.loc E.pkTy] (.arrow a b)}
-    {t : FTerm D [.loc E.pkTy] a} (hf : E.Avoids M f) (ht : E.Avoids M t) :
-    E.Avoids M (FTerm.app f t) := fun η ρa ρh ρh' h x => by
-  change FTerm.evalAt M η (ρa, ρh) f x (FTerm.evalAt M η (ρa, ρh) t x) =
-    FTerm.evalAt M η (ρa, ρh') f x (FTerm.evalAt M η (ρa, ρh') t x)
-  rw [hf η ρa ρh ρh' h x, ht η ρa ρh ρh' h x]
-
-/-- A conditional of terms that avoid the two coordinates avoids them. -/
-theorem Avoids.ite {a : Ty B} {c : FTerm D [.loc E.pkTy] .bool} {t e : FTerm D [.loc E.pkTy] a}
-    (hc : E.Avoids M c) (ht : E.Avoids M t) (he : E.Avoids M e) :
-    E.Avoids M (FTerm.ite c t e) := fun η ρa ρh ρh' h x => by
-  change cond (FTerm.evalAt M η (ρa, ρh) c x) (FTerm.evalAt M η (ρa, ρh) t x)
-      (FTerm.evalAt M η (ρa, ρh) e x) =
-    cond (FTerm.evalAt M η (ρa, ρh') c x) (FTerm.evalAt M η (ρa, ρh') t x)
-      (FTerm.evalAt M η (ρa, ρh') e x)
-  rw [hc η ρa ρh ρh' h x, ht η ρa ρh ρh' h x, he η ρa ρh ρh' h x]
-
-/-- An equality of terms that avoid the two coordinates avoids them. -/
-theorem Avoids.eq {a : Ty B} {t t' : FTerm D [.loc E.pkTy] a} (ht : E.Avoids M t)
-    (ht' : E.Avoids M t') : E.Avoids M (FTerm.eq t t') :=
-  Avoids.app (Avoids.app (fun _ _ _ _ _ _ => rfl) ht) ht'
 
 /-- A name other than the key and coin names, at an index that avoids the two coordinates, reads
 neither: it reads its own coordinate. -/
@@ -262,11 +225,8 @@ theorem Avoids.name {a b : Ty B} (n : D.Name a b)
     (hk : (⟨a, b, n⟩ : (a : Ty B) × (b : Ty B) × D.Name a b) ≠ E.keyName)
     (hr : (⟨a, b, n⟩ : (a : Ty B) × (b : Ty B) × D.Name a b) ≠ E.coinName)
     {i : FTerm D [.loc E.pkTy] a} (hi : E.Avoids M i) : E.Avoids M (FTerm.name n i) :=
-  fun η ρa ρh ρh' h x => by
-  change M.sample η b (ρh ⟨⟨a, b, n⟩, FTerm.evalAt M η (ρa, ρh) i x⟩) =
-    M.sample η b (ρh' ⟨⟨a, b, n⟩, FTerm.evalAt M η (ρa, ρh') i x⟩)
-  rw [hi η ρa ρh ρh' h x, h _ (fun he => hk (congrArg Sigma.fst he))
-    (fun he => hr (congrArg Sigma.fst he))]
+  FTerm.Avoids.name n (fun _ _ h => h.elim (fun he => hk (congrArg Sigma.fst he))
+    (fun he => hr (congrArg Sigma.fst he))) hi
 
 end Avoids
 
@@ -319,7 +279,9 @@ private theorem prEvent_branch (hkr : E.keyName ≠ E.coinName) {M : Model D} (C
   have hav : ∀ {τ : Ty B} {t : FTerm D [.loc E.pkTy] τ}, E.Avoids M t → ∀ x,
       FTerm.evalAt M η (ρ.1, Function.update (Function.update ρ.2 (E.keySlot M η) kc)
         (E.coinSlot M η) rc) t x = FTerm.evalAt M η ρ t x := fun ht x =>
-    ht η ρ.1 _ ρ.2 (fun k h₁ h₂ => by rw [Function.update_of_ne h₂, Function.update_of_ne h₁]) x
+    ht η ρ.1 _ ρ.2 (fun k hk => by
+      rw [Function.update_of_ne fun h => hk (.inr h), Function.update_of_ne fun h => hk (.inl h)])
+      (Env.cons x Env.empty)
   have hg := hlen η (ρ.1, Function.update (Function.update ρ.2 (E.keySlot M η) kc)
     (E.coinSlot M η) rc)
   simp only [pkVal, hk, hav hm₀, hav hm₁] at hg

@@ -21,8 +21,11 @@ times the coordinate, and the old coordinate is then marginalized away.
 `prEvent_uniformSample_update_update` overwrites two coordinates, the first before and the second
 after drawing the product, which also has an extra component. This is the coupling behind the
 encryption rule (`Valid.equiv_enc`): a reduction that receives a key and coins from its game and
-draws every other coordinate itself, and the attacker tape, sees a uniform tape. Nothing here
-mentions Squirrel. It is local to this library until a second consumer needs it.
+draws every other coordinate itself, and the attacker tape, sees a uniform tape.
+`prEvent_uniformSample_prod_update` overwrites one coordinate of a product with an extra
+component, with the coin drawn first; it is the coupling behind FreshR
+(`SquirrelLogic.Rules.Fresh`). Nothing here mentions Squirrel. It is local to this library until a
+second consumer needs it.
 -/
 
 public section
@@ -151,6 +154,50 @@ theorem prEvent_uniformSample_update_update {β ι : Type} [DecidableEq ι] {α 
             let b ← $ᵗ β
             Prod.mk b <$> ($ᵗ (∀ i, α i) : ProbComp (∀ i, α i)) : ProbComp (β × ∀ i, α i)) :=
           EvalDistEq.bind_right _ fun _ => (update_update_uniformSample_evalDistEq i₀ i₁).map _
+      _ = ($ᵗ (β × ∀ i, α i) : ProbComp (β × ∀ i, α i)) := by
+          simp [SampleableType.uniformSample_prod_eq_bind, map_eq_bind_pure_comp]
+  simpa only [prEvent_norm] using h.prEvent_eq p
+
+/-- **Coupling with an extra component.** Draw a coin for the coordinate `i₀`, then a uniform pair
+of an extra component and a dependent product, and overwrite the coordinate with the coin. The pair
+is uniform. -/
+theorem prEvent_uniformSample_prod_update {β ι : Type} [DecidableEq ι] {α : ι → Type}
+    [SampleableType β] [SampleableType (∀ i, α i)] (i₀ : ι) [SampleableType (α i₀)]
+    (p : β × (∀ i, α i) → Prop) :
+    Pr{let c ← $ᵗ (α i₀); let ρ ← $ᵗ (β × ∀ i, α i)}[p (ρ.1, Function.update ρ.2 i₀ c)] =
+      Pr{let ρ ← $ᵗ (β × ∀ i, α i)}[p ρ] := by
+  have h : (do
+        let c ← $ᵗ (α i₀)
+        let ρ ← $ᵗ (β × ∀ i, α i)
+        pure (ρ.1, Function.update ρ.2 i₀ c) : ProbComp (β × ∀ i, α i)) =ᵈ
+      ($ᵗ (β × ∀ i, α i) : ProbComp (β × ∀ i, α i)) := by
+    calc (do
+            let c ← $ᵗ (α i₀)
+            let ρ ← $ᵗ (β × ∀ i, α i)
+            pure (ρ.1, Function.update ρ.2 i₀ c) : ProbComp (β × ∀ i, α i))
+        = (do
+            let c ← $ᵗ (α i₀)
+            let b ← $ᵗ β
+            let ρ ← $ᵗ (∀ i, α i)
+            pure (b, Function.update ρ i₀ c) : ProbComp (β × ∀ i, α i)) := by
+          simp [SampleableType.uniformSample_prod_eq_bind]
+      _ =ᵈ (do
+            let b ← $ᵗ β
+            let c ← $ᵗ (α i₀)
+            let ρ ← $ᵗ (∀ i, α i)
+            pure (b, Function.update ρ i₀ c) : ProbComp (β × ∀ i, α i)) :=
+          OracleComp.EvalDistEq.bind_bind_swap _ _ _
+      _ = (do
+            let b ← $ᵗ β
+            Prod.mk b <$> (do
+              let c ← $ᵗ (α i₀)
+              let ρ ← $ᵗ (∀ i, α i)
+              pure (Function.update ρ i₀ c)) : ProbComp (β × ∀ i, α i)) := by
+          simp [map_eq_bind_pure_comp, bind_assoc]
+      _ =ᵈ (do
+            let b ← $ᵗ β
+            Prod.mk b <$> ($ᵗ (∀ i, α i) : ProbComp (∀ i, α i)) : ProbComp (β × ∀ i, α i)) :=
+          EvalDistEq.bind_right _ fun _ => (update_uniformSample_evalDistEq i₀).map _
       _ = ($ᵗ (β × ∀ i, α i) : ProbComp (β × ∀ i, α i)) := by
           simp [SampleableType.uniformSample_prod_eq_bind, map_eq_bind_pure_comp]
   simpa only [prEvent_norm] using h.prEvent_eq p

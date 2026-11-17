@@ -139,7 +139,7 @@ theorem pad_advantage_eq_zero (nk : Name .bool .bool) (η : ℕ)
 together against every distinguisher. -/
 theorem padInstance_holds :
     padInstance.Holds (fun M => M = encModel pad) fun M => AdvClass.all M :=
-  ⟨fun M hM => ⟨EncSymbols.avoids_tt, EncSymbols.avoids_ff, (fun _ x => nomatch x),
+  ⟨fun M hM => ⟨FTerm.avoids_tt, FTerm.avoids_ff, (fun _ x => nomatch x),
     hM ▸ equalLength .s pad _ _⟩, fun M _ hM A _ => by
     subst hM
     exact negligible_of_zero fun η => pad_advantage_eq_zero .s η _⟩
@@ -168,7 +168,7 @@ theorem encDerivation_sound :
 
 /-- **The IND-CPA hypothesis is needed.** For a scheme that leaks the message, the conclusion
 fails against every distinguisher, though the names are distinct and the side conditions hold
-(`keyName_ne_coinName`, `EncSymbols.avoids_tt`, `EncSymbols.avoids_ff`, `equalLength`): the
+(`keyName_ne_coinName`, `FTerm.avoids_tt`, `FTerm.avoids_ff`, `equalLength`): the
 ciphertext is the message. -/
 theorem not_valid_enc_leaky :
     ¬ Valid (fun M => M = encModel leaky) (fun M => AdvClass.all M) (Γ := []) []
@@ -183,8 +183,8 @@ theorem not_valid_enc_leaky :
   · exact (prEvent_eq_zero_of_forall_not _ _ fun _ h => Bool.noConfusion h).symm
 
 /-- **The names must be distinct.** With the key name equal to the coin name, the one-time pad
-meets the side conditions and the IND-CPA hypothesis (`EncSymbols.avoids_tt`,
-`EncSymbols.avoids_ff`, `equalLength`, `pad_advantage_eq_zero`), but the
+meets the side conditions and the IND-CPA hypothesis (`FTerm.avoids_tt`,
+`FTerm.avoids_ff`, `equalLength`, `pad_advantage_eq_zero`), but the
 conclusion fails against every distinguisher: the public key is the pad, and the exclusive or of
 the two entries is the message. -/
 theorem not_valid_enc_keyIsCoin :
@@ -211,7 +211,7 @@ theorem not_valid_enc_keyIsCoin :
 
 /-- **The coins must be fresh.** With the coins themselves in the context, the one-time pad has
 distinct names and meets the IND-CPA hypothesis (`keyName_ne_coinName`, `pad_advantage_eq_zero`),
-and the messages meet the side conditions (`EncSymbols.avoids_tt`, `equalLength`), but the
+and the messages meet the side conditions (`FTerm.avoids_tt`, `equalLength`), but the
 context reads the coin coordinate, and the conclusion fails against every distinguisher: the
 exclusive or of the ciphertext and the coins is the message. -/
 theorem not_valid_enc_coinReused :
