@@ -26,7 +26,9 @@ sends related arguments to related results, then every term of the fragment (`Te
 denotes related meanings in related environments. Adequacy of a monadic reading against an
 ordinary one is the instance where a computation is related to a value when running it gives a
 related value. `Term.denote_eq_of_every` is the congruence of the plain reading: two algebras that
-agree on the constructors of a fragment agree on its terms.
+agree on the constructors of a fragment agree on its terms. `Term.Every ok` is itself a fold, and
+it is decidable when `ok` is and constructors have finitely many arguments
+(`Term.decidableEvery`).
 
 Nothing here is specific to Squirrel: this is general language theory, kept beside
 `SquirrelLogic.Sum` until a second consumer moves both to PolyFun.
@@ -93,6 +95,21 @@ theorem every_node {ok : ∀ {a}, σ.Op a → Prop} {a : S} (op : σ.Op a)
     (args : (p : σ.Arg op) → σ.Term (σ.binders op p ++ Γ) (σ.sort op p)) :
     (node op args).Every ok ↔ ok op ∧ ∀ p, (args p).Every ok :=
   Iff.rfl
+
+/-- `Every ok` is decidable when `ok` is and every constructor has finitely many arguments: a
+structural recursion over the term. -/
+@[expose] def decidableEvery (ok : ∀ {a}, σ.Op a → Prop) [∀ {a} (op : σ.Op a), Decidable (ok op)]
+    [∀ {a} (op : σ.Op a), Fintype (σ.Arg op)] :
+    {j : Judgment S} → (t : IFreeM σ.polynomial (fun j => ScopedVar j.1 j.2) j) →
+      Decidable (Every ok (Γ := j.1) (a := j.2) t)
+  | _, .pure _ => isTrue trivial
+  | _, .liftBind op args =>
+    have := fun p => decidableEvery ok (args p)
+    inferInstanceAs (Decidable (ok op ∧ ∀ p, Every ok (args p)))
+
+instance {ok : ∀ {a}, σ.Op a → Prop} [∀ {a} (op : σ.Op a), Decidable (ok op)]
+    [∀ {a} (op : σ.Op a), Fintype (σ.Arg op)] {a : S} (t : σ.Term Γ a) : Decidable (t.Every ok) :=
+  decidableEvery ok t
 
 theorem Every.mono {ok ok' : ∀ {a}, σ.Op a → Prop} (h : ∀ {a} (op : σ.Op a), ok op → ok' op)
     {a : S} {t : σ.Term Γ a} (ht : t.Every ok) : t.Every ok' := by

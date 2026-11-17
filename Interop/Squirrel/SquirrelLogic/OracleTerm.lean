@@ -243,6 +243,23 @@ closed-up term it occurs only as the key of `h`. -/
 @[expose] def KeyFree {Γ : List (Kind B)} {s : Kind B} (t : P.oSig.Term Γ s) : Prop :=
   t.Every P.keyFreeOp
 
+instance {s : Kind B} (op : P.oSig.Op s) : Fintype (P.oSig.Arg op) := by
+  rcases op with o | o
+  · exact inferInstanceAs (Fintype (Fin _))
+  · exact inferInstanceAs (Fintype Unit)
+
+instance [DecidableEq ((a : Ty B) × (b : Ty B) × D.Name a b)] {s : Kind B} (op : P.oSig.Op s) :
+    Decidable (P.keyFreeOp op) := by
+  rcases op with o | o
+  · cases o <;> first | exact instDecidableNot | exact instDecidableTrue
+  · cases o
+    exact instDecidableTrue
+
+/-- `ψ_key` is decidable when names have decidable equality. -/
+instance [DecidableEq ((a : Ty B) × (b : Ty B) × D.Name a b)] {Γ : List (Kind B)} {s : Kind B}
+    (t : P.oSig.Term Γ s) : Decidable (P.KeyFree t) :=
+  inferInstanceAs (Decidable (t.Every P.keyFreeOp))
+
 /-- The constructors that the compiled reading evaluates (LICS23 Fig. 10): names at Boolean or
 base indices with results of order at most one, honest and attacker symbols of order at most one,
 equality at Boolean and base types, no local quantifiers, and calls on a Boolean or base message
