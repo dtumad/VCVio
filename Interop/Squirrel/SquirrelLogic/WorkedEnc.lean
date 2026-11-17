@@ -243,7 +243,7 @@ theorem lpad_advantage_unequalAdv (η : ℕ) :
 /-- **The worked derivation of M0**: `pk(k), enc(n; r), n ∼ pk(k), enc(zero; r), n`, one step of
 the encryption rule. -/
 @[expose] def workedDerivation :
-    Derivation decl (· = workedInstance) (Γ := []) []
+    Derivation decl (· = workedInstance) (fun _ => True) (Γ := []) []
       (.equiv (encSymbols.challenge nTerm ctx) (encSymbols.challenge zeroTerm ctx)) :=
   .equivEnc workedInstance rfl keyName_ne_coinName
 
@@ -258,8 +258,8 @@ theorem workedDerivation_sound {R : Model decl → Prop} {C : ∀ M : Model decl
           ProbCompRuntime.probComp (encSymbols.encReduction nTerm zeroTerm ctx A.test η)) :
     Valid R C (Γ := []) []
       (.equiv (encSymbols.challenge nTerm ctx) (encSymbols.challenge zeroTerm ctx)) :=
-  workedDerivation.sound R C fun e (he : e = workedInstance) => he ▸
-    ⟨fun M hM => ⟨avoids_n M, FTerm.avoids_fn _, avoids_ctx M, hlen M hM⟩, hcpa⟩
+  workedDerivation.sound R C (fun e (he : e = workedInstance) => he ▸
+    ⟨fun M hM => ⟨avoids_n M, FTerm.avoids_fn _, avoids_ctx M, hlen M hM⟩, hcpa⟩) fun _ _ => trivial
 
 /-- **Satisfiability, for a scheme that leaks lengths.** In the model of `lpad`, the length fact
 holds and the IND-CPA hypothesis holds against every machine, so the worked derivation's
