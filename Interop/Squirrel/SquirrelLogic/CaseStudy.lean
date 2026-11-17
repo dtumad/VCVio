@@ -30,7 +30,7 @@ Checks of `Valid.equiv_caseStudy` and BC14's If1 (`Valid.equiv_if1`). The model 
   `true`, and returning the entry has advantage one half against `r`. The condition must sit
   beside each branch, because the reductions `guard true` and `guard false` read it.
 * `if1_needs_second`, `if1_needs_first`: in every model of every declaration with no `large` base
-  type, against all distinguishers, one premise holds by Refl at an instance whose conclusion is
+  type, against all machines, one premise holds by Refl at an instance whose conclusion is
   `true ∼ false`. So neither premise may be dropped.
 * `guard_changes_output`: the reduction `guard true` of the machine returning `true` returns
   `false` when the condition is `false`. A reduction that only relabels the inputs or answers
@@ -128,7 +128,7 @@ private theorem prEvent_padR_add_self (η : ℕ) :
 
 /-- The case split needs the condition beside each branch. Without it, the premises
 `enc true ∼ enc false` (`TwoTimePad.valid_fresh`) and `enc false ∼ enc false` (Refl) hold, and
-`if r then enc false else enc true ∼ enc false` fails against all distinguishers: its left side
+`if r then enc false else enc true ∼ enc false` fails against all machines: its left side
 is always `true` and its right side is `r`, so returning the entry has advantage one half. -/
 theorem caseStudy_needs_condition :
     Valid (fun M => M = model) (fun M => AdvClass.all M) (Γ := []) []
