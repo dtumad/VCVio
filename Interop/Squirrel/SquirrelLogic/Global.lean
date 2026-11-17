@@ -146,6 +146,10 @@ variable {b : Ty B}
 /-- An honest function symbol. -/
 @[expose] def fn (f : D.Fn a) : FTerm D Γ a := .node (.inl (.fn f)) fun p => nomatch p
 
+/-- A name applied to an index. -/
+@[expose] def name (n : D.Name a b) (i : FTerm D Γ a) : FTerm D Γ b :=
+  app (.node (.inl (.name n)) fun p => nomatch p) i
+
 end FTerm
 
 /-- Vectors of local terms of the types `τs`, as environments. -/
@@ -257,6 +261,25 @@ theorem eval_denote_fullInterp (M : Model D) (C : AdvClass M) (η : ℕ) (ρ : M
   · exact nomatch o
   · rfl
 
+/-- A term with one free variable, read at `(η, ρ)` with the value `x` for the variable. -/
+@[expose] noncomputable def FTerm.evalAt (M : Model D) (η : ℕ) (ρ : M.Tape η) {σ τ : Ty B}
+    (t : FTerm D [.loc σ] τ) (x : σ.Value M.carrier η) : τ.Value M.carrier η :=
+  t.denote (Interpretation.sum (interp M η ρ) (ptGlobal M η)) (Env.cons x Env.empty)
+
+/-- A term with one free variable, closed by substituting a closed term, means at `(η, ρ)` the
+open term read at the closed term's value there: `denote_substOne` and locality. -/
+theorem FTerm.denote_substOne_apply (M : Model D) (C : AdvClass M) {σ τ : Ty B}
+    (t : FTerm D [.loc σ] τ) (s : FTerm D [] σ) (env : Env (Kind.Value M) []) (η : ℕ)
+    (ρ : M.Tape η) :
+    (t.substOne s).denote (fullInterp M C) env η ρ =
+      FTerm.evalAt M η ρ t (s.denote (fullInterp M C) env η ρ) := by
+  rw [Term.denote_substOne]
+  refine (eval_denote_fullInterp M C η ρ t _).trans
+    (congrArg _ (funext fun _ => funext fun x => ?_))
+  cases x with
+  | zero => rfl
+  | succ x => exact nomatch x
+
 /-- A global formula holds in a model at random-variable values of its variables. -/
 @[expose] def Form.Holds (M : Model D) (C : AdvClass M) {Γ : List (Kind B)} (F : Form D Γ)
     (env : Env (Kind.Value M) Γ) : Prop :=
@@ -300,6 +323,11 @@ is the constant random variable `RV.constAt η x`. -/
 
 @[simp] theorem FTerm.denote_fn {τ : Ty B} (f : D.Fn τ) :
     (FTerm.fn f : FTerm D Γ τ).denote (fullInterp M C) env = fun η _ => M.fn η f := rfl
+
+/-- A name reads the coordinate of the honest tape at its index's value. -/
+@[simp] theorem FTerm.denote_name {a b : Ty B} (n : D.Name a b) (i : FTerm D Γ a) :
+    (FTerm.name n i).denote (fullInterp M C) env =
+      fun η ρ => M.name η n (i.denote (fullInterp M C) env η ρ) ρ.2 := rfl
 
 /-- A term weakened past a binder ignores the value bound there. -/
 theorem denote_weaken_cons {V : Kind B → Type} (alg : Interpretation (fullSig D) V)

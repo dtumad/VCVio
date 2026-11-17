@@ -103,8 +103,11 @@ variable {D : Decl B}
 abbrev Model.Slot (M : Model D) (η : ℕ) : Type :=
   (n : (a : Ty B) × (b : Ty B) × D.Name a b) × n.1.Value M.carrier η
 
-/-- The honest tape at `η`: an independent coin for every name and index (LICS23 §II-B.2). -/
-@[expose] def Model.TapeH (M : Model D) (η : ℕ) : Type := (k : M.Slot η) → M.Coin η k.1.2.1
+/-- The honest tape at `η`: an independent coin for every name and index (LICS23 §II-B.2). It is
+reducible, so that lemmas about uniform dependent products, such as
+`prEvent_uniformSample_update_update`, apply to it and rewriting inside them stays type-correct. -/
+@[expose, reducible] def Model.TapeH (M : Model D) (η : ℕ) : Type :=
+  (k : M.Slot η) → M.Coin η k.1.2.1
 
 /-- The honest tape is uniform: its coordinates are independent uniform coins. -/
 noncomputable instance Model.instSampleableTapeH (M : Model D) (η : ℕ) :
