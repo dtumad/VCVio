@@ -18,7 +18,9 @@ Derivations in the fragment of LICS23 proved sound in `SquirrelLogic.Global` and
 hypotheses and the conclusion. `Derivation.sound` maps every derivation to validity over every
 model restriction and every adversary class, one rule lemma per constructor. Name renaming is the
 constructor for a bijection of names (`Valid.equiv_renameNames_of_equiv`), which holds in every
-model.
+model. BC14's If1 (`equivIf1`) is sound by the case split (`equivCaseStudy`), but is a
+constructor of its own: deriving it would rewrite `if c' then z else z` to `z`, and the fragment
+has no rule proving that local equality.
 
 The encryption rule (`Valid.equiv_enc`) is a constructor, at the instances that the parameter
 `enc` admits; its syntactic side condition, distinct key and coin names, is a premise of the
@@ -105,6 +107,18 @@ inductive Derivation (D : Decl B) (enc : EncInstance D → Prop) :
       Derivation D enc Θ (.equiv (Env.cons c (Env.cons t (Env.cons t' u)))
         (Env.cons c' (Env.cons s (Env.cons s' v)))) →
       Derivation D enc Θ (.equiv (Env.cons (FTerm.ite c t t') u) (Env.cons (FTerm.ite c' s s') v))
+  /-- G.Case-Study:ITE (LICS23 Fig. 8). -/
+  | equivCaseStudy {Γ : List (Kind B)} {Θ : List (Form D Γ)} {τs : List (Ty B)} {u v : Vec D Γ τs}
+      {a : Ty B} {c c' : FTerm D Γ .bool} {t t' s s' : FTerm D Γ a} :
+      Derivation D enc Θ (.equiv (Env.cons c (Env.cons t u)) (Env.cons c' (Env.cons s v))) →
+      Derivation D enc Θ (.equiv (Env.cons c (Env.cons t' u)) (Env.cons c' (Env.cons s' v))) →
+      Derivation D enc Θ (.equiv (Env.cons (FTerm.ite c t t') u) (Env.cons (FTerm.ite c' s s') v))
+  /-- If1 (BC14 Fig. 2). -/
+  | equivIf1 {Γ : List (Kind B)} {Θ : List (Form D Γ)} {τs : List (Ty B)} {u v : Vec D Γ τs}
+      {a : Ty B} {c c' : FTerm D Γ .bool} {x y z : FTerm D Γ a} :
+      Derivation D enc Θ (.equiv (Env.cons c (Env.cons x u)) (Env.cons c' (Env.cons z v))) →
+      Derivation D enc Θ (.equiv (Env.cons c (Env.cons y u)) (Env.cons c' (Env.cons z v))) →
+      Derivation D enc Θ (.equiv (Env.cons (FTerm.ite c x y) u) (Env.cons z v))
   /-- Rewriting an entry under an overwhelming equality. -/
   | equivRewrite {Γ : List (Kind B)} {Θ : List (Form D Γ)} {τs : List (Ty B)} {u : Vec D Γ τs}
       {τ : Ty B} {t t' : FTerm D Γ τ} {w : Vec D Γ (τ :: τs)} :
@@ -154,6 +168,8 @@ theorem Derivation.sound {enc : EncInstance D → Prop} (R : Model D → Prop)
   | _, _, _, .equivTail d => (d.sound R C henc).equiv_tail
   | _, _, _, .equivDup d => (d.sound R C henc).equiv_dup
   | _, _, _, .equivIte d => (d.sound R C henc).equiv_ite
+  | _, _, _, .equivCaseStudy d₁ d₂ => (d₁.sound R C henc).equiv_caseStudy (d₂.sound R C henc)
+  | _, _, _, .equivIf1 d₁ d₂ => (d₁.sound R C henc).equiv_if1 (d₂.sound R C henc)
   | _, _, _, .equivRewrite d₁ d₂ => Valid.equiv_rewrite (d₁.sound R C henc) (d₂.sound R C henc)
   | _, _, _, .equivEqSelf t u => Valid.equiv_eq_self t u
   | _, _, _, .equivRename r d => Valid.equiv_rename r (d.sound R C henc)

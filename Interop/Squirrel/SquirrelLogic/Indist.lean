@@ -25,11 +25,14 @@ depends on `η`. Here:
   distinguisher has negligible advantage, and `C.Adv X` says an admitted attacker computation
   equals `X` everywhere.
 
-Each structural rule about `∼` reduces an adversary against its conclusion to one against its
-premise. The reductions are named (`Distinguisher.app`, `.fn`, `.adv`, `.ite`, `.rename`),
-each changes a vector before running the given distinguisher, and the advantage is unchanged at
-every `η`: these are the concrete statements. `AdvClass` carries one closure field per reduction,
-used by exactly that rule.
+Each structural rule about `∼` reduces an adversary against its conclusion to adversaries against
+its premises, and the reductions are named. Five of them (`Distinguisher.app`, `.fn`, `.adv`,
+`.ite`, `.rename`) change a vector before running the given distinguisher, and the advantage is
+unchanged at every `η`. The case split (`Indist.caseStudy`, with BC14's If1 as `Indist.if1`) uses
+`Distinguisher.guard true` and `.guard false`, which run the distinguisher only when a Boolean
+first entry has the given value, and at every `η` the advantage is at most the sum of theirs
+(`advantage_cons_cond_le`). These are the concrete statements. `AdvClass` carries one closure
+field per reduction shape, used only by the rules that need that shape.
 
 The empty class meets every closure field, and then `Indist` holds of any two vectors: a statement
 `C.Indist u v` is exactly as strong as `C`. `AdvClass.all` admits every distinguisher.
@@ -91,6 +94,12 @@ then test. -/
     Distinguisher M τs :=
   fun η e ρa => A η (Env.rename r e) ρa
 
+/-- The reduction for the case split: when the Boolean first entry is `c`, test the rest;
+otherwise return `false`. The two halves of a case split on `b` are `guard true`, which is
+`b && A(v⃗)`, and `guard false`, which is `!b && A(v⃗)`. -/
+@[expose] def guard (c : Bool) (A : Distinguisher M τs) : Distinguisher M (.bool :: τs) :=
+  fun η e ρa => (e _ .zero == c) && A η e.tail ρa
+
 end Distinguisher
 
 /-- The advantage of a distinguisher between two vectors at `η`, over uniform tapes. -/
@@ -102,7 +111,7 @@ end Distinguisher
 /-! ## The class of machines -/
 
 /-- The machines of a model: attacker computations for `adv`, distinguishers for `∼`, and one
-closure field for each structural rule about `∼`. -/
+closure field for each reduction shape of the structural rules about `∼`. -/
 structure AdvClass (M : Model D) where
   /-- Admitted attacker computations. -/
   computes : {τ : Ty B} → AttackerFn M τ → Prop
@@ -124,6 +133,12 @@ structure AdvClass (M : Model D) where
   `Valid.equiv_tail`, `Valid.equiv_dup`). -/
   rename_mem {τs τs' : List (Ty B)} (r : Renaming τs' τs) {A : Distinguisher M τs'} :
     distinguishes A → distinguishes (A.rename r)
+  /-- The case split (`Valid.equiv_caseStudy`, `Valid.equiv_if1`). The other reductions only
+  change the vector before running `A`, so they map constant distinguishers to constant ones,
+  and `guard` does not: this field does not follow from the others
+  (`CaseStudy.guard_not_derivable`). -/
+  guard_mem {τs : List (Ty B)} (c : Bool) {A : Distinguisher M τs} :
+    distinguishes A → distinguishes (A.guard c)
 
 namespace AdvClass
 
@@ -136,6 +151,7 @@ namespace AdvClass
   adv_mem := by intros; trivial
   ite_mem _ := trivial
   rename_mem := by intros; trivial
+  guard_mem := by intros; trivial
 
 /-- `adv t` (LICS23 Fig. 2): an admitted attacker computation agrees with `t` everywhere. -/
 @[expose] def Adv (C : AdvClass M) (X : RV M τ) : Prop :=
@@ -177,7 +193,7 @@ namespace VecRV
 
 end VecRV
 
-/-! ## Concrete statements: each reduction keeps the advantage at every `η` -/
+/-! ## Concrete statements: each reduction keeps or bounds the advantage at every `η` -/
 
 section Reductions
 
@@ -216,6 +232,42 @@ theorem advantage_le_add_prEvent_ne (u u' v : VecRV M τs) (η : ℕ) :
   rw [add_comm (advantage A u' v η)]
   exact add_le_add (ENNReal.absDiff_le_iff.2
     ⟨step u u' fun _ => id, step u' u fun _ h he => h he.symm⟩) le_rfl
+
+/-- `absDiff` is subadditive along sums. -/
+private theorem absDiff_add_add_le (a b c d : ENNReal) :
+    ENNReal.absDiff (a + b) (c + d) ≤ ENNReal.absDiff a c + ENNReal.absDiff b d := by
+  obtain ⟨hac, hca⟩ := ENNReal.absDiff_le_iff.1 (le_refl (ENNReal.absDiff a c))
+  obtain ⟨hbd, hdb⟩ := ENNReal.absDiff_le_iff.1 (le_refl (ENNReal.absDiff b d))
+  exact ENNReal.absDiff_le_iff.2 ⟨(add_le_add hac hbd).trans_eq (add_add_add_comm _ _ _ _),
+    (add_le_add hca hdb).trans_eq (add_add_add_comm _ _ _ _)⟩
+
+/-- A test of a conditional splits along its condition:
+`Pr[A(if b then x else y, u⃗)] = Pr[b ∧ A(x, u⃗)] + Pr[¬b ∧ A(y, u⃗)]`. -/
+private theorem prEvent_cons_cond (A : Distinguisher M (a :: τs)) (b : RV M .bool)
+    (x y : RV M a) (u : VecRV M τs) (η : ℕ) :
+    Pr{let ρ ← $ᵗ (M.Tape η)}[A η (VecRV.cons (fun η ρ => cond (b η ρ) (x η ρ) (y η ρ)) u η ρ)
+        ρ.1 = true] =
+      Pr{let ρ ← $ᵗ (M.Tape η)}[A.guard true η (VecRV.cons b (VecRV.cons x u) η ρ) ρ.1 =
+        true] +
+      Pr{let ρ ← $ᵗ (M.Tape η)}[A.guard false η (VecRV.cons b (VecRV.cons y u) η ρ) ρ.1 =
+        true] := by
+  rw [prEvent_eq_prEvent_and_add_prEvent_and_not _ _ fun ρ => b η ρ = true]
+  congr 1 <;> refine prEvent_congr _ _ _ fun ρ => ?_ <;>
+    simp only [VecRV.cons, Distinguisher.guard] <;> cases b η ρ <;> simp <;> rfl
+
+/-- The case split at one `η`: the advantage against two conditionals is at most the sum of the
+advantages of the named reductions `A.guard true` and `A.guard false` against the two premises.
+The factor is one. -/
+theorem advantage_cons_cond_le (A : Distinguisher M (a :: τs)) (b b' : RV M .bool)
+    (x y x' y' : RV M a) (u v : VecRV M τs) (η : ℕ) :
+    advantage A (VecRV.cons (fun η ρ => cond (b η ρ) (x η ρ) (y η ρ)) u)
+        (VecRV.cons (fun η ρ => cond (b' η ρ) (x' η ρ) (y' η ρ)) v) η ≤
+      advantage (A.guard true) (VecRV.cons b (VecRV.cons x u))
+          (VecRV.cons b' (VecRV.cons x' v)) η +
+        advantage (A.guard false) (VecRV.cons b (VecRV.cons y u))
+          (VecRV.cons b' (VecRV.cons y' v)) η := by
+  simp only [advantage, prEvent_cons_cond]
+  exact absDiff_add_add_le _ _ _ _
 
 end Reductions
 
@@ -282,6 +334,26 @@ theorem Indist.dup {u v : VecRV M (τ :: τs)} (h : C.Indist u v) : C.Indist u.d
     fun w => by funext η ρ σ x; cases x <;> rfl
   rw [hu u, hu v]
   exact h.rename _
+
+/-- Case split (LICS23's G.Case-Study:ITE), by the reductions `Distinguisher.guard true` and
+`Distinguisher.guard false`: if `b, x, u⃗ ∼ b', x', v⃗` and `b, y, u⃗ ∼ b', y', v⃗`, then
+`if b then x else y, u⃗ ∼ if b' then x' else y', v⃗`. -/
+theorem Indist.caseStudy {b b' : RV M .bool} {x y x' y' : RV M a} {u v : VecRV M τs}
+    (h₁ : C.Indist (VecRV.cons b (VecRV.cons x u)) (VecRV.cons b' (VecRV.cons x' v)))
+    (h₂ : C.Indist (VecRV.cons b (VecRV.cons y u)) (VecRV.cons b' (VecRV.cons y' v))) :
+    C.Indist (VecRV.cons (fun η ρ => cond (b η ρ) (x η ρ) (y η ρ)) u)
+      (VecRV.cons (fun η ρ => cond (b' η ρ) (x' η ρ) (y' η ρ)) v) := fun A hA =>
+  negligible_of_le (advantage_cons_cond_le A b b' x y x' y' u v)
+    (negligible_add (h₁ (A.guard true) (C.guard_mem true hA))
+      (h₂ (A.guard false) (C.guard_mem false hA)))
+
+/-- BC14's If1, from the case split with both right-hand branches `z`: if `b, x, u⃗ ∼ b', z, v⃗`
+and `b, y, u⃗ ∼ b', z, v⃗`, then `if b then x else y, u⃗ ∼ z, v⃗`. -/
+theorem Indist.if1 {b b' : RV M .bool} {x y z : RV M a} {u v : VecRV M τs}
+    (h₁ : C.Indist (VecRV.cons b (VecRV.cons x u)) (VecRV.cons b' (VecRV.cons z v)))
+    (h₂ : C.Indist (VecRV.cons b (VecRV.cons y u)) (VecRV.cons b' (VecRV.cons z v))) :
+    C.Indist (VecRV.cons (fun η ρ => cond (b η ρ) (x η ρ) (y η ρ)) u) (VecRV.cons z v) := by
+  simpa only [Bool.cond_self] using h₁.caseStudy h₂
 
 /-- Rewriting under an overwhelming equality: if `u` and `u'` differ with negligible probability,
 `u` is indistinguishable from whatever `u'` is. -/
