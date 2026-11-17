@@ -85,7 +85,7 @@ namespace Distinguisher
 @[expose] def fn (f : D.Fn τ) (A : Distinguisher M (τ :: τs)) : Distinguisher M τs :=
   fun η e ρa => A η (Env.cons (M.fn η f) e) ρa
 
-/-- The reduction for FA-Adv: prepend an attacker computation run on the same attacker tape,
+/-- The reduction for FA-Adv: prepend an attacker function run on the same attacker tape,
 then test. -/
 @[expose] def adv (g : AttackerFn M τ) (A : Distinguisher M (τ :: τs)) : Distinguisher M τs :=
   fun η e ρa => A η (Env.cons (g η ρa) e) ρa

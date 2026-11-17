@@ -20,14 +20,14 @@ both at index `false`; keys, coins, public keys, messages and ciphertexts are bi
 message the same length. The messages are `true` and `false` and the context is empty.
 
 * `padInstance_holds`, `valid_enc_pad`: for the one-time pad `enc m r pk = m xor r`, the
-  hypotheses of `Valid.equiv_enc` hold together against every distinguisher, so the rule
+  hypotheses of `Valid.equiv_enc` hold together against every machine, so the rule
   concludes `pk, enc(true; r, pk) ∼ pk, enc(false; r, pk)`. The IND-CPA hypothesis holds because
   the two branches of the game are equal in distribution (`pad_branch_evalDistEq`), so every
   adversary has advantage zero (`pad_advantage_eq_zero`). `encDerivation` is the same conclusion
   as a one-step derivation, and `encDerivation_sound` discharges the hypothesis of
   `Derivation.sound`.
 * `not_valid_enc_leaky`: for the scheme `enc m r pk = m`, which leaks the message, the conclusion
-  fails against every distinguisher, although the side conditions hold. So the IND-CPA hypothesis
+  fails against every machine, although the side conditions hold. So the IND-CPA hypothesis
   is needed.
 * `not_valid_enc_keyIsCoin`: with the key name equal to the coin name, the conclusion fails for the
   one-time pad, although the side conditions and the IND-CPA hypothesis hold. So the names must be
@@ -144,7 +144,7 @@ theorem pad_advantage_eq_zero (nk : Name .bool .bool) (η : ℕ)
   order := by decide
 
 /-- **Satisfiability.** For the one-time pad, the semantic hypotheses of `Valid.equiv_enc` hold
-together against every distinguisher. -/
+together against every machine. -/
 theorem padInstance_holds :
     padInstance.Holds (fun M => M = encModel pad) fun M => AdvClass.all M :=
   ⟨fun M hM => ⟨FTerm.avoids_tt, FTerm.avoids_ff, (fun _ x => nomatch x),

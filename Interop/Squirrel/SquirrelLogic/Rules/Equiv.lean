@@ -11,7 +11,7 @@ public import SquirrelLogic.Global
 # Structural rules for indistinguishability
 
 The rules of BC14 (Fig. 2) and LICS23 (Figs. 5, 8) about `∼` that need no cryptographic
-assumption, sound over `Valid` for every model restriction and every adversary class:
+assumption, sound over `Valid` for every model restriction and every class of machines:
 
 * `Valid.equiv_refl`, `Valid.equiv_symm`, `Valid.equiv_trans`;
 * FA, as LICS23 splits it: `Valid.equiv_fn` (an honest symbol may be added), `Valid.equiv_adv`

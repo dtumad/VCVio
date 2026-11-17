@@ -31,7 +31,7 @@ samples a message of length bit `false` with a uniform payload, `zero` and `one`
   compositional lemmas for `EncSymbols.Avoids`. `workedDerivation_sound` is its validity from
   `Derivation.sound`, under the two hypotheses that remain: that `n` and `zero` have equal lengths
   in every admitted model, and IND-CPA for the image of the class.
-* `valid_worked_lpad`: in the model of `lpad` both hypotheses hold against every distinguisher.
+* `valid_worked_lpad`: in the model of `lpad` both hypotheses hold against every machine.
   The length fact holds in the model (`equalLength_n_zero`), and is not assumed.
 * `not_valid_leak`: for the scheme that returns the message, the rule's conclusion fails for the
   messages `one` and `zero`, although they have equal lengths and the side conditions hold.
