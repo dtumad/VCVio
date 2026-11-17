@@ -18,13 +18,16 @@ assumption, sound over `Valid` for every model restriction and every adversary c
   (G.Equiv:FA-Adv, a term the attacker computes may be added) and `Valid.equiv_app`
   (G.Equiv:FA-App, two entries may be replaced by the application of one to the other). BC14's
   FA for an honest symbol `f` is `equiv_fn` followed by `equiv_app`;
-* `Valid.equiv_tail` (Restr), `Valid.equiv_dup` (Dup), `Valid.equiv_ite` (If);
+* `Valid.equiv_tail` (Restr), `Valid.equiv_dup` (Dup), `Valid.equiv_ite` (FA for `if`);
+* `Valid.equiv_caseStudy` (LICS23's G.Case-Study:ITE) and `Valid.equiv_if1` (BC14's If1): the
+  case split on a condition, whose two premises each keep the condition beside one branch;
 * `Valid.equiv_rewrite`: rewriting an entry under an overwhelming equality `[t = t']`;
 * `Valid.equiv_eq_self` (BC14's Eq1): `EQ(t, t)` may be replaced by `true`.
 
-Each rule reads its premise and conclusion through `Form.holds_equiv` and applies one law of
+Each rule reads its premises and conclusion through `Form.holds_equiv` and applies one law of
 `SquirrelLogic.Indist`, whose proof is a named reduction and an equality of advantages at every
-`η`. The vector entries that rules act on are the first ones.
+`η`; for the case split it is two named reductions and a bound by the sum of their advantages.
+The vector entries that rules act on are the first ones.
 -/
 
 public section
@@ -100,6 +103,34 @@ theorem equiv_ite {c c' : FTerm D Γ .bool} {t t' s s' : FTerm D Γ a}
   have hI := Form.holds_equiv.1 (h M hl hR env hΘ)
   simp only [Form.holds_equiv, Vec.rv_cons] at hI ⊢
   exact hI.ite
+
+/-- **G.Case-Study:ITE** (LICS23 Fig. 8; the tool's `cs` with one condition on both sides). A
+conditional splits into its branches, each beside the condition: from `c, t, u⃗ ∼ c', s, v⃗` and
+`c, t', u⃗ ∼ c', s', v⃗`, conclude `if c then t else t', u⃗ ∼ if c' then s else s', v⃗`. The
+reductions are `Distinguisher.guard true` and `.guard false`, and the advantage is at most the sum
+of the two premises' advantages at every `η` (`advantage_cons_cond_le`). -/
+theorem equiv_caseStudy {c c' : FTerm D Γ .bool} {t t' s s' : FTerm D Γ a}
+    (h₁ : Valid R C Θ (.equiv (Env.cons c (Env.cons t u)) (Env.cons c' (Env.cons s v))))
+    (h₂ : Valid R C Θ (.equiv (Env.cons c (Env.cons t' u)) (Env.cons c' (Env.cons s' v)))) :
+    Valid R C Θ (.equiv (Env.cons (FTerm.ite c t t') u) (Env.cons (FTerm.ite c' s s') v)) := by
+  intro M hl hR env hΘ
+  have hI₁ := Form.holds_equiv.1 (h₁ M hl hR env hΘ)
+  have hI₂ := Form.holds_equiv.1 (h₂ M hl hR env hΘ)
+  simp only [Form.holds_equiv, Vec.rv_cons, FTerm.denote_ite] at hI₁ hI₂ ⊢
+  exact hI₁.caseStudy hI₂
+
+/-- **If1** (BC14 Fig. 2, Prop. 2): from `c, x, u⃗ ∼ c', z, v⃗` and `c, y, u⃗ ∼ c', z, v⃗`, conclude
+`if c then x else y, u⃗ ∼ z, v⃗`. BC14 states it with one condition and one context on both sides
+(`c' = c`, `v⃗ = u⃗`), an instance. It is the case split with both right-hand branches `z`. -/
+theorem equiv_if1 {c c' : FTerm D Γ .bool} {x y z : FTerm D Γ a}
+    (h₁ : Valid R C Θ (.equiv (Env.cons c (Env.cons x u)) (Env.cons c' (Env.cons z v))))
+    (h₂ : Valid R C Θ (.equiv (Env.cons c (Env.cons y u)) (Env.cons c' (Env.cons z v)))) :
+    Valid R C Θ (.equiv (Env.cons (FTerm.ite c x y) u) (Env.cons z v)) := by
+  intro M hl hR env hΘ
+  have hI₁ := Form.holds_equiv.1 (h₁ M hl hR env hΘ)
+  have hI₂ := Form.holds_equiv.1 (h₂ M hl hR env hΘ)
+  simp only [Form.holds_equiv, Vec.rv_cons, FTerm.denote_ite] at hI₁ hI₂ ⊢
+  exact hI₁.if1 hI₂
 
 /-- **Rewriting under an overwhelming equality.** If `[t = t']`, an entry `t` may be replaced by
 `t'`. LICS23's G.Rewrite, for an equivalence atom. -/
