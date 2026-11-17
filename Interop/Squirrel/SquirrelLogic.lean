@@ -8,6 +8,7 @@ public import SquirrelLogic.OneTimeGame
 public import SquirrelLogic.Syntax
 public import SquirrelLogic.Model
 public import SquirrelLogic.Machine
+public import SquirrelLogic.Guess
 public import SquirrelLogic.RandomVariable
 public import SquirrelLogic.Indist
 public import SquirrelLogic.TapeBounds

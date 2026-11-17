@@ -187,8 +187,8 @@ theorem xorMachine_test (M : Model decl) :
   cases e _ .zero <;> cases e _ (.succ .zero) <;> rfl
 
 theorem xorMachine_mem (M : Model decl) : (AdvClass.all M).mem (xorMachine M) :=
-  AdvClass.all_mem_of_readsBelow_zero (((Machine.readsBelow_const _).branch
-    (Machine.readsBelow_const _)).branch (Machine.readsBelow_input _ _))
+  (AdvClass.all M).branch_mem ((AdvClass.all M).branch_mem ((AdvClass.all M).const_mem _)
+    ((AdvClass.all M).const_mem _)) (AdvClass.all_mem_input _ _)
 
 /-- **The IND-CPA hypothesis is needed.** For a scheme that leaks the message, the conclusion
 fails against every machine, though the names are distinct and the side conditions hold
@@ -200,7 +200,7 @@ theorem not_valid_enc_leaky :
         ((encSymbols .s).challenge .ff Env.empty)) := fun h => by
   have hM := Form.holds_equiv.1 (h (encModel leaky) (encModel_respectsLabels _) rfl Env.empty
     (by simp)) (Machine.input (.succ .zero) Ty.isGround_bool)
-    (AdvClass.all_mem_of_readsBelow_zero (Machine.readsBelow_input _ _))
+    (AdvClass.all_mem_input _ _)
   rw [Machine.test_input] at hM
   refine not_negligible_one (negligible_of_le (fun η => le_of_eq ?_) hM)
   simp only [advantage, EncSymbols.rv_challenge, Env.cons_succ, Env.cons_zero]

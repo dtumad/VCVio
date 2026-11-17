@@ -283,7 +283,8 @@ theorem not_valid_leak :
         (encSymbols.challenge zeroTerm Env.empty)) := fun h => by
   have hM := Form.holds_equiv.1 (h (model leak) (model_respectsLabels _) rfl Env.empty
     (by simp)) (fun _ => Machine.ask ⟨encSymbols.cTy, .succ .zero, Env.cons true Env.empty⟩)
-    (AdvClass.all_mem_of_readsBelow_zero fun _ => allQueriesSatisfy_ask _ _)
+    (AdvClass.all_mem_of_readsBelow_zero (fun _ => allQueriesSatisfy_ask _ _)
+      fun _ => Machine.isQueryBoundP_ask _)
   replace hM : negligible (advantage (fun _ e _ => e _ (.succ .zero) true :
       Distinguisher (model leak) [encSymbols.pkTy, encSymbols.cTy]) _ _) := hM
   refine not_negligible_one (negligible_of_le (fun η => le_of_eq ?_) hM)

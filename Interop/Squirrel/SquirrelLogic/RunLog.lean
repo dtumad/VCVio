@@ -28,7 +28,13 @@ about runs:
 * a program making at most `n` queries that satisfy `p`, on every path, logs at most `n` of them
   on its run (`OracleComp.length_filterMap_runLog_le`), so a query bound bounds a log;
 * the queries of a simulated run are those of the handler's runs at the queries of the program's
-  run (`OracleComp.forall_mem_runLog_simulateQ`).
+  run (`OracleComp.forall_mem_runLog_simulateQ`);
+* answers that agree on the queries a program may make give the same run and the same log
+  (`OracleComp.runLog_eq_of_allQueriesSatisfy`).
+
+Two facts about query bounds go with them: a handler whose answers make at most `k` queries of a
+kind multiplies a bound by `k` (`OracleComp.isQueryBoundP_simulateQ`), and logging makes the same
+queries (`OracleComp.isQueryBoundP_withQueryLog`, `OracleComp.runLog_withQueryLog`).
 -/
 
 public section
@@ -142,5 +148,108 @@ theorem forall_mem_runLog_simulateQ {ι' : Type} {spec' : OracleSpec ι'}
     rcases List.mem_append.1 he' with he' | he'
     · exact h _ List.mem_cons_self e' he'
     · exact ih _ (fun e he => h e (List.mem_cons_of_mem _ he)) e' he'
+
+/-- Answers that agree on every query satisfying `P` give the same log and the same run, for a
+program whose queries all satisfy `P`. -/
+theorem runLog_eq_of_allQueriesSatisfy {P : ι → Prop} {ans' : QueryImpl spec Id}
+    (hans : ∀ t, P t → ans t = ans' t) :
+    ∀ {oa : OracleComp spec α}, oa.AllQueriesSatisfy P →
+      runLog ans oa = runLog ans' oa ∧ evalWithAnswerFn ans oa = evalWithAnswerFn ans' oa := by
+  intro oa
+  induction oa using OracleComp.inductionOn with
+  | pure a => exact fun _ => ⟨rfl, rfl⟩
+  | query_bind t k ih =>
+    intro h
+    obtain ⟨ht, hk⟩ := (allQueriesSatisfy_query_bind_iff t k P).1 h
+    obtain ⟨hl, hr⟩ := ih (ans t) (hk (ans t))
+    rw [runLog_query_bind, runLog_query_bind, evalWithAnswerFn_bind, evalWithAnswerFn_bind,
+      evalWithAnswerFn_liftM_query, evalWithAnswerFn_liftM_query, hl, hr, ← hans t ht]
+    exact ⟨rfl, rfl⟩
+
+/-- A run makes only queries that the program may make. -/
+theorem forall_mem_runLog_of_allQueriesSatisfy {P : ι → Prop} :
+    ∀ {oa : OracleComp spec α}, oa.AllQueriesSatisfy P → ∀ e ∈ runLog ans oa, P e.1 := by
+  intro oa
+  induction oa using OracleComp.inductionOn with
+  | pure a => exact fun _ _ h => absurd h List.not_mem_nil
+  | query_bind t k ih =>
+    intro h e he
+    obtain ⟨ht, hk⟩ := (allQueriesSatisfy_query_bind_iff t k P).1 h
+    rw [runLog_query_bind, List.mem_cons] at he
+    rcases he with rfl | he
+    · exact ht
+    · exact ih (ans t) (hk (ans t)) e he
+
+/-- Logging a program makes the queries the program makes. -/
+@[simp] theorem runLog_withQueryLog (oa : OracleComp spec α) :
+    runLog ans oa.withQueryLog = runLog ans oa := by
+  induction oa using OracleComp.inductionOn with
+  | pure a => rfl
+  | query_bind t k ih =>
+    rw [withQueryLog_bind, withQueryLog_query, bind_assoc]
+    simp only [pure_bind]
+    rw [runLog_query_bind, runLog_map, ih, runLog_query_bind]
+
+/-! ## Query bounds through handlers and logs -/
+
+/-- Sequencing adds query bounds, and the sum may be weakened. -/
+theorem isQueryBoundP_bind_le {p : ι → Prop} [DecidablePred p] {oa : OracleComp spec α}
+    {ob : α → OracleComp spec β} {n m k : ℕ} (h : oa.IsQueryBoundP p n)
+    (h' : ∀ x, (ob x).IsQueryBoundP p m) (hk : n + m ≤ k) : (oa >>= ob).IsQueryBoundP p k :=
+  (isQueryBoundP_bind h fun x _ => h' x).mono hk
+
+/-- **A handler multiplies a query bound.** If the handler's answer to a query satisfying `p` makes
+at most `k` queries satisfying `p'`, and its answer to any other query makes none, then simulating
+a program that makes at most `n` queries satisfying `p` makes at most `n * k` satisfying `p'`. -/
+theorem isQueryBoundP_simulateQ {ι' : Type} {spec' : OracleSpec ι'}
+    (impl : QueryImpl spec (OracleComp spec')) {p : ι → Prop} [DecidablePred p]
+    {p' : ι' → Prop} [DecidablePred p'] {k : ℕ}
+    (himpl : ∀ t, (impl t).IsQueryBoundP p' (if p t then k else 0)) :
+    ∀ {oa : OracleComp spec α} {n : ℕ}, oa.IsQueryBoundP p n →
+      (simulateQ impl oa).IsQueryBoundP p' (n * k) := by
+  intro oa
+  induction oa using OracleComp.inductionOn with
+  | pure a => exact fun _ => trivial
+  | query_bind t c ih =>
+    intro n h
+    rw [isQueryBoundP_query_bind_iff] at h
+    rw [simulateQ_bind, simulateQ_spec_query]
+    refine (isQueryBoundP_bind (himpl t) fun u _ => ih u (h.2 u)).mono ?_
+    by_cases ht : p t
+    · obtain ⟨n, rfl⟩ := Nat.exists_eq_add_one_of_ne_zero
+        (Nat.pos_iff_ne_zero.1 (h.1.resolve_left (not_not.2 ht)))
+      simp only [ht, ↓reduceIte, Nat.add_sub_cancel]
+      rw [Nat.add_mul, one_mul, add_comm]
+    · simp only [ht, ↓reduceIte, zero_add, le_refl]
+
+/-- Logging a program makes the queries the program makes, so it keeps every query bound. -/
+theorem isQueryBoundP_withQueryLog {p : ι → Prop} [DecidablePred p] :
+    ∀ {oa : OracleComp spec α} {n : ℕ}, oa.IsQueryBoundP p n →
+      oa.withQueryLog.IsQueryBoundP p n := by
+  intro oa
+  induction oa using OracleComp.inductionOn with
+  | pure a => exact fun _ => by rw [withQueryLog_pure]; trivial
+  | query_bind t c ih =>
+    intro n h
+    rw [isQueryBoundP_query_bind_iff] at h
+    rw [withQueryLog_bind, withQueryLog_query, bind_assoc]
+    simp only [pure_bind]
+    rw [isQueryBoundP_query_bind_iff]
+    exact ⟨h.1, fun u => (isQueryBoundP_map_iff _ _ _).2 (ih u (h.2 u))⟩
+
+/-- Logging a program makes the queries the program makes, so it keeps every query predicate. -/
+theorem allQueriesSatisfy_withQueryLog {P : ι → Prop} :
+    ∀ {oa : OracleComp spec α}, oa.AllQueriesSatisfy P → oa.withQueryLog.AllQueriesSatisfy P := by
+  intro oa
+  induction oa using OracleComp.inductionOn with
+  | pure a => exact fun _ => by rw [withQueryLog_pure]; exact allQueriesSatisfy_pure _ _
+  | query_bind t c ih =>
+    intro h
+    obtain ⟨ht, hk⟩ := (allQueriesSatisfy_query_bind_iff t c P).1 h
+    rw [withQueryLog_bind, withQueryLog_query, bind_assoc]
+    simp only [pure_bind]
+    refine (allQueriesSatisfy_query_bind_iff t _ P).2 ⟨ht, fun u => ?_⟩
+    rw [map_eq_bind_pure_comp]
+    exact allQueriesSatisfy_bind (ih u (hk u)) fun _ => allQueriesSatisfy_pure _ _
 
 end OracleComp

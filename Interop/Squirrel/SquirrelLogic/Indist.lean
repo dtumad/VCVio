@@ -7,6 +7,7 @@ module
 
 public import SquirrelLogic.RandomVariable
 public import SquirrelLogic.Machine
+public import SquirrelLogic.Guess
 public import VCVio.CryptoFoundations.Asymptotics.Negligible
 public import ToMathlib.Data.ENNReal.AbsDiff
 public import Mathlib.Algebra.Polynomial.Eval.Defs
@@ -39,14 +40,16 @@ The closure fields of `AdvClass` are the program constructions of `SquirrelLogic
 relabelling the inputs, running one machine to answer another's input queries (substitution into
 a handler), querying an input at another input, answering by an honest symbol, branching on a
 Boolean input, Boolean constants, the equality test, reading the tape a polynomial offset further
-along, and the samplers of names whose bit blocks have polynomial length (`Model.PolyCoins`); and
-a polynomial bound on the tape positions a machine reads. The reductions of the rules are built
-from them (`AdvClass.adv_mem`, `AdvClass.ite_mem`, `AdvClass.guard_mem`, `AdvClass.freshL_mem`,
-…). No field admits an `η`-indexed constant: offsets are polynomials, and the only values a field
-supplies are Booleans, the model's honest symbols and the model's samplers.
+along, the samplers of names whose bit blocks have polynomial length (`Model.PolyCoins`), and
+the guessing machine of Rw-Oracle (`Machine.guess`); a polynomial bound on the tape positions a
+machine reads; and a polynomial bound on the queries it makes to its inputs. The reductions of
+the rules are built from them (`AdvClass.adv_mem`, `AdvClass.ite_mem`, `AdvClass.guard_mem`,
+`AdvClass.freshL_mem`, …). No field admits an `η`-indexed constant: offsets and bit counts are
+computed from polynomials, and the only values a field supplies are Booleans, the model's honest
+symbols, the model's samplers and the arguments of a machine's own queries.
 
-`AdvClass.all` admits every machine with a polynomial read bound and meets every field: the
-information-theoretic class of the satisfiability models and countermodels.
+`AdvClass.all` admits every machine with polynomial read and query bounds and meets every field:
+the information-theoretic class of the satisfiability models and countermodels.
 -/
 
 public section
@@ -245,30 +248,71 @@ structure AdvClass (M : Model D) where
   on the tape interface (VCVio's `AllQueriesSatisfy`). -/
   readBound_mem {τs : List (Ty B)} {β : Ty B} {A : Machine M τs β} :
     mem A → ∃ p : Polynomial ℕ, A.ReadsBelow fun η => p.eval η
+  /-- Each admitted machine makes polynomially many queries to its inputs, on every path
+  (`Machine.QueryBound`): Rw-Oracle's guessing reduction draws the position of the faulty query
+  below this bound (CCS26 App. C.1: "there exists a polynomial `q(η)` bounding" the adversary's
+  oracle calls). The bound counts the queries to all inputs together; a machine has finitely many
+  inputs, so this is a polynomial bound on the queries to each. Polynomial time: a machine running
+  in time `t(η)` makes at most `t(η)` queries (time bounds query count; VCVio's `IsQueryBoundP`). -/
+  queryBound_mem {τs : List (Ty B)} {β : Ty B} {A : Machine M τs β} :
+    mem A → ∃ p : Polynomial ℕ, A.QueryBound fun η => p.eval η
+  /-- The guessing machine (`Machine.guess`): read `⌈log₂ q(η)⌉` bits of the tape from bit `p(η)`
+  as a number `j`; run an admitted machine, logging its queries; return the argument of its `j`-th
+  query to its first input, an oracle with a Boolean or base argument, or an admitted default.
+  Rw-Oracle and Pc-Oracle (CCS26 App. C.1, p. 15: `B` "samples `j` … using a part of `ρa` further
+  away" and runs `A_j`, which "returns the input of" the `j`-th call). The offset and the number
+  of bits are computed from polynomials, finite objects, so the closure is uniform. Polynomial
+  time: computing `p(η)` and `⌈log₂ q(η)⌉` from `1^η` and reading that many bits, then running the
+  machine through a handler that forwards each query unchanged and keeps its argument (VCVio's
+  `closeHandler` with a logging handler of constant cost per query; the answers are passed on, not
+  copied, so their size does not enter), and selecting one entry of a list of polynomial length;
+  sequenced by `IsOraclePPTBy.bind`. -/
+  guess_mem {a b γ : Ty B} {Γ : List (Ty B)} (p q : Polynomial ℕ) (ha : a.IsGround)
+    {A : Machine M (.arrow a b :: Γ) γ} {d : Machine M (.arrow a b :: Γ) a.res} :
+    mem A → mem d →
+      mem (A.guess (fun η => p.eval η) (fun η => Nat.clog 2 (q.eval η)) ha d)
 
 namespace AdvClass
 
-/-- Every machine with a polynomial read bound: the information-theoretic class, which meets every
-closure field. -/
+/-- Every machine with polynomial read and query bounds: the information-theoretic class, which
+meets every closure field. -/
 @[expose] def all (M : Model D) : AdvClass M where
-  mem A := ∃ p : Polynomial ℕ, A.ReadsBelow fun η => p.eval η
-  rename_mem r := fun ⟨p, hp⟩ => ⟨p, hp.rename r⟩
-  subst_mem := fun ⟨p, hp⟩ ⟨q, hq⟩ => ⟨p + q,
-    (hp.mono fun η => by simp).subst (hq.mono fun η => by simp)⟩
-  app_mem ha := fun ⟨p, hp⟩ => ⟨p, hp.app ha⟩
-  fn_mem f := fun ⟨p, hp⟩ => ⟨p, hp.fn f⟩
-  branch_mem := fun ⟨p, hp⟩ ⟨q, hq⟩ => ⟨p + q,
-    (hp.mono fun η => by simp).branch (hq.mono fun η => by simp)⟩
-  const_mem _ := ⟨0, Machine.readsBelow_const _⟩
-  eqTest_mem hβ := ⟨0, Machine.readsBelow_eqTest hβ⟩
-  shift_mem p := fun ⟨q, hq⟩ => ⟨p + q, (hq.shift _).mono fun η => by simp⟩
-  sampler_mem hb := fun ⟨p, hp⟩ => ⟨p, (Machine.readsBelow_sampler _ hb).mono hp⟩
-  readBound_mem h := h
+  mem A := (∃ p : Polynomial ℕ, A.ReadsBelow fun η => p.eval η) ∧
+    ∃ q : Polynomial ℕ, A.QueryBound fun η => q.eval η
+  rename_mem r := fun ⟨⟨p, hp⟩, q, hq⟩ => ⟨⟨p, hp.rename r⟩, q, hq.rename r⟩
+  subst_mem := fun ⟨⟨p, hp⟩, q, hq⟩ ⟨⟨p', hp'⟩, q', hq'⟩ => ⟨⟨p + p',
+    (hp.mono fun η => by simp).subst (hp'.mono fun η => by simp)⟩, q * (q' + 1),
+    (hq.subst hq').mono fun η => by simp⟩
+  app_mem ha := fun ⟨⟨p, hp⟩, q, hq⟩ => ⟨⟨p, hp.app ha⟩, q * 2, (hq.app ha).mono fun η => by simp⟩
+  fn_mem f := fun ⟨⟨p, hp⟩, q, hq⟩ => ⟨⟨p, hp.fn f⟩, q, hq.fn f⟩
+  branch_mem := fun ⟨⟨p, hp⟩, q, hq⟩ ⟨⟨p', hp'⟩, q', hq'⟩ => ⟨⟨p + p',
+    (hp.mono fun η => by simp).branch (hp'.mono fun η => by simp)⟩, 1 + (q + q'),
+    (hq.branch hq').mono fun η => by simp⟩
+  const_mem _ := ⟨⟨0, Machine.readsBelow_const _⟩, 0, Machine.queryBound_const _⟩
+  eqTest_mem hβ := ⟨⟨0, Machine.readsBelow_eqTest hβ⟩, 2,
+    (Machine.queryBound_eqTest hβ).mono fun η => by simp⟩
+  shift_mem p := fun ⟨⟨q, hq⟩, q', hq'⟩ => ⟨⟨p + q, (hq.shift _).mono fun η => by simp⟩, q',
+    hq'.shift _⟩
+  sampler_mem {b} hb := fun ⟨p, hp⟩ => ⟨⟨p, (Machine.readsBelow_sampler _ hb).mono hp⟩,
+    b.args.length, (Machine.queryBound_sampler b hb).mono fun η => by simp⟩
+  readBound_mem h := h.1
+  queryBound_mem h := h.2
+  guess_mem p q ha := fun ⟨⟨pA, hpA⟩, qA, hqA⟩ ⟨⟨pd, hpd⟩, qd, hqd⟩ => ⟨⟨p + q + pA + pd,
+    (hpA.mono fun η => by simp; omega).guess (hpd.mono fun η => by simp) _ _ ha fun η => by
+      have := Nat.clog_le_of_le_pow (b := 2) (Nat.lt_two_pow_self (n := q.eval η)).le
+      simp only [Polynomial.eval_add]
+      omega⟩, qA + qd, (hqA.guess hqd _ _ ha).mono fun η => by simp⟩
 
-/-- A machine that never reads the tape is in `AdvClass.all`. -/
+/-- A machine that never reads the tape and makes boundedly many input queries is in
+`AdvClass.all`. -/
 theorem all_mem_of_readsBelow_zero {τs : List (Ty B)} {β : Ty B} {A : Machine M τs β}
-    (h : A.ReadsBelow fun _ => 0) : (all M).mem A :=
-  ⟨0, by simpa using h⟩
+    (h : A.ReadsBelow fun _ => 0) {n : ℕ} (hq : A.QueryBound fun _ => n) : (all M).mem A :=
+  ⟨⟨0, by simpa using h⟩, n, by simpa using hq⟩
+
+/-- The input projections are in `AdvClass.all`. -/
+theorem all_mem_input {τs : List (Ty B)} {a : Ty B} (y : ScopedVar τs a) (ha : a.IsGround) :
+    (all M).mem (Machine.input y ha) :=
+  all_mem_of_readsBelow_zero (Machine.readsBelow_input y ha) (Machine.queryBound_input y ha)
 
 /-- `adv t` (LICS23 Fig. 2), at the type `τ₁ → … → τₙ → β`: an admitted machine with inputs `τs`
 and the arguments of `β` computes `t` everywhere. -/
