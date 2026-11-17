@@ -159,6 +159,9 @@ variable {b : Ty B}
 @[expose] def name (n : D.Name a b) (i : FTerm D Γ a) : FTerm D Γ b :=
   app (.node (.inl (.name n)) fun p => nomatch p) i
 
+/-- An attacker function symbol. -/
+@[expose] def att (f : D.Att) : FTerm D Γ (D.attTy f) := .node (.inl (.att f)) fun p => nomatch p
+
 end FTerm
 
 /-- Vectors of local terms of the types `τs`, as environments. -/
@@ -371,6 +374,11 @@ is the constant random variable `RV.constAt η x`. -/
 
 @[simp] theorem FTerm.denote_fn {τ : Ty B} (f : D.Fn τ) :
     (FTerm.fn f : FTerm D Γ τ).denote (fullInterp M C) env = fun η _ => M.fn η f := rfl
+
+/-- An attacker symbol reads the attacker tape. -/
+@[simp] theorem FTerm.denote_att (f : D.Att) :
+    (FTerm.att f : FTerm D Γ (D.attTy f)).denote (fullInterp M C) env = fun η ρ => M.att η f ρ.1 :=
+  rfl
 
 /-- A name reads the coordinate of the honest tape at its index's value. -/
 @[simp] theorem FTerm.denote_name {a b : Ty B} (n : D.Name a b) (i : FTerm D Γ a) :

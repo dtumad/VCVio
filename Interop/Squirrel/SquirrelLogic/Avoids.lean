@@ -19,9 +19,10 @@ semantically.
   `t` is the same at two honest tapes that agree outside the coordinates `S η`. The encryption
   rule's side condition (`EncSymbols.Avoids`) is the instance at the key and coin coordinates,
   FreshR's (`SquirrelLogic.Rules.Fresh`) the instance at one name occurrence.
-* `FTerm.avoids_var`, `FTerm.avoids_fn`, `FTerm.avoids_tt`, `FTerm.avoids_ff`,
-  `FTerm.Avoids.app`, `.ite`, `.eq`, `.not` and `.name`: it holds in every model of terms built
-  from free variables, honest symbols and names whose coordinates are outside `S`.
+* `FTerm.avoids_var`, `FTerm.avoids_fn`, `FTerm.avoids_att`, `FTerm.avoids_tt`,
+  `FTerm.avoids_ff`, `FTerm.Avoids.app`, `.ite`, `.eq`, `.not` and `.name`: it holds in every
+  model of terms built from free variables, honest and attacker symbols, and names whose
+  coordinates are outside `S`.
 * `Model.FreshAt M k X`: a family over the tapes, such as a random variable or a vector of them,
   agrees at two honest tapes that agree outside the coordinate `k η`. `FTerm.Avoids.freshAt`
   gives it for the random variable of a closed term.
@@ -56,6 +57,10 @@ theorem avoids_var (x : ScopedVar Γ (.loc τ)) : FTerm.Avoids M S (Term.var x :
 
 /-- An honest symbol reads no honest coordinate. -/
 theorem avoids_fn (f : D.Fn τ) : (FTerm.fn f : FTerm D Γ τ).Avoids M S :=
+  fun _ _ _ _ _ _ => rfl
+
+/-- An attacker symbol reads no honest coordinate. -/
+theorem avoids_att (f : D.Att) : (FTerm.att f : FTerm D Γ (D.attTy f)).Avoids M S :=
   fun _ _ _ _ _ _ => rfl
 
 /-- `true` reads no honest coordinate. -/
