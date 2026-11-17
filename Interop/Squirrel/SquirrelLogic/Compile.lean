@@ -8,6 +8,7 @@ module
 public import SquirrelLogic.OracleTerm
 public import VCVio.OracleComp.SimSemantics.SimulateQ
 public import VCVio.OracleComp.QueryTracking.LoggingOracle.Core
+public import SquirrelLogic.RunLog
 
 /-!
 # Terms with calls, compiled to free programs
@@ -172,11 +173,6 @@ they are outside the fragment (`PRFSymbols.pptmOp`). -/
 
 variable {P M η}
 
-/-- The queries of a run with the answers `ans`, in order. -/
-@[expose] noncomputable def runLog (ans : QueryImpl (P.Iface M η) Id) {α : Type}
-    (c : OracleComp (P.Iface M η) α) : QueryLog (P.Iface M η) :=
-  (evalWithAnswerFn ans c.withQueryLog).2
-
 /-- Every message that the run of `c` with the answers `ans` hashes satisfies `Q`. -/
 @[expose] def HashOK (ans : QueryImpl (P.Iface M η) Id) (Q : P.Dom M η → Prop) {α : Type}
     (c : OracleComp (P.Iface M η) α) : Prop :=
@@ -184,28 +180,7 @@ variable {P M η}
 
 section Runs
 
-variable (ans : QueryImpl (P.Iface M η) Id) {α β : Type}
-
-theorem fst_evalWithAnswerFn_withQueryLog (c : OracleComp (P.Iface M η) α) :
-    (evalWithAnswerFn ans c.withQueryLog).1 = evalWithAnswerFn ans c :=
-  (evalWithAnswerFn_map ans Prod.fst _).symm.trans
-    (congrArg (evalWithAnswerFn ans) (loggingOracle.fst_map_run_simulateQ c))
-
-@[simp] theorem runLog_pure (a : α) : runLog ans (pure a : OracleComp (P.Iface M η) α) = [] :=
-  rfl
-
-theorem runLog_bind (c : OracleComp (P.Iface M η) α) (f : α → OracleComp (P.Iface M η) β) :
-    runLog ans (c >>= f) = runLog ans c ++ runLog ans (f (evalWithAnswerFn ans c)) := by
-  rw [runLog, withQueryLog_bind, evalWithAnswerFn_bind, evalWithAnswerFn_map,
-    fst_evalWithAnswerFn_withQueryLog]
-  rfl
-
-theorem runLog_query (t : (P.Iface M η).Domain) :
-    runLog ans (liftM ((P.Iface M η).query t) : OracleComp (P.Iface M η) _) = [⟨t, ans t⟩] := by
-  rw [runLog, withQueryLog_query, evalWithAnswerFn_bind]
-  rfl
-
-variable {ans}
+variable {ans : QueryImpl (P.Iface M η) Id} {α β : Type}
 
 theorem hashOK_pure (Q : P.Dom M η → Prop) (a : α) :
     HashOK ans Q (pure a : OracleComp (P.Iface M η) α) :=

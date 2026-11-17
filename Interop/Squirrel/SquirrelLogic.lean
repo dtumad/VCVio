@@ -2,6 +2,7 @@ module
 
 public import SquirrelLogic.Sum
 public import SquirrelLogic.MonadicReading
+public import SquirrelLogic.RunLog
 public import SquirrelLogic.ProductTape
 public import SquirrelLogic.OneTimeGame
 public import SquirrelLogic.Syntax
