@@ -1613,3 +1613,178 @@ tapes) and the commit that adds these notes. Sources: LICS23, the author report 
 ### Ledger
 
 L10, L11, L12, L14 and L20 are updated, and L23 (long tapes) is new.
+
+## M1, part 1c: FreshL
+
+This work was done on top of `ed54b8aa9`, in commits `9ab692cb4` (the machines and class fields),
+`2d582319d` (read bounds of terms), `234d97931` (FreshL and the derivation constructor),
+`bc2e8ca21` (the long-tape model and the uses of part 1's rules), `879297cd5` (the countermodel)
+and the commit that adds these notes. Sources: CCS26 Fig. 11 and App. C.2 (pp. 16–17), the
+authors' PDF pinned in `../SOURCES.md`; LICS23 §II-A.3, §II-B.2 (p. 6), §II-C.1 and p. 17.
+
+### The reduction, as a machine
+
+- **Pieces.** `Machine.shift off A` runs `A` with every tape read moved `off η` bits along: the
+  handler `Machine.shiftImpl` of the tape interface, applied by `simulateQ`, with
+  `Machine.run_shift` (the run at `ρa` is the run at `Model.shiftTape (off η) ρa`).
+  `Machine.sampler b hb` reads the first `coinLen η b` bits of the tape (`Machine.readBits`),
+  fetches `b`'s arguments (`Machine.fetchVals`; they are Boolean or base since `b` has order at
+  most one, `Ty.isGround_of_mem_args`), and returns the model's sampler applied to them
+  (`Machine.run_sampler`).
+- **The reduction.** `AdvMachine.freshL off hb g` answers `g`'s input for the fresh name, the last
+  entry of its tuple, by `(Machine.sampler b hb).shift off`, through `Machine.subst` after the
+  relabelling `Machine.lastFirst` that moves that input first. `AdvMachine.appVals_eval_freshL`:
+  it computes `g` applied to `u` and the sampler's value on the bits `[off η, off η + coinLen η b)`
+  (`Model.coinAt`). FreshL takes `off` to be a polynomial `p`, the sum of the read bounds of `g`
+  and of the terms.
+
+### Class and model conditions
+
+| Condition | Kind | Used for | Polynomial-time counterpart |
+|---|---|---|---|
+| `shift_mem p` | closure field, `p` a polynomial | the offset of the sampler | computing `p(η)` from `1^η` and adding it to each tape index: a tape handler of polynomial cost (`closeHandler`, `HandlerCertificate`) |
+| `sampler_mem hb` | closure field, given `Model.PolyCoins b` | drawing the fresh name | LICS23 §II-B.2 makes names polynomial-time samplings; `PureCertificate` for the sampler (cslib-frontier's `IsPPTOn`) after the tape reads, by `IsOraclePPTBy.bind`; a model–class compatibility condition like `fn_mem` |
+| `readBound_mem` | closure field (from step 1b) | the bound `p` above `g`'s reads | a machine running in time `t` reads below `t` |
+| `Model.PolyCoins M b` | model condition, hypothesis on `R` | the field's premise, and room on the tape | a polynomial-time sampling reads polynomially many bits |
+| `Model.LongTapes M` | model condition, hypothesis on `R` | room above `p` at every large `η` | LICS23's "long enough finite tapes" (p. 17) |
+
+- **Uniformity.** No field admits an `η`-indexed constant: offsets are polynomials, and the only
+  values the fields supply are Booleans, honest symbols and samplers. `AdvClass.all` meets both new
+  fields (a shifted machine reads below `p + q`; the sampler below `coinLen`).
+- **Why the premise on `sampler_mem`.** With `Model.PolyCoins` as a premise of the field rather
+  than a condition on `AdvClass.all`, the information-theoretic class stays a function of the
+  model alone, and no existing satisfiability model or countermodel changes.
+- `AdvClass.freshL_mem`: the reduction is admitted, from `subst_mem`, `rename_mem`, `shift_mem` and
+  `sampler_mem`.
+
+### What the terms read of ρa
+
+- `VecRV.ReadsBelow` (every entry), `RV.ReadsBelow.mono`, `VecRV.exists_readsBelow` (finitely many
+  polynomial bounds give one, their sum).
+- `FTerm.ReadsPoly M C t env`: the random variable of `t` at `env` reads below a polynomial.
+  Constructor lemmas: `readsPoly_fn`, `readsPoly_tt`, `readsPoly_ff` (nothing), `ReadsPoly.name` (a
+  name reads only what its index reads), `ReadsPoly.app`, `.ite`, `.eq`, `.not` (the sum), and
+  `readsPoly_of_adv` (a term computed by an admitted machine has its bound).
+- **Choice (L24).** Free variables and attacker symbols get their bounds from `adv` hypotheses
+  (`Valid.readsPoly_of_adv`), not from a model condition. CCS26's caption of Fig. 11 asks every
+  declared variable to be a name or adversarial, and LICS23 (p. 17) adds `adv(g)` for every
+  attacker symbol; the worked derivation uses `adv(a)` for its attacker symbol `a`. A model
+  condition on `Model.att` would have restricted the models without the paper asking it. λ and the
+  local quantifiers are not covered: their bodies are read at every value of the bound variable,
+  and a bound uniform in that value is not built.
+- `FTerm.att` (smart constructor), `FTerm.denote_att`, `FTerm.avoids_att` are new.
+
+### The proof
+
+- **At one `η`** (`deduceAdv_freshL_eq`): if `g`, `u` and `v` read below `p` and `n(i)` is fresh in
+  `u` and `v`, then at every `η` with `p(η) + coinLen η b ≤ lenA η`,
+  `deduceAdv (g.freshL p hb).eval u v η = deduceAdv g.eval (u, n(i)) v η`. The map that swaps the
+  bit block `[p(η), p(η) + coinLen η b)` of ρa with the honest coordinate of `n(i)` is an
+  involution of the tapes, so it preserves the uniform distribution
+  (`prEvent_uniformSample_equiv`). After the swap the reduction reads the name's old coordinate,
+  while `g`, `u` and `v` see the same bits below `p(η)` and the same honest tape outside the
+  coordinate.
+- **Not through G.Equiv.Fresh.** CCS26 goes through `u, n ∼ u, n_fresh` and Rw-Equiv. That needs a
+  name occurring nowhere, which a fixed declaration may not have, and Rw-Equiv is proved only at
+  ground types (L21); the single bijection gives equality directly, for every type of order at most
+  one.
+- **Asymptotically** (`AdvClass.NonDed.freshL`): `LongTapes` at `p + pc`, with `pc` bounding
+  `coinLen`, gives the condition for all large `η`, and `negligible_of_eventuallyLE` transfers
+  negligibility. `Valid.nonDed_freshL_of_readsPoly` (any context, side conditions under `Θ`) and
+  `Valid.nonDed_freshL` (closed vectors, freshness by `FTerm.Avoids`) are the rules.
+- **Footnote 2.** No model is extended: the premise is applied in the model where the conclusion
+  is evaluated, and the bits the reduction needs are there by `LongTapes`. The question whether `Θ`
+  holds in an extended model (L20) does not arise.
+- `Model.longTapes_of_two_pow_le`: tapes of at least `2^η` bits are long, since `p(η)·2^{-η}` is
+  negligible (`negligible_polynomial_mul`).
+
+### Derivations
+
+`Derivation D enc R₀` gains the parameter `R₀`, the restriction on models its rules assume.
+`nonDedFreshL` takes as premises that `R₀` gives `LongTapes` and `PolyCoins b`, the read bounds in
+every model of `R₀` and `Θ` and every class, and freshness by `FTerm.Avoids`;
+`Derivation.sound` takes `hR : ∀ M, R M → R₀ M`. Derivations without FreshL take `R₀` to be every
+model (`fun _ => True`); the four existing derivations changed by one argument each, and
+`SecrecyExamples.freshR` and `workedDerivation` are polymorphic in `R₀`.
+
+### Checks
+
+| Check | Shows |
+|---|---|
+| `FreshLExamples.longModel_longTapes`, `longModel_polyCoins`, `longModel_respectsLabels` | the model with tapes of `2^η` bits meets FreshL's model conditions |
+| `FreshLExamples.valid_advA` | `adv(a)` holds there: the attacker symbol is the sampler of messages on the tape |
+| `FreshLExamples.freshLDerivation`, `freshLDerivation_sound` | from `adv(h)`, `adv(a)`: FreshR, `▷` twice, Trans, WeakL give `h(h(a)) ⊬ n`, and FreshL adds `m`; the read bound of `a` comes from `adv(a)` |
+| `FreshLExamples.valid_freshLWorked` | all of FreshL's hypotheses hold jointly with `AdvClass.all`, and `h(h(a)), m ⊬ n` holds |
+| `FreshLExamples.not_valid_freshL_n` | `h(h(a)), n ⊬ n` fails: the conclusion depends on freshness |
+| `SecrecyExamples.freshL_needs_freshness` | unchanged: `⊬ n` holds and `n ⊬ n` fails |
+| `FreshLCountermodel.freshL_needs_longTapes` | with an empty attacker tape, against the class generated by the closure fields, `[] ⊬ m` holds, `n ⊬ m` fails, and every other hypothesis of FreshL holds |
+
+- **The countermodel.** `Gen M` is the least predicate closed under the constructions of the
+  closure fields and containing their base machines and the input projections (`Machine.input`,
+  which every polynomial-time class contains; without it the generated class has no identity and
+  `n ⊬ m` would hold). `Gen.mem_all` gives the read bounds, so `genClass M` is an `AdvClass`. In
+  `cmodel` a message is `[true]` except with probability `2^{-(η+1)}`, and the empty tape gives the
+  sampler the all-`false` block, whose value is `[false]`. `Gen.clean`, by induction over `Gen`: on
+  inputs without `[true]`, no machine outputs `[true]`. So no machine without inputs guesses `m`
+  beyond probability `2^{-(η+1)}`, while the identity on `n` computes `m` with probability at least
+  `1 − 2·2^{-(η+1)}` (a union bound over the marginals, `prEvent_nameAt`, new in
+  `Rules/Fresh.lean`). The construction uses one likely value instead of two values sharing the mass: two would need
+  the independence of the two names, and the class's inability to produce the value is the same.
+
+### Part 1's rules, used
+
+`SecrecyExamples` uses Neg1 (`valid_neg1`: `¬ (k ▷ n)`), Neg2 (`valid_neg2`: `¬ (k ⊬ h(k))`),
+Ineq (`valid_ineq`: `[n ≠ h(k)]`), Rw-Equiv (`valid_rwEquiv`: `k ⊬ h(h(n))` from
+`k, h(h(n)) ∼ k, n`, valid in `model` where `h` is the identity, `valid_equiv_k_hhn`) and WeakR
+(`valid_weakR`: `k ⊬ h(n)` from `k ⊬ h(h(n))` and `h(n) ▷ h(h(n))`). Checks that premises are
+needed: `neg1_needs_nonDed` (`¬ (k ▷ h(k))` fails), `ineq_needs_nonDed` (`[h(k) ≠ h(k)]` fails
+while `k ▷ h(k)` holds), `rwEquiv_needs_equiv` (`k ⊬ n` holds and `k ⊬ k` fails, so neither
+Rw-Equiv nor WeakR passes between them without its second premise). The declaration gains an
+attacker symbol of type `msg`, constant in `model`; `hMachine`, `idMachine`, `valid_advH` and
+`not_nonDed_of_forall_eq` are stated for every model.
+
+### Problems hit
+
+1. **`simp` on membership of formulas.** `advA ∈ [advH, advA]` by `simp` timed out at `whnf`,
+   deciding the equality of two formulas; `List.mem_cons_of_mem _ List.mem_cons_self` is instant.
+2. **Binder types from arithmetic.** In `fun j => M.readBit ρa (n + j)` with `j : Fin k` expected,
+   `n + j` elaborated `j` as a natural number; the binder needs its type.
+3. **`renameInl` unification.** In `rename renameInl` with target `[] ++ (Ξ ++ Γ)`, Lean solved
+   `Ξ := []`; the block is given explicitly, `renameInl (Γ := …)`.
+4. **Dot notation on function types.** `Vec`, `VecRV` and `CleanVals` unfold to function types, so
+   `u.ReadsPoly` and `he.append` fail; the full names work.
+5. **`dif_pos` is deprecated** at this toolchain; `split_ifs` with `omega` replaces it.
+6. **`nomatch x, y`** again parsed as two discriminants inside an anonymous constructor.
+
+### Build and checks
+
+- **Build.** `LEAN_NUM_THREADS=4 lake build SquirrelLogic` succeeds with no warnings.
+- **Axioms.** The scratch file of step 1b, extended by 55 headlines of this part, prints the axioms
+  of 167 declarations and sweeps all 1922 declarations of the library's modules: only `propext`,
+  `Classical.choice` and `Quot.sound` occur.
+- **Forbidden tactics, comment fences, line length.** No `sorry`, `admit`, `stop` or
+  `native_decide`; the fence check passes; no line exceeds 100 characters, and no file 1500 lines.
+
+| File | Content |
+|---|---|
+| `Machine.lean` | `Model.shiftTape`, `Model.coinAt`, `Machine.shift`, `readBits`, `fetchVals`, `sampler`, `lastFirst`, `AdvMachine.freshL`, their `run` lemmas and read bounds |
+| `Indist.lean` | `Model.PolyCoins`, `shift_mem`, `sampler_mem`, `AdvClass.freshL_mem` |
+| `TapeBounds.lean` | `VecRV.ReadsBelow`, `FTerm.ReadsPoly` and its constructor lemmas, `Valid.readsPoly_of_adv` |
+| `Rules/FreshL.lean` (new) | `Model.longTapes_of_two_pow_le`, `deduceAdv_freshL_eq`, `AdvClass.NonDed.freshL`, the rules |
+| `Derivation.lean` | the parameter `R₀`, `nonDedFreshL` |
+| `FreshLExamples.lean`, `FreshLCountermodel.lean` (new) | the checks above |
+
+### What remains
+
+- **Read bounds under binders** (L24): λ and the local quantifiers.
+- **Syntactic side conditions**: freshness through PolyFun's `Term.heads`, after the pin moves.
+- **FreshL for open vectors in derivations**: the semantic rule covers them; the constructor takes
+  closed vectors, as FreshR's does.
+- **Polynomial time itself**: the class is still a parameter (L14); the new fields name their
+  polynomial-time counterparts but no polynomial-time class is built.
+
+### Ledger
+
+L20 is closed for this fragment, with the replacement of footnote 2 recorded; L23 is closed
+(satisfiable and needed); L12 is closed as stated conditions; L10, L14 and L18 are updated; L24
+(the read-bound side condition and its choice for free variables and attacker symbols) is new.
