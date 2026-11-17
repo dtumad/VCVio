@@ -26,3 +26,4 @@ public import SquirrelLogic.EncExamples
 public import SquirrelLogic.WorkedEnc
 public import SquirrelLogic.CaseStudy
 public import SquirrelLogic.SecrecyExamples
+public import SquirrelLogic.FreshLExamples
