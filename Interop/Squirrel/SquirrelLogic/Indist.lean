@@ -6,6 +6,7 @@ Authors: Devon Tuma
 module
 
 public import SquirrelLogic.RandomVariable
+public import SquirrelLogic.Machine
 public import VCVio.CryptoFoundations.Asymptotics.Negligible
 public import ToMathlib.Data.ENNReal.AbsDiff
 import VCVio.EvalDist.ProbabilityBounds
@@ -50,19 +51,8 @@ open IPFunctor IPFunctor.ScopedSignature
 
 variable {B : Type} {D : Decl B} {M : Model D}
 
-/-- A vector of values of the types `τs` at `η`. -/
-abbrev Vals (M : Model D) (η : ℕ) (τs : List (Ty B)) : Type := Env (Ty.Value M.carrier η) τs
-
 /-- A vector of random variables of the types `τs`. -/
 abbrev VecRV (M : Model D) (τs : List (Ty B)) : Type := (η : ℕ) → M.Tape η → Vals M η τs
-
-/-- A distinguisher of vectors of the types `τs`: a test at each `η` that reads the attacker
-tape. -/
-abbrev Distinguisher (M : Model D) (τs : List (Ty B)) : Type :=
-  (η : ℕ) → Vals M η τs → M.TapeA η → Bool
-
-/-- An attacker computation of a value of type `τ` from the attacker tape. -/
-abbrev AttackerFn (M : Model D) (τ : Ty B) : Type := (η : ℕ) → M.TapeA η → τ.Value M.carrier η
 
 variable {η : ℕ} {a b τ : Ty B} {τs : List (Ty B)}
 

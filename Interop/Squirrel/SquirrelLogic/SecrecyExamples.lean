@@ -87,41 +87,45 @@ theorem carrier_finite (b : Unit) (η : ℕ) : (carrier b η).Finite := List.fin
 theorem carrier_nonempty (b : Unit) (η : ℕ) : (carrier b η).Nonempty :=
   ⟨List.replicate η false, List.length_replicate⟩
 
-/-- The uniform sampler of every type. -/
-@[expose, reducible] noncomputable def coinSampleable (η : ℕ) (τ : Ty Unit) :
-    SampleableType (τ.Value carrier η) :=
-  haveI := τ.finite_value_of_finite carrier_finite η
-  haveI := τ.nonempty_value carrier_nonempty η
-  haveI := Fintype.ofFinite (τ.Value carrier η)
-  SampleableType.ofFintype _
-
-/-- Every name draws a uniform value of its type; `idx` is `false` and `h` the identity. -/
+/-- A name of type `msg` reads `η` bits and returns them as a message, and a Boolean name reads
+one bit; so every name draws a uniform value of its type. `idx` is `false` and `h` the identity. -/
 @[expose] noncomputable def model : Model decl where
-  TapeA _ := Unit
+  lenA _ := 0
   carrier := carrier
   nonempty := carrier_nonempty
-  Coin η τ := τ.Value carrier η
-  sampleableCoin := coinSampleable
-  sample _ _ := id
+  coinLen η τ := match τ with
+    | .base _ => η
+    | .bool => 1
+    | .arrow _ _ => 0
+  sample η τ := match τ with
+    | .base _ => fun c => ⟨List.ofFn c, List.length_ofFn⟩
+    | .bool => fun c => c 0
+    | .arrow _ _ => fun _ => Classical.choice ((Ty.arrow _ _).nonempty_value carrier_nonempty η)
   finite_index η {a _} _ := a.finite_value_of_finite carrier_finite η
   fn _ {τ} f := match τ, f with
     | _, .idx => false
     | _, .h => id
   att _ f := f.elim
 
-/-- There are `2^η` messages at `η`. -/
-theorem natCard_msg (η : ℕ) : Nat.card (model.Coin η msg) = 2 ^ η := by
-  rw [Nat.card_congr (α := model.Coin η msg) (β := List.Vector Bool η)
-      (Equiv.subtypeEquivRight fun _ => Iff.rfl), Nat.card_eq_fintype_card, card_vector,
-    Fintype.card_bool]
-
 /-- `msg` is large in `model`, with `c = 1`: each message is drawn with probability `2^{-η}`. -/
 theorem model_isLarge : model.IsLarge msg := by
   refine ⟨1, one_pos, fun η y => le_of_eq ?_⟩
-  refine (SampleableType.prEvent_uniformSample_eq_singleton_natCard (α := model.Coin η msg)
-    y).trans ?_
-  rw [natCard_msg, one_mul,
+  obtain ⟨l, hl⟩ := y
+  change l.length = η at hl
+  subst hl
+  have hc : ∀ c : model.Coin l.length msg,
+      (model.sample l.length msg c = ⟨l, rfl⟩) ↔ c = l.get := fun c => by
+    change (⟨List.ofFn c, _⟩ : carrier () l.length) = ⟨l, rfl⟩ ↔ _
+    refine ⟨fun h => List.ofFn_inj.1 ((congrArg Subtype.val h).trans (List.ofFn_get l).symm),
+      fun h => ?_⟩
+    subst h
+    exact Subtype.ext (List.ofFn_get l)
+  rw [prEvent_congr _ _ _ hc]
+  refine (SampleableType.prEvent_uniformSample_eq_singleton_natCard (α := model.Coin l.length msg)
+    l.get).trans ?_
+  rw [Nat.card_eq_fintype_card, Fintype.card_fun, Fintype.card_fin, Fintype.card_bool, one_mul,
     ENNReal.rpow_neg, ENNReal.rpow_natCast, Nat.cast_pow, Nat.cast_ofNat]
+  rfl
 
 theorem model_respectsLabels : model.RespectsLabels := fun _ _ h => by
   subst h
@@ -261,11 +265,15 @@ theorem prEvent_bT_eq_true (η : ℕ) :
     fun z => true = model.sample η .bool z.1).symm.trans
     (SampleableType.prEvent_uniformSample_fst (β := model.Tape η)
       fun c : model.Coin η .bool => true = model.sample η .bool c)).trans ?_)
-  refine ((prEvent_congr _ _ (fun c => c = (true : model.Coin η .bool)) fun _ => eq_comm).trans
+  have hc : ∀ c : model.Coin η .bool, true = model.sample η .bool c ↔ c = fun _ => true :=
+    fun c => ⟨fun h => funext fun i => (Subsingleton.elim (α := Fin 1) i 0) ▸ h.symm,
+      fun h => h ▸ rfl⟩
+  refine ((prEvent_congr _ _ _ hc).trans
     (SampleableType.prEvent_uniformSample_eq_singleton_natCard (α := model.Coin η .bool)
-      true)).trans ?_
-  change ((Nat.card Bool : ℕ) : ENNReal)⁻¹ = 2⁻¹
-  rw [Nat.card_eq_fintype_card, Fintype.card_bool, Nat.cast_ofNat]
+      fun _ => true)).trans ?_
+  change ((Nat.card (Fin 1 → Bool) : ℕ) : ENNReal)⁻¹ = 2⁻¹
+  rw [Nat.card_eq_fintype_card, Fintype.card_fun, Fintype.card_bool, Fintype.card_fin, pow_one,
+    Nat.cast_ofNat]
 
 /-- **FreshR needs `large`.** The Boolean name `b` is fresh in the empty vector, and `⊬ b` fails
 in `model` against all machines: the constant `true` guesses `b` with probability one half. -/

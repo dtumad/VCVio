@@ -32,13 +32,13 @@ open IPFunctor IPFunctor.ScopedSignature
 
 variable {B : Type} {D : Decl B}
 
-/-- Every base type is the single empty bitstring, the attacker tape and the coins have one
-element, and the samplers, honest and attacker symbols take arbitrary values. -/
+/-- Every base type is the single empty bitstring, the attacker tape and the names' bit blocks
+are empty, and the samplers, honest and attacker symbols take arbitrary values. -/
 noncomputable def Model.trivial (D : Decl B) : Model D where
-  TapeA _ := Unit
+  lenA _ := 0
   carrier _ _ := {[]}
   nonempty _ _ := Set.singleton_nonempty _
-  Coin _ _ := Unit
+  coinLen _ _ := 0
   sample η b _ := Classical.choice (b.nonempty_value (fun _ _ => Set.singleton_nonempty _) η)
   finite_index η {a _} _ := a.finite_value_of_finite (fun _ _ => Set.finite_singleton _) η
   fn η {τ} _ := Classical.choice (τ.nonempty_value (fun _ _ => Set.singleton_nonempty _) η)
