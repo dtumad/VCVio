@@ -107,23 +107,25 @@ theorem valid_fresh (C : ∀ M : Model decl, AdvClass M) :
       fun _ => funext fun _ => funext fun _ => Bool.not_not _⟩
   refine Eq.trans ?_ (SampleableType.prEvent_uniformSample_equiv ((Equiv.refl _).prodCongr flip) _)
   refine prEvent_congr _ _ _ fun ρ => ?_
-  change A η (Env.cons (xor false (bit ρ.2 (slotR η))) Env.empty) ρ.1 = true ↔
-    A η (Env.cons (xor true (!bit ρ.2 (slotR η))) Env.empty) ρ.1 = true
+  change A.test η (Env.cons (xor false (bit ρ.2 (slotR η))) Env.empty) ρ.1 = true ↔
+    A.test η (Env.cons (xor true (!bit ρ.2 (slotR η))) Env.empty) ρ.1 = true
   cases bit ρ.2 (slotR η) <;> rfl
 
-/-- With the pad reused, testing the two entries for equality tells the vectors apart with
+/-- With the pad reused, the equality test (`Machine.eqTest`) tells the vectors apart with
 advantage one. -/
 theorem not_valid_reuse :
     ¬ Valid (fun M => M = model) (fun M => AdvClass.all M) (Γ := []) []
       (.equiv (Env.cons (enc .ff) (Env.cons (enc .ff) Env.empty))
         (Env.cons (enc .tt) (Env.cons (enc .ff) Env.empty))) := fun h => by
   have hM := Form.holds_equiv.1 (h model model_respectsLabels rfl Env.empty (by simp))
-    (fun _ e _ => decide (e _ .zero = e _ (.succ .zero))) trivial
+    (Machine.eqTest Ty.isGround_bool)
+    (AdvClass.all_mem_of_readsBelow_zero (Machine.readsBelow_eqTest _))
   refine not_negligible_one (negligible_of_le (fun η => le_of_eq ?_) hM)
-  simp only [advantage, Vec.rv_cons, VecRV.cons, Env.cons_zero, Env.cons_succ, denote_enc,
-    FTerm.denote_tt, FTerm.denote_ff, decide_true, decide_eq_true_eq]
+  simp only [advantage, Machine.test_eqTest, Distinguisher.eqTest, Vec.rv_cons, VecRV.cons,
+    Env.cons_zero, Env.cons_succ, denote_enc,
+    FTerm.denote_tt, FTerm.denote_ff, decide_true]
   rw [OracleComp.prEvent_true_eq_one, prEvent_eq_zero_of_forall_not _ _ fun ρ h => by
-    revert h; cases bit ρ.2 (slotR η) <;> exact fun h => Bool.noConfusion h,
+    revert h; cases bit ρ.2 (slotR η) <;> simp,
     ENNReal.absDiff_zero_right]
 
 /-- The permutation of names exchanging the two pads. -/
@@ -138,7 +140,7 @@ theorem valid_swap {R : Model decl → Prop} {C : ∀ M : Model decl, AdvClass M
       (.equiv (Env.cons (pad .r) Env.empty) (Env.cons (pad .s) Env.empty)) := by
   intro M hl hR env hΘ
   have h := Form.holds_equiv.1 (Valid.equiv_renameNames_of_equiv (R := R) (C := C) (Θ := [])
-    swap (Env.cons (pad .r) Env.empty) M hl hR env hΘ)
+    swap (Env.cons (pad .r) Env.empty) (ho := of_decide_eq_true rfl) M hl hR env hΘ)
   have hrv : Vec.rv M (C M) (Env.cons (pad .s) Env.empty) env =
       Vec.rv M (C M) (Vec.renameNames (fun n => swap n) (Env.cons (pad .r) Env.empty)) env := by
     funext η ρ τ x

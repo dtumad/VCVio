@@ -32,9 +32,10 @@ Checks of `Valid.equiv_caseStudy` and BC14's If1 (`Valid.equiv_if1`). The model 
 * `if1_needs_second`, `if1_needs_first`: in every model of every declaration with no `large` base
   type, against all distinguishers, one premise holds by Refl at an instance whose conclusion is
   `true ∼ false`. So neither premise may be dropped.
-* `guard_not_derivable`: the constant-`true` distinguishers are closed under the reductions
-  `app`, `fn`, `adv`, `ite` and `rename`, and not under `guard true`. So `AdvClass.guard_mem`
-  does not follow from the other closure fields.
+* `guard_changes_output`: the reduction `guard true` of the machine returning `true` returns
+  `false` when the condition is `false`. A reduction that only relabels the inputs or answers
+  them maps constant machines to constant ones, so the case split needs a construction that
+  changes the output: here `Machine.branch` with the constant `false` (`AdvClass.guard_mem`).
 -/
 
 public section
@@ -76,10 +77,10 @@ theorem valid_flip (C : ∀ M : Model decl, AdvClass M) :
   refine Eq.trans ?_
     (SampleableType.prEvent_uniformSample_equiv ((Equiv.refl _).prodCongr (flipTape η)) _)
   refine prEvent_congr _ _ _ fun ρ => ?_
-  change A η (Env.cons (xor (bit ρ.2 (slotS η)) (bit ρ.2 (slotR η)))
+  change A.test η (Env.cons (xor (bit ρ.2 (slotS η)) (bit ρ.2 (slotR η)))
       (Env.cons (bit ρ.2 (slotR η)) Env.empty))
       ρ.1 = true ↔
-    A η (Env.cons (xor (!bit ρ.2 (slotS η)) (!bit ρ.2 (slotR η)))
+    A.test η (Env.cons (xor (!bit ρ.2 (slotS η)) (!bit ρ.2 (slotR η)))
       (Env.cons (xor true (!bit ρ.2 (slotR η))) Env.empty)) ρ.1 = true
   cases bit ρ.2 (slotR η) <;> cases bit ρ.2 (slotS η) <;> rfl
 
@@ -102,7 +103,7 @@ theorem denote_ite_parity (C : AdvClass model) (env : Env (Kind.Value model) [])
 
 /-- `valid_if1_flip` as a one-step derivation from the hypothesis `flipForm`. -/
 @[expose] def if1Derivation : Derivation decl (fun _ => False) [flipForm] if1Form :=
-  .equivIf1 (.equivRefl _) (.ax List.mem_cons_self)
+  .equivIf1 (.equivRefl _ (by decide)) (.ax List.mem_cons_self)
 
 /-- `Derivation.sound` applies to `if1Derivation`, and `valid_flip` discharges its hypothesis. -/
 theorem if1Derivation_sound (C : ∀ M : Model decl, AdvClass M) :
@@ -137,7 +138,9 @@ theorem caseStudy_needs_condition :
           (Env.cons (enc .ff) Env.empty)) := by
   refine ⟨(valid_fresh _).equiv_symm, fun h => ?_⟩
   have hM := Form.holds_equiv.1 (h model model_respectsLabels rfl Env.empty (by simp))
-    (fun _ e _ => e _ .zero) trivial
+    (Machine.input .zero Ty.isGround_bool)
+    (AdvClass.all_mem_of_readsBelow_zero (Machine.readsBelow_input _ _))
+  rw [Machine.test_input] at hM
   refine not_negligible_one (negligible_of_le (fun η => ?_)
     (negligible_const_mul hM (c := 2) ENNReal.ofNat_ne_top))
   set p := Pr{let ρ ← $ᵗ (model.Tape η)}[bit ρ.2 (slotR η) = true] with hp
@@ -198,30 +201,14 @@ theorem if1_needs_first (hD : ∀ b, ¬ D.labels b .large) :
 
 end Countermodels
 
-/-! ## The closure field for the case split is independent -/
+/-! ## The case split changes the output -/
 
-/-- A distinguisher that returns `true` on every input. -/
-@[expose] def ConstTrue {τs : List (Ty Empty)} (A : Distinguisher model τs) : Prop :=
-  ∀ η e ρa, A η e ρa = true
-
-/-- `AdvClass.guard_mem` does not follow from the other closure fields: the constant-`true`
-distinguishers are closed under the reductions `app`, `fn`, `adv`, `ite` and `rename`, which only
-change the input, and `guard true` of the constant-`true` distinguisher returns `false` when the
-condition is `false`. -/
-theorem guard_not_derivable :
-    (∀ {a b : Ty Empty} {τs : List (Ty Empty)} {A : Distinguisher model (b :: τs)},
-      ConstTrue A → ConstTrue (A.app (a := a))) ∧
-    (∀ {τ : Ty Empty} {τs : List (Ty Empty)} (f : decl.Fn τ) {A : Distinguisher model (τ :: τs)},
-      ConstTrue A → ConstTrue (A.fn f)) ∧
-    (∀ {τ : Ty Empty} {τs : List (Ty Empty)} (g : AttackerFn model τ)
-      {A : Distinguisher model (τ :: τs)}, ConstTrue A → ConstTrue (A.adv g)) ∧
-    (∀ {a : Ty Empty} {τs : List (Ty Empty)} {A : Distinguisher model (a :: τs)},
-      ConstTrue A → ConstTrue A.ite) ∧
-    (∀ {τs τs' : List (Ty Empty)} (r : Renaming τs' τs) {A : Distinguisher model τs'},
-      ConstTrue A → ConstTrue (A.rename r)) ∧
-    ¬ ConstTrue (Distinguisher.guard true (fun _ _ _ => true : Distinguisher model [])) :=
-  ⟨fun h _ _ _ => h _ _ _, fun {_ _} _ {_} h _ _ _ => h _ _ _, fun {_ _} _ {_} h _ _ _ => h _ _ _,
-    fun h _ _ _ => h _ _ _, fun {_ _} _ {_} h _ _ _ => h _ _ _,
-    fun h => Bool.false_ne_true (h 0 (Env.cons false Env.empty : Vals model 0 [.bool]) Fin.elim0)⟩
+/-- The reduction `guard true` of the machine returning `true` returns `false` when the condition
+is `false`: the case split's reductions change the output, which relabelling and answering inputs
+cannot, and they are built from `Machine.branch` and `Machine.const`. -/
+theorem guard_changes_output (η : ℕ) (ρa : model.TapeA η) :
+    (Machine.guard true (Machine.const true : Machine model [] .bool)).test η
+      (Env.cons false Env.empty) ρa = false :=
+  Machine.run_guard true _ _
 
 end SquirrelLogic.CaseStudy

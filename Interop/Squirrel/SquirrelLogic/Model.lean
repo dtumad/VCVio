@@ -151,12 +151,105 @@ theorem Ty.isGround_iff_order_eq_zero : ∀ {τ : Ty B}, τ.IsGround ↔ τ.orde
   | .base _ => iff_of_true trivial rfl
   | .arrow _ _ => iff_of_false id (by simp [Ty.order])
 
+theorem Ty.isGround_bool : (Ty.bool : Ty B).IsGround := trivial
+
+theorem Ty.isGround_base (b : B) : (Ty.base b).IsGround := trivial
+
 /-- The argument of a function of order at most one is a Boolean or base type. -/
 theorem Ty.isGround_of_order_arrow_le_one {a b : Ty B} (h : (Ty.arrow a b).order ≤ 1) :
     a.IsGround :=
   Ty.isGround_iff_order_eq_zero.2 (by simp only [Ty.order] at h; omega)
 
 section Spine
+
+/-- The entries of `u⃗ ∼ v⃗` have order at most one (CSF24 App. A; CCS26 §3.1, p. 6). -/
+@[expose, reducible] def Ty.IndistOrder (τs : List (Ty B)) : Prop := ∀ τ ∈ τs, τ.order ≤ 1
+
+instance (τs : List (Ty B)) : Decidable (Ty.IndistOrder τs) :=
+  inferInstanceAs (Decidable (∀ τ ∈ τs, τ.order ≤ 1))
+
+/-- `adv` applies to terms of order at most two (CSF24 App. A; CCS26 §3.1, p. 6): here, to a term
+of type `τ₁ → … → τₙ → β`. -/
+@[expose, reducible] def Ty.AdvOrder (τs : List (Ty B)) (β : Ty B) : Prop :=
+  (Ty.arrows τs β).order ≤ 2
+
+instance (τs : List (Ty B)) (β : Ty B) : Decidable (Ty.AdvOrder τs β) :=
+  inferInstanceAs (Decidable ((Ty.arrows τs β).order ≤ 2))
+
+/-- `u⃗ ⊬ v` and `u⃗ ▷ v` relate terms of order at most one, so that their attacker functions have
+order at most two (CCS26 §3.1, p. 6). -/
+@[expose, reducible] def Ty.SecrecyOrder (τs : List (Ty B)) (β : Ty B) : Prop :=
+  Ty.IndistOrder τs ∧ β.order ≤ 1
+
+instance (τs : List (Ty B)) (β : Ty B) : Decidable (Ty.SecrecyOrder τs β) :=
+  inferInstanceAs (Decidable (Ty.IndistOrder τs ∧ β.order ≤ 1))
+
+namespace Ty.IndistOrder
+
+variable {τ : Ty B} {τs τs' : List (Ty B)}
+
+theorem head (h : Ty.IndistOrder (τ :: τs)) : τ.order ≤ 1 := h τ List.mem_cons_self
+
+theorem tail (h : Ty.IndistOrder (τ :: τs)) : Ty.IndistOrder τs :=
+  fun σ hσ => h σ (List.mem_cons_of_mem _ hσ)
+
+theorem cons (hτ : τ.order ≤ 1) (h : Ty.IndistOrder τs) : Ty.IndistOrder (τ :: τs) :=
+  List.forall_mem_cons.2 ⟨hτ, h⟩
+
+theorem append_left (h : Ty.IndistOrder (τs ++ τs')) : Ty.IndistOrder τs :=
+  fun σ hσ => h σ (List.mem_append_left _ hσ)
+
+theorem append_right (h : Ty.IndistOrder (τs ++ τs')) : Ty.IndistOrder τs' :=
+  fun σ hσ => h σ (List.mem_append_right _ hσ)
+
+theorem append (h : Ty.IndistOrder τs) (h' : Ty.IndistOrder τs') :
+    Ty.IndistOrder (τs ++ τs') :=
+  fun σ hσ => (List.mem_append.1 hσ).elim (h σ) (h' σ)
+
+/-- A position of a context names one of its types. -/
+theorem _root_.SquirrelLogic.scopedVar_mem {S : Type} :
+    ∀ {Γ : List S} {a : S}, ScopedVar Γ a → a ∈ Γ
+  | _, _, .zero => List.mem_cons_self
+  | _, _, .succ x => List.mem_cons_of_mem _ (scopedVar_mem x)
+
+/-- A type in a context has a position there. -/
+theorem _root_.SquirrelLogic.nonempty_scopedVar_of_mem {S : Type} {a : S} :
+    ∀ {Γ : List S}, a ∈ Γ → Nonempty (ScopedVar Γ a)
+  | _, .head _ => ⟨.zero⟩
+  | _, .tail _ h => (nonempty_scopedVar_of_mem h).map .succ
+
+theorem rename (r : Renaming τs' τs) (h : Ty.IndistOrder τs) : Ty.IndistOrder τs' :=
+  fun σ hσ => (nonempty_scopedVar_of_mem hσ).elim fun x => h σ (scopedVar_mem (r σ x))
+
+theorem dup (h : Ty.IndistOrder (τ :: τs)) : Ty.IndistOrder (τ :: τ :: τs) := h.cons h.head
+
+theorem single (h : τ.order ≤ 1) : Ty.IndistOrder [τ] :=
+  Ty.IndistOrder.cons h fun _ hσ => absurd hσ List.not_mem_nil
+
+theorem ite {a : Ty B} (h : Ty.IndistOrder (.bool :: a :: a :: τs)) : Ty.IndistOrder (a :: τs) :=
+  h.tail.tail.tail.cons h.tail.head
+
+theorem app {a b : Ty B} (h : Ty.IndistOrder (.arrow a b :: a :: τs)) :
+    Ty.IndistOrder (b :: τs) :=
+  h.tail.tail.cons (le_trans (le_max_right _ _) h.head)
+
+/-- The argument of the first entry of FA-App is a Boolean or base type. -/
+theorem isGround_app {a b : Ty B} (h : Ty.IndistOrder (.arrow a b :: a :: τs)) : a.IsGround :=
+  Ty.isGround_of_order_arrow_le_one h.head
+
+end Ty.IndistOrder
+
+theorem Ty.order_cod_le (a b : Ty B) : b.order ≤ (Ty.arrow a b).order := le_max_right _ _
+
+/-- The attacker functions of `⊬` and `▷` have order at most two. -/
+theorem Ty.SecrecyOrder.advOrder :
+    ∀ {τs : List (Ty B)} {β : Ty B}, Ty.SecrecyOrder τs β → Ty.AdvOrder τs β
+  | [], _, h => le_trans h.2 (by norm_num)
+  | _ :: _, _, h => by
+    have ih := Ty.SecrecyOrder.advOrder ⟨h.1.tail, h.2⟩
+    have hd := h.1.head
+    simp only [Ty.AdvOrder, Ty.arrows, Ty.order] at ih ⊢
+    omega
 
 variable {carrier : B → ℕ → Set (List Bool)} {η : ℕ}
 

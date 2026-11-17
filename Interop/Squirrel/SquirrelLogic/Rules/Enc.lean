@@ -319,8 +319,8 @@ where the messages and the context are closed by substituting `pk(nk)` for their
 * In every admitted model the two messages have equal length at every tape (`hR`,
   `EncSymbols.EqualLength`): BC14's guard `EQL(m₀, m₁)` holds surely.
 * `hcpa` is the assumption, about the image of the class under the named reduction
-  `EncSymbols.encReduction`: every admitted distinguisher becomes a one-time IND-CPA adversary of
-  negligible advantage against the scheme the model implements.
+  `EncSymbols.encReduction`: every admitted machine, as a distinguisher (`Machine.test`), becomes
+  a one-time IND-CPA adversary of negligible advantage against the scheme the model implements.
 * `ProbCompRuntime.probComp` imposes no time or query bound on the reduction, so `hcpa` asserts
   security against the reductions of every admitted distinguisher, however slow. Efficiency
   enters only through the class: `hcpa` is plausible only when `C` admits efficient machines and
@@ -330,17 +330,18 @@ The proof is `EncSymbols.advantage_challenge`, an equality at every `η`. -/
 theorem Valid.equiv_enc (E : EncSymbols D) (hkr : E.keyName ≠ E.coinName)
     {R : Model D → Prop} {C : ∀ M : Model D, AdvClass M} {Θ : List (Form D [])}
     {τs : List (Ty B)} {m₀ m₁ : FTerm D [.loc E.pkTy] E.msgTy} {u : Vec D [.loc E.pkTy] τs}
+    {ho : Ty.IndistOrder (E.pkTy :: E.cTy :: τs)}
     (hR : ∀ M, R M →
       E.Avoids M m₀ ∧ E.Avoids M m₁ ∧ (∀ τ x, E.Avoids M (u τ x)) ∧ E.EqualLength M m₀ m₁)
     (hcpa : ∀ M : Model D, M.RespectsLabels → R M →
-      ∀ A : Distinguisher M (E.pkTy :: E.cTy :: τs), (C M).distinguishes A →
+      ∀ A : Machine M (E.pkTy :: E.cTy :: τs) .bool, (C M).mem A →
         negligible fun η => IND_CPA_OneTime_Advantage (E.scheme M η) ProbCompRuntime.probComp
-          (E.encReduction m₀ m₁ u A η)) :
-    Valid R C Θ (.equiv (E.challenge m₀ u) (E.challenge m₁ u)) := by
+          (E.encReduction m₀ m₁ u A.test η)) :
+    Valid R C Θ (.equiv (E.challenge m₀ u) (E.challenge m₁ u) ho) := by
   intro M hl hRM env _
   obtain ⟨hm₀, hm₁, hu, hlen⟩ := hR M hRM
   exact Form.holds_equiv.2 fun A hA => negligible_of_le
-    (fun η => (EncSymbols.advantage_challenge hkr (C M) hm₀ hm₁ hu hlen A env η).le)
+    (fun η => (EncSymbols.advantage_challenge hkr (C M) hm₀ hm₁ hu hlen A.test env η).le)
     (hcpa M hl hRM A hA)
 
 /-! ## Instances, for derivations -/
@@ -357,6 +358,8 @@ structure EncInstance (D : Decl B) where
   m₁ : FTerm D [.loc E.pkTy] E.msgTy
   /-- The context, with the public key free. -/
   u : Vec D [.loc E.pkTy] τs
+  /-- The vectors of the conclusion have order at most one. -/
+  order : Ty.IndistOrder (E.pkTy :: E.cTy :: τs)
 
 /-- The semantic hypotheses of `Valid.equiv_enc` for an instance: the side conditions in every
 admitted model, and one-time IND-CPA security against the reductions of the admitted
@@ -366,8 +369,8 @@ distinguishers. -/
   (∀ M, R M → e.E.Avoids M e.m₀ ∧ e.E.Avoids M e.m₁ ∧ (∀ τ x, e.E.Avoids M (e.u τ x)) ∧
       e.E.EqualLength M e.m₀ e.m₁) ∧
     ∀ M : Model D, M.RespectsLabels → R M →
-      ∀ A : Distinguisher M (e.E.pkTy :: e.E.cTy :: e.τs), (C M).distinguishes A →
+      ∀ A : Machine M (e.E.pkTy :: e.E.cTy :: e.τs) .bool, (C M).mem A →
         negligible fun η => IND_CPA_OneTime_Advantage (e.E.scheme M η) ProbCompRuntime.probComp
-          (e.E.encReduction e.m₀ e.m₁ e.u A η)
+          (e.E.encReduction e.m₀ e.m₁ e.u A.test η)
 
 end SquirrelLogic

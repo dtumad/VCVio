@@ -141,6 +141,7 @@ theorem pad_advantage_eq_zero (nk : Name .bool .bool) (η : ℕ)
   m₀ := .tt
   m₁ := .ff
   u := Env.empty
+  order := by decide
 
 /-- **Satisfiability.** For the one-time pad, the semantic hypotheses of `Valid.equiv_enc` hold
 together against every distinguisher. -/
@@ -173,8 +174,23 @@ theorem encDerivation_sound :
         ((encSymbols .s).challenge .ff Env.empty)) :=
   encDerivation.sound _ _ fun _ he => he ▸ padInstance_holds
 
+/-- The machine returning the exclusive or of two Boolean inputs: a branch on the first. -/
+@[expose] def xorMachine (M : Model decl) : Machine M [.bool, .bool] .bool :=
+  Machine.branch (Machine.branch (Machine.const false) (Machine.const true))
+    (Machine.input .zero Ty.isGround_bool)
+
+theorem xorMachine_test (M : Model decl) :
+    (xorMachine M).test = fun _ e _ => xor (e _ .zero) (e _ (.succ .zero)) := by
+  funext η e ρa
+  simp only [Machine.test, xorMachine, Machine.run_branch, Machine.run_const, Machine.run_input]
+  cases e _ .zero <;> cases e _ (.succ .zero) <;> rfl
+
+theorem xorMachine_mem (M : Model decl) : (AdvClass.all M).mem (xorMachine M) :=
+  AdvClass.all_mem_of_readsBelow_zero (((Machine.readsBelow_const _).branch
+    (Machine.readsBelow_const _)).branch (Machine.readsBelow_input _ _))
+
 /-- **The IND-CPA hypothesis is needed.** For a scheme that leaks the message, the conclusion
-fails against every distinguisher, though the names are distinct and the side conditions hold
+fails against every machine, though the names are distinct and the side conditions hold
 (`keyName_ne_coinName`, `FTerm.avoids_tt`, `FTerm.avoids_ff`, `equalLength`): the
 ciphertext is the message. -/
 theorem not_valid_enc_leaky :
@@ -182,7 +198,9 @@ theorem not_valid_enc_leaky :
       (.equiv ((encSymbols .s).challenge .tt Env.empty)
         ((encSymbols .s).challenge .ff Env.empty)) := fun h => by
   have hM := Form.holds_equiv.1 (h (encModel leaky) (encModel_respectsLabels _) rfl Env.empty
-    (by simp)) (fun _ e _ => e _ (.succ .zero)) trivial
+    (by simp)) (Machine.input (.succ .zero) Ty.isGround_bool)
+    (AdvClass.all_mem_of_readsBelow_zero (Machine.readsBelow_input _ _))
+  rw [Machine.test_input] at hM
   refine not_negligible_one (negligible_of_le (fun η => le_of_eq ?_) hM)
   simp only [advantage, EncSymbols.rv_challenge, Env.cons_succ, Env.cons_zero]
   refine (ENNReal.absDiff_zero_right 1).symm.trans (congrArg₂ ENNReal.absDiff ?_ ?_)
@@ -192,14 +210,15 @@ theorem not_valid_enc_leaky :
 /-- **The names must be distinct.** With the key name equal to the coin name, the one-time pad
 meets the side conditions and the IND-CPA hypothesis (`FTerm.avoids_tt`,
 `FTerm.avoids_ff`, `equalLength`, `pad_advantage_eq_zero`), but the
-conclusion fails against every distinguisher: the public key is the pad, and the exclusive or of
+conclusion fails against every machine: the public key is the pad, and the exclusive or of
 the two entries is the message. -/
 theorem not_valid_enc_keyIsCoin :
     ¬ Valid (fun M => M = encModel pad) (fun M => AdvClass.all M) (Γ := []) []
       (.equiv ((encSymbols .r).challenge .tt Env.empty)
         ((encSymbols .r).challenge .ff Env.empty)) := fun h => by
   have hM := Form.holds_equiv.1 (h (encModel pad) (encModel_respectsLabels _) rfl Env.empty
-    (by simp)) (fun _ e _ => xor (e _ .zero) (e _ (.succ .zero))) trivial
+    (by simp)) (xorMachine _) (xorMachine_mem _)
+  rw [xorMachine_test] at hM
   refine not_negligible_one (negligible_of_le (fun η => le_of_eq ?_) hM)
   simp only [advantage, EncSymbols.rv_challenge, Env.cons_succ, Env.cons_zero]
   refine (ENNReal.absDiff_zero_right 1).symm.trans (congrArg₂ ENNReal.absDiff ?_ ?_)
@@ -219,16 +238,20 @@ theorem not_valid_enc_keyIsCoin :
 /-- **The coins must be fresh.** With the coins themselves in the context, the one-time pad has
 distinct names and meets the IND-CPA hypothesis (`keyName_ne_coinName`, `pad_advantage_eq_zero`),
 and the messages meet the side conditions (`FTerm.avoids_tt`, `equalLength`), but the
-context reads the coin coordinate, and the conclusion fails against every distinguisher: the
+context reads the coin coordinate, and the conclusion fails against every machine: the
 exclusive or of the ciphertext and the coins is the message. -/
 theorem not_valid_enc_coinReused :
     ¬ Valid (fun M => M = encModel pad) (fun M => AdvClass.all M) (Γ := []) []
       (.equiv ((encSymbols .s).challenge .tt coinCtx)
         ((encSymbols .s).challenge .ff coinCtx)) := fun h => by
   have hM := Form.holds_equiv.1 (h (encModel pad) (encModel_respectsLabels _) rfl Env.empty
-    (by simp)) (fun _ e _ => xor (e _ (.succ .zero)) (e _ (.succ (.succ .zero)))) trivial
+    (by simp))
+    ((xorMachine _).rename (Env.cons (.succ .zero) (Env.cons (.succ (.succ .zero)) Env.empty)))
+    ((AdvClass.all _).rename_mem _ (xorMachine_mem _))
+  rw [Machine.test_rename, xorMachine_test] at hM
   refine not_negligible_one (negligible_of_le (fun η => le_of_eq ?_) hM)
-  simp only [advantage, EncSymbols.rv_challenge, Env.cons_succ, Env.cons_zero]
+  simp only [advantage, Distinguisher.rename, Env.rename_apply, EncSymbols.rv_challenge,
+    Env.cons_succ, Env.cons_zero]
   refine (ENNReal.absDiff_zero_right 1).symm.trans (congrArg₂ ENNReal.absDiff ?_ ?_)
   · refine (OracleComp.prEvent_eq_one_of_forall_mem_support _ _ fun ρ _ => ?_).symm
     change xor (xor true (encBit ρ.2 ((encSymbols .s).coinSlot (encModel pad) η)))
