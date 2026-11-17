@@ -33,9 +33,7 @@ coordinate of the honest tape that `n(i)` reads at each `η` (`Model.nameSlot`).
   `Valid.nonDed_freshR` is the rule for closed vectors whose terms avoid the coordinate
   (`FTerm.Avoids`) in every admitted model.
 
-FreshL (`u ⊬ v ⟹ u, n ⊬ v` for `n` fresh in `u, v`) is not proved: its reduction must supply the
-value of `n` from attacker randomness that the terms do not read (`notes/experiments.md`, M1 part
-1; ledger rows L10 and L20).
+FreshL (`u ⊬ v ⟹ u, n ⊬ v` for `n` fresh in `u, v`) is in `SquirrelLogic.Rules.FreshL`.
 -/
 
 public section

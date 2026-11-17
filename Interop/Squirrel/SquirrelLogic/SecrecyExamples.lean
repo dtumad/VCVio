@@ -16,10 +16,12 @@ import Mathlib.Data.Fintype.BigOperators
 # Checks of the secrecy rules
 
 The declaration has one base type `msg`, labelled `large`, three names `k`, `m`, `n : bool → msg`,
-a Boolean name `b : bool → bool`, the honest index `idx : bool` and an honest symbol
-`h : msg → msg`. In `model`, `msg` at `η` is the bitstrings of length `η`, every name draws a
-uniform value of its type, `idx` is `false` and `h` is the identity. Then `msg` is large with
-`c = 1` (`model_isLarge`), and `model` respects the labels.
+a Boolean name `b : bool → bool`, the honest index `idx : bool`, an honest symbol `h : msg → msg`
+and an attacker symbol of type `msg`. In `model`, `msg` at `η` is the bitstrings of length `η`,
+every name draws a uniform value of its type, `idx` is `false` and `h` is the identity. Then `msg`
+is large with `c = 1` (`model_isLarge`), and `model` respects the labels. The attacker tape of
+`model` is empty; `SquirrelLogic.FreshLExamples` gives the same declaration a model with long
+tapes.
 
 * `workedDerivation`: from the hypothesis `adv(h)`, derive `h(h(k)) ⊬ n`, by FreshR (`k ⊬ n`),
   `▷` from `adv` twice (`k ▷ h(k)`, `h(k) ▷ h(h(k))`), Trans and WeakL.
@@ -64,7 +66,8 @@ inductive Fn : Ty Unit → Type where
   /-- A function on messages. -/
   | h : Fn (.arrow msg msg)
 
-/-- `msg` is labelled `large` and has no other label. -/
+/-- `msg` is labelled `large` and has no other label; there is one attacker symbol, of type
+`msg`. -/
 @[expose] def decl : Decl Unit where
   labels _ l := l = .large
   Name := Name
@@ -76,8 +79,8 @@ inductive Fn : Ty Unit → Type where
     fun | ⟨_, _, .k⟩, ⟨_, _, .k⟩, _ => rfl | ⟨_, _, .m⟩, ⟨_, _, .m⟩, _ => rfl
         | ⟨_, _, .n⟩, ⟨_, _, .n⟩, _ => rfl | ⟨_, _, .b⟩, ⟨_, _, .b⟩, _ => rfl
   Fn := Fn
-  Att := Empty
-  attTy f := f.elim
+  Att := Unit
+  attTy _ := msg
 
 /-- Messages at `η` are the bitstrings of length `η`. -/
 @[expose] def carrier : Unit → ℕ → Set (List Bool) := fun _ η => {l | l.length = η}
@@ -88,7 +91,8 @@ theorem carrier_nonempty (b : Unit) (η : ℕ) : (carrier b η).Nonempty :=
   ⟨List.replicate η false, List.length_replicate⟩
 
 /-- A name of type `msg` reads `η` bits and returns them as a message, and a Boolean name reads
-one bit; so every name draws a uniform value of its type. `idx` is `false` and `h` the identity. -/
+one bit; so every name draws a uniform value of its type. `idx` is `false` and `h` the identity.
+The attacker tape is empty, and the attacker symbol is the message of `η` zeros. -/
 @[expose] noncomputable def model : Model decl where
   lenA _ := 0
   carrier := carrier
@@ -105,7 +109,7 @@ one bit; so every name draws a uniform value of its type. `idx` is `false` and `
   fn _ {τ} f := match τ, f with
     | _, .idx => false
     | _, .h => id
-  att _ f := f.elim
+  att η _ _ := ⟨List.replicate η false, List.length_replicate⟩
 
 /-- `msg` is large in `model`, with `c = 1`: each message is drawn with probability `2^{-η}`. -/
 theorem model_isLarge : model.IsLarge msg := by
@@ -161,8 +165,8 @@ theorem nm_avoids {x y : Name .bool msg} (hxy : x ≠ y) (M : Model decl) :
   exact FTerm.Avoids.name (D := decl) y (fun _ _ h => hxy (by cases h; rfl)) (FTerm.avoids_fn _)
 
 /-- FreshR for one message name on the left. -/
-@[expose] def freshR (x y : Name .bool msg) (hxy : x ≠ y) :
-    Derivation decl (fun _ => False) (Γ := []) [advH] (.nonDed (one (nm y)) (nm x)) :=
+@[expose] def freshR {R₀ : Model decl → Prop} (x y : Name .bool msg) (hxy : x ≠ y) :
+    Derivation decl (fun _ => False) R₀ (Γ := []) [advH] (.nonDed (one (nm y)) (nm x)) :=
   .nonDedFreshR (one (nm y)) x Fn.idx (by decide) rfl fun M τ z => match τ, z with
     | _, .zero => nm_avoids hxy M
 
@@ -170,8 +174,8 @@ theorem nm_avoids {x y : Name .bool msg} (hxy : x ≠ y) (M : Model decl) :
 
 /-- From `adv(h)`, derive `h(h(k)) ⊬ n`: FreshR gives `k ⊬ n`; `▷` from `adv` gives `k ▷ h(k)` and
 `h(k) ▷ h(h(k))`; Trans gives `k ▷ h(h(k))`; WeakL gives `h(h(k)) ⊬ n`. -/
-@[expose] def workedDerivation :
-    Derivation decl (fun _ => False) (Γ := []) [advH]
+@[expose] def workedDerivation {R₀ : Model decl → Prop} :
+    Derivation decl (fun _ => False) R₀ (Γ := []) [advH]
       (.nonDed (one (hT (hT (nm Name.k)))) (nm Name.n)) :=
   .nonDedWeakL (freshR Name.n Name.k nofun)
     (.dedTrans (v := hT (nm Name.k)) (.dedApps (by decide) (.ax List.mem_cons_self))
@@ -180,21 +184,23 @@ theorem nm_avoids {x y : Name .bool msg} (hxy : x ≠ y) (M : Model decl) :
 /-- The worked derivation is valid in every model restriction, against every class. -/
 theorem workedDerivation_sound (R : Model decl → Prop) (C : ∀ M : Model decl, AdvClass M) :
     Valid R C [advH] (.nonDed (one (hT (hT (nm Name.k)))) (nm Name.n)) :=
-  workedDerivation.sound R C fun _ h => h.elim
+  workedDerivation.sound R C (fun _ h => h.elim) fun _ h => h
 
 /-- The machine applying `h` to its input: FA-App of the input to the input, answered by the
 honest symbol. -/
-@[expose] noncomputable def hMachine : AdvMachine model [msg] msg :=
+@[expose] noncomputable def hMachine (M : Model decl) : AdvMachine M [msg] msg :=
   ((Machine.input .zero (Ty.isGround_base ())).app (Ty.isGround_base ())).fn Fn.h
 
-theorem hMachine_mem : (AdvClass.all model).mem hMachine :=
+theorem hMachine_mem (M : Model decl) : (AdvClass.all M).mem (hMachine M) :=
   AdvClass.all_mem_of_readsBelow_zero (((Machine.readsBelow_input _ _).app _).fn _)
 
-/-- In `model`, against all machines, the hypothesis `adv(h)` holds: `hMachine` computes `h`. -/
-theorem valid_advH : Valid (· = model) (fun M => AdvClass.all M) (Γ := []) [] advH := by
-  rintro M - rfl env -
-  refine Form.holds_adv.2 ⟨hMachine, hMachine_mem, fun η ρ => funext fun x => ?_⟩
-  change model.fn η Fn.h x = hMachine.run η ρ.1 (Env.cons x Env.empty)
+/-- In every model, against all machines, the hypothesis `adv(h)` holds: `hMachine` computes
+`h`. -/
+theorem valid_advH {R : Model decl → Prop} :
+    Valid R (fun M => AdvClass.all M) (Γ := []) [] advH := by
+  rintro M - - env -
+  refine Form.holds_adv.2 ⟨hMachine M, hMachine_mem M, fun η ρ => funext fun x => ?_⟩
+  change M.fn η Fn.h x = (hMachine M).run η ρ.1 (Env.cons x Env.empty)
   rw [hMachine]
   refine Eq.symm ((Machine.run_fn _ _ _).trans ((Machine.run_app _ _ _).trans ?_))
   exact Machine.run_input _ _ _
@@ -210,25 +216,25 @@ theorem valid_worked :
 
 /-- An admitted attacker machine that computes `v` from `u` everywhere refutes `u ⊬ v` against all
 machines. -/
-theorem not_nonDed_of_forall_eq {τs : List (Ty Unit)} {β : Ty Unit} {u : VecRV model τs}
-    {v : RV model β} (g : AdvMachine model τs β) (hg : (AdvClass.all model).mem g)
-    (h : ∀ η ρ, Ty.appVals (g.eval η ρ.1) (u η ρ) = v η ρ) : ¬ (AdvClass.all model).NonDed u v :=
+theorem not_nonDed_of_forall_eq {M : Model decl} {τs : List (Ty Unit)} {β : Ty Unit}
+    {u : VecRV M τs} {v : RV M β} (g : AdvMachine M τs β) (hg : (AdvClass.all M).mem g)
+    (h : ∀ η ρ, Ty.appVals (g.eval η ρ.1) (u η ρ) = v η ρ) : ¬ (AdvClass.all M).NonDed u v :=
   fun hn => not_negligible_one (negligible_of_le (fun η => le_of_eq
     ((prEvent_congr _ _ (fun _ => True) fun ρ => iff_true_intro (h η ρ)).trans
       (OracleComp.prEvent_true_eq_one _)).symm) (hn g hg))
 
 /-- The machine returning its message input. -/
-@[expose] noncomputable def idMachine : AdvMachine model [msg] msg :=
+@[expose] noncomputable def idMachine (M : Model decl) : AdvMachine M [msg] msg :=
   Machine.input .zero (Ty.isGround_base ())
 
-theorem idMachine_mem : (AdvClass.all model).mem idMachine :=
+theorem idMachine_mem (M : Model decl) : (AdvClass.all M).mem (idMachine M) :=
   AdvClass.all_mem_of_readsBelow_zero (Machine.readsBelow_input _ _)
 
 /-- `n ⊬ n` fails in `model`: the identity computes `n` from `n`. -/
 theorem not_valid_nonDed_n_n :
     ¬ Valid (· = model) (fun M => AdvClass.all M) (Γ := []) []
       (.nonDed (one (nm Name.n)) (nm Name.n)) :=
-  fun h => not_nonDed_of_forall_eq idMachine idMachine_mem
+  fun h => not_nonDed_of_forall_eq (idMachine model) (idMachine_mem model)
     (fun _ _ => (AdvMachine.appVals_eval _ _).trans (Machine.run_input _ _ _))
     (Form.holds_nonDed.1 (h model model_respectsLabels rfl Env.empty (by simp)))
 
@@ -238,7 +244,7 @@ theorem not_valid_nonDed_hhn_n :
     ¬ Valid (· = model) (fun M => AdvClass.all M) (Γ := []) []
       (.nonDed (one (hT (hT (nm Name.n)))) (nm Name.n)) := fun h => by
   have hn := Form.holds_nonDed.1 (h model model_respectsLabels rfl Env.empty (by simp))
-  exact not_nonDed_of_forall_eq idMachine idMachine_mem
+  exact not_nonDed_of_forall_eq (idMachine model) (idMachine_mem model)
     (fun _ _ => (AdvMachine.appVals_eval _ _).trans (Machine.run_input _ _ _)) hn
 
 /-- `n ⊬ m`, by FreshR. -/
