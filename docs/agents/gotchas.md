@@ -257,6 +257,10 @@ Two failure classes recur:
   or be uniformly distributed on — a strictly larger space. A hypothesis asserting such an
   equality or uniformity is false at every parameter where the strict cardinality inequality
   holds.
+- **Bounds over every adversary**: a hypothesis `∀ adv, Adv adv ≤ ε` over an adversary type is
+  satisfiable only at `ε` as large as exhaustive search achieves, query budgets notwithstanding,
+  so the theorem is empty at real parameters. Assume the bound for the named distinguisher
+  ([crypto.md](crypto.md#name-the-reduction-in-the-theorem-statement)).
 
 **Fix**: when compatibility of a new hypothesis bundle is not immediate, ship a kernel-checked
 witness for the whole bundle (or at least each nontrivial compatibility pair) in the same PR.
@@ -413,8 +417,8 @@ their executable modules contain colliding root-level `main` declarations.
 
 ### 26. Lean toolchain and Mathlib version must stay in sync
 
-Both currently `v4.35.0`: `lean-toolchain` pins `leanprover/lean4:v4.35.0` and
-`lakefile.lean` has `require "leanprover-community" / "mathlib" @ git "v4.35.0"`.
+Both currently `v4.36.0`: `lean-toolchain` pins `leanprover/lean4:v4.36.0` and
+`lakefile.lean` has `require "leanprover-community" / "mathlib" @ git "v4.36.0"`.
 When upgrading, update both lines simultaneously.
 
 ### 27. Use public references in shared docs
