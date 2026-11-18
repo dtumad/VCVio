@@ -57,11 +57,8 @@ private def runVCGenFinish : TacticM Unit := do
            ReaderT.run_bind, ReaderT.run_pure, ReaderT.run_monadLift, ReaderT.run_read,
            ReaderT.run_map,
            WriterT.wp_apply_eq,
-           OracleComp.Lower.WriterT.wp_bind,
-           OracleComp.Lower.WriterT.wp_pure,
            OracleComp.Lower.WriterT.wp_tell,
            OracleComp.Lower.WriterT.wp_monadLift,
-           OracleComp.Lower.WriterT.wp_map,
            WriterT.run_bind, WriterT.run_pure, WriterT.run_tell, WriterT.run_map,
            ExactWPMonad.wp_bind, ExactWPMonad.wp_pure, ExactWPMonad.wp_map,
            MonadLift.monadLift, pure_bind, bind_assoc, map_pure, Functor.map_map,
@@ -304,12 +301,14 @@ elab_rules : tactic
 /-- `pvcgen` exhaustively decomposes a `Triple`, raw `wp`, or probability goal
 with spec-aware stepping.
 
-Accepts `Triple` goals, raw `wp` goals, lower-bound / exact probability goals, and
-`Pr{…}[…] = Pr{…}[…]` equality goals. Probability goals are automatically lowered or
-dispatched (swap/congr) before structural decomposition continues.
+Accepts `Triple` goals, raw `wp` goals, support statements `∀ x ∈ support oa, post x`,
+lower-bound / exact probability goals, and `Pr{…}[…] = Pr{…}[…]` equality goals. Probability
+goals are automatically lowered or dispatched (swap/congr) before structural decomposition
+continues.
 
 Bare `vcgen` is core's generic verification-condition generator over `Std.WP`. Each `pvcgen`
-pass first hands a quantitative triple to it with the `@[spec]` rules of the lower reading
+pass first hands a quantitative triple to it with the `@[spec]` rules of the lower reading, and a
+triple in the necessary reading or a support statement with the rules of the necessary reading
 (`set_option vcvio.vcgen.core false` switches this off), and adds the probability-specific steps
 around it:
 - Lowers `Pr{…}[…]` goals into `Triple` or raw `wp` form before decomposition
