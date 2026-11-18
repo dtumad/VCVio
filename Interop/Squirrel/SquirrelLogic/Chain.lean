@@ -72,6 +72,34 @@ trace corrupts, the NoCollision lemmas that its derivation uses. CCS26 proves th
 and pre-image resistance (App. B); those rules are not formalized here, so the derivation takes
 the lemmas as hypotheses, as CCS26's proof takes them as lemmas. The model conditions are
 `ChainR`, and the PRF assumption is that of each PRF.R and PRF.L-sec instance (`instR`, `instL`).
+`SquirrelLogic.ChainModel` shows that all of them hold jointly in a model with a perfect PRF, and
+that the corrupted key is not secret there.
+
+## Against the seminar spike's `prfChainAdv_le`
+
+The spike (`Examples/SquirrelModel/PRFChain.lean`, outside this library) proves
+`prfChainAdv prf A ≤ prfAdvantage prf (chainReduction A) + (q + 1) / |K|` for every attacker `A`, a
+free program over coins, the hash oracle, `upd` and `corrupt`, making at most `q` queries other
+than coins; `negligible_prfChainAdv` is its asymptotic reading.
+
+* **What the spike covers that `chainPFS_sound` does not.** It is adaptive: the attacker chooses
+  the order of updates, hash queries and corruptions from what it has seen, and may corrupt more
+  than once. Its bound is concrete, with one named PRF reduction and the term `(q + 1) / |K|`. It
+  needs no collision hypothesis: the hash is a PRF on `K × M`, whose pairs are a product type, and
+  the bound absorbs the collisions. Its attacker draws fresh coins (VCVio's adversaries) rather than
+  reading a shared attacker tape.
+* **What `chainPFS_sound` covers that the spike does not.** It is derived in the logic, from rules
+  each proved sound, and its conclusion is CCS26's own statement `frame(τ′) ⊬ ck(τ)` in the
+  logic's semantics, against every machine of an arbitrary class meeting the closure fields. It
+  holds for every safe key, not only `ck(Init)`: the spike's `prfChainAdv_le` is at `t = init`, and
+  its later keys (`ChainLaterKeys.lean`, `keyAdv_le`) are in the random-oracle model with the
+  safe updates first.
+* **What `chainPFS_sound` leaves open.** The trace is fixed in advance: the attacker's inputs
+  depend on the frame through `att`, but the schedule of updates, hash queries and the single
+  `Corrupt` is a Lean value, and the induction over traces is not derived. The conclusion is
+  asymptotic: the rules have bounds at every `η` (`PRFSymbols.rightAdvantage_le`,
+  `PRFSymbols.leftAdvantage_le`), but their composition along the derivation is not stated as one
+  bound. The NoCollision lemmas are hypotheses, not derived from collision resistance.
 -/
 
 public section
