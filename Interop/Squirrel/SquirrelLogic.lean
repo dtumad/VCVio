@@ -41,4 +41,6 @@ public import SquirrelLogic.FreshLCountermodel
 public import SquirrelLogic.PRFExamples
 public import SquirrelLogic.PRFOracleExamples
 public import SquirrelLogic.Chain
+public import SquirrelLogic.IterateCollision
+public import SquirrelLogic.ChainModel
 public import SquirrelLogic.OracleExamples
