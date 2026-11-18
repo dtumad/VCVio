@@ -30,7 +30,7 @@ is one term. Here the two predicates are read over random variables:
 * `AdvClass.Ded C u v`: `deduceErr g.eval u v` is negligible for some admitted `g`.
 
 `g` reads the tape `ρa` that every machine of the model shares, as `adv` does in LICS23 (ledger
-row L10). The spike `Examples/SquirrelModel/Deduction.lean` reads the same predicate at one `η` as
+row L10). The seminar spike (`SOURCES.md`) reads the same predicate at one `η` as
 `deduceAdv uv f = Pr[f(u) = v]` for a VCVio adversary `f` that draws fresh coins: there `u ⊬ v`
 holds against every adversary, here against every admitted machine reading `ρa`.
 

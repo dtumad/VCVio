@@ -33,7 +33,7 @@ trace, and the derivation is sound by `Derivation.sound` (`chainPFS_sound`).
 * **`ck` at `ROM`.** Fig. 2 sets `ck(ROM(i)) = empty`. With that definition `secrecy_base` fails
   at an update after a hash query: the attacker computes `input(τ)` from the oracle and queries
   `⟨empty, input(τ)⟩`, so `ck(τ)` is deducible. Here a hash query leaves the key unchanged, as in
-  the spike's chain (`Examples/SquirrelModel/ChainSecrecy.lean`), and every position before
+  the seminar spike's chain (`SOURCES.md`, `ChainSecrecy.lean`), and every position before
   `Corrupt` is safe.
 
 ## The declaration
@@ -77,7 +77,7 @@ that the corrupted key is not secret there.
 
 ## Against the seminar spike's `prfChainAdv_le`
 
-The spike (`Examples/SquirrelModel/PRFChain.lean`, outside this library) proves
+The seminar spike (`PRFChain.lean`, outside this tree; `SOURCES.md`) proves
 `prfChainAdv prf A ≤ prfAdvantage prf (chainReduction A) + (q + 1) / |K|` for every attacker `A`, a
 free program over coins, the hash oracle, `upd` and `corrupt`, making at most `q` queries other
 than coins; `negligible_prfChainAdv` is its asymptotic reading.

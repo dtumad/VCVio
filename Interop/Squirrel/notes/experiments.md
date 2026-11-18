@@ -2651,3 +2651,26 @@ the ratchet's hypotheses all hold in `ChainModel.cmodel`.
 - The NoCollision lemmas from collision and pre-image resistance (L33); the induction over traces
   and an adaptive schedule (L35, M3); a countermodel to Fig. 2's `ck(ROM) = empty` (L36); a
   concrete bound composed along a derivation.
+
+## Port to Lean v4.36
+
+The library moved from Lean and Mathlib v4.35 (PolyFun pin `ea3b297`) to VCVio's v4.36 port
+(Verified-zkEVM/VCVio#1169, PolyFun pin `528b3b1f`). The branch now sits directly on VCVio, without
+the seminar spike underneath: the library imports nothing from the spike, so only its own commits
+were rebased (`git rebase --onto`), and the spike is cited from `SOURCES.md` (key Spike, commit
+`ce5dd6f`). The v4.35 head is kept as `dtumad/squirrel-logic-v435` on the fork.
+
+- **What a read-only survey expected.** No import of the library is among the 28 measure modules
+  the port retires, and no VCVio, ToMathlib or PolyFun declaration it uses was renamed or removed:
+  the `prEvent` and `EvalDistEq` lemmas moved into PolyFun under the same names and import paths,
+  query logs are still lists, and PolyFun's scoped-syntax files only gained declarations. The one
+  semantic change in reach was Mathlib's `Set`, now a one-field structure, at the models' carriers.
+- **What broke.** One proof, once. Gap log:
+
+  | File | Symptom | Cause | Fix |
+  |---|---|---|---|
+  | `Rules/Oracle.lean` (`two_pow_clog_le`) | `Function expected at Nat.pow_pred_clog_lt_self 2 one_lt_two` | Mathlib v4.36 made the base of `Nat.pow_pred_clog_lt_self` explicit and dropped its `1 < b` hypothesis | `Nat.pow_pred_clog_lt_self 2 hn` |
+
+- **What did not.** Every `Set` membership in the carriers, labels and example models still
+  reduces through the structure's projection, so none of the sites the survey flagged needed a
+  change. No new linter fires (`linter.concreteInstances`, `linter.style.extendedBinder`).
