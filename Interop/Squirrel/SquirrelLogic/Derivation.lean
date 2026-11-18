@@ -13,7 +13,7 @@ public import SquirrelLogic.Rules.Fresh
 public import SquirrelLogic.Rules.FreshL
 public import SquirrelLogic.Rules.PRF
 public import SquirrelLogic.Rules.Oracle
-public import SquirrelLogic.Rules.PRFOracle
+public import SquirrelLogic.Rules.PRFLeft
 
 /-!
 # Derivations of global sequents
@@ -31,11 +31,12 @@ The encryption rule (`Valid.equiv_enc`) is a constructor, at the instances that 
 `enc` admits; its syntactic side condition, distinct key and coin names, is a premise of the
 constructor. `Derivation.sound` takes the semantic hypotheses of each admitted instance
 (`EncInstance.Holds`). With `enc` empty, derivations are those of the structural fragment.
-G.PRF (`Valid.equiv_prf`) and PRF.R (`Valid.nonDed_prfR`) are constructors in the same way, at
-the instances that the parameter `prf` admits (`PRFRule`; `equivPRF`, `nonDedPRFR`), with their
-syntactic side conditions (`PRFInstance.Syntactic`, `PRFRInstance.Syntactic`) and their `[ψ_msg]`
-as premises; `Derivation.sound` takes the semantic hypotheses of each admitted instance
-(`PRFRule.Holds`). PRF.R's model conditions and read bounds are premises, as for FreshL.
+G.PRF (`Valid.equiv_prf`), PRF.R (`Valid.nonDed_prfR`) and PRF.L-sec (`Valid.nonDed_prfLSec`)
+are constructors in the same way, at the instances that the parameter `prf` admits (`PRFRule`;
+`equivPRF`, `nonDedPRFR`, `nonDedPRFLSec`), with their syntactic side conditions and their
+`[ψ_msg]` as premises; `Derivation.sound` takes the semantic hypotheses of each admitted instance
+(`PRFRule.Holds`). The model conditions and read bounds of PRF.R and PRF.L-sec are premises, as
+for FreshL.
 PRF-Simple is derived from G.PRF, Perm, FreshL and Rw-Equiv as CCS26 derives it
 (`Derivation.nonDedPRF`), so it is not a constructor.
 
@@ -311,6 +312,21 @@ inductive Derivation (D : Decl B) (enc : EncInstance D → Prop) (prf : PRFRule 
       Derivation D enc prf R₀ Θ (.box (e.P.psiMsgVec e.u e.m)) →
       Derivation D enc prf R₀ Θ (.nonDed e.lhs (e.P.close e.m) e.orderM) →
       Derivation D enc prf R₀ Θ (.nonDed e.lhs (e.P.hashTerm (e.P.close e.m)) e.order)
+  /-- PRF.L-sec (CCS26 §2.3 and Fig. 4), at an admitted instance meeting the syntactic side
+  conditions, over models where `R₀` gives uniform names of the hash type, long attacker tapes and
+  polynomial bit blocks for messages and hashes, with the read bounds of the terms in every model
+  of `R₀` and of `Θ`, from `[ψ_msg^{m,k}(u⃗, v, m)]`, `u⃗, o_h^k ⊬ v` and `u⃗, o_h^k ⊬ m`. -/
+  | nonDedPRFLSec {Θ : List (Form D [])} (e : PRFLInstance D) : prf (.left e) → e.Syntactic →
+      (∀ M, R₀ M → M.UniformSampler e.P.hTy ∧ M.LongTapes ∧ M.PolyCoins e.P.msgTy ∧
+        M.PolyCoins e.P.hTy) →
+      (∀ M : Model D, M.RespectsLabels → R₀ M → ∀ (C : AdvClass M) env,
+        (∀ θ ∈ Θ, θ.Holds M C env) → Vec.ReadsPoly M C (e.P.closeVec e.u) env ∧
+          FTerm.ReadsPoly M C (e.P.close e.v) env ∧ FTerm.ReadsPoly M C (e.P.close e.m) env) →
+      Derivation D enc prf R₀ Θ (.box (e.P.psiMsg (Env.append e.u (Env.cons e.v Env.empty)) e.m)) →
+      Derivation D enc prf R₀ Θ (.nonDed e.lhs (e.P.close e.v) e.order) →
+      Derivation D enc prf R₀ Θ (.nonDed e.lhs (e.P.close e.m) e.orderM) →
+      Derivation D enc prf R₀ Θ
+        (.nonDed (Vec.snoc e.lhs (e.P.hashTerm (e.P.close e.m))) (e.P.close e.v) e.orderC)
 
 variable {D : Decl B}
 
@@ -382,6 +398,10 @@ theorem Derivation.sound {enc : EncInstance D → Prop} {prf : PRFRule D → Pro
     e.valid hs (hprf _ he) (fun M hRM => hl M (hR M hRM))
       (fun M hlM hRM env hΘ => hr M hlM (hR M hRM) (C M) env hΘ) (d₁.sound R C henc hprf hR)
       (d₂.sound R C henc hprf hR)
+  | _, _, _, .nonDedPRFLSec e he hs hl hr d₁ d₂ d₃ =>
+    e.valid hs (hprf _ he) (fun M hRM => hl M (hR M hRM))
+      (fun M hlM hRM env hΘ => hr M hlM (hR M hRM) (C M) env hΘ) (d₁.sound R C henc hprf hR)
+      (d₂.sound R C henc hprf hR) (d₃.sound R C henc hprf hR)
 
 /-- **PRF-Simple, derived** (CCS26 Fig. 11 and p. 17): from a derivation of `u⃗ ⊬ v`, a
 derivation of `u⃗, h(m, k) ⊬ v`, through the constructors of G.PRF (at the vector `u⃗, v` and a name

@@ -61,7 +61,8 @@ The reductions follow App. C.3.2's hops, with two changes forced or allowed by t
    CCS26's `B` runs the attacker after computing the message; running it first makes the challenge
    the last query.
 
-`PRFSymbols.rightAdvantage_le` is the statement at one `η`; `Valid.nonDed_prfR` is the rule.
+`PRFSymbols.rightAdvantage_le` is the statement at one `η`; `Valid.nonDed_prfR` is the rule, and
+`PRFRInstance` packages its data for derivations.
 -/
 
 public section
@@ -699,17 +700,5 @@ theorem valid {R : Model D → Prop} {C : ∀ M : Model D, AdvClass M} {Θ : Lis
     hs.2.2.2.2.2.1 hs.2.2.2.2.2.2.1 hs.2.2.2.2.2.2.2 hR hread hh hmsg h
 
 end PRFRInstance
-
-/-- The instances of the PRF rules that a derivation may use: G.PRF and PRF.R. -/
-inductive PRFRule (D : Decl B) where
-  /-- An instance of G.PRF. -/
-  | gprf (e : PRFInstance D)
-  /-- An instance of PRF.R. -/
-  | right (e : PRFRInstance D)
-
-/-- The semantic hypotheses of an instance of a PRF rule. -/
-@[expose] def PRFRule.Holds : PRFRule D → (Model D → Prop) → (∀ M : Model D, AdvClass M) → Prop
-  | .gprf e, R, C => e.Holds R C
-  | .right e, R, C => e.Holds R C
 
 end SquirrelLogic

@@ -958,4 +958,90 @@ theorem nonDed_prfLSec (P : PRFSymbols D) {Θ : List (Form D [])} {β : Ty B} (u
 
 end Valid
 
+/-! ## Instances, for derivations -/
+
+/-- An instance of PRF.L-sec: the keyed hash, a closed vector, secret and message with calls, with
+Boolean or base secret and message types, and the order bounds of the premises and the
+conclusion. -/
+structure PRFLInstance (D : Decl B) where
+  /-- The keyed hash. -/
+  P : PRFSymbols D
+  /-- The types of the vector. -/
+  τs : List (Ty B)
+  /-- The type of the secret. -/
+  β : Ty B
+  /-- The vector, with calls. -/
+  u : OVec P [] τs
+  /-- The secret, with calls. -/
+  v : OTerm P [] β
+  /-- The message, with calls. -/
+  m : OTerm P [] P.msgTy
+  /-- The secret is Boolean or base. -/
+  hβ : β.IsGround
+  /-- Messages are Boolean or base. -/
+  hmg : P.msgTy.IsGround
+  /-- The premise has order at most one. -/
+  order : Ty.SecrecyOrder (τs ++ [.arrow P.msgTy P.hTy]) β
+  /-- `C_sec` has order at most one. -/
+  orderM : Ty.SecrecyOrder (τs ++ [.arrow P.msgTy P.hTy]) P.msgTy
+  /-- The conclusion has order at most one. -/
+  orderC : Ty.SecrecyOrder ((τs ++ [.arrow P.msgTy P.hTy]) ++ [P.hTy]) β
+
+namespace PRFLInstance
+
+variable (e : PRFLInstance D)
+
+/-- The syntactic side conditions of PRF.L-sec: entries and a hash type of Boolean or base type,
+`ψ_key`, `⊢pptm` and first order. -/
+@[expose] def Syntactic : Prop :=
+  (∀ τ ∈ e.τs, τ.IsGround) ∧ e.P.hTy.IsGround ∧ (∀ τ x, e.P.KeyFree (e.u τ x)) ∧
+    e.P.KeyFree e.v ∧ e.P.KeyFree e.m ∧ (∀ τ x, e.P.Pptm (e.u τ x)) ∧ e.P.Pptm e.v ∧
+    e.P.Pptm e.m ∧ (∀ τ x, e.P.FirstOrder (e.u τ x)) ∧ e.P.FirstOrder e.v ∧ e.P.FirstOrder e.m
+
+/-- The PRF assumption of PRF.L-sec: in every model of `R`, the two reductions of every admitted
+machine have negligible PRF advantage. -/
+@[expose] def Holds (R : Model D → Prop) (C : ∀ M : Model D, AdvClass M) : Prop :=
+  ∀ M : Model D, M.RespectsLabels → R M → ∀ hU : M.UniformSampler e.P.hTy,
+    ∀ g : AdvMachine M ((e.τs ++ [e.P.hTy]) ++ [.arrow e.P.msgTy e.P.hTy]) e.β, (C M).mem g →
+      negligible (fun η => e.P.prfAdv M η hU (e.P.leftReduction η e.hmg e.hβ e.u e.v e.m g)) ∧
+        negligible (fun η => e.P.prfAdv M η hU (e.P.leftFreshReduction η e.hmg e.hβ e.u e.v e.m g))
+
+/-- The left side of the premises, `u⃗, o_h^k`. -/
+@[expose] def lhs : Vec D [] (e.τs ++ [.arrow e.P.msgTy e.P.hTy]) :=
+  Vec.snoc (e.P.closeVec e.u) e.P.hashOracle
+
+/-- PRF.L-sec at an instance. -/
+theorem valid {R : Model D → Prop} {C : ∀ M : Model D, AdvClass M} {Θ : List (Form D [])}
+    (hs : e.Syntactic) (hh : e.Holds R C)
+    (hR : ∀ M, R M → M.UniformSampler e.P.hTy ∧ M.LongTapes ∧ M.PolyCoins e.P.msgTy ∧
+      M.PolyCoins e.P.hTy)
+    (hread : ∀ M : Model D, M.RespectsLabels → R M → ∀ env, (∀ θ ∈ Θ, θ.Holds M (C M) env) →
+      Vec.ReadsPoly M (C M) (e.P.closeVec e.u) env ∧ FTerm.ReadsPoly M (C M) (e.P.close e.v) env ∧
+        FTerm.ReadsPoly M (C M) (e.P.close e.m) env)
+    (hmsg : Valid R C Θ (.box (e.P.psiMsg (Env.append e.u (Env.cons e.v Env.empty)) e.m)))
+    (h : Valid R C Θ (.nonDed e.lhs (e.P.close e.v) e.order))
+    (hsec : Valid R C Θ (.nonDed e.lhs (e.P.close e.m) e.orderM)) :
+    Valid R C Θ (.nonDed (Vec.snoc e.lhs (e.P.hashTerm (e.P.close e.m))) (e.P.close e.v)
+      e.orderC) :=
+  Valid.nonDed_prfLSec e.P e.u e.v e.m hs.1 e.hβ e.hmg hs.2.1 hs.2.2.1 hs.2.2.2.1 hs.2.2.2.2.1
+    hs.2.2.2.2.2.1 hs.2.2.2.2.2.2.1 hs.2.2.2.2.2.2.2.1 hs.2.2.2.2.2.2.2.2.1
+    hs.2.2.2.2.2.2.2.2.2.1 hs.2.2.2.2.2.2.2.2.2.2 hR hread hh hmsg h hsec
+
+end PRFLInstance
+
+/-- The instances of the PRF rules that a derivation may use: G.PRF, PRF.R and PRF.L-sec. -/
+inductive PRFRule (D : Decl B) where
+  /-- An instance of G.PRF. -/
+  | gprf (e : PRFInstance D)
+  /-- An instance of PRF.R. -/
+  | right (e : PRFRInstance D)
+  /-- An instance of PRF.L-sec. -/
+  | left (e : PRFLInstance D)
+
+/-- The semantic hypotheses of an instance of a PRF rule. -/
+@[expose] def PRFRule.Holds : PRFRule D → (Model D → Prop) → (∀ M : Model D, AdvClass M) → Prop
+  | .gprf e, R, C => e.Holds R C
+  | .right e, R, C => e.Holds R C
+  | .left e, R, C => e.Holds R C
+
 end SquirrelLogic
