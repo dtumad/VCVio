@@ -253,11 +253,62 @@ theorem deduceAdv_le_add_faulty (v : RV M β) (o o' : RV M (.arrow a b)) (η : �
   · exact (hrun ρ hρ).symm.trans h
   · exact (hrun ρ hρ).trans h
 
-/-- **The guessing bound** (CCS26 App. C.1, step 2). Let `g` read the attacker tape below `p` and
-make at most `q` input queries, and `u⃗`, `o` and `o'` read it below `p`. At an `η` where
-`⌈log₂ q(η)⌉` bits from `p(η)` fit on the tape, the probability that the run with `o` makes a
-faulty query is at most `2 ^ ⌈log₂ q(η)⌉` times the probability that the reduction
-`AdvMachine.rwGuess`, run with `o`, returns a point where `o` and `o'` differ. -/
+/-- **The guessing bound**, for any event on the queried point (CCS26 App. C.1, step 2). Let `g`
+read the attacker tape below `p` and make at most `q` input queries, `u⃗` and `o` read it below
+`p`, and the event `S` on a point of `a` read it below `p` too. At an `η` where `⌈log₂ q(η)⌉` bits
+from `p(η)` fit on the tape, the probability that the run with `o` queries the oracle at a point
+where `S` holds is at most `2 ^ ⌈log₂ q(η)⌉` times the probability that `S` holds at the output of
+the reduction `AdvMachine.rwGuess`, run with `o`. -/
+theorem prEvent_exists_firstArgs_le {p q : Polynomial ℕ}
+    (hg : Machine.ReadsBelow g fun η => p.eval η) (hq : Machine.QueryBound g fun η => q.eval η)
+    (o : RV M (.arrow a b)) (S : (η : ℕ) → M.Tape η → a.Value M.carrier η → Prop)
+    (hu : u.ReadsBelow fun η => p.eval η) (ho : o.ReadsBelow fun η => p.eval η)
+    (hS : ∀ η ρa ρa' ρh x, (∀ i < p.eval η, M.readBit ρa i = M.readBit ρa' i) →
+      S η (ρa, ρh) x → S η (ρa', ρh) x) {η : ℕ}
+    (hη : p.eval η + Nat.clog 2 (q.eval η) ≤ M.lenA η) :
+    Pr{let ρ ← $ᵗ (M.Tape η)}[∃ x ∈ M.firstArgs (runLog (M.answer ρ.1 (Env.cons (o η ρ)
+        (Env.append (u η ρ) (Ty.groundArgs ha)))) ((g.withOracleFirst hβ) η)),
+          S η ρ (x _ .zero)] ≤
+      2 ^ Nat.clog 2 (q.eval η) * Pr{let ρ ← $ᵗ (M.Tape η)}[
+        S η ρ (Ty.appVals ((g.rwGuess p q ha hβ).eval η ρ.1) (VecRV.snoc u o η ρ))] := by
+  set k := Nat.clog 2 (q.eval η)
+  let L : M.Tape η → List (Vals M η (Ty.arrow a b).args) := fun ρ =>
+    M.firstArgs (runLog (M.answer ρ.1 (Env.cons (o η ρ) (Env.append (u η ρ)
+      (Ty.groundArgs ha)))) ((g.withOracleFirst hβ) η))
+  let E : ℕ → M.Tape η → Prop := fun j ρ => ∃ x, (L ρ)[j]? = some x ∧ S η ρ (x _ .zero)
+  have hG : Machine.ReadsBelow (g.withOracleFirst hβ) fun η => p.eval η := hg.rename _
+  have hGq : Machine.QueryBound (g.withOracleFirst hβ) fun η => q.eval η := hq.rename _
+  -- The events `E j` read the attacker tape only below `p(η)`.
+  have hE : ∀ j ρa ρa' ρh, (∀ i < p.eval η, M.readBit ρa i = M.readBit ρa' i) →
+      E j (ρa, ρh) → E j (ρa', ρh) := by
+    intro j ρa ρa' ρh hρ ⟨x, hx, hs⟩
+    have hu' : u η (ρa, ρh) = u η (ρa', ρh) :=
+      funext fun τ => funext fun y => hu τ y η ρa ρa' ρh hρ
+    refine ⟨x, ?_, hS η ρa ρa' ρh _ hρ hs⟩
+    change (M.firstArgs (runLog _ _))[j]? = some x
+    rw [← ho η ρa ρa' ρh hρ, ← hu', ← hG.runLog_eq hρ]
+    exact hx
+  calc Pr{let ρ ← $ᵗ (M.Tape η)}[∃ x ∈ L ρ, S η ρ (x _ .zero)]
+      ≤ Pr{let ρ ← $ᵗ (M.Tape η)}[∃ j ∈ Finset.range (2 ^ k), E j ρ] := by
+        refine prEvent_mono _ _ _ fun ρ ⟨x, hx, hs⟩ => ?_
+        obtain ⟨j, hj⟩ := List.mem_iff_getElem?.1 hx
+        have hlen : j < (L ρ).length := (List.getElem?_eq_some_iff.1 hj).1
+        refine ⟨j, Finset.mem_range.2 (lt_of_lt_of_le hlen ((hGq.length_firstArgs_le _ _).trans
+          (Nat.le_pow_clog one_lt_two _))), x, hj, hs⟩
+    _ ≤ ∑ j ∈ Finset.range (2 ^ k), Pr{let ρ ← $ᵗ (M.Tape η)}[E j ρ] :=
+        prEvent_exists_finset_le _ _ _
+    _ = 2 ^ k * Pr{let ρ ← $ᵗ (M.Tape η)}[E (bitsEquiv k (M.bitsAt ρ.1 (p.eval η) k)) ρ] :=
+        sum_prEvent_eq_two_pow_mul _ _ hη E hE
+    _ ≤ _ := by
+        refine mul_le_mul' le_rfl (prEvent_mono _ _ _ fun ρ ⟨x, hx, hs⟩ => ?_)
+        rw [VecRV.snoc, AdvMachine.appVals_eval_rwGuess ha hβ g ρ.1 (u η ρ) (o η ρ) hx]
+        exact hs
+
+/-- **The guessing bound** of Rw-Oracle (CCS26 App. C.1, step 2): `prEvent_exists_firstArgs_le` at
+the event that `o` and `o'` differ. At an `η` where `⌈log₂ q(η)⌉` bits from `p(η)` fit on the
+tape, the probability that the run with `o` makes a faulty query is at most `2 ^ ⌈log₂ q(η)⌉`
+times the probability that the reduction `AdvMachine.rwGuess`, run with `o`, returns a point where
+`o` and `o'` differ. -/
 theorem prEvent_faultyAt_le {p q : Polynomial ℕ} (hg : Machine.ReadsBelow g fun η => p.eval η)
     (hq : Machine.QueryBound g fun η => q.eval η) (o o' : RV M (.arrow a b))
     (hu : u.ReadsBelow fun η => p.eval η) (ho : o.ReadsBelow fun η => p.eval η)
@@ -266,42 +317,9 @@ theorem prEvent_faultyAt_le {p q : Polynomial ℕ} (hg : Machine.ReadsBelow g fu
     Pr{let ρ ← $ᵗ (M.Tape η)}[faultyAt ha hβ g u o o' η ρ] ≤
       2 ^ Nat.clog 2 (q.eval η) * Pr{let ρ ← $ᵗ (M.Tape η)}[
         o η ρ (Ty.appVals ((g.rwGuess p q ha hβ).eval η ρ.1) (VecRV.snoc u o η ρ)) ≠
-          o' η ρ (Ty.appVals ((g.rwGuess p q ha hβ).eval η ρ.1) (VecRV.snoc u o η ρ))] := by
-  set k := Nat.clog 2 (q.eval η)
-  let L : M.Tape η → List (Vals M η (Ty.arrow a b).args) := fun ρ =>
-    M.firstArgs (runLog (M.answer ρ.1 (Env.cons (o η ρ) (Env.append (u η ρ)
-      (Ty.groundArgs ha)))) ((g.withOracleFirst hβ) η))
-  let E : ℕ → M.Tape η → Prop := fun j ρ =>
-    ∃ x, (L ρ)[j]? = some x ∧ o η ρ (x _ .zero) ≠ o' η ρ (x _ .zero)
-  have hG : Machine.ReadsBelow (g.withOracleFirst hβ) fun η => p.eval η := hg.rename _
-  have hGq : Machine.QueryBound (g.withOracleFirst hβ) fun η => q.eval η := hq.rename _
-  -- The events `E j` read the attacker tape only below `p(η)`.
-  have hE : ∀ j ρa ρa' ρh, (∀ i < p.eval η, M.readBit ρa i = M.readBit ρa' i) →
-      E j (ρa, ρh) → E j (ρa', ρh) := by
-    intro j ρa ρa' ρh hρ ⟨x, hx, hne⟩
-    have hu' : u η (ρa, ρh) = u η (ρa', ρh) :=
-      funext fun τ => funext fun y => hu τ y η ρa ρa' ρh hρ
-    refine ⟨x, ?_, ?_⟩
-    · change (M.firstArgs (runLog _ _))[j]? = some x
-      rw [← ho η ρa ρa' ρh hρ, ← hu', ← hG.runLog_eq hρ]
-      exact hx
-    · rw [← ho η ρa ρa' ρh hρ, ← ho' η ρa ρa' ρh hρ]
-      exact hne
-  calc Pr{let ρ ← $ᵗ (M.Tape η)}[faultyAt ha hβ g u o o' η ρ]
-      ≤ Pr{let ρ ← $ᵗ (M.Tape η)}[∃ j ∈ Finset.range (2 ^ k), E j ρ] := by
-        refine prEvent_mono _ _ _ fun ρ ⟨x, hx, hne⟩ => ?_
-        obtain ⟨j, hj⟩ := List.mem_iff_getElem?.1 hx
-        have hlen : j < (L ρ).length := (List.getElem?_eq_some_iff.1 hj).1
-        refine ⟨j, Finset.mem_range.2 (lt_of_lt_of_le hlen ((hGq.length_firstArgs_le _ _).trans
-          (Nat.le_pow_clog one_lt_two _))), x, hj, hne⟩
-    _ ≤ ∑ j ∈ Finset.range (2 ^ k), Pr{let ρ ← $ᵗ (M.Tape η)}[E j ρ] :=
-        prEvent_exists_finset_le _ _ _
-    _ = 2 ^ k * Pr{let ρ ← $ᵗ (M.Tape η)}[E (bitsEquiv k (M.bitsAt ρ.1 (p.eval η) k)) ρ] :=
-        sum_prEvent_eq_two_pow_mul _ _ hη E hE
-    _ ≤ _ := by
-        refine mul_le_mul' le_rfl (prEvent_mono _ _ _ fun ρ ⟨x, hx, hne⟩ => ?_)
-        rw [VecRV.snoc, AdvMachine.appVals_eval_rwGuess ha hβ g ρ.1 (u η ρ) (o η ρ) hx]
-        exact hne
+          o' η ρ (Ty.appVals ((g.rwGuess p q ha hβ).eval η ρ.1) (VecRV.snoc u o η ρ))] :=
+  prEvent_exists_firstArgs_le ha hβ g u hg hq o (fun η ρ x => o η ρ x ≠ o' η ρ x) hu ho
+    (fun η ρa ρa' ρh x hρ hne => by rwa [← ho η ρa ρa' ρh hρ, ← ho' η ρa ρa' ρh hρ]) hη
 
 end Bound
 
