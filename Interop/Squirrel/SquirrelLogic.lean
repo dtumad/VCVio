@@ -26,6 +26,7 @@ public import SquirrelLogic.Rules.Fresh
 public import SquirrelLogic.Rules.FreshL
 public import SquirrelLogic.Rules.PRF
 public import SquirrelLogic.Rules.Oracle
+public import SquirrelLogic.Rules.PRFOracle
 public import SquirrelLogic.Derivation
 public import SquirrelLogic.Examples
 public import SquirrelLogic.TwoTimePad
