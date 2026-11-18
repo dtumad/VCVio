@@ -2230,3 +2230,113 @@ They need:
 L2 is closed with the efficiency obligation in `guess_mem`; L10, L11, L14 and L18 are updated; L27
 (the uniform guess and its factor), L28 (the default value and `PolyCoins a`) and L29 (the double
 rule, ground right side, Pc-Oracle as a constructor) are new.
+
+## M1, part 3b: the hash oracle on the left
+
+This work was done on top of `c89509a87`, in commits `ecdece14c` (the oracle input and PRF.R),
+`fc9d85615` (the derivation constructor and the checks) and the commit that adds these notes.
+Sources: CCS26 Fig. 4 and §3.4 (pp. 7–8), §2.3 (pp. 5–6), App. C.3.1 (pp. 18–21) and App. C.3.2
+(pp. 22–25), the authors' PDF pinned in `../SOURCES.md`.
+
+### The oracle as an input (`Rules/PRFOracle.lean`)
+
+- **The terms.** `PRFSymbols.hashOracle` is `o_h^k = λx. h(x, k)`; `PRFSymbols.callOracle` is the
+  term with calls `λx. call x`, which closes up to it (`close_callOracle`, by `rfl`).
+- **The handler.** `PRFSymbols.kapp M η o x` Kleisli-applies the compiled reading of a closed arrow
+  `o` (`Term.cbv` of `cbvAlg`) to `x`; `PRFSymbols.arrowIn M η o e` answers a machine whose first
+  input is `o` by `kapp` and its other inputs from the values `e`. For `λx. call x`, `kapp` is one
+  hash query (`kapp_callOracle`), which the reduction's `fwd` sends to the PRF oracle.
+- **Fusion.** `evalWithAnswerFn_kapp` is adequacy at an arrow (`cbv_adequate`, `CRel` at `a → b`
+  applied to an embedded ground argument); `evalWithAnswerFn_simulate_arrowIn` is the instance of
+  `Machine.simulateQ_simulate`: with the keyed hash's answers the machine's run inside the
+  reduction is its run with the oracle's reading as its first input. In the PRF game's real world
+  that reading is the true function `h(·, k)` (`simulateQ_prfRealQueryImpl_simulate_callOracle`).
+- **The attacker's hashes are its oracle queries** (`exists_firstArgs_of_hashed`, from
+  `OracleComp.forall_mem_runLog_simulateQ`): a hash query of the simulated run is the argument of a
+  query to the first input on the run with the true function.
+- **Ad hoc, as in CCS26.** No condition is generated from the oracle: it is a fixed term, answered
+  by the rule's reductions (L30).
+
+### PRF.R
+
+```
+Valid.nonDed_prfR P u m hg hmg hh hlarge hku hkm hpu hpm hfu hfm hR hread hprf hmsg h :
+  Valid R C Θ (.nonDed (Vec.snoc (P.closeVec u) P.hashOracle) (P.hashTerm (P.close m)) ho)
+```
+
+from `h : u⃗, o_h^k ⊬ m` and `hmsg : [ψ^{m,k}_msg(u⃗)]` (`PRFSymbols.psiMsgVec`, the calls of `u⃗`
+only), for a first-order `⊢pptm` vector of Boolean or base entries and message, without the key
+name, a `large` hash type, and in every model of `R` uniform names of the hash type, long tapes and
+polynomial bit blocks for messages; the terms read the attacker tape below a polynomial under `Θ`.
+`hprf` is the PRF assumption on the named reductions `PRFSymbols.rightReduction η hmg hh u t g`, one
+for each candidate `t ∈ m :: calls m`.
+
+- **Per `η`** (`PRFSymbols.rightAdvantage_le`): at every `η` where the guess's bits fit,
+  `deduceAdv g (u⃗, o_h^k) h(m, k) ≤ Pr[ψ_msg(u⃗) = false] + 2^⌈log₂ q(η)⌉ · deduceAdv (rwGuess g)
+  (u⃗, o_h^k) m + Σ_{t ∈ m :: calls m} (prfAdv (rightReduction t g) + ε)`, with `ε` a bound on each
+  value of the hash type's sampler (`2^{-cη}` for a `large` type).
+- **The events.** On the conclusion's tapes the attacker wins; either the vector hashes `m`
+  (bounded by `¬ψ_msg`, through `cbvVec_spec` at `Q = (· ≠ m)`), or the attacker queries its oracle
+  at `m` (bounded by the uniform guess, `prEvent_exists_firstArgs_le`, a generalisation of
+  Rw-Oracle's guessing bound to any event on the queried point), or neither. In the last case the
+  descent (`exists_unhashed`) gives a candidate `t` with `m`'s value that its own run does not
+  hash, and `rightReduction t` succeeds in the real world.
+- **The reduction** (`rightReduction`, program `rightProg`): draw both tapes, run the compiled
+  vector, then the attacker with its oracle answered by `arrowIn`, then the compiled candidate,
+  all logged and forwarded to the PRF oracle; query the oracle at the candidate's value; succeed
+  if the attacker's output is the answer and the value was not hashed before. Real world:
+  `prEvent_prfRealExperiment_rightReduction` and `rightRun_eq`. Ideal world
+  (`prEvent_prfIdealExperiment_rightReduction_le`): the answer is a fresh draw, so the success is at
+  most `ε`.
+- **Why candidates, not a guess of `A₂`'s call.** App. C.3.2 guesses which oracle call of the
+  message's machine is on its output (factor `q(η)`), and drops the machine's continuation. A
+  first-order message's hashes are values of its call arguments (`exists_mem_calls_of_hashed`, the
+  contrapositive of `cbv_guard`), and a call argument of a call argument is a call argument with
+  fewer calls (`calls_infix`), so the descent on the number of calls stops at a candidate that its
+  own run does not hash. One reduction per candidate replaces the guess (L31).
+- **Why the attacker runs before the candidate.** CCS26's `B` runs the message first. Run last,
+  the challenge is the last query of the reduction, and in the ideal world a fresh draw
+  independent of the attacker's output; no lazy-sampling argument about the attacker's view is
+  needed (L31).
+
+### Derivations
+
+`Derivation`'s parameter `prf` now ranges over `PRFRule D`, the instances of G.PRF (`.gprf`) and
+PRF.R (`.right`, `PRFRInstance`), with `PRFRule.Holds`. `nonDedPRFR` is PRF.R's constructor: the
+syntactic side conditions (`PRFRInstance.Syntactic`), the model conditions on `R₀` and the read
+bounds are premises, as for FreshL. `PRFExamples` changes by one constructor name.
+
+### Checks (`PRFOracleExamples.lean`)
+
+| Check | Shows |
+|---|---|
+| `chainWorked`, `chainWorked_sound` | FreshR gives `o_h^k ⊬ s`; PRF.R gives `o_h^k ⊬ h(s, k)`; PRF.R at the message `h(s, k)` (two candidates, `h(s, k)` and `s`) gives `o_h^k ⊬ h(h(s, k), k)`: two steps of CCS26 §2's `secrecy_base` |
+| `valid_chainWorked` | in `pmodel` (a perfect PRF), against `AdvClass.all`, every hypothesis of both PRF.R steps holds jointly, so `o_h^k ⊬ h(h(s, k), k)` holds; FreshR does not give it |
+| `inst₁_holds`, `inst₂_holds` | the PRF assumption of both instances, from `pmodel_prfAdv` |
+| `hashOracle_avoids` | the oracle reads only the key's coordinate |
+
+### Statements that changed
+
+- `prEvent_faultyAt_le` is derived from `prEvent_exists_firstArgs_le` (statement unchanged).
+- `Derivation`'s parameter `prf : PRFInstance D → Prop` is now `prf : PRFRule D → Prop`;
+  `equivPRF` takes `prf (.gprf e)`, and `Derivation.sound` takes `PRFRule.Holds`.
+
+### Build and checks
+
+- **Build.** `LEAN_NUM_THREADS=3 lake build SquirrelLogic` succeeds with no warnings.
+- **Forbidden tactics, comment fences, line length.** No `sorry`, `admit`, `stop` or
+  `native_decide`; the fence check passes; no line exceeds 100 characters, and no file 1500 lines.
+
+| File | Content |
+|---|---|
+| `Rules/PRFOracle.lean` (new) | the oracle terms, `kapp`, `arrowIn`, fusion, PRF.R's reductions, the bound, `Valid.nonDed_prfR`, `PRFRInstance`, `PRFRule` |
+| `PRFOracleExamples.lean` (new) | the checks above |
+| `OracleTerm.lean` | `calls_infix`, `mem_calls_of_mem_calls`, `length_calls_lt`, `every_of_mem_calls`, `psiMsgVec` |
+| `Compile.lean` | `exists_mem_calls_of_hashed`, `exists_unhashed` |
+| `Rules/Oracle.lean` | `prEvent_exists_firstArgs_le` |
+| `Derivation.lean` | `PRFRule` as the parameter, `nonDedPRFR` |
+
+### Ledger
+
+L6, L26 and L28 are updated; L30 (the oracle as a compiled input, handled by the rule) and L31
+(PRF.R's candidates and order) are new.
