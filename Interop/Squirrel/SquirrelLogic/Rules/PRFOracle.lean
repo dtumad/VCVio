@@ -640,4 +640,76 @@ theorem nonDed_prfR (P : PRFSymbols D) {Θ : List (Form D [])} (u : OVec P [] τ
 
 end Valid
 
+/-! ## Instances, for derivations -/
+
+/-- An instance of PRF.R: the keyed hash, a closed vector and a message with calls, with Boolean
+or base message and hash types, which the reductions use, and the order bounds of the premise and
+the conclusion. -/
+structure PRFRInstance (D : Decl B) where
+  /-- The keyed hash. -/
+  P : PRFSymbols D
+  /-- The types of the vector. -/
+  τs : List (Ty B)
+  /-- The vector, with calls. -/
+  u : OVec P [] τs
+  /-- The message, with calls. -/
+  m : OTerm P [] P.msgTy
+  /-- Messages are Boolean or base. -/
+  hmg : P.msgTy.IsGround
+  /-- Hashes are Boolean or base. -/
+  hh : P.hTy.IsGround
+  /-- The conclusion has order at most one. -/
+  order : Ty.SecrecyOrder (τs ++ [.arrow P.msgTy P.hTy]) P.hTy
+  /-- The premise has order at most one. -/
+  orderM : Ty.SecrecyOrder (τs ++ [.arrow P.msgTy P.hTy]) P.msgTy
+
+namespace PRFRInstance
+
+variable (e : PRFRInstance D)
+
+/-- The syntactic side conditions of PRF.R: entries of Boolean or base type, a `large` hash type,
+`ψ_key`, `⊢pptm` and first order. -/
+@[expose] def Syntactic : Prop :=
+  (∀ τ ∈ e.τs, τ.IsGround) ∧ e.P.hTy.HasLabel D.labels .large ∧
+    (∀ τ x, e.P.KeyFree (e.u τ x)) ∧ e.P.KeyFree e.m ∧ (∀ τ x, e.P.Pptm (e.u τ x)) ∧
+    e.P.Pptm e.m ∧ (∀ τ x, e.P.FirstOrder (e.u τ x)) ∧ e.P.FirstOrder e.m
+
+/-- The PRF assumption of PRF.R: in every model of `R`, the reductions of every admitted machine,
+one for each candidate, have negligible PRF advantage. -/
+@[expose] def Holds (R : Model D → Prop) (C : ∀ M : Model D, AdvClass M) : Prop :=
+  ∀ M : Model D, M.RespectsLabels → R M → ∀ hU : M.UniformSampler e.P.hTy,
+    ∀ g : AdvMachine M (e.τs ++ [.arrow e.P.msgTy e.P.hTy]) e.P.hTy, (C M).mem g →
+      ∀ t ∈ e.m :: e.P.calls e.m,
+        negligible (fun η => e.P.prfAdv M η hU (e.P.rightReduction η e.hmg e.hh e.u t g))
+
+/-- The left side of PRF.R, `u⃗, o_h^k`. -/
+@[expose] def lhs : Vec D [] (e.τs ++ [.arrow e.P.msgTy e.P.hTy]) :=
+  Vec.snoc (e.P.closeVec e.u) e.P.hashOracle
+
+/-- PRF.R at an instance. -/
+theorem valid {R : Model D → Prop} {C : ∀ M : Model D, AdvClass M} {Θ : List (Form D [])}
+    (hs : e.Syntactic) (hh : e.Holds R C)
+    (hR : ∀ M, R M → M.UniformSampler e.P.hTy ∧ M.LongTapes ∧ M.PolyCoins e.P.msgTy)
+    (hread : ∀ M : Model D, M.RespectsLabels → R M → ∀ env, (∀ θ ∈ Θ, θ.Holds M (C M) env) →
+      Vec.ReadsPoly M (C M) (e.P.closeVec e.u) env ∧ FTerm.ReadsPoly M (C M) (e.P.close e.m) env)
+    (hmsg : Valid R C Θ (.box (e.P.psiMsgVec e.u e.m)))
+    (h : Valid R C Θ (.nonDed e.lhs (e.P.close e.m) e.orderM)) :
+    Valid R C Θ (.nonDed e.lhs (e.P.hashTerm (e.P.close e.m)) e.order) :=
+  Valid.nonDed_prfR e.P e.u e.m hs.1 e.hmg e.hh hs.2.1 hs.2.2.1 hs.2.2.2.1 hs.2.2.2.2.1
+    hs.2.2.2.2.2.1 hs.2.2.2.2.2.2.1 hs.2.2.2.2.2.2.2 hR hread hh hmsg h
+
+end PRFRInstance
+
+/-- The instances of the PRF rules that a derivation may use: G.PRF and PRF.R. -/
+inductive PRFRule (D : Decl B) where
+  /-- An instance of G.PRF. -/
+  | gprf (e : PRFInstance D)
+  /-- An instance of PRF.R. -/
+  | right (e : PRFRInstance D)
+
+/-- The semantic hypotheses of an instance of a PRF rule. -/
+@[expose] def PRFRule.Holds : PRFRule D → (Model D → Prop) → (∀ M : Model D, AdvClass M) → Prop
+  | .gprf e, R, C => e.Holds R C
+  | .right e, R, C => e.Holds R C
+
 end SquirrelLogic
