@@ -40,4 +40,5 @@ public import SquirrelLogic.FreshLExamples
 public import SquirrelLogic.FreshLCountermodel
 public import SquirrelLogic.PRFExamples
 public import SquirrelLogic.PRFOracleExamples
+public import SquirrelLogic.Chain
 public import SquirrelLogic.OracleExamples
