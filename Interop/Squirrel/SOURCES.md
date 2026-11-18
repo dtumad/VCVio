@@ -16,5 +16,6 @@ only at a milestone boundary.
 | CCS26 | Hérouard, Jacomme, Koutsos, Lallemand, "Secrecy in Squirrel and the Post-Compromise Security of a Ratchet", CCS 2026 ([ePrint 2026/1912](https://eprint.iacr.org/2026/1912); local `~/Documents/ref/papers/herouard2026ratchet/`) | authors' PDF of 2026-09-07 | `⊬`/`▷`, Figs. 3, 4, 10, 11, App. C |
 | SIG | Baelde, Delaune, Jacomme, Koutsos, Lallemand, "The Squirrel Prover and its Logic", SIGLOG News 2024 (local `~/Documents/ref/papers/baelde2024squirrelsiglog/`) | text copy | overview; fixed traces (lines 536–555) |
 | Tool | [squirrel-prover](https://github.com/squirrel-prover/squirrel-prover) | master `ebef0aca4f` (2026-09-29) | `theories/*.sp`, `documentation/sphinx/source/*.rst`, `examples/secrecy-ccs-2026/` |
+| Spike | The seminar's shallow model of Squirrel's execution semantics and secrecy judgments, `Examples/SquirrelModel/` on branch `dtumad/spike-squirrel-model` of the VCVio fork (not in this tree; Lean v4.35) | commit `ce5dd6f` | comparison with the deep rules (`Secrecy.lean`, `Chain.lean`, ledger L10) |
 
 All links accessed 2026-11-16.

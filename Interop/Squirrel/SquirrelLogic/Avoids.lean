@@ -28,7 +28,7 @@ semantically.
   gives it for the random variable of a closed term.
 
 A decidable syntactic version is the occurrence check of PolyFun's `Term.heads`, which is not at
-VCVio's PolyFun pin (`ea3b297`).
+VCVio's PolyFun pin (`528b3b1f`).
 -/
 
 public section

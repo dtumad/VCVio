@@ -102,7 +102,7 @@ theorem Ty.curry_eq_ofRes {carrier : B → ℕ → Set (List Bool)} {η : ℕ} (
 /-- `2 ^ ⌈log₂ n⌉ ≤ 2n + 1`: rounding up to a power of two costs a factor below two. -/
 theorem two_pow_clog_le (n : ℕ) : 2 ^ Nat.clog 2 n ≤ 2 * n + 1 := by
   rcases Nat.lt_or_ge 1 n with hn | hn
-  · have h := Nat.pow_pred_clog_lt_self (b := 2) one_lt_two hn
+  · have h := Nat.pow_pred_clog_lt_self 2 hn
     have hpos := Nat.clog_pos one_lt_two hn
     obtain ⟨c, hc⟩ := Nat.exists_eq_add_one_of_ne_zero (Nat.pos_iff_ne_zero.1 hpos)
     rw [hc] at h
