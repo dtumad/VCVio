@@ -2234,7 +2234,9 @@ rule, ground right side, Pc-Oracle as a constructor) are new.
 ## M1, part 3b: the hash oracle on the left
 
 This work was done on top of `c89509a87`, in commits `ecdece14c` (the oracle input and PRF.R),
-`fc9d85615` (the derivation constructor and the checks) and the commit that adds these notes.
+`fc9d85615` (PRF.R's derivation constructor and checks), `c6e7206e0` (notes), `5076aca16`
+(PRF.L-sec), `cd4829c71` (PRF.L-sec's constructor, checks and countermodel) and the commit that
+updates these notes.
 Sources: CCS26 Fig. 4 and §3.4 (pp. 7–8), §2.3 (pp. 5–6), App. C.3.1 (pp. 18–21) and App. C.3.2
 (pp. 22–25), the authors' PDF pinned in `../SOURCES.md`.
 
@@ -2299,12 +2301,57 @@ for each candidate `t ∈ m :: calls m`.
   independent of the attacker's output; no lazy-sampling argument about the attacker's view is
   needed (L31).
 
+### PRF.L-sec (`Rules/PRFLeft.lean`)
+
+```
+Valid.nonDed_prfLSec P u v m hg hβ hmg hh hku hkv hkm hpu hpv hpm hfu hfv hfm hR hread hprf
+    hmsg h hsec :
+  Valid R C Θ (.nonDed (Vec.snoc (Vec.snoc (P.closeVec u) P.hashOracle)
+    (P.hashTerm (P.close m))) (P.close v) ho')
+```
+
+from `h : u⃗, o_h^k ⊬ v`, `hsec : u⃗, o_h^k ⊬ m` (`C_sec`) and `hmsg : [ψ^{m,k}_msg(u⃗, v, m)]`
+(`PRFSymbols.psiMsg` at the vector `u⃗, v`), under PRF.R's conditions for `u⃗`, `v` and `m`, with
+polynomial bit blocks also for hashes. `hprf` is the PRF assumption on `leftReduction` and
+`leftFreshReduction`.
+
+- **Per `η`** (`PRFSymbols.leftAdvantage_le`): `deduceAdv g (u⃗, h(m, k), o_h^k) v ≤ Pr[¬ψ_msg] +
+  prfAdv (leftReduction) + prfAdv (leftFreshReduction) + deduceAdv (freshL (swapLast g)) (u⃗,
+  o_h^k) v + 2^⌈log₂ q(η)⌉ · deduceAdv (freshL (swapLast (rwGuess g))) (u⃗, o_h^k) m`, at every `η`
+  where the guess's bits fit above the fresh draw's block. The rule swaps the conclusion's last two
+  entries into CCS26's order (`AdvClass.NonDed.swapLast`).
+- **The reductions.** Phase one compiles `u⃗`, `v` and `m`, logged; the challenge is the oracle at
+  the message (`leftReduction`) or a fresh draw (`leftFreshReduction`); phase two runs the attacker
+  on the values and the challenge, its oracle input answered by the compiled `λx. call x` except
+  at the message, where the challenge answers (`interceptIn`). Success: the attacker computes the
+  secret or queries the message, unless the message was hashed in phase one.
+- **Real worlds.** With the hash as challenge, the intercepting oracle is the keyed hash
+  (`evalWithAnswerFn_simulate_interceptIn`, `reprogram_self`), so the first reduction's success
+  covers the conclusion where `ψ_msg` holds. With a fresh challenge, the reprogrammed oracle runs
+  as the keyed hash until the message is queried (`Machine.run_cons_eq_of_firstArgs`), and a query
+  at the message is one with either oracle (`mem_firstArgs_iff_of_agree`).
+- **The ideal hop is an equality of distributions.** Where the message was not hashed in phase
+  one its value is a fresh draw, and phase two never queries the hash there
+  (`allQueriesSatisfy_interceptIn`), so the cache entry that the first reduction leaves at the
+  message does not matter (`fst_run_evalDistEq_of_avoids`, an induction on the forwarded program).
+  This is where the interception pays: without it the two ideal worlds differ after the attacker
+  queries the message, and an identical-until-bad argument on the stateful lazy sampler is needed.
+- **The fresh draw from the tape.** `update_coin_evalDistEq` moves the key's coordinate and the
+  fresh coin into place; `prEvent_coin_eq_coinAt` reads the coin from a block of the attacker
+  tape above what the attacker and the terms read (FreshL's swap). The attacker with that draw is
+  `freshL (swapLast g)`, a machine on `u⃗, o_h^k`; its queries at the message are bounded by the
+  guess (`prEvent_exists_firstArgs_le` at the vector `u⃗, n`), which is
+  `freshL (swapLast (rwGuess g))` against `u⃗, o_h^k ⊢ m`.
+- **Form (L32).** `ψ_msg` includes `m`'s calls, as in §2.3; Fig. 4 drops them, which App. C.3.1
+  pays for by guessing `A₂`'s call on the message. PRF.L-eq and PRF.L-⊤ are not done.
+
 ### Derivations
 
-`Derivation`'s parameter `prf` now ranges over `PRFRule D`, the instances of G.PRF (`.gprf`) and
-PRF.R (`.right`, `PRFRInstance`), with `PRFRule.Holds`. `nonDedPRFR` is PRF.R's constructor: the
-syntactic side conditions (`PRFRInstance.Syntactic`), the model conditions on `R₀` and the read
-bounds are premises, as for FreshL. `PRFExamples` changes by one constructor name.
+`Derivation`'s parameter `prf` now ranges over `PRFRule D`, the instances of G.PRF (`.gprf`),
+PRF.R (`.right`, `PRFRInstance`) and PRF.L-sec (`.left`, `PRFLInstance`), with `PRFRule.Holds`.
+`nonDedPRFR` and `nonDedPRFLSec` are the constructors: syntactic side conditions, model conditions
+on `R₀` and read bounds are premises, as for FreshL. `PRFExamples` changes by one constructor
+name.
 
 ### Checks (`PRFOracleExamples.lean`)
 
@@ -2313,30 +2360,69 @@ bounds are premises, as for FreshL. `PRFExamples` changes by one constructor nam
 | `chainWorked`, `chainWorked_sound` | FreshR gives `o_h^k ⊬ s`; PRF.R gives `o_h^k ⊬ h(s, k)`; PRF.R at the message `h(s, k)` (two candidates, `h(s, k)` and `s`) gives `o_h^k ⊬ h(h(s, k), k)`: two steps of CCS26 §2's `secrecy_base` |
 | `valid_chainWorked` | in `pmodel` (a perfect PRF), against `AdvClass.all`, every hypothesis of both PRF.R steps holds jointly, so `o_h^k ⊬ h(h(s, k), k)` holds; FreshR does not give it |
 | `inst₁_holds`, `inst₂_holds` | the PRF assumption of both instances, from `pmodel_prfAdv` |
-| `hashOracle_avoids` | the oracle reads only the key's coordinate |
+| `hashOracle_avoids`, `hashOracle_avoids_name` | the oracle reads only the key's coordinate |
+| `leftWorked`, `valid_leftWorked` | PRF.R gives `o_h^k ⊬ h(s, k)`, FreshR `o_h^k ⊬ r`, and PRF.L-sec (secret `h(s, k)`, message `r`) gives `o_h^k, h(r, k) ⊬ h(s, k)`; every hypothesis of both steps holds jointly in `pmodel`, `[s ≠ r]` by `valid_psiL` |
+| `prfLSec_needs_psiMsg` | with secret `h(s, k)` and message `s`: syntactic conditions, PRF assumption, premise (PRF.R) and `C_sec` (FreshR) hold, `ψ_msg` (`s ≠ s`) fails, and `o_h^k, h(s, k) ⊬ h(s, k)` fails (the attacker returns its last input) |
+
+No countermodel to `C_sec` exists: without it the rule is PRF.L-⊤, which App. C.3.1 proves sound
+at a polynomial loss. A countermodel to PRF.R without `ψ_msg` (`u⃗ = h(m, k)`) needs the
+one-wayness of the oracle, `h(m, k), o_h^k ⊬ m`, and is not built (L32).
 
 ### Statements that changed
 
 - `prEvent_faultyAt_le` is derived from `prEvent_exists_firstArgs_le` (statement unchanged).
 - `Derivation`'s parameter `prf : PRFInstance D → Prop` is now `prf : PRFRule D → Prop`;
   `equivPRF` takes `prf (.gprf e)`, and `Derivation.sound` takes `PRFRule.Holds`.
+- `Derivation.lean` imports `Rules/PRFLeft.lean`, which holds `PRFRule`.
 
 ### Build and checks
 
 - **Build.** `LEAN_NUM_THREADS=3 lake build SquirrelLogic` succeeds with no warnings.
+- **Axioms.** The scratch file of step 1b, extended by 40 headlines of this part, prints the axioms
+  of 310 declarations and sweeps all 3006 declarations of the library's modules: only `propext`,
+  `Classical.choice` and `Quot.sound` occur.
 - **Forbidden tactics, comment fences, line length.** No `sorry`, `admit`, `stop` or
   `native_decide`; the fence check passes; no line exceeds 100 characters, and no file 1500 lines.
 
 | File | Content |
 |---|---|
-| `Rules/PRFOracle.lean` (new) | the oracle terms, `kapp`, `arrowIn`, fusion, PRF.R's reductions, the bound, `Valid.nonDed_prfR`, `PRFRInstance`, `PRFRule` |
+| `Rules/PRFOracle.lean` (new) | the oracle terms, `kapp`, `arrowIn`, fusion, PRF.R's reductions, the bound, `Valid.nonDed_prfR`, `PRFRInstance` |
+| `Rules/PRFLeft.lean` (new) | `AdvMachine.swapLast`, `prEvent_coin_eq_coinAt`, `update_coin_evalDistEq`, `interceptIn`, `fst_run_evalDistEq_of_avoids`, PRF.L-sec's reductions, the bound, `Valid.nonDed_prfLSec`, `PRFLInstance`, `PRFRule` |
 | `PRFOracleExamples.lean` (new) | the checks above |
 | `OracleTerm.lean` | `calls_infix`, `mem_calls_of_mem_calls`, `length_calls_lt`, `every_of_mem_calls`, `psiMsgVec` |
 | `Compile.lean` | `exists_mem_calls_of_hashed`, `exists_unhashed` |
 | `Rules/Oracle.lean` | `prEvent_exists_firstArgs_le` |
 | `Derivation.lean` | `PRFRule` as the parameter, `nonDedPRFR` |
 
+### Candidates for VCVio core
+
+`fst_run_evalDistEq_of_avoids` is a fact about VCVio's lazily sampled random function, stated here
+for the forwarded programs of the compiled reading: a program that never queries a point gives the
+same output distribution from two caches that differ only there. The private
+`runLog_eq_of_forall_mem_runLog` (answers agreeing on a run's queries give the same log) belongs
+beside `OracleComp.evalWithAnswerFn_eq_of_forall_mem_runLog` in `RunLog.lean`.
+
+### What part 4 needs
+
+CCS26 §2's toy hash chain for a fixed trace: `frame ⊬ ck` through the simulation lemma
+(`leakage ▷ frame`, then WeakL), `secrecy_base` by unrolled PRF.R steps (`chainWorked` is two of
+them), PRF.L-sec to remove the corrupted key `C = h(⟨ck(pred Corrupt), input⟩, k)` from
+`leakage = (o_h^k, C)` (`leftWorked` is the shape), and WeakL.
+
+- **Messages are pairs.** The chain hashes `⟨ck, input⟩`; the declaration needs a pairing symbol
+  of order at most one, and `input` is an attacker symbol of the frame (`att`), which the compiled
+  reading answers from the attacker tape.
+- **`ψ_msg` of the message in PRF.L-sec.** Removing `C` needs `[ψ_msg(∅, ck(τ), v)]` with
+  `v = ⟨ck(pred Corrupt), input⟩`, whose calls are the earlier links' messages: their inequality
+  with `v` is CCS26's non-collision lemmas, provable for a fixed trace in a model where the links
+  are distinct overwhelmingly (a derivation of `[t′ ≠ v]` from the secrecy of the links by Ineq,
+  or semantically). Fig. 4's form, without `m`'s calls, would avoid this (L32).
+- **The simulation lemma** `leakage ▷ frame` needs a deduction of the frame's hashes through the
+  oracle (`ded_apps` with the oracle applied), and the frame's attacker inputs.
+- **WeakL** exists (`Valid.nonDed_weakL`).
+
 ### Ledger
 
-L6, L26 and L28 are updated; L30 (the oracle as a compiled input, handled by the rule) and L31
-(PRF.R's candidates and order) are new.
+L6, L26 and L28 are updated; L30 (the oracle as a compiled input, handled by the rule), L31
+(PRF.R's candidates and order) and L32 (PRF.L-sec's form, its proof, the variants not done, and
+the countermodels) are new.
