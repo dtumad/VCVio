@@ -225,6 +225,7 @@ public import VCVioTest.ReplayCheckpoint
 public import VCVioTest.ResumptionCompatibility
 public import VCVioTest.Rewinding
 public import VCVioTest.RewindingCost
+public import VCVioTest.RewindingCostTransfer
 public import VCVioTest.RoundByRound.OneRound
 public import VCVioTest.Runtime
 public import VCVioTest.SMDTDSPR
