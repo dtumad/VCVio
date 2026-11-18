@@ -2426,3 +2426,228 @@ them), PRF.L-sec to remove the corrupted key `C = h(⟨ck(pred Corrupt), input�
 L6, L26 and L28 are updated; L30 (the oracle as a compiled input, handled by the rule), L31
 (PRF.R's candidates and order) and L32 (PRF.L-sec's form, its proof, the variants not done, and
 the countermodels) are new.
+
+## M1, part 4: the toy chain
+
+This work was done on top of `bd2343947`, in commits `5f8f3d455` (deduction rules and local
+reasoning), `a4a4da601` (the chain and its derivation), `08148fd61` (the satisfiability model and
+the countermodel) and the commit that adds these notes. Sources: CCS26 §2 (Fig. 1–2, pp. 3–6) and
+App. B, the authors' PDF pinned in `../SOURCES.md`; LICS23 Fig. 10 (PT.Input, p. 27).
+
+### The chain as syntax (`Chain.lean`)
+
+- **Declaration.** Base types `msg` (labelled `large`) and `frm`; names `k : bool → (msg → msg)`
+  and `s : bool → msg` at the honest index `idx`; honest symbols `h`, `pair`, `fst`, `empty`,
+  `empty_f`, `pair_f : frm → msg → frm`; one attacker symbol `att : frm → msg`. The keyed hash is
+  `P : PRFSymbols decl` with messages and hashes of type `msg`.
+- **Traces** (`Chain.Trace`): updates `A` and hash queries `ROM`, latest first, and whether a
+  `Corrupt` follows. Positions are suffixes of the history; `Init` is the empty one.
+- **Terms by recursion on the history**, as terms with explicit calls (`OTerm`), CCS26 Fig. 2:
+  `frame`, `input h = att(frame h)`, `output`, `ck`, the corrupted key `ckC h = h(⟨ck h, input h⟩,
+  k)` and its frame `frameC h`. `frame` inlines `output`: as a mutual definition it compiled to
+  well-founded recursion and lost its definitional unfolding.
+- **`ck` at `ROM`** (L36). Fig. 2 sets `ck(ROM(i)) = empty`; with it, `secrecy_base` fails at an
+  update after a hash query (the attacker computes `input` from the oracle and queries
+  `⟨empty, input⟩`). Here a hash query leaves the key unchanged, as in the spike.
+- **Frames have their own type** (L34). The derivation needs only `fst(⟨x, y⟩) = x` (`FstPair`).
+  In a finite model of that equation `⟨x, y⟩` depends on `x` only (the fibres of `fst` partition the
+  carrier, one per message), and a perfect PRF needs finite messages. So the frame, which must keep
+  the corrupted key for the countermodel, is a nested pair in an infinite type `frm`; no second
+  projection is declared.
+
+### Deduction and local reasoning (`Rules/Deduce.lean`, L37)
+
+| Rule | Lean | Machine |
+|---|---|---|
+| `u⃗ ▷ uᵢ` | `Valid.ded_input` | `AdvMachine.ofInput`: `Machine.project`, the entry applied to its arguments |
+| `u⃗ ▷ f` | `Valid.ded_fn` | `AdvMachine.ofFn`: `Machine.project` answered by `f` |
+| `u⃗ ▷ f`, `u⃗ ▷ t` ⟹ `u⃗ ▷ f t` | `Valid.ded_app` | `AdvMachine.ofApp`: `subst` of the argument's machine |
+| `u⃗ ▷ v`, `[v = v']` ⟹ `u⃗ ▷ v'` | `Valid.ded_rewrite` | the same machine |
+| `[φ]` for `φ` true in every model of `R₀` | `Valid.box_valid` | none |
+| `[φ]`, `[φ ⇒ ψ]` ⟹ `[ψ]` | `Valid.box_mp` | none |
+
+- **The class field.** `Machine.project` is built from `Machine.input` and `Machine.app`; returning
+  an input is the new field `AdvClass.input_mem` (LICS23's PT.Input), which `AdvClass.all` meets
+  with read bound `0` and query bound `1`, and which the FreshL countermodel's generated class
+  already contained. It is stated as a field because returning an input is the most basic
+  operation of LICS23's machines. Whether the other fields already give it is not checked: the
+  guess of a machine that queries an oracle input at the input, with the oracle then answered by
+  a constant, would return it.
+- **Local reasoning** is read semantically. `fst(⟨x, y⟩) = x` is a model condition, made available
+  by `box_valid`; `Derivation.boxOfMap` combines boxes indexed by the elements of a list with one
+  `box_valid` and `box_mp` per element. Its premises are indexed by elements, not by membership
+  proofs, since a derivation cannot be extracted from a membership proof in `Prop`.
+
+### The derivation
+
+```
+Chain.chainPFS (tr : Trace) {hτ} (hs : hτ <:+ tr.hist) :
+  Derivation decl (fun _ => False) ChainPRF ChainR (hyps tr)
+    (.nonDed (Env.cons (P.close tr.frame) Env.empty) (P.close (ck hτ)) order_frame)
+
+Chain.chainPFS_sound (tr : Trace) {hτ} (hs : hτ <:+ tr.hist) (R : Model decl → Prop)
+    (C : ∀ M, AdvClass M) (hR : ∀ M, R M → ChainR M) (hprfR : ∀ h, (instR h).Holds R C)
+    (hprfL : ∀ h h', (instL h h').Holds R C) :
+  Valid R C (hyps tr)
+    (.nonDed (Env.cons (P.close tr.frame) Env.empty) (P.close (ck hτ)) order_frame)
+```
+
+- **`secrecyBase`** (CCS26's `secrecy_base`, `o_h^k ⊬ ck(h)`): FreshR at `Init` (the oracle reads
+  only the key's coordinate, `leak_avoids`); PRF.R at each update (`instR h`, message
+  `⟨ck h, input h⟩`), with `[ψ_msg]` over the empty vector by `box_valid` and the premise from the
+  previous key by WeakR with `dedFst` (`[⟨ck, input⟩] ▷ ck`: `fst` applied to the entry, rewritten
+  by `FstPair`); unchanged at a hash query.
+- **`sim`** (CCS26's `simulate`, `u⃗ ▷ frame(h)` for a vector whose entry is the oracle): `empty_f`,
+  `pair_f`, `empty` by `dedFn` and `dedApp`; `att` by Trans with `dedApps` and `adv(att)`; the
+  oracle applied to the input by `dedInput` and `dedApp`, rewritten to `h(input, k)` by β.
+- **`pfsFrame`**: WeakL from `secrecyBase` and `sim` at any position before `Corrupt`.
+- **`pfsCorrupt`**: PRF.L-sec (`instL h hτ`) removes `C = ckC h` from `(o_h^k, C)`, from
+  `secrecyBase` at `hτ`, `C_sec` (`secMsg`, `secrecyBase` at `h` and WeakR) and `psiL`; WeakL with
+  the simulation of `frameC h` from `(o_h^k, C)` (`pair_f` of `sim` and the entry `C`).
+- **`psiL`**: PRF.L-sec's `ψ_msg` ranges over the call arguments of `ck(hτ)` and of `⟨ck h,
+  input h⟩`, which are the messages of the updates of `h` and the inputs of its hash queries
+  (`mem_calls_psiL`). The former differ from the corrupted message by NoCollision and `fst`; the
+  latter by Ineq (`boxNotEq` of `C_sec` and `o_h^k ▷ input(h′)`), as CCS26 argues on p. 6.
+  `psiL_of_facts` is the local implication, used through `boxOfMap`.
+- **Θ** (`hyps tr`): `adv(att)` always (it gives the read bounds of PRF.R and PRF.L-sec, and
+  `att`'s deduction), and for a corrupting trace the NoCollision lemmas
+  `[ck(h′) ≠ ck(h)]` for the positions `h′` before the updates of `h` (L33).
+- **Side conditions** as folds: `ChainOps` collects the constructors the chain uses, and one
+  induction gives `ψ_key`, `⊢pptm` and first order for every chain term (`instR_syntactic`,
+  `instL_syntactic`); read bounds by `readsPoly_frame`, `readsPoly_ck`, `readsPoly_msgA`.
+
+### Checks (`ChainModel.lean`, `IterateCollision.lean`)
+
+`cmodel`: messages are bitstrings of length `η`, the key a whole uniform function table
+(`PRFExamples.keyEquiv`), `h(x, k) = k(x)`, `⟨x, y⟩ = x`, `fst` the identity, frames all
+bitstrings with `⟨f, x⟩_f = f ++ x`, `empty` and `att` the zero message, attacker tape `2^η` bits.
+
+| Check | Shows |
+|---|---|
+| `cmodel_chainR`, `cmodel_respectsLabels` | the model conditions and the label `large` |
+| `cmodel_prfAdv`, `instR_holds`, `instL_holds` | the PRF assumption of every instance: `h` is a perfect PRF |
+| `valid_advAtt` | `adv(att)`, by `AdvMachine.ofFn` |
+| `denote_ck`, `prEvent_key_iterate_collision_le`, `valid_noCollision` | the keys are the iterates `k^[i](s)`; two of the first `n` coincide with probability at most `n·n/2^η`; every NoCollision lemma holds |
+| `hyps_valid`, `valid_chainPFS` | every hypothesis holds jointly against `AdvClass.all`, so every safe key is secret from the last frame of every trace in `cmodel` |
+| `corrupt_not_secret`, `safety_needed` | with every hypothesis holding, `frameC h ⊬ ckC h` fails: `lastOutput` returns the frame's last output |
+| `prEvent_iterate_collision_le` | generic: iterates of a uniform `g : α → α` repeat among the first `n` with probability at most `n·n/|α|`, from VCVio's `prEvent_tableQueryLog_bad_le` |
+
+Not built: a check that dropping a NoCollision hypothesis breaks `ψ_msg`. In a model where the
+PRF assumption holds the lemmas hold overwhelmingly, so such a check needs a model where the
+hash is not a PRF, and it would show only that `psiL` uses them.
+
+### Against the spike's `prfChainAdv_le`
+
+`Chain`'s module docstring states the comparison. In short: the spike is adaptive and concrete, at
+`t = init`, in a model with a PRF on `K × M` and no collision hypothesis; `chainPFS_sound` is
+derived in the logic, for every fixed trace and every safe key, asymptotic, from the PRF
+assumption on the rules' named reductions, with NoCollision as hypotheses. The per-`η` bounds of the
+rules are not composed into one bound along the derivation.
+
+### Statements that changed
+
+- `AdvClass` has the field `input_mem`; `AdvClass.all` and `FreshLCountermodel.genClass` meet it.
+- `Derivation` has six more constructors (`dedInput`, `dedFn`, `dedApp`, `dedRewrite`, `boxValid`,
+  `boxMP`).
+
+### Problems hit
+
+1. **`rw` with the example's own symbols.** A goal containing `Fn.pair : Fn _` where `decl.Fn _` is
+   expected fails `rw`'s motive check at instance transparency; term-mode `congrArg` and `.trans`
+   chains, and `dcast` along an equality of formulas, work.
+2. **Order proofs are not unified.** `Ty.SecrecyOrder` arguments are propositions, so a `_` for one
+   is never assigned by unification; explicit ascriptions such as
+   `(⟨ho, Nat.zero_le 1⟩ : Ty.SecrecyOrder τs msg)` are needed.
+3. **`nomatch x, y`** again parsed as two discriminants inside anonymous constructors.
+4. **Section variables and recursion.** Inside a recursive definition the included variables are
+   already applied (`ChainOps.every_frame h`), and a definition that does not use an `include`d
+   variable does not take it.
+5. **Defeq that `rfl` closes but `rw` does not**: `Repeats` with its type argument inferred from two
+   defeq types; `exact Iff.rfl` closes it.
+
+### Build and checks
+
+- **Build.** `LEAN_NUM_THREADS=3 lake build SquirrelLogic` succeeds with no warnings.
+- **Axioms.** The scratch file of step 1b, extended by 34 headlines of this part, prints the axioms
+  of 342 declarations and sweeps all 3508 declarations of the library's modules: only `propext`,
+  `Classical.choice` and `Quot.sound` occur.
+- **Forbidden tactics, comment fences, line length.** No `sorry`, `admit`, `stop` or
+  `native_decide`; the fence check passes; no line exceeds 100 characters, and no file 1500 lines.
+
+| File | Content |
+|---|---|
+| `Rules/Deduce.lean` (new) | `Machine.project`, `AdvMachine.ofInput`, `ofFn`, `ofApp`, the deduction laws and rules, `box_valid`, `box_mp` |
+| `Chain.lean` (new) | the declaration, traces, terms, side conditions, `secrecyBase`, `sim`, `psiL`, `pfsFrame`, `pfsCorrupt`, `chainPFS`, `chainPFS_sound`, the comparison with the spike |
+| `IterateCollision.lean` (new) | `iterateQuery`, `iteratesUntil`, `prEvent_iterate_collision_le` |
+| `ChainModel.lean` (new) | `cmodel`, the satisfiability checks, the countermodel |
+| `Indist.lean`, `FreshLCountermodel.lean` | `input_mem` |
+| `Derivation.lean` | the six constructors, `Derivation.boxOfMap` |
+
+### Ledger
+
+L6, L14, L18 and L28 are updated; L33 (NoCollision as hypotheses), L34 (`att` on the frame, the
+type of frames and `fst`), L35 (one derivation per fixed trace), L36 (`ck` at `ROM`) and L37 (the
+deduction rules, `input_mem` and semantic local reasoning) are new.
+
+## M1 summary
+
+M1 asked for CCS26's secrecy logic (§3) on top of the M0 fragment, its rules proved sound against
+the logic's own semantics, and the toy ratchet's forward secrecy derived in it.
+
+### CCS26 rules proved
+
+| Rule | Source | Lean |
+|---|---|---|
+| Neg1, Neg2 | Fig. 3 | `Valid.not_ded`, `Valid.not_nonDed` |
+| Ineq | Fig. 3 | `Valid.box_not_eq` |
+| Trans | Fig. 3 | `Valid.ded_trans` |
+| WeakL, WeakR | Fig. 3 | `Valid.nonDed_weakL`, `Valid.nonDed_weakR` |
+| Rw-Equiv (ground right side) | Fig. 3 | `Valid.nonDed_rwEquiv` |
+| Rw-Oracle (App. C.1's double rule; ground argument and right side) | Fig. 3 | `Valid.nonDed_rwOracle_of`, `Valid.nonDed_rwOracle` |
+| Pc-Oracle | Fig. 3 | `Valid.nonDed_pcOracle` |
+| FreshR | Fig. 11 | `Valid.nonDed_freshR`, `Valid.nonDed_freshR_of_freshAt` |
+| FreshL | Fig. 11 | `Valid.nonDed_freshL`, `Valid.nonDed_freshL_of_readsPoly` |
+| G.PRF (LICS23) | Fig. 11 | `Valid.equiv_prf` |
+| PRF-Simple (derived as CCS26 derives it) | Fig. 11, p. 17 | `Valid.nonDed_prf`, `Derivation.nonDedPRF` |
+| PRF.R | Fig. 4 | `Valid.nonDed_prfR` |
+| PRF.L-sec (§2.3's form) | §2.3, Fig. 4 | `Valid.nonDed_prfLSec` |
+| `▷` from `adv`, and from entries, honest symbols, application, rewriting | §3.1 | `Valid.ded_apps`, `Valid.ded_input`, `Valid.ded_fn`, `Valid.ded_app`, `Valid.ded_rewrite` |
+| local validity, modus ponens under `[·]` | (local reasoning) | `Valid.box_valid`, `Valid.box_mp` |
+
+Each is a `Derivation` constructor (PRF-Simple is derived), sound in `Derivation.sound`, and the
+toy ratchet's forward secrecy is `Chain.chainPFS` with `Chain.chainPFS_sound`.
+
+### Class fields and model conditions
+
+| Field of `AdvClass` | Used by |
+|---|---|
+| `rename_mem`, `subst_mem` | the `∼` rules, Trans, WeakL, WeakR, Rw-Equiv, FreshL, `ded_app` |
+| `app_mem`, `fn_mem`, `input_mem` | FA-App, FA-Fn, `ded_input`, `ded_fn` |
+| `branch_mem`, `const_mem` | If, the case split |
+| `eqTest_mem` | Rw-Equiv |
+| `shift_mem`, `sampler_mem`, `readBound_mem` | FreshL, PRF.L-sec |
+| `queryBound_mem`, `guess_mem` | Rw-Oracle, Pc-Oracle, PRF.R, PRF.L-sec |
+
+| Model condition | Used by |
+|---|---|
+| `Model.LongTapes` | FreshL, Rw-Oracle, Pc-Oracle, PRF-Simple, PRF.R, PRF.L-sec |
+| `Model.PolyCoins` | FreshL (the name's type), Rw-Oracle and Pc-Oracle (the argument type), PRF.R and PRF.L-sec (messages; PRF.L-sec also hashes) |
+| `Model.UniformSampler` | G.PRF, PRF-Simple, PRF.R, PRF.L-sec (the hash type) |
+| the label `large` (`Model.IsLarge`) | FreshR, PRF.R (the hash type) |
+| `Chain.FstPair` | the ratchet |
+
+Every rule's hypotheses are satisfiable jointly with `AdvClass.all` in a model of its checks, and
+the ratchet's hypotheses all hold in `ChainModel.cmodel`.
+
+### What M1 leaves open
+
+- PRF.L-eq and PRF.L-⊤ (L32), and Fig. 4's form of PRF.L, whose `ψ_msg` omits the message's
+  calls (L32).
+- The countermodel to PRF.R without `ψ_msg`, which needs the oracle's one-wayness (L32).
+- L24 (read bounds of λ and local quantifiers), L26 (`ψ_msg` with binders, LICS23's generalised
+  subterms) and L28 (the guess's default value from the sampler).
+- Syntactic freshness, waiting on PolyFun's `Term.heads` at VCVio's pin (L22).
+- No polynomial-time class: the class is a parameter with closure fields (L14).
+- The NoCollision lemmas from collision and pre-image resistance (L33); the induction over traces
+  and an adaptive schedule (L35, M3); a countermodel to Fig. 2's `ck(ROM) = empty` (L36); a
+  concrete bound composed along a derivation.
