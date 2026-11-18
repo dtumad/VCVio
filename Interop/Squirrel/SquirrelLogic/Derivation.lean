@@ -14,6 +14,7 @@ public import SquirrelLogic.Rules.FreshL
 public import SquirrelLogic.Rules.PRF
 public import SquirrelLogic.Rules.Oracle
 public import SquirrelLogic.Rules.PRFLeft
+public import SquirrelLogic.Rules.Deduce
 
 /-!
 # Derivations of global sequents
@@ -44,6 +45,13 @@ The secrecy rules of CCS26 Fig. 3 (Neg1, Neg2, Ineq, Trans, WeakL, WeakR, Rw-Equ
 `adv` (`dedApps`), FreshR and FreshL (Fig. 11) are constructors. Rw-Equiv takes the ground type of
 its right side as a premise, and FreshR the label `large` and the freshness of its closed vector in
 every model (`FTerm.Avoids`), so both are sound in every model.
+
+Deductions are built from the entries of the vector (`dedInput`), honest symbols (`dedFn`),
+application (`dedApp`) and rewriting under an overwhelming equality (`dedRewrite`), with Trans and
+`dedApps` for attacker symbols (`SquirrelLogic.Rules.Deduce`). Local reasoning is read
+semantically: `boxValid` concludes `[φ]` for a local formula true at every tape of every model of
+`R₀`, which is how equations of honest symbols that `R₀` imposes are used, and `boxMP` is modus
+ponens under `[·]`. `Derivation.boxOfList` combines them.
 
 FreshL is sound only over models with long attacker tapes (`Model.LongTapes`); without them it
 fails (`FreshLCountermodel.freshL_needs_longTapes`). So derivations carry a parameter `R₀`, the
@@ -247,6 +255,36 @@ inductive Derivation (D : Decl B) (enc : EncInstance D → Prop) (prf : PRFRule 
       {u : Vec D Γ τs} {f : FTerm D Γ (Ty.arrows τs β)} {ha : Ty.AdvOrder τs β}
       (ho : Ty.SecrecyOrder τs β) :
       Derivation D enc prf R₀ Θ (.adv f ha) → Derivation D enc prf R₀ Θ (.ded u (FTerm.apps f u) ho)
+  /-- `u⃗ ▷ uᵢ`: an entry of order at most one is deducible. -/
+  | dedInput {Γ : List (Kind B)} {Θ : List (Form D Γ)} {τs : List (Ty B)} {τ : Ty B}
+      (u : Vec D Γ τs) (y : ScopedVar τs τ) (ho : Ty.SecrecyOrder τs τ) :
+      Derivation D enc prf R₀ Θ (.ded u (u τ y) ho)
+  /-- `u⃗ ▷ f`: an honest symbol of order at most one is deducible. -/
+  | dedFn {Γ : List (Kind B)} {Θ : List (Form D Γ)} {τs : List (Ty B)} {τ : Ty B}
+      (u : Vec D Γ τs) (f : D.Fn τ) (ho : Ty.SecrecyOrder τs τ) :
+      Derivation D enc prf R₀ Θ (.ded u (FTerm.fn f) ho)
+  /-- From `u⃗ ▷ f` and `u⃗ ▷ t`, `u⃗ ▷ f t`. -/
+  | dedApp {Γ : List (Kind B)} {Θ : List (Form D Γ)} {τs : List (Ty B)} {a b : Ty B}
+      {u : Vec D Γ τs} {f : FTerm D Γ (.arrow a b)} {t : FTerm D Γ a}
+      {hof : Ty.SecrecyOrder τs (.arrow a b)} {hot : Ty.SecrecyOrder τs a}
+      (ho : Ty.SecrecyOrder τs b) :
+      Derivation D enc prf R₀ Θ (.ded u f hof) → Derivation D enc prf R₀ Θ (.ded u t hot) →
+      Derivation D enc prf R₀ Θ (.ded u (FTerm.app f t) ho)
+  /-- From `u⃗ ▷ v` and `[v = v']`, `u⃗ ▷ v'`. -/
+  | dedRewrite {Γ : List (Kind B)} {Θ : List (Form D Γ)} {τs : List (Ty B)} {β : Ty B}
+      {u : Vec D Γ τs} {v v' : FTerm D Γ β} {ho : Ty.SecrecyOrder τs β} :
+      Derivation D enc prf R₀ Θ (.ded u v ho) → Derivation D enc prf R₀ Θ (.box (FTerm.eq v v')) →
+      Derivation D enc prf R₀ Θ (.ded u v' ho)
+  /-- `[φ]` for a local formula true at every tape of every model of `R₀`: local reasoning, read
+  semantically. -/
+  | boxValid {Γ : List (Kind B)} {Θ : List (Form D Γ)} (φ : FTerm D Γ .bool) :
+      (∀ M : Model D, M.RespectsLabels → R₀ M → ∀ (C : AdvClass M) env η ρ,
+        φ.denote (fullInterp M C) env η ρ = true) →
+      Derivation D enc prf R₀ Θ (.box φ)
+  /-- Modus ponens under `[·]`: from `[φ]` and `[φ ⇒ ψ]`, `[ψ]`. -/
+  | boxMP {Γ : List (Kind B)} {Θ : List (Form D Γ)} {φ ψ : FTerm D Γ .bool} :
+      Derivation D enc prf R₀ Θ (.box φ) → Derivation D enc prf R₀ Θ (.box (FTerm.imp φ ψ)) →
+      Derivation D enc prf R₀ Θ (.box ψ)
   /-- FreshR (CCS26 Fig. 11), for a closed vector that avoids the name's coordinate in every
   model. -/
   | nonDedFreshR {Θ : List (Form D [])} {τs : List (Ty B)} {a b : Ty B} (u : Vec D [] τs)
@@ -380,6 +418,15 @@ theorem Derivation.sound {enc : EncInstance D → Prop} {prf : PRFRule D → Pro
   | _, _, _, .nonDedRwEquiv hβ d₁ d₂ =>
     Valid.nonDed_rwEquiv hβ (d₁.sound R C henc hprf hR) (d₂.sound R C henc hprf hR)
   | _, _, _, .dedApps _ d => Valid.ded_apps (d.sound R C henc hprf hR)
+  | _, _, _, .dedInput _ y _ => Valid.ded_input y
+  | _, _, _, .dedFn _ f _ => Valid.ded_fn f
+  | _, _, _, .dedApp _ d₁ d₂ =>
+    Valid.ded_app (d₁.sound R C henc hprf hR) (d₂.sound R C henc hprf hR)
+  | _, _, _, .dedRewrite d₁ d₂ =>
+    Valid.ded_rewrite (d₁.sound R C henc hprf hR) (d₂.sound R C henc hprf hR)
+  | _, _, _, .boxValid _ h =>
+    Valid.box_valid fun M hl hRM env η ρ => h M hl (hR M hRM) (C M) env η ρ
+  | _, _, _, .boxMP d₁ d₂ => Valid.box_mp (d₁.sound R C henc hprf hR) (d₂.sound R C henc hprf hR)
   | _, _, _, .nonDedFreshR _ n i _ hl hf => Valid.nonDed_freshR n i hl fun M _ => hf M
   | _, _, _, .nonDedFreshL _ n i hl hr hf d =>
     Valid.nonDed_freshL n i (fun M hRM => hl M (hR M hRM))
@@ -451,5 +498,25 @@ def Derivation.allInst {enc : EncInstance D → Prop} {prf : PRFRule D → Prop}
     {τ : Ty B} (G : Form D (.loc τ :: Γ)) (t : FTerm D Γ τ) :
     Derivation D enc prf R₀ [.all τ G] (G.substOne t) :=
   .allLeft t (.ax List.mem_cons_self)
+
+/-- `[χ]` from derivations of `[φ]` for each `φ` of a list, when `χ` is true at every tape where
+they all are, in every model of `R₀`: `boxValid` of `φ₁ ⇒ (… ⇒ (φₙ ⇒ χ))`, then `boxMP` once per
+formula. -/
+def Derivation.boxOfList {enc : EncInstance D → Prop} {prf : PRFRule D → Prop}
+    {R₀ : Model D → Prop} {Γ : List (Kind B)} {Θ : List (Form D Γ)} :
+    (φs : List (FTerm D Γ .bool)) → ((φ : FTerm D Γ .bool) → φ ∈ φs →
+      Derivation D enc prf R₀ Θ (.box φ)) → {χ : FTerm D Γ .bool} →
+    (∀ M : Model D, M.RespectsLabels → R₀ M → ∀ (C : AdvClass M) env η ρ,
+      (∀ φ ∈ φs, φ.denote (fullInterp M C) env η ρ = true) →
+        χ.denote (fullInterp M C) env η ρ = true) →
+    Derivation D enc prf R₀ Θ (.box χ)
+  | [], _, χ, h => .boxValid χ fun M hl hR C env η ρ => h M hl hR C env η ρ fun _ h => nomatch h
+  | φ :: φs, ds, _, h => .boxMP (ds φ List.mem_cons_self)
+      (Derivation.boxOfList φs (fun ψ hψ => ds ψ (List.mem_cons_of_mem _ hψ))
+        fun M hl hR C env η ρ hall => by
+          simp only [FTerm.imp, FTerm.denote_ite, FTerm.denote_tt]
+          cases hφ : φ.denote (fullInterp M C) env η ρ
+          · rfl
+          · exact h M hl hR C env η ρ (List.forall_mem_cons.2 ⟨hφ, hall⟩))
 
 end SquirrelLogic
