@@ -28,6 +28,7 @@ public import SquirrelLogic.Rules.PRF
 public import SquirrelLogic.Rules.Oracle
 public import SquirrelLogic.Rules.PRFOracle
 public import SquirrelLogic.Rules.PRFLeft
+public import SquirrelLogic.Rules.Deduce
 public import SquirrelLogic.Derivation
 public import SquirrelLogic.Examples
 public import SquirrelLogic.TwoTimePad
