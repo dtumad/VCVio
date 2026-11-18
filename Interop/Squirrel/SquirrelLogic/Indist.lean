@@ -212,6 +212,12 @@ structure AdvClass (M : Model D) where
   `PureCertificate`). -/
   fn_mem {τ : Ty B} {τs : List (Ty B)} {β : Ty B} (f : D.Fn τ) {A : Machine M (τ :: τs) β} :
     mem A → mem (A.fn f)
+  /-- Returning a Boolean or base input (`Machine.input`): LICS23's PT.Input (Fig. 10, p. 27), and
+  with `app_mem`, `fn_mem` and `subst_mem` the deductions of inputs, honest symbols and
+  applications (`Valid.ded_input`, `Valid.ded_fn`, `Valid.ded_app`). Polynomial time: one query,
+  whose answer is returned (VCVio's `PureCertificate` after the query). -/
+  input_mem {τs : List (Ty B)} {a : Ty B} (y : ScopedVar τs a) (ha : a.IsGround) :
+    mem (Machine.input y ha)
   /-- Branching on a Boolean input (`Machine.branch`): If (`AdvClass.ite_mem`) and the case split
   (`AdvClass.guard_mem`). Polynomial time: one query, then either machine (`IsOraclePPTBy.bind`
   with a two-way continuation). -/
@@ -285,6 +291,8 @@ meets every closure field. -/
     (hq.subst hq').mono fun η => by simp⟩
   app_mem ha := fun ⟨⟨p, hp⟩, q, hq⟩ => ⟨⟨p, hp.app ha⟩, q * 2, (hq.app ha).mono fun η => by simp⟩
   fn_mem f := fun ⟨⟨p, hp⟩, q, hq⟩ => ⟨⟨p, hp.fn f⟩, q, hq.fn f⟩
+  input_mem y ha := ⟨⟨0, Machine.readsBelow_input y ha⟩, 1,
+    (Machine.queryBound_input y ha).mono fun η => by simp⟩
   branch_mem := fun ⟨⟨p, hp⟩, q, hq⟩ ⟨⟨p', hp'⟩, q', hq'⟩ => ⟨⟨p + p',
     (hp.mono fun η => by simp).branch (hp'.mono fun η => by simp)⟩, 1 + (q + q'),
     (hq.branch hq').mono fun η => by simp⟩
