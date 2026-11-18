@@ -1,0 +1,523 @@
+/-
+Copyright (c) 2026 Devon Tuma. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Devon Tuma
+-/
+module
+
+public import SquirrelLogic.Rules.Local
+public import SquirrelLogic.Rules.Equiv
+public import SquirrelLogic.Rules.Enc
+public import SquirrelLogic.Rules.Rename
+public import SquirrelLogic.Rules.Fresh
+public import SquirrelLogic.Rules.FreshL
+public import SquirrelLogic.Rules.PRF
+public import SquirrelLogic.Rules.Oracle
+public import SquirrelLogic.Rules.PRFLeft
+public import SquirrelLogic.Rules.Deduce
+
+/-!
+# Derivations of global sequents
+
+Derivations in the fragment of LICS23 proved sound in `SquirrelLogic.Global` and
+`SquirrelLogic.Rules`, as data: each constructor is one rule, indexed by the context, the
+hypotheses and the conclusion. `Derivation.sound` maps every derivation to validity over every
+model restriction and every class of machines, one rule lemma per constructor. Name renaming is the
+constructor for a bijection of names (`Valid.equiv_renameNames_of_equiv`), which holds in every
+model. BC14's If1 (`equivIf1`) is sound by the case split (`equivCaseStudy`), but is a
+constructor of its own: deriving it would rewrite `if c' then z else z` to `z`, and the fragment
+has no rule proving that local equality.
+
+The encryption rule (`Valid.equiv_enc`) is a constructor, at the instances that the parameter
+`enc` admits; its syntactic side condition, distinct key and coin names, is a premise of the
+constructor. `Derivation.sound` takes the semantic hypotheses of each admitted instance
+(`EncInstance.Holds`). With `enc` empty, derivations are those of the structural fragment.
+G.PRF (`Valid.equiv_prf`), PRF.R (`Valid.nonDed_prfR`) and PRF.L-sec (`Valid.nonDed_prfLSec`)
+are constructors in the same way, at the instances that the parameter `prf` admits (`PRFRule`;
+`equivPRF`, `nonDedPRFR`, `nonDedPRFLSec`), with their syntactic side conditions and their
+`[ψ_msg]` as premises; `Derivation.sound` takes the semantic hypotheses of each admitted instance
+(`PRFRule.Holds`). The model conditions and read bounds of PRF.R and PRF.L-sec are premises, as
+for FreshL.
+PRF-Simple is derived from G.PRF, Perm, FreshL and Rw-Equiv as CCS26 derives it
+(`Derivation.nonDedPRF`), so it is not a constructor.
+
+The secrecy rules of CCS26 Fig. 3 (Neg1, Neg2, Ineq, Trans, WeakL, WeakR, Rw-Equiv), `▷` from
+`adv` (`dedApps`), FreshR and FreshL (Fig. 11) are constructors. Rw-Equiv takes the ground type of
+its right side as a premise, and FreshR the label `large` and the freshness of its closed vector in
+every model (`FTerm.Avoids`), so both are sound in every model.
+
+Deductions are built from the entries of the vector (`dedInput`), honest symbols (`dedFn`),
+application (`dedApp`) and rewriting under an overwhelming equality (`dedRewrite`), with Trans and
+`dedApps` for attacker symbols (`SquirrelLogic.Rules.Deduce`). Local reasoning is read
+semantically: `boxValid` concludes `[φ]` for a local formula true at every tape of every model of
+`R₀`, which is how equations of honest symbols that `R₀` imposes are used, and `boxMP` is modus
+ponens under `[·]`. `Derivation.boxOfMap` combines them.
+
+FreshL is sound only over models with long attacker tapes (`Model.LongTapes`); without them it
+fails (`FreshLCountermodel.freshL_needs_longTapes`). So derivations carry a parameter `R₀`, the
+restriction on models that their rules assume: FreshL's constructor takes as premises that `R₀`
+gives long tapes and polynomial bit blocks for the name's type, and that the terms read the
+attacker tape below a polynomial in every model of `R₀` and of `Θ`. `Derivation.sound` holds over
+every restriction `R` contained in `R₀`. Derivations that do not use FreshL take `R₀` to be every
+model.
+
+Rw-Oracle (CCS26 Fig. 3, as App. C.1's double rule) and Pc-Oracle are constructors over models
+where `R₀` gives long attacker tapes and polynomial bit blocks for the oracles' argument type, with
+the read bounds of their terms as premises, as for FreshL. Pc-Oracle is a constructor because its
+derivation from Rw-Oracle concludes the agreement premise by Ineq under a hypothesis, which this
+fragment has no rule to introduce; its soundness is that derivation, made semantically
+(`AdvClass.NonDed.pcOracle`).
+
+Formulas carry the order bounds of CSF24 and CCS26 (`Ty.IndistOrder`, `Ty.AdvOrder`,
+`Ty.SecrecyOrder`). A constructor's conclusion carries the bound derived from its premises', and
+a constructor that adds an entry or starts from no premise takes the conclusion's bound.
+-/
+
+public section
+
+namespace SquirrelLogic
+
+open IPFunctor IPFunctor.ScopedSignature
+
+variable {B : Type}
+
+/-- Derivations of `Θ ⊢ F` in the context `Γ`, using the encryption rule at the instances that
+`enc` admits and the PRF rules at the instances that `prf` admits, over the models of `R₀`. -/
+inductive Derivation (D : Decl B) (enc : EncInstance D → Prop) (prf : PRFRule D → Prop)
+    (R₀ : Model D → Prop) :
+    {Γ : List (Kind B)} → List (Form D Γ) → Form D Γ → Type
+  /-- G.Axiom. -/
+  | ax {Γ : List (Kind B)} {Θ : List (Form D Γ)} {F : Form D Γ} :
+      F ∈ Θ → Derivation D enc prf R₀ Θ F
+  /-- G.Weak. -/
+  | weaken {Γ : List (Kind B)} {Θ Θ' : List (Form D Γ)} {F : Form D Γ} :
+      Derivation D enc prf R₀ Θ F → Θ ⊆ Θ' → Derivation D enc prf R₀ Θ' F
+  /-- G.Cut. -/
+  | cut {Γ : List (Kind B)} {Θ : List (Form D Γ)} {F F' : Form D Γ} :
+      Derivation D enc prf R₀ Θ F' → Derivation D enc prf R₀ (F' :: Θ) F →
+      Derivation D enc prf R₀ Θ F
+  /-- G.L-∀̃. -/
+  | allLeft {Γ : List (Kind B)} {Θ : List (Form D Γ)} {F : Form D Γ} {τ : Ty B}
+      {G : Form D (.loc τ :: Γ)} (t : FTerm D Γ τ) :
+      Derivation D enc prf R₀ (G.substOne t :: Θ) F → Derivation D enc prf R₀ (.all τ G :: Θ) F
+  /-- G.R-∀̃. -/
+  | allRight {Γ : List (Kind B)} {Θ : List (Form D Γ)} {τ : Ty B} {G : Form D (.loc τ :: Γ)} :
+      Derivation D enc prf R₀ (Θ.map (Term.weaken · (.loc τ))) G →
+      Derivation D enc prf R₀ Θ (.all τ G)
+  /-- L.ByGlob, with the local sequent unfolded. -/
+  | byGlob {Γ : List (Kind B)} {Θ : List (Form D Γ)} {φ : FTerm D Γ .bool}
+      (Γl : List (FTerm D Γ .bool)) :
+      Derivation D enc prf R₀ Θ (.box φ) → Derivation D enc prf R₀ Θ (.box (.imp (.conj Γl) φ))
+  /-- G.ByLoc, with the local sequent unfolded. -/
+  | byLoc {Γ : List (Kind B)} {Θ : List (Form D Γ)} {φ : FTerm D Γ .bool} :
+      Derivation D enc prf R₀ Θ (.box (.imp (.conj []) φ)) → Derivation D enc prf R₀ Θ (.box φ)
+  /-- L.R-∀, with the local sequents unfolded. -/
+  | localAll {Γ : List (Kind B)} {Θ : List (Form D Γ)} {τ : Ty B} {φ : FTerm D (.loc τ :: Γ) .bool}
+      (Γl : List (FTerm D Γ .bool)) :
+      Derivation D enc prf R₀ (Θ.map (Term.weaken · (.loc τ)))
+        (.box (.imp (.conj (Γl.map (Term.weaken · (.loc τ)))) φ)) →
+      Derivation D enc prf R₀ Θ (.box (.imp (.conj Γl) (FTerm.all φ)))
+  /-- Refl. -/
+  | equivRefl {Γ : List (Kind B)} {Θ : List (Form D Γ)} {τs : List (Ty B)} (u : Vec D Γ τs)
+      (ho : Ty.IndistOrder τs) : Derivation D enc prf R₀ Θ (.equiv u u ho)
+  /-- Sym. -/
+  | equivSymm {Γ : List (Kind B)} {Θ : List (Form D Γ)} {τs : List (Ty B)} {u v : Vec D Γ τs}
+      {ho : Ty.IndistOrder τs} :
+      Derivation D enc prf R₀ Θ (.equiv u v ho) → Derivation D enc prf R₀ Θ (.equiv v u ho)
+  /-- Trans. -/
+  | equivTrans {Γ : List (Kind B)} {Θ : List (Form D Γ)} {τs : List (Ty B)}
+      {u v w : Vec D Γ τs} {ho : Ty.IndistOrder τs} :
+      Derivation D enc prf R₀ Θ (.equiv u v ho) → Derivation D enc prf R₀ Θ (.equiv v w ho) →
+      Derivation D enc prf R₀ Θ (.equiv u w ho)
+  /-- G.Equiv:FA-App. -/
+  | equivApp {Γ : List (Kind B)} {Θ : List (Form D Γ)} {τs : List (Ty B)} {u v : Vec D Γ τs}
+      {a b : Ty B} {t s : FTerm D Γ (.arrow a b)} {t' s' : FTerm D Γ a}
+      {ho : Ty.IndistOrder (.arrow a b :: a :: τs)} :
+      Derivation D enc prf R₀ Θ
+        (.equiv (Env.cons t (Env.cons t' u)) (Env.cons s (Env.cons s' v)) ho) →
+      Derivation D enc prf R₀ Θ
+        (.equiv (Env.cons (FTerm.app t t') u) (Env.cons (FTerm.app s s') v) ho.app)
+  /-- FA-Fn. -/
+  | equivFn {Γ : List (Kind B)} {Θ : List (Form D Γ)} {τs : List (Ty B)} {u v : Vec D Γ τs}
+      {τ : Ty B} (ho : Ty.IndistOrder (τ :: τs)) (f : D.Fn τ) :
+      Derivation D enc prf R₀ Θ (.equiv u v ho.tail) →
+      Derivation D enc prf R₀ Θ (.equiv (Env.cons (FTerm.fn f) u) (Env.cons (FTerm.fn f) v) ho)
+  /-- G.Equiv:FA-Adv. -/
+  | equivAdv {Γ : List (Kind B)} {Θ : List (Form D Γ)} {τs : List (Ty B)} {u v : Vec D Γ τs}
+      {τs₀ : List (Ty B)} {β : Ty B} {t : FTerm D Γ (Ty.arrows τs₀ β)} {ha : Ty.AdvOrder τs₀ β}
+      (ho : Ty.IndistOrder (Ty.arrows τs₀ β :: τs)) :
+      Derivation D enc prf R₀ Θ (.adv t ha) → Derivation D enc prf R₀ Θ (.equiv u v ho.tail) →
+      Derivation D enc prf R₀ Θ (.equiv (Env.cons t u) (Env.cons t v) ho)
+  /-- Restr. -/
+  | equivTail {Γ : List (Kind B)} {Θ : List (Form D Γ)} {τs : List (Ty B)} {u v : Vec D Γ τs}
+      {τ : Ty B} {t s : FTerm D Γ τ} {ho : Ty.IndistOrder (τ :: τs)} :
+      Derivation D enc prf R₀ Θ (.equiv (Env.cons t u) (Env.cons s v) ho) →
+      Derivation D enc prf R₀ Θ (.equiv u v ho.tail)
+  /-- Dup. -/
+  | equivDup {Γ : List (Kind B)} {Θ : List (Form D Γ)} {τs : List (Ty B)} {u v : Vec D Γ τs}
+      {τ : Ty B} {t s : FTerm D Γ τ} {ho : Ty.IndistOrder (τ :: τs)} :
+      Derivation D enc prf R₀ Θ (.equiv (Env.cons t u) (Env.cons s v) ho) →
+      Derivation D enc prf R₀ Θ
+        (.equiv (Env.cons t (Env.cons t u)) (Env.cons s (Env.cons s v)) ho.dup)
+  /-- If. -/
+  | equivIte {Γ : List (Kind B)} {Θ : List (Form D Γ)} {τs : List (Ty B)} {u v : Vec D Γ τs}
+      {a : Ty B} {c c' : FTerm D Γ .bool} {t t' s s' : FTerm D Γ a}
+      {ho : Ty.IndistOrder (.bool :: a :: a :: τs)} :
+      Derivation D enc prf R₀ Θ (.equiv (Env.cons c (Env.cons t (Env.cons t' u)))
+        (Env.cons c' (Env.cons s (Env.cons s' v))) ho) →
+      Derivation D enc prf R₀ Θ
+        (.equiv (Env.cons (FTerm.ite c t t') u) (Env.cons (FTerm.ite c' s s') v) ho.ite)
+  /-- G.Case-Study:ITE (LICS23 Fig. 8). -/
+  | equivCaseStudy {Γ : List (Kind B)} {Θ : List (Form D Γ)} {τs : List (Ty B)} {u v : Vec D Γ τs}
+      {a : Ty B} {c c' : FTerm D Γ .bool} {t t' s s' : FTerm D Γ a}
+      {ho : Ty.IndistOrder (.bool :: a :: τs)} :
+      Derivation D enc prf R₀ Θ
+        (.equiv (Env.cons c (Env.cons t u)) (Env.cons c' (Env.cons s v)) ho) →
+      Derivation D enc prf R₀ Θ
+        (.equiv (Env.cons c (Env.cons t' u)) (Env.cons c' (Env.cons s' v)) ho) →
+      Derivation D enc prf R₀ Θ
+        (.equiv (Env.cons (FTerm.ite c t t') u) (Env.cons (FTerm.ite c' s s') v) ho.tail)
+  /-- If1 (BC14 Fig. 2). -/
+  | equivIf1 {Γ : List (Kind B)} {Θ : List (Form D Γ)} {τs : List (Ty B)} {u v : Vec D Γ τs}
+      {a : Ty B} {c c' : FTerm D Γ .bool} {x y z : FTerm D Γ a}
+      {ho : Ty.IndistOrder (.bool :: a :: τs)} :
+      Derivation D enc prf R₀ Θ
+        (.equiv (Env.cons c (Env.cons x u)) (Env.cons c' (Env.cons z v)) ho) →
+      Derivation D enc prf R₀ Θ
+        (.equiv (Env.cons c (Env.cons y u)) (Env.cons c' (Env.cons z v)) ho) →
+      Derivation D enc prf R₀ Θ (.equiv (Env.cons (FTerm.ite c x y) u) (Env.cons z v) ho.tail)
+  /-- Rewriting an entry under an overwhelming equality. -/
+  | equivRewrite {Γ : List (Kind B)} {Θ : List (Form D Γ)} {τs : List (Ty B)} {u : Vec D Γ τs}
+      {τ : Ty B} {t t' : FTerm D Γ τ} {w : Vec D Γ (τ :: τs)} {ho : Ty.IndistOrder (τ :: τs)} :
+      Derivation D enc prf R₀ Θ (.box (FTerm.eq t t')) →
+      Derivation D enc prf R₀ Θ (.equiv (Env.cons t' u) w ho) →
+      Derivation D enc prf R₀ Θ (.equiv (Env.cons t u) w ho)
+  /-- Eq1 (BC14 Fig. 2). -/
+  | equivEqSelf {Γ : List (Kind B)} {Θ : List (Form D Γ)} {τs : List (Ty B)} {τ : Ty B}
+      (t : FTerm D Γ τ) (u : Vec D Γ τs) (ho : Ty.IndistOrder (.bool :: τs)) :
+      Derivation D enc prf R₀ Θ (.equiv (Env.cons (FTerm.eq t t) u) (Env.cons FTerm.tt u) ho)
+  /-- Restr and Perm (BC14 Fig. 2): reindexing both vectors. -/
+  | equivRename {Γ : List (Kind B)} {Θ : List (Form D Γ)} {τs τs' : List (Ty B)}
+      {u v : Vec D Γ τs} {ho : Ty.IndistOrder τs} (r : Renaming τs' τs) :
+      Derivation D enc prf R₀ Θ (.equiv u v ho) →
+      Derivation D enc prf R₀ Θ (.equiv (Env.rename r u) (Env.rename r v) (ho.rename r))
+  /-- Name renaming along a bijection of names, for a closed vector. -/
+  | equivRenameNames {Θ : List (Form D [])} {τs : List (Ty B)}
+      (π : ∀ {a b : Ty B}, D.Name a b ≃ D.Name a b) (u : Vec D [] τs) (ho : Ty.IndistOrder τs) :
+      Derivation D enc prf R₀ Θ (.equiv u (u.renameNames fun n => π n) ho)
+  /-- Encryption from one-time IND-CPA, at an admitted instance with distinct key and coin
+  names. -/
+  | equivEnc {Θ : List (Form D [])} (e : EncInstance D) : enc e →
+      e.E.keyName ≠ e.E.coinName →
+      Derivation D enc prf R₀ Θ (.equiv (e.E.challenge e.m₀ e.u) (e.E.challenge e.m₁ e.u) e.order)
+  /-- Neg1 (CCS26 Fig. 3). -/
+  | notDed {Γ : List (Kind B)} {Θ : List (Form D Γ)} {τs : List (Ty B)} {β : Ty B}
+      {u : Vec D Γ τs} {v : FTerm D Γ β} {ho : Ty.SecrecyOrder τs β} :
+      Derivation D enc prf R₀ Θ (.nonDed u v ho) → Derivation D enc prf R₀ Θ (.not (.ded u v ho))
+  /-- Neg2 (CCS26 Fig. 3). -/
+  | notNonDed {Γ : List (Kind B)} {Θ : List (Form D Γ)} {τs : List (Ty B)} {β : Ty B}
+      {u : Vec D Γ τs} {v : FTerm D Γ β} {ho : Ty.SecrecyOrder τs β} :
+      Derivation D enc prf R₀ Θ (.ded u v ho) → Derivation D enc prf R₀ Θ (.not (.nonDed u v ho))
+  /-- Ineq (CCS26 Fig. 3). -/
+  | boxNotEq {Γ : List (Kind B)} {Θ : List (Form D Γ)} {τs : List (Ty B)} {β : Ty B}
+      {u : Vec D Γ τs} {v w : FTerm D Γ β} {ho : Ty.SecrecyOrder τs β} :
+      Derivation D enc prf R₀ Θ (.nonDed u v ho) → Derivation D enc prf R₀ Θ (.ded u w ho) →
+      Derivation D enc prf R₀ Θ (.box (FTerm.not (FTerm.eq v w)))
+  /-- Trans (CCS26 Fig. 3). -/
+  | dedTrans {Γ : List (Kind B)} {Θ : List (Form D Γ)} {τs : List (Ty B)} {β γ : Ty B}
+      {u : Vec D Γ τs} {v : FTerm D Γ β} {w : FTerm D Γ γ} {ho₁ : Ty.SecrecyOrder τs β}
+      {ho₂ : Ty.SecrecyOrder [β] γ} :
+      Derivation D enc prf R₀ Θ (.ded u v ho₁) →
+      Derivation D enc prf R₀ Θ (.ded (Env.cons v Env.empty) w ho₂) →
+      Derivation D enc prf R₀ Θ (.ded u w ⟨ho₁.1, ho₂.2⟩)
+  /-- WeakL (CCS26 Fig. 3). -/
+  | nonDedWeakL {Γ : List (Kind B)} {Θ : List (Form D Γ)} {τs : List (Ty B)} {β γ : Ty B}
+      {u : Vec D Γ τs} {v : FTerm D Γ β} {w : FTerm D Γ γ} {ho₁ : Ty.SecrecyOrder τs γ}
+      {ho₂ : Ty.SecrecyOrder τs β} :
+      Derivation D enc prf R₀ Θ (.nonDed u w ho₁) → Derivation D enc prf R₀ Θ (.ded u v ho₂) →
+      Derivation D enc prf R₀ Θ (.nonDed (Env.cons v Env.empty) w ⟨.single ho₂.2, ho₁.2⟩)
+  /-- WeakR (CCS26 Fig. 3). -/
+  | nonDedWeakR {Γ : List (Kind B)} {Θ : List (Form D Γ)} {τs : List (Ty B)} {β γ : Ty B}
+      {u : Vec D Γ τs} {v : FTerm D Γ β} {w : FTerm D Γ γ} {ho₁ : Ty.SecrecyOrder τs β}
+      {ho₂ : Ty.SecrecyOrder [γ] β} :
+      Derivation D enc prf R₀ Θ (.nonDed u v ho₁) →
+      Derivation D enc prf R₀ Θ (.ded (Env.cons w Env.empty) v ho₂) →
+      Derivation D enc prf R₀ Θ (.nonDed u w ⟨ho₁.1, ho₂.1.head⟩)
+  /-- Rw-Equiv (CCS26 Fig. 3), for a right side of Boolean or base type. -/
+  | nonDedRwEquiv {Γ : List (Kind B)} {Θ : List (Form D Γ)} {τs : List (Ty B)} {β : Ty B}
+      {u₁ u₂ : Vec D Γ τs} {v₁ v₂ : FTerm D Γ β} {ho : Ty.SecrecyOrder τs β}
+      {hoE : Ty.IndistOrder (τs ++ [β])} : β.IsGround →
+      Derivation D enc prf R₀ Θ (.nonDed u₂ v₂ ho) →
+      Derivation D enc prf R₀ Θ (.equiv (Vec.snoc u₁ v₁) (Vec.snoc u₂ v₂) hoE) →
+      Derivation D enc prf R₀ Θ (.nonDed u₁ v₁ ho)
+  /-- `u⃗ ▷ f(u⃗)` from `adv(f)`. -/
+  | dedApps {Γ : List (Kind B)} {Θ : List (Form D Γ)} {τs : List (Ty B)} {β : Ty B}
+      {u : Vec D Γ τs} {f : FTerm D Γ (Ty.arrows τs β)} {ha : Ty.AdvOrder τs β}
+      (ho : Ty.SecrecyOrder τs β) :
+      Derivation D enc prf R₀ Θ (.adv f ha) → Derivation D enc prf R₀ Θ (.ded u (FTerm.apps f u) ho)
+  /-- `u⃗ ▷ uᵢ`: an entry of order at most one is deducible. -/
+  | dedInput {Γ : List (Kind B)} {Θ : List (Form D Γ)} {τs : List (Ty B)} {τ : Ty B}
+      (u : Vec D Γ τs) (y : ScopedVar τs τ) (ho : Ty.SecrecyOrder τs τ) :
+      Derivation D enc prf R₀ Θ (.ded u (u τ y) ho)
+  /-- `u⃗ ▷ f`: an honest symbol of order at most one is deducible. -/
+  | dedFn {Γ : List (Kind B)} {Θ : List (Form D Γ)} {τs : List (Ty B)} {τ : Ty B}
+      (u : Vec D Γ τs) (f : D.Fn τ) (ho : Ty.SecrecyOrder τs τ) :
+      Derivation D enc prf R₀ Θ (.ded u (FTerm.fn f) ho)
+  /-- From `u⃗ ▷ f` and `u⃗ ▷ t`, `u⃗ ▷ f t`. -/
+  | dedApp {Γ : List (Kind B)} {Θ : List (Form D Γ)} {τs : List (Ty B)} {a b : Ty B}
+      {u : Vec D Γ τs} {f : FTerm D Γ (.arrow a b)} {t : FTerm D Γ a}
+      {hof : Ty.SecrecyOrder τs (.arrow a b)} {hot : Ty.SecrecyOrder τs a}
+      (ho : Ty.SecrecyOrder τs b) :
+      Derivation D enc prf R₀ Θ (.ded u f hof) → Derivation D enc prf R₀ Θ (.ded u t hot) →
+      Derivation D enc prf R₀ Θ (.ded u (FTerm.app f t) ho)
+  /-- From `u⃗ ▷ v` and `[v = v']`, `u⃗ ▷ v'`. -/
+  | dedRewrite {Γ : List (Kind B)} {Θ : List (Form D Γ)} {τs : List (Ty B)} {β : Ty B}
+      {u : Vec D Γ τs} {v v' : FTerm D Γ β} {ho : Ty.SecrecyOrder τs β} :
+      Derivation D enc prf R₀ Θ (.ded u v ho) → Derivation D enc prf R₀ Θ (.box (FTerm.eq v v')) →
+      Derivation D enc prf R₀ Θ (.ded u v' ho)
+  /-- `[φ]` for a local formula true at every tape of every model of `R₀`: local reasoning, read
+  semantically. -/
+  | boxValid {Γ : List (Kind B)} {Θ : List (Form D Γ)} (φ : FTerm D Γ .bool) :
+      (∀ M : Model D, M.RespectsLabels → R₀ M → ∀ (C : AdvClass M) env η ρ,
+        φ.denote (fullInterp M C) env η ρ = true) →
+      Derivation D enc prf R₀ Θ (.box φ)
+  /-- Modus ponens under `[·]`: from `[φ]` and `[φ ⇒ ψ]`, `[ψ]`. -/
+  | boxMP {Γ : List (Kind B)} {Θ : List (Form D Γ)} {φ ψ : FTerm D Γ .bool} :
+      Derivation D enc prf R₀ Θ (.box φ) → Derivation D enc prf R₀ Θ (.box (FTerm.imp φ ψ)) →
+      Derivation D enc prf R₀ Θ (.box ψ)
+  /-- FreshR (CCS26 Fig. 11), for a closed vector that avoids the name's coordinate in every
+  model. -/
+  | nonDedFreshR {Θ : List (Form D [])} {τs : List (Ty B)} {a b : Ty B} (u : Vec D [] τs)
+      (n : D.Name a b) (i : D.Fn a) (ho : Ty.SecrecyOrder τs b) : b.HasLabel D.labels .large →
+      (∀ M : Model D, ∀ τ x, (u τ x).Avoids M fun η k => k = M.nameSlot n i η) →
+      Derivation D enc prf R₀ Θ (.nonDed u (FTerm.name n (FTerm.fn i)) ho)
+  /-- FreshL (CCS26 Fig. 11), for a closed vector, over models where `R₀` gives long attacker tapes
+  and polynomial bit blocks for names of type `b`: the terms read the attacker tape below a
+  polynomial in every model of `R₀` and of `Θ`, and avoid the name's coordinate. -/
+  | nonDedFreshL {Θ : List (Form D [])} {τs : List (Ty B)} {a b β : Ty B} {u : Vec D [] τs}
+      {v : FTerm D [] β} {ho : Ty.SecrecyOrder τs β} (ho' : Ty.SecrecyOrder (τs ++ [b]) β)
+      (n : D.Name a b) (i : D.Fn a) :
+      (∀ M, R₀ M → M.LongTapes ∧ M.PolyCoins b) →
+      (∀ M : Model D, M.RespectsLabels → R₀ M → ∀ (C : AdvClass M) env,
+        (∀ θ ∈ Θ, θ.Holds M C env) → u.ReadsPoly M C env ∧ v.ReadsPoly M C env) →
+      (∀ M, R₀ M → (∀ τ x, (u τ x).Avoids M fun η k => k = M.nameSlot n i η) ∧
+        v.Avoids M fun η k => k = M.nameSlot n i η) →
+      Derivation D enc prf R₀ Θ (.nonDed u v ho) →
+      Derivation D enc prf R₀ Θ (.nonDed (Vec.snoc u (FTerm.name n (FTerm.fn i))) v ho')
+  /-- Rw-Oracle (CCS26 Fig. 3, as the double rule of App. C.1), over models where `R₀` gives long
+  attacker tapes and polynomial bit blocks for the oracles' argument type: the terms read the
+  attacker tape below a polynomial in every model of `R₀` and of `Θ`. -/
+  | nonDedRwOracle {Γ : List (Kind B)} {Θ : List (Form D Γ)} {τs : List (Ty B)} {a b β : Ty B}
+      {u : Vec D Γ τs} {o₁ o₂ oβ : FTerm D Γ (.arrow a b)} {v : FTerm D Γ β}
+      {ho₂ : Ty.SecrecyOrder (τs ++ [.arrow a b]) β}
+      {hd : Ty.SecrecyOrder (τs ++ [.arrow a b]) a} (ho₁ : Ty.SecrecyOrder (τs ++ [.arrow a b]) β)
+      (ha : a.IsGround) (hβ : β.IsGround) (hoβ : oβ = o₁ ∨ oβ = o₂) :
+      (∀ M, R₀ M → M.LongTapes ∧ M.PolyCoins a) →
+      (∀ M : Model D, M.RespectsLabels → R₀ M → ∀ (C : AdvClass M) env,
+        (∀ θ ∈ Θ, θ.Holds M C env) →
+          u.ReadsPoly M C env ∧ o₁.ReadsPoly M C env ∧ o₂.ReadsPoly M C env) →
+      Derivation D enc prf R₀ Θ (.nonDed (Vec.snoc u o₂) v ho₂) →
+      Derivation D enc prf R₀ Θ (Form.oracleAgree u oβ o₁ o₂ hd) →
+      Derivation D enc prf R₀ Θ (.nonDed (Vec.snoc u o₁) v ho₁)
+  /-- Pc-Oracle (CCS26 Fig. 3), under the conditions of Rw-Oracle, with the read bounds of the
+  oracle, the point and the new answer. -/
+  | nonDedPcOracle {Γ : List (Kind B)} {Θ : List (Form D Γ)} {τs : List (Ty B)} {a b β : Ty B}
+      {u : Vec D Γ τs} {o : FTerm D Γ (.arrow a b)} {m : FTerm D Γ a} {w : FTerm D Γ b}
+      {v : FTerm D Γ β} {ho₂ : Ty.SecrecyOrder (τs ++ [.arrow a b]) β}
+      {hom : Ty.SecrecyOrder (τs ++ [.arrow a b]) a} (ho₁ : Ty.SecrecyOrder (τs ++ [.arrow a b]) β)
+      (ha : a.IsGround) (hβ : β.IsGround) :
+      (∀ M, R₀ M → M.LongTapes ∧ M.PolyCoins a) →
+      (∀ M : Model D, M.RespectsLabels → R₀ M → ∀ (C : AdvClass M) env,
+        (∀ θ ∈ Θ, θ.Holds M C env) → u.ReadsPoly M C env ∧ o.ReadsPoly M C env ∧
+          m.ReadsPoly M C env ∧ w.ReadsPoly M C env) →
+      Derivation D enc prf R₀ Θ (.nonDed (Vec.snoc u (FTerm.puncture o m w)) v ho₂) →
+      Derivation D enc prf R₀ Θ (.nonDed (Vec.snoc u (FTerm.puncture o m w)) m hom) →
+      Derivation D enc prf R₀ Θ (.nonDed (Vec.snoc u o) v ho₁)
+  /-- G.PRF (LICS23 p. 29; CCS26 Fig. 11), at an admitted instance meeting the syntactic side
+  conditions, from `[ψ_msg]`. -/
+  | equivPRF {Θ : List (Form D [])} (e : PRFInstance D) : prf (.gprf e) → e.Syntactic →
+      Derivation D enc prf R₀ Θ (.box (e.P.psiMsg e.u e.m)) →
+      Derivation D enc prf R₀ Θ (.equiv e.lhs e.rhs e.order)
+  /-- PRF.R (CCS26 Fig. 4), at an admitted instance meeting the syntactic side conditions, over
+  models where `R₀` gives uniform names of the hash type, long attacker tapes and polynomial bit
+  blocks for messages, with the read bounds of the terms in every model of `R₀` and of `Θ`, from
+  `[ψ_msg^{m,k}(u⃗)]` and `u⃗, o_h^k ⊬ m`. -/
+  | nonDedPRFR {Θ : List (Form D [])} (e : PRFRInstance D) : prf (.right e) → e.Syntactic →
+      (∀ M, R₀ M → M.UniformSampler e.P.hTy ∧ M.LongTapes ∧ M.PolyCoins e.P.msgTy) →
+      (∀ M : Model D, M.RespectsLabels → R₀ M → ∀ (C : AdvClass M) env,
+        (∀ θ ∈ Θ, θ.Holds M C env) →
+          Vec.ReadsPoly M C (e.P.closeVec e.u) env ∧ FTerm.ReadsPoly M C (e.P.close e.m) env) →
+      Derivation D enc prf R₀ Θ (.box (e.P.psiMsgVec e.u e.m)) →
+      Derivation D enc prf R₀ Θ (.nonDed e.lhs (e.P.close e.m) e.orderM) →
+      Derivation D enc prf R₀ Θ (.nonDed e.lhs (e.P.hashTerm (e.P.close e.m)) e.order)
+  /-- PRF.L-sec (CCS26 §2.3 and Fig. 4), at an admitted instance meeting the syntactic side
+  conditions, over models where `R₀` gives uniform names of the hash type, long attacker tapes and
+  polynomial bit blocks for messages and hashes, with the read bounds of the terms in every model
+  of `R₀` and of `Θ`, from `[ψ_msg^{m,k}(u⃗, v, m)]`, `u⃗, o_h^k ⊬ v` and `u⃗, o_h^k ⊬ m`. -/
+  | nonDedPRFLSec {Θ : List (Form D [])} (e : PRFLInstance D) : prf (.left e) → e.Syntactic →
+      (∀ M, R₀ M → M.UniformSampler e.P.hTy ∧ M.LongTapes ∧ M.PolyCoins e.P.msgTy ∧
+        M.PolyCoins e.P.hTy) →
+      (∀ M : Model D, M.RespectsLabels → R₀ M → ∀ (C : AdvClass M) env,
+        (∀ θ ∈ Θ, θ.Holds M C env) → Vec.ReadsPoly M C (e.P.closeVec e.u) env ∧
+          FTerm.ReadsPoly M C (e.P.close e.v) env ∧ FTerm.ReadsPoly M C (e.P.close e.m) env) →
+      Derivation D enc prf R₀ Θ (.box (e.P.psiMsg (Env.append e.u (Env.cons e.v Env.empty)) e.m)) →
+      Derivation D enc prf R₀ Θ (.nonDed e.lhs (e.P.close e.v) e.order) →
+      Derivation D enc prf R₀ Θ (.nonDed e.lhs (e.P.close e.m) e.orderM) →
+      Derivation D enc prf R₀ Θ
+        (.nonDed (Vec.snoc e.lhs (e.P.hashTerm (e.P.close e.m))) (e.P.close e.v) e.orderC)
+
+variable {D : Decl B}
+
+/-- **Soundness** of the fragment: a derivable sequent is valid for every restriction on models
+contained in `R₀` and every class of machines under which the admitted encryption instances meet
+their hypotheses. -/
+theorem Derivation.sound {enc : EncInstance D → Prop} {prf : PRFRule D → Prop}
+    {R₀ : Model D → Prop} (R : Model D → Prop) (C : ∀ M : Model D, AdvClass M)
+    (henc : ∀ e, enc e → e.Holds R C) (hprf : ∀ e, prf e → e.Holds R C)
+    (hR : ∀ M, R M → R₀ M) :
+    {Γ : List (Kind B)} → {Θ : List (Form D Γ)} → {F : Form D Γ} →
+      Derivation D enc prf R₀ Θ F → Valid R C Θ F
+  | _, _, _, .ax h => Valid.ax h
+  | _, _, _, .weaken d h => (d.sound R C henc hprf hR).weaken h
+  | _, _, _, .cut d₁ d₂ => (d₁.sound R C henc hprf hR).cut (d₂.sound R C henc hprf hR)
+  | _, _, _, .allLeft t d => Valid.all_left t (d.sound R C henc hprf hR)
+  | _, _, _, .allRight d => Valid.all_right (d.sound R C henc hprf hR)
+  | _, _, _, .byGlob Γl d => Valid.byGlob Γl (d.sound R C henc hprf hR)
+  | _, _, _, .byLoc d => Valid.byLoc (d.sound R C henc hprf hR)
+  | _, _, _, .localAll Γl d => Valid.local_all Γl (d.sound R C henc hprf hR)
+  | _, _, _, .equivRefl u _ => Valid.equiv_refl u
+  | _, _, _, .equivSymm d => (d.sound R C henc hprf hR).equiv_symm
+  | _, _, _, .equivTrans d₁ d₂ =>
+    (d₁.sound R C henc hprf hR).equiv_trans (d₂.sound R C henc hprf hR)
+  | _, _, _, .equivApp d => (d.sound R C henc hprf hR).equiv_app
+  | _, _, _, .equivFn ho f d => Valid.equiv_fn (ho := ho) f (d.sound R C henc hprf hR)
+  | _, _, _, .equivAdv ho d₁ d₂ =>
+    Valid.equiv_adv (ho := ho) (d₁.sound R C henc hprf hR) (d₂.sound R C henc hprf hR)
+  | _, _, _, .equivTail d => (d.sound R C henc hprf hR).equiv_tail
+  | _, _, _, .equivDup d => (d.sound R C henc hprf hR).equiv_dup
+  | _, _, _, .equivIte d => (d.sound R C henc hprf hR).equiv_ite
+  | _, _, _, .equivCaseStudy d₁ d₂ =>
+    (d₁.sound R C henc hprf hR).equiv_caseStudy (d₂.sound R C henc hprf hR)
+  | _, _, _, .equivIf1 d₁ d₂ => (d₁.sound R C henc hprf hR).equiv_if1 (d₂.sound R C henc hprf hR)
+  | _, _, _, .equivRewrite d₁ d₂ =>
+    Valid.equiv_rewrite (d₁.sound R C henc hprf hR) (d₂.sound R C henc hprf hR)
+  | _, _, _, .equivEqSelf t u _ => Valid.equiv_eq_self t u
+  | _, _, _, .equivRename r d => Valid.equiv_rename r (d.sound R C henc hprf hR)
+  | _, _, _, .equivRenameNames π u _ => Valid.equiv_renameNames_of_equiv π u
+  | _, _, _, .equivEnc e he hkr => Valid.equiv_enc e.E hkr (henc e he).1 (henc e he).2
+  | _, _, _, .notDed d => Valid.not_ded (d.sound R C henc hprf hR)
+  | _, _, _, .notNonDed d => Valid.not_nonDed (d.sound R C henc hprf hR)
+  | _, _, _, .boxNotEq d₁ d₂ =>
+    Valid.box_not_eq (d₁.sound R C henc hprf hR) (d₂.sound R C henc hprf hR)
+  | _, _, _, .dedTrans d₁ d₂ =>
+    Valid.ded_trans (d₁.sound R C henc hprf hR) (d₂.sound R C henc hprf hR)
+  | _, _, _, .nonDedWeakL d₁ d₂ =>
+    Valid.nonDed_weakL (d₁.sound R C henc hprf hR) (d₂.sound R C henc hprf hR)
+  | _, _, _, .nonDedWeakR d₁ d₂ =>
+    Valid.nonDed_weakR (d₁.sound R C henc hprf hR) (d₂.sound R C henc hprf hR)
+  | _, _, _, .nonDedRwEquiv hβ d₁ d₂ =>
+    Valid.nonDed_rwEquiv hβ (d₁.sound R C henc hprf hR) (d₂.sound R C henc hprf hR)
+  | _, _, _, .dedApps _ d => Valid.ded_apps (d.sound R C henc hprf hR)
+  | _, _, _, .dedInput _ y _ => Valid.ded_input y
+  | _, _, _, .dedFn _ f _ => Valid.ded_fn f
+  | _, _, _, .dedApp _ d₁ d₂ =>
+    Valid.ded_app (d₁.sound R C henc hprf hR) (d₂.sound R C henc hprf hR)
+  | _, _, _, .dedRewrite d₁ d₂ =>
+    Valid.ded_rewrite (d₁.sound R C henc hprf hR) (d₂.sound R C henc hprf hR)
+  | _, _, _, .boxValid _ h =>
+    Valid.box_valid fun M hl hRM env η ρ => h M hl (hR M hRM) (C M) env η ρ
+  | _, _, _, .boxMP d₁ d₂ => Valid.box_mp (d₁.sound R C henc hprf hR) (d₂.sound R C henc hprf hR)
+  | _, _, _, .nonDedFreshR _ n i _ hl hf => Valid.nonDed_freshR n i hl fun M _ => hf M
+  | _, _, _, .nonDedFreshL _ n i hl hr hf d =>
+    Valid.nonDed_freshL n i (fun M hRM => hl M (hR M hRM))
+      (fun M hlM hRM env hΘ => hr M hlM (hR M hRM) (C M) env hΘ) (fun M hRM => hf M (hR M hRM))
+      (d.sound R C henc hprf hR)
+  | _, _, _, .nonDedRwOracle _ ha hβ hoβ hl hr d₁ d₂ =>
+    Valid.nonDed_rwOracle_of ha hβ hoβ (fun M hRM => hl M (hR M hRM))
+      (fun M hlM hRM env hΘ => hr M hlM (hR M hRM) (C M) env hΘ) (d₁.sound R C henc hprf hR)
+      (d₂.sound R C henc hprf hR)
+  | _, _, _, .nonDedPcOracle _ ha hβ hl hr d₁ d₂ =>
+    Valid.nonDed_pcOracle ha hβ (fun M hRM => hl M (hR M hRM))
+      (fun M hlM hRM env hΘ => hr M hlM (hR M hRM) (C M) env hΘ) (d₁.sound R C henc hprf hR)
+      (d₂.sound R C henc hprf hR)
+  | _, _, _, .equivPRF e he hs d => e.valid hs (hprf _ he) (d.sound R C henc hprf hR)
+  | _, _, _, .nonDedPRFR e he hs hl hr d₁ d₂ =>
+    e.valid hs (hprf _ he) (fun M hRM => hl M (hR M hRM))
+      (fun M hlM hRM env hΘ => hr M hlM (hR M hRM) (C M) env hΘ) (d₁.sound R C henc hprf hR)
+      (d₂.sound R C henc hprf hR)
+  | _, _, _, .nonDedPRFLSec e he hs hl hr d₁ d₂ d₃ =>
+    e.valid hs (hprf _ he) (fun M hRM => hl M (hR M hRM))
+      (fun M hlM hRM env hΘ => hr M hlM (hR M hRM) (C M) env hΘ) (d₁.sound R C henc hprf hR)
+      (d₂.sound R C henc hprf hR) (d₃.sound R C henc hprf hR)
+
+/-- **PRF-Simple, derived** (CCS26 Fig. 11 and p. 17): from a derivation of `u⃗ ⊬ v`, a
+derivation of `u⃗, h(m, k) ⊬ v`, through the constructors of G.PRF (at the vector `u⃗, v` and a name
+`n` of the hash type), Perm, FreshL and Rw-Equiv, as CCS26 derives it. The side conditions are
+those of the three constructors. -/
+def Derivation.nonDedPRF {enc : EncInstance D → Prop} {prf : PRFRule D → Prop}
+    {R₀ : Model D → Prop} {Θ : List (Form D [])} (P : PRFSymbols D) {τs : List (Ty B)}
+    {β : Ty B} (u : OVec P [] τs) (v : OTerm P [] β) (m : OTerm P [] P.msgTy) {a : Ty B}
+    (nn : D.Name a P.hTy) (i : D.Fn a) {ho : Ty.SecrecyOrder τs β}
+    (ho' : Ty.SecrecyOrder (τs ++ [P.hTy]) β) (hβ : β.IsGround)
+    (horder : Ty.IndistOrder ((τs ++ [β]) ++ [P.hTy]))
+    (hprf : prf (.gprf ⟨P, τs ++ [β], Env.append u (Env.cons v Env.empty), m, a, nn, i, horder⟩))
+    (hs : PRFInstance.Syntactic ⟨P, τs ++ [β], Env.append u (Env.cons v Env.empty), m, a, nn, i,
+      horder⟩)
+    (hl : ∀ M, R₀ M → M.LongTapes ∧ M.PolyCoins P.hTy)
+    (hread : ∀ M : Model D, M.RespectsLabels → R₀ M → ∀ (C : AdvClass M) env,
+      (∀ θ ∈ Θ, θ.Holds M C env) →
+        Vec.ReadsPoly M C (P.closeVec u) env ∧ FTerm.ReadsPoly M C (P.close v) env)
+    (hfresh : ∀ M, R₀ M →
+      (∀ τ x, FTerm.Avoids M (fun η k => k = M.nameSlot nn i η) (P.close (u τ x))) ∧
+        FTerm.Avoids M (fun η k => k = M.nameSlot nn i η) (P.close v))
+    (dmsg : Derivation D enc prf R₀ Θ (.box (P.psiMsg (Env.append u (Env.cons v Env.empty)) m)))
+    (d : Derivation D enc prf R₀ Θ (.nonDed (P.closeVec u) (P.close v) ho)) :
+    Derivation D enc prf R₀ Θ
+      (.nonDed (Vec.snoc (P.closeVec u) (P.hashTerm (P.close m))) (P.close v) ho') :=
+  let dprf := Derivation.equivPRF (Θ := Θ) _ hprf hs dmsg
+  have hlhs : PRFInstance.lhs ⟨P, τs ++ [β], Env.append u (Env.cons v Env.empty), m, a, nn, i,
+      horder⟩ = Vec.snoc (Vec.snoc (P.closeVec u) (P.close v)) (P.hashTerm (P.close m)) := by
+    rw [PRFInstance.lhs, P.closeVec_append, P.closeVec_single]
+    rfl
+  have hrhs : PRFInstance.rhs ⟨P, τs ++ [β], Env.append u (Env.cons v Env.empty), m, a, nn, i,
+      horder⟩ = Vec.snoc (Vec.snoc (P.closeVec u) (P.close v)) (FTerm.name nn (FTerm.fn i)) := by
+    rw [PRFInstance.rhs, P.closeVec_append, P.closeVec_single]
+    rfl
+  let dperm := Derivation.equivRename (swapLast τs P.hTy β) (hlhs ▸ hrhs ▸ dprf)
+  have hperm : ∀ (w : FTerm D [] P.hTy),
+      Env.rename (swapLast τs P.hTy β) (Vec.snoc (Vec.snoc (P.closeVec u) (P.close v)) w) =
+        Vec.snoc (Vec.snoc (P.closeVec u) w) (P.close v) := fun w =>
+    rename_swapLast (P.closeVec u) (P.close v) w
+  Derivation.nonDedRwEquiv hβ
+    (Derivation.nonDedFreshL ho' nn i hl hread hfresh d)
+    (hperm _ ▸ hperm _ ▸ dperm)
+
+/-- A worked derivation: from the hypothesis `∀̃ x. G`, conclude `G{x ↦ t}`. -/
+def Derivation.allInst {enc : EncInstance D → Prop} {prf : PRFRule D → Prop}
+    {R₀ : Model D → Prop} {Γ : List (Kind B)}
+    {τ : Ty B} (G : Form D (.loc τ :: Γ)) (t : FTerm D Γ τ) :
+    Derivation D enc prf R₀ [.all τ G] (G.substOne t) :=
+  .allLeft t (.ax List.mem_cons_self)
+
+/-- `[χ]` from derivations of `[f a]` for each `a` of a list, when `χ` is true at every tape where
+they all are, in every model of `R₀`: `boxValid` of `f a₁ ⇒ (… ⇒ (f aₙ ⇒ χ))`, then `boxMP` once per
+element. -/
+def Derivation.boxOfMap {enc : EncInstance D → Prop} {prf : PRFRule D → Prop}
+    {R₀ : Model D → Prop} {Γ : List (Kind B)} {Θ : List (Form D Γ)} {α : Type}
+    (f : α → FTerm D Γ .bool) :
+    (l : List α) → ((a : α) → a ∈ l → Derivation D enc prf R₀ Θ (.box (f a))) →
+    {χ : FTerm D Γ .bool} →
+    (∀ M : Model D, M.RespectsLabels → R₀ M → ∀ (C : AdvClass M) env η ρ,
+      (∀ a ∈ l, (f a).denote (fullInterp M C) env η ρ = true) →
+        χ.denote (fullInterp M C) env η ρ = true) →
+    Derivation D enc prf R₀ Θ (.box χ)
+  | [], _, χ, h => .boxValid χ fun M hl hR C env η ρ => h M hl hR C env η ρ fun _ h => nomatch h
+  | a :: l, ds, _, h => .boxMP (ds a List.mem_cons_self)
+      (Derivation.boxOfMap f l (fun b hb => ds b (List.mem_cons_of_mem _ hb))
+        fun M hl hR C env η ρ hall => by
+          simp only [FTerm.imp, FTerm.denote_ite, FTerm.denote_tt]
+          cases hφ : (f a).denote (fullInterp M C) env η ρ
+          · rfl
+          · exact h M hl hR C env η ρ (List.forall_mem_cons.2 ⟨hφ, hall⟩))
+
+end SquirrelLogic
