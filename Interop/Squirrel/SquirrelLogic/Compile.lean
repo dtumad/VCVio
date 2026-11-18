@@ -524,6 +524,55 @@ theorem lower_evalWithAnswerFn_cbv {τ : Ty B} (hτ : τ.IsGround) (t : OTerm P 
       t.denote (P.ointerp M η ρ kv) Env.empty :=
   CRel.lower_eq hτ (cbv_adequate (e := Env.empty) t ht fun _ x => nomatch x)
 
+/-- **A hashed message is the value of a call argument.** The run of a closed first-order term of
+the `⊢pptm` fragment, with the answers of `ρ` and `kv`, hashes only values of the arguments of its
+calls (`cbv_guard` at `Q = (· ≠ x)`). -/
+theorem exists_mem_calls_of_hashed {τ : Ty B} (t : OTerm P [] τ) (hp : P.Pptm t)
+    (hf : P.FirstOrder t) {x : P.Dom M η}
+    (hx : Sum.inr x ∈ (runLog (P.answer M η ρ kv) (t.cbv (P.cbvAlg M η) Env.empty)).map
+      (fun e => e.1)) :
+    ∃ t' ∈ P.calls t, t'.denote (P.ointerp M η ρ kv) Env.empty = x := by
+  by_contra h
+  push Not at h
+  have hg : (t.denote (P.guardInterp ρ kv fun y => y ≠ x) (pairEnv Env.empty)).2 :=
+    (snd_denote_guardInterp_iff _ t hf Env.empty).2 h
+  exact (cbv_guard (e := Env.empty) t hp (fun _ y => nomatch y) hg).2 x hx rfl
+
+/-- **A candidate not hashed by its own run.** Among a closed first-order message `m` of the
+`⊢pptm` fragment and the arguments of its calls, some term has `m`'s value and its run does not
+hash that value. If a term's run hashes its own value, a call argument has that value
+(`exists_mem_calls_of_hashed`) and fewer calls (`PRFSymbols.length_calls_lt`), so the descent
+stops. -/
+theorem exists_unhashed (m : OTerm P [] P.msgTy) (hp : P.Pptm m) (hf : P.FirstOrder m) :
+    ∃ t ∈ m :: P.calls m, t.denote (P.ointerp M η ρ kv) Env.empty =
+        m.denote (P.ointerp M η ρ kv) Env.empty ∧
+      Sum.inr (m.denote (P.ointerp M η ρ kv) Env.empty) ∉
+        (runLog (P.answer M η ρ kv) (t.cbv (P.cbvAlg M η) Env.empty)).map (fun e => e.1) := by
+  set x := m.denote (P.ointerp M η ρ kv) Env.empty
+  have key : ∀ n, ∀ t ∈ m :: P.calls m, (P.calls t).length = n →
+      t.denote (P.ointerp M η ρ kv) Env.empty = x →
+        ∃ t₀ ∈ m :: P.calls m, t₀.denote (P.ointerp M η ρ kv) Env.empty = x ∧
+          Sum.inr x ∉ (runLog (P.answer M η ρ kv) (t₀.cbv (P.cbvAlg M η) Env.empty)).map
+            (fun e => e.1) := by
+    intro n
+    induction n using Nat.strong_induction_on with
+    | _ n ih =>
+      intro t ht hn htx
+      have hall : ∀ {ok : ∀ {s : Kind B}, P.oSig.Op s → Prop}, m.Every ok → t.Every ok :=
+        fun hm => by
+          rcases List.mem_cons.1 ht with rfl | h
+          · exact hm
+          · exact P.every_of_mem_calls m hm t h
+      by_cases hx : Sum.inr x ∈
+          (runLog (P.answer M η ρ kv) (t.cbv (P.cbvAlg M η) Env.empty)).map (fun e => e.1)
+      · obtain ⟨t', ht', ht'x⟩ := exists_mem_calls_of_hashed t (hall hp) (hall hf) hx
+        refine ih _ (hn ▸ P.length_calls_lt ht') t' ?_ rfl (ht'x.trans rfl)
+        rcases List.mem_cons.1 ht with rfl | h
+        · exact List.mem_cons_of_mem _ ht'
+        · exact List.mem_cons_of_mem _ (P.mem_calls_of_mem_calls h ht')
+      · exact ⟨t, ht, htx, hx⟩
+  exact key _ m List.mem_cons_self rfl rfl
+
 end Guard
 
 /-! ## Compiling a vector and a message -/
