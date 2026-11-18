@@ -368,7 +368,7 @@ theorem close_nmO (x : Name .bool msg) :
 `⊬ s`, and PRF-Simple (`Derivation.nonDedPRF`) adds the hash of `r` under the key on the left,
 through G.PRF at the vector `s` with the fresh name `n`, Perm, FreshL and Rw-Equiv. -/
 @[expose] def prfWorked :
-    Derivation decl (fun _ => False) (· = inst) LongR (Γ := []) [psiH]
+    Derivation decl (fun _ => False) (· = .gprf inst) LongR (Γ := []) [psiH]
       (.nonDed (Vec.snoc (P.closeVec (Env.empty : OVec P [] []))
         (P.hashTerm (P.close (nmO Name.r)))) (P.close (nmO Name.s))) :=
   Derivation.nonDedPRF P Env.empty (nmO Name.s) (nmO Name.r) Name.n Fn.idx
@@ -385,7 +385,7 @@ theorem prfWorked_sound (R : Model decl → Prop) (C : ∀ M : Model decl, AdvCl
     Valid R C [psiH]
       (.nonDed (Vec.snoc (P.closeVec (Env.empty : OVec P [] []))
         (P.hashTerm (P.close (nmO Name.r)))) (P.close (nmO Name.s))) :=
-  prfWorked.sound R C (fun _ h => h.elim) (fun e (he : e = inst) => he ▸ hinst) hR
+  prfWorked.sound R C (fun _ h => h.elim) (fun e (he : e = .gprf inst) => he ▸ hinst) hR
 
 /-- **Satisfiability of PRF-Simple.** In `pmodel`, against all machines, every hypothesis of the
 worked derivation holds jointly: long tapes, polynomial bit blocks, uniform messages, freshness,
