@@ -1,0 +1,51 @@
+name: VCVioFrontier
+
+on:
+  push:
+    branches: [main]
+    paths: &frontier-paths
+      - 'VCVioFrontier/**'
+      - 'VCVio/**'
+      - 'ToMathlib/**'
+      - 'Examples/**'
+      - 'lakefile.lean'
+      - 'lake-manifest.json'
+      - 'lean-toolchain'
+      - 'scripts/AxiomSweep.lean'
+      - 'scripts/axiom_baseline.json'
+      - '.github/workflows/frontier.yml'
+  pull_request:
+    paths: *frontier-paths
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  frontier:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: VCVioFrontier
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: leanprover/lean-action@fe408643ea7367d8c0404a8be3975bb145f5fb64 # v1
+        with:
+          lake-package-directory: VCVioFrontier
+          auto-config: false
+          build: false
+          test: false
+          lint: false
+          use-github-cache: false
+          use-mathlib-cache: false
+      - run: lake exe cache get
+      - run: python3 scripts/check-pins.py
+      - run: lake build VCVioFrontier VCVioFrontierTest
+      - run: lake exe mk_all --lib VCVioFrontier --module --check
+      - name: Check axioms and sorry debt
+        run: >-
+          lake exe axiomsweep --root VCVioFrontier
+          --baseline ../scripts/axiom_baseline.json --check

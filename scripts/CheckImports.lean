@@ -40,6 +40,8 @@ private def allowed (externOnly : Bool) (owner : String) (path : FilePath) (name
   let source := (path.withExtension "").components.foldl Name.str .anonymous
   if externOnly then
     owner == "Extern" || tests.contains owner || head != "Extern"
+  else if ["CslibFrontier", "PolyFunFrontier", "VCVioFrontier"].contains head then
+    false
   else if core.contains owner then
     !(["Interop", "Hax", "Aeneas"].contains head) &&
       (if (`VCVio.Algorithms).isPrefixOf source then
