@@ -29,6 +29,7 @@ private partial def sources (dir : FilePath) : IO (Array FilePath) := do
   let mut files := #[]
   if !(← dir.isDir) then return files
   for entry in ← dir.readDir do
+    if entry.fileName == ".lake" then continue
     if ← entry.path.isDir then
       files := files ++ (← sources entry.path)
     else if entry.path.extension == some "lean" then
