@@ -93,9 +93,9 @@ import VCVioFrontier.Examples.ElGamal.Bound
    [Machine correspondence](VCVioFrontier/Examples/ElGamal/Security.lean) ·
    [Fixed-bit comparison](VCVioFrontier/Examples/ElGamal/Reduction.lean) ·
    [Frontier’s distinguisher](https://github.com/cslib-community/cslib-frontier/blob/87063d8acdd04168e47c55701c7497de584af566/CslibFrontier/Crypto/Computational/ElGamal.lean#L606)
-3. **Install the exponent handler in the honest algorithms.** Fixed exponents give correctness
-   for every secret and nonce. A stateful tape handler feeds these exponents to key generation
-   and encryption and preserves the unused suffix. Installing Frontier’s bounded fair-coin
+3. **Install the exponent handler in the honest algorithms.** Fixed exponents recover every
+   encoded group-element message for every secret and nonce. A stateful tape handler feeds these
+   exponents to key generation and encryption. Decryption draws nothing from the remaining tape. Installing Frontier’s bounded fair-coin
    sampler gives the three fields of the implemented word scheme. If selecting the group
    description from the security parameter is polynomial time, `wordScheme_efficient`
    certifies all three fields, including the option-valued plaintext returned by decryption.
