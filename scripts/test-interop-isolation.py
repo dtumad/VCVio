@@ -82,6 +82,12 @@ class IsolationTests(unittest.TestCase):
                     self.assertIn(f"VCVio/lakefile.lean: forbidden import {target}",
                                   result.stderr)
 
+    def test_installed_dependencies_are_outside_the_interop_source_tree(self):
+        dep = "Interop/.lake/packages/peer/Peer/Programs.lean"
+        result = self.check({dep: "module\nimport CslibFrontier.Crypto.Game\n",
+                             "Interop/Hax/Bridge.lean": "module\nimport Hax\n"})
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
     def test_algorithms_umbrella_forbidden_import(self):
         result = self.check({
             "VCVio/Algorithms.lean": "module\npublic import VCVio.OracleComp.OracleComp\n",
