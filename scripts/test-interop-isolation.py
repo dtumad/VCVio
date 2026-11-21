@@ -36,7 +36,10 @@ class IsolationTests(unittest.TestCase):
                  ("HashSig/X.lean", "Interop.Rust"),
                  ("VCVio.lean", "Interop"),
                  ("VCVioTest/X.lean", "Hax"),
-                 ("Interop/Hax/X.lean", "HashSig")]
+                 ("Interop/Hax/X.lean", "HashSig"),
+                 ("Interop/Hax/X.lean", "CslibFrontier.Crypto.Game"),
+                 ("VCVio.lean", "PolyFunFrontier"),
+                 ("Examples/X.lean", "VCVioFrontier.OracleComp.Measure")]
         for source, target in edges:
             for modifier in ("import", "public import", "import all", "public meta import", "public/-comment-/import",
                              "public\nimport", "import\n"):
