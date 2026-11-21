@@ -2674,3 +2674,53 @@ were rebased (`git rebase --onto`), and the spike is cited from `SOURCES.md` (ke
 - **What did not.** Every `Set` membership in the carriers, labels and example models still
   reduces through the structure's projection, so none of the sites the survey flagged needed a
   change. No new linter fires (`linter.concreteInstances`, `linter.style.extendedBinder`).
+
+## Switch-over map to the upstream generic pieces
+
+When the library moves onto the upstream versions of its generic pieces, these replacements apply.
+They come from PolyFun #514 (branch `dtumad/scoped-cbv`) and the VCVio branch
+`dtumad/querytracking-runlog`.
+
+**PolyFun (#514)**
+
+| Here | Upstream | Note |
+|---|---|---|
+| `ScopedSignature.sum`, `Interpretation.sum`, `Term.inl`, `Term.denote_inl` | same names | `Term.inl` is `IFreeM.mapLens`; unfold with `inl_node`/`inl_var` |
+| `CBVAlgebra`, `CBVAlgebra.sum` | `CBVInterpretation`, `CBVInterpretation.sum` | |
+| `Term.cbv`, `cbv_var`, `cbv_node` | `Term.denoteCBV`, `denoteCBV_var`, `denoteCBV_node` | |
+| `Term.cbv_rel alg₀ alg RV RC hpure hop t ht henv` | `Term.denoteCBV_related hpure h t ht hη` | relations flipped (call-by-value side first); `hop` becomes `CBVInterpretation.RelatedOn {h ∣ ok h.op} …` |
+| `Env.Rel R`, `h.append hξ` | `Env.LiftRel R`, `hξ.append h` | block first |
+| `t.Every ok` | `t.heads ⊆ {h ∣ ok h.op}` | |
+| `decidableEvery`, local `Fintype (P.oSig.Arg op)` | `decidableHeadsSubset`, `Sum.instFintypeRec` | |
+| `Every.mono` | `Set.Subset.trans` | |
+| `denote_eq_of_every` | `denote_congr_of_heads_subset` | agreement stated on heads |
+| `renameInl (Γ := Γ)`, `renameInr Ξ` | `fun _ x => x.appendLeft Γ`, `fun _ x => x.weakenMany Ξ` | |
+| `Env.rename_renameInl_append`, `Env.rename_renameInr_append Ξ ξ η` | `Env.rename_appendLeft_append`, `Env.rename_weakenMany_append ξ η` | |
+| `Env.append_renameInl`, `Env.append_renameInr Ξ ξ η x` | `Env.append_appendLeft`, `Env.append_weakenMany ξ η x` | |
+| `Env.forall_append hξ hη` | `Env.forall_append.2 ⟨hξ, hη⟩` | |
+| `Env.cons_head_tail`, `scopedVar_mem x`, `nonempty_scopedVar_of_mem h` | `Env.cons_eta`, `x.mem`, `nonempty_scopedVar_iff.2 h` | |
+| `swapLast`, `rename_swapLast` | stay here | rebuild from `appendLeft`, `weakenMany`, `rename_append_renaming` |
+
+**VCVio core (`dtumad/querytracking-runlog`)**
+
+| Here | Upstream | Call-site change |
+|---|---|---|
+| `simulateQ_pure_comp f oa` | `simulateQ_pure_eq_evalWithAnswerFn f oa` | none |
+| `runLog` (exposed) | `OracleComp.runLog` (not exposed) | `rfl` on the log → `evalWithAnswerFn_withQueryLog` |
+| `fst_evalWithAnswerFn_withQueryLog` | `evalWithAnswerFn_withQueryLog` (simp) | `by simp` |
+| `runLog_{pure,bind,query,query_bind,map,withQueryLog}`, `length_filterMap_runLog_le`, `forall_mem_runLog_of_allQueriesSatisfy` | same names | none |
+| `evalWithAnswerFn_eq_of_forall_mem_runLog ans oa h` | same name, arguments implicit | drop explicit arguments |
+| private `runLog_eq_of_forall_mem_runLog ans ans' oa h` | `(runLog_eq_of_forall_mem_runLog h).symm` | orientation |
+| `forall_mem_runLog_simulateQ` | `mem_runLog_simulateQ` (iff), `runLog_simulateQ` | destructure the iff |
+| `(runLog_eq_of_allQueriesSatisfy ans hans h).1` / `.2` | `runLog_eq_of_allQueriesSatisfy hans h` / `evalWithAnswerFn_eq_of_allQueriesSatisfy hans h` | |
+| `isQueryBoundP_bind_le h h' hk` | same name | `h'` takes support membership |
+| `isQueryBoundP_simulateQ impl himpl h` | `IsQueryBoundP.simulateQ_of_step_le h hp hnp` | split `himpl` |
+| `isQueryBoundP_withQueryLog`, `allQueriesSatisfy_withQueryLog` | `…_iff` versions | `.2` |
+| Machine's `allQueriesSatisfy_simulateQ`, `allQueriesSatisfy_map` | `AllQueriesSatisfy.simulateQ` (existing), `allQueriesSatisfy_map_iff` | argument order; `.2` |
+| Machine's tape-specific `evalWithAnswerFn_eq_of_allQueriesSatisfy` | keep, renamed, proved from the generic lemma | avoids an ambiguous name |
+| `PRFSymbols.fst_run_evalDistEq_of_avoids` | `OracleSpec.fst_map_run_simulateQ_romImpl_eq_of_allQueriesSatisfy` | an equality; derive `=ᵈ` |
+| `prEvent_le_add_of_imp` (two versions) | `prEvent_le_prEvent_add_prEvent_of_imp` | the Secrecy one negates `r` |
+| `absDiff_le_absDiff_and_not_add` | `absDiff_prEvent_le_absDiff_prEvent_and_not_add` | none |
+| `prEvent_exists_mem_list_le mx E L` | `prEvent_exists_list_le L mx E` | argument order |
+| `prEvent_bind_le_of_support` | existing `prEvent_bind_le_of_forall_le_of_support` with `id` | |
+| `prEvent_bind_bind_false` | same name (simp) | none |
