@@ -30,6 +30,41 @@ explicit key sampler takes `n + 1` transitions on a unary input of width `n`.
   with probability one. The machines halt on every supported branch at the stated clock.
   [Definitions and theorems](VCVioFrontier/Examples/OneTimePad/Machine.lean)
 
+## ElGamal
+
+The typed VCVio reduction and the word implementation share one program parameterized by its
+operations. It calls the adversary to choose messages, flips a coin, then calls the
+adversary to guess using the saved state and challenge ciphertext. A realization gives two
+uniform word procedures with polynomial-time certificates, an encoding for the saved state, and
+agreement of each call on encoded inputs. The choice law preserves both messages and the state
+jointly. VCVio uses the first message on `true`, so the representation exchanges the two message
+positions at that boundary.
+
+- `AdversaryRealization.exists_halting_machine` realizes the existing
+  `IND_CPA_OneTime_DDHReduction_openOracle` after the adversary and coin handlers are installed.
+  Its clock is polynomial in encoded input length and covers malformed words as well.
+  `AdversaryRealization.advantage_eq` identifies the exact-exponent one-time IND-CPA advantage
+  with twice the DDH advantage of this same distinguisher. The assumption uses a specified
+  prime-order group family and a point setup at each security parameter.
+  [Machine and security theorems](VCVioFrontier/Examples/ElGamal/Security.lean)
+- Key generation, encryption and decryption are free programs over an exponent request.
+  Installing fixed exponents proves decryption for every secret and nonce. A state handler runs
+  the whole round trip and exposes both draws and the unused suffix.
+  [Programs and handler laws](VCVioFrontier/Examples/ElGamal/HonestPrograms.lean) ·
+  [State regression](VCVioFrontierTest/Examples/ElGamal/State.lean)
+- Installing the bounded sampler in these programs gives the honest word scheme. It samples bounded fair-coin exponents for key generation and encryption.
+  Decryption recovers every honestly encrypted group-element word on every supported execution.
+  When selecting the group description is polynomial time, key generation, encryption, and
+  decryption have uniform polynomial-time certificates. For each fixed challenge bit the
+  implemented game incurs advantage at most `2 / 2^n` relative to exact exponents.
+  [Honest algorithms and sampling bound](VCVioFrontier/Examples/ElGamal/Honest.lean)
+- `AdversaryRealization.wordGame_advantage_le` combines the two sampling errors. For the same
+  realized adversary and its own DDH distinguisher, the implemented advantage is bounded by
+  `2 * AdvDDH + 4 / 2^n`. The bound holds at each parameter. Uniform machine DDH then implies
+  negligible advantage for the bounded-coin implementation in VCVio's native one-time IND-CPA
+  experiment (`implemented_secureAgainst`).
+  [Implemented security bound](VCVioFrontier/Examples/ElGamal/Bound.lean)
+
 ## Build
 
 The nested package follows PolyFunFrontier's immutable pins. At this revision it uses Lean
