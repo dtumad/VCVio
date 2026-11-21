@@ -2724,3 +2724,20 @@ They come from PolyFun #514 (branch `dtumad/scoped-cbv`) and the VCVio branch
 | `prEvent_exists_mem_list_le mx E L` | `prEvent_exists_list_le L mx E` | argument order |
 | `prEvent_bind_le_of_support` | existing `prEvent_bind_le_of_forall_le_of_support` with `id` | |
 | `prEvent_bind_bind_false` | same name (simp) | none |
+
+**VCVio core and ToMathlib (`dtumad/crypto-generic`)**
+
+| Here | Upstream | Call-site change |
+|---|---|---|
+| `IND_CPA_OneTime_Branch encAlg adv b` | `AsymmEncAlg.IND_CPA_OneTime_Experiment adv b` | `encAlg` implicit |
+| `IND_CPA_OneTime_Advantage_probComp_eq_absDiff encAlg adv` | `AsymmEncAlg.IND_CPA_OneTime_Advantage_eq_boolDist adv` | right side is `boolDist`; rewrite with `Measure.boolDist` and `prEvent_eq_evalDist_singleton` for the `absDiff` form |
+| `IND_CPA_OneTime_EqualLength len adv` | `adv.IsAdmissible len` | none |
+| `prEvent_uniformSample_update i₀ p` | existing `OracleComp.prEvent_uniformTable_update i₀ p` | `.symm`; needs `Finite ι` and `∀ i, SampleableType (α i)` |
+| `prEvent_uniformSample_prod_update`, `prEvent_uniformSample_update_update` | `SampleableType.prEvent_uniformSample_prod_update`, `SampleableType.prEvent_uniformSample_prod_update_update` | `(α := …)` → `(R := …)`; needs `Finite (M.Slot η)` from `D.finite_names` and `M.finite_index` |
+| `Repeats g s n` | inline `∃ a b, a < b ∧ b ≤ n ∧ g^[a] s = g^[b] s` | keep `Repeats` locally or inline it |
+| `prEvent_iterate_collision_le s n` | `OracleComp.prEvent_iterate_collision_le s n` | `Nat.card` denominator; in `ChainModel` drop the local `Fintype` and the `Nat.card_eq_fintype_card` rewrite |
+| `prEvent_uniformSample_mem_le l` | `SampleableType.prEvent_uniformSample_mem_le l` | none |
+| `not_negligible_one`, `negligible_two_rpow_neg_mul hc` | same names | none |
+| private `negligible_list_sum f L h` | `negligible_list_sum h` | implicit arguments |
+| `absDiff_add_add_le a b c d` | `ENNReal.absDiff_add_add_le a b c d` | namespace |
+| `two_pow_clog_le n` | `Nat.pow_clog_le_mul_add_one 2 n` | base explicit |
