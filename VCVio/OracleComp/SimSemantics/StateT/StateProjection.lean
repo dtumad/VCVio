@@ -280,7 +280,7 @@ namespace QueryImpl
 
 /-- Given a `StateT (σ × Q) ProbComp` query implementation, fix the second state component
 at `q₀` and project to `StateT σ ProbComp`. -/
-def fixSndStateT {ι : Type} {spec : OracleSpec ι} {σ Q : Type}
+@[simps -isSimp] def fixSndStateT {ι : Type} {spec : OracleSpec ι} {σ Q : Type}
     (impl : QueryImpl spec (StateT (σ × Q) ProbComp)) (q₀ : Q) :
     QueryImpl spec (StateT σ ProbComp) where
   toFun t := StateT.mk fun s => Prod.map id Prod.fst <$> (impl t).run (s, q₀)
@@ -314,7 +314,7 @@ theorem simulateQ_run_eq_of_snd_invariant
     simp only [simulateQ_bind, simulateQ_query, OracleQuery.input_query,
       OracleQuery.cont_query, id_map, StateT.run_bind]
     rw [map_bind]
-    simp only [QueryImpl.fixSndStateT, StateT.run, StateT.mk, bind_map_left]
+    simp only [QueryImpl.fixSndStateT_apply, StateT.run, StateT.mk, bind_map_left]
     refine OracleComp.bind_congr_of_forall_mem_support _ (fun ⟨u, s', q'⟩ hx => ?_)
     obtain rfl := h_inv t s ⟨u, s', q'⟩ hx
     simpa [StateT.run, Functor.map_map, Function.comp_def] using ih u s'

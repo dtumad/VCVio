@@ -285,7 +285,7 @@ noncomputable def transcriptDist (H : ProbHandler spec) (A : OracleStrategy S sp
   Prod.fst <$> kleisliTranscript H A s n
 
 /-- A deterministic handler as a Dirac `ProbHandler`. -/
-noncomputable def _root_.ProbHandler.ofHandler (h : OracleHandler spec) : ProbHandler spec where
+@[simps -isSimp] noncomputable def _root_.ProbHandler.ofHandler (h : OracleHandler spec) : ProbHandler spec where
   toFun t := (pure (h t) : ProbComp (spec.Range t))
 
 @[simp] theorem kleisliStep_ofHandler (h : OracleHandler spec) (A : OracleStrategy S spec)
@@ -305,7 +305,7 @@ noncomputable def _root_.ProbHandler.ofHandler (h : OracleHandler spec) : ProbHa
   induction n generalizing s with
   | zero => rfl
   | succ n ih =>
-      rw [kleisliTranscript, ProbHandler.ofHandler]
+      rw [kleisliTranscript, ProbHandler.ofHandler_apply]
       simp only [pure_bind, ih, transcript_succ, advanceOnce, stateAfter_succ]
 
 /-- **Dirac bridge.** The randomized transcript distribution of a deterministic handler is the Dirac

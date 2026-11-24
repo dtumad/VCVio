@@ -85,7 +85,7 @@ theorem runFinder_coordFinder [SampleableType (ι → S)] (k : ℕ) (ρ : (ι �
   simp only [Rewinding.runFinder, coordFinder, coordForkOp, simulateQ_bind, StateT.run_bind,
     QueryImpl.simulateQ_add_liftComp_left, hcoins, bind_map_left]
   refine bind_congr fun c₀ => ?_
-  simp only [QueryImpl.simulateQ_add_liftM_query_right, Rewinding.counted, StateT.run_bind,
+  simp only [QueryImpl.simulateQ_add_liftM_query_right, Rewinding.counted_apply, StateT.run_bind,
     StateT.run_modify, StateT.run_pure, pure_bind, zero_add]
   cases hacc : ρ c₀ with
   | false => simp [coordForkOpAt, hacc]

@@ -199,7 +199,7 @@ theorem singleHashImpl_inr_run (x : D) (b : (D →ₒ M).QueryCache) :
 /-- The single-oracle world is the random oracle model of the single oracle after the
 encoding. -/
 theorem romImpl_compose_encodeImpl : (D →ₒ M).romImpl ∘ₛ E.encodeImpl = E.singleImpl := by
-  funext u
+  ext u : 1
   rcases u with n | t | x
   · rfl
   · rfl

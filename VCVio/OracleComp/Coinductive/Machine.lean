@@ -74,20 +74,16 @@ namespace OracleMachine
 
 variable {α β : Type u} {m : Type u → Type v} [Monad m]
 
-/-- `QueryImpl spec m` is definitionally PolyFun's monadic handler type, so machines run
-directly through query implementations. Regression guard for the definitional bridge. -/
-example : QueryImpl spec m = PFunctor.Handler m spec.toPFunctor := rfl
-
 /-- Executing a machine through a `QueryImpl` is definitionally `simulateQ` of the fuelled
 unrolling: the machine layer plugs into the existing simulation semantics with no glue. -/
 theorem runWith_eq_simulateQ (M : OracleMachine spec α β) (impl : QueryImpl spec m)
     (k : ℕ) (s : M.State) :
-    M.runWith impl k s = simulateQ impl (ofFreeM (M.unroll k s)) := rfl
+    M.runWith impl.toHandler k s = simulateQ impl (ofFreeM (M.unroll k s)) := rfl
 
 /-- Input form of `runWith_eq_simulateQ`. -/
 theorem runWithInput_eq_simulateQ (M : OracleMachine spec α β) (impl : QueryImpl spec m)
     (k : ℕ) (x : α) :
-    M.runWithInput impl k x = simulateQ impl (ofFreeM (M.unroll k (M.init x))) := rfl
+    M.runWithInput impl.toHandler k x = simulateQ impl (ofFreeM (M.unroll k (M.init x))) := rfl
 
 /-- The implementation relation **is** behavior equality: `M.Implements program` says the
 machine's behavior tree at each input — its extensional, state-free denotation in the cofree
@@ -130,7 +126,7 @@ the `simulateQ` reading of `DynComputation.ImplementsWithin.runWithInput_eq`. -/
 theorem simulateQ_run_eq [LawfulMonad m] {M : OracleMachine spec α β}
     {program : α → OracleComp spec β} {k : ℕ}
     (h : M.ImplementsWithin program k) (impl : QueryImpl spec m) (x : α) :
-    M.runWithInput impl k x = some <$> simulateQ impl (program x) :=
+    M.runWithInput impl.toHandler k x = some <$> simulateQ impl (program x) :=
   h.runWithInput_eq impl x
 
 /-- Deterministic reading: through a deterministic handler, an implementing machine returns

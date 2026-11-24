@@ -135,7 +135,8 @@ lemma comapLens_apply [Functor m] (impl : QueryImpl spec' m)
 @[simp]
 lemma comapLens_id [Functor m] [LawfulFunctor m] (impl : QueryImpl spec m) :
     impl.comapLens (Lens.id spec.toPFunctor) = impl := by
-  grind only [comapLens_apply, id_map']
+  ext t : 1
+  exact id_map (impl t)
 
 end QueryImpl
 
@@ -172,7 +173,7 @@ theorem liftComp_eq_mapLens [h : spec ⊂ₒ superSpec] (mx : OracleComp spec α
     liftComp mx superSpec = mx.mapLens h.toLens := by
   rw [mapLens_eq_simulateQ, liftComp_def]
   congr 1
-  funext t
+  ext t : 1
   have e : (liftM (spec.query t) : OracleQuery superSpec _) =
       ⟨h.onQuery t, h.onResponse t⟩ :=
     SubSpec.liftM_eq_lift (self := h) _

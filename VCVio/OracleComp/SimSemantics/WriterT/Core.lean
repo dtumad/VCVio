@@ -68,7 +68,7 @@ carries both logs as a product. -/
 /-- Read a handler over `StateT σ (WriterT ω m)` as a handler over the product state `σ × ω`:
 each query appends the log it writes to the second component. This is the state-over-writer
 analogue of `flattenStateT`. -/
-@[expose] def flattenStateTWriterT {ι : Type _} {spec : OracleSpec ι}
+@[expose, simps -isSimp] def flattenStateTWriterT {ι : Type _} {spec : OracleSpec ι}
     {m : Type u → Type v} [Functor m] {σ ω : Type u} [Append ω]
     (impl : QueryImpl spec (StateT σ (WriterT ω m))) :
     QueryImpl spec (StateT (σ × ω) m) where
@@ -150,7 +150,7 @@ theorem simulateQ_flattenStateTWriterT_run (impl : QueryImpl spec (StateT σ (Wr
   | pure x => simp
   | query_bind t k ih =>
     simp only [simulateQ_bind, simulateQ_spec_query, StateT.run_bind, WriterT.run_bind',
-      map_bind, QueryImpl.flattenStateTWriterT, StateT.run_mk, bind_map_left]
+      map_bind, QueryImpl.flattenStateTWriterT_apply, StateT.run_mk, bind_map_left]
     refine bind_congr fun z => ?_
     rw [ih z.1.1 z.1.2 (w₀ ++ z.2)]
     simp [Functor.map_map, LawfulAppend.append_assoc]

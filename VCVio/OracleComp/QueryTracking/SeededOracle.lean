@@ -618,7 +618,7 @@ theorem isTotalQueryBound_run_simulateQ {ι₀ : Type} [DecidableEq ι₀] {spec
     (h : OracleComp.IsTotalQueryBound oa n) (seed : QuerySeed spec₀) :
     OracleComp.IsTotalQueryBound ((simulateQ spec₀.seededOracle oa).run seed) n := by
   rw [eq_withPregen]
-  exact OracleComp.IsTotalQueryBound.simulateQ_run_withPregen _ h
+  exact OracleComp.IsTotalQueryBound.simulateQ_run_withPregen (QueryImpl.ofLift spec₀ _) h
     (fun t => (OracleComp.isQueryBound_query_iff t 1 _ _).mpr Nat.one_pos) seed
 
 theorem isQueryBoundP_run_simulateQ {ι₀ : Type} [DecidableEq ι₀] {spec₀ : OracleSpec ι₀}

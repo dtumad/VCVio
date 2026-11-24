@@ -48,7 +48,7 @@ theorem expectedCalls_thresholdFinderWithPools (n : ℕ) (C : Fin n → Type)
   induction n with
   | zero =>
       simp [runFinder, simulateQ_counted_thresholdFinderWithPools, thresholdProgram,
-        counted, StateT.run_modify, expectedCalls, AddWriterT.expectedCostNat,
+        counted_apply, StateT.run_modify, expectedCalls, AddWriterT.expectedCostNat,
         AddWriterT.expectedCost, AddWriterT.costs_def]
   | succ n ih =>
       rw [runFinder_thresholdFinderWithPools_succ]

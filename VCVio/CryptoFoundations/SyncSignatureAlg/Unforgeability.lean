@@ -146,7 +146,7 @@ simulated signer under the same epoch discipline. -/
 @[expose] def signingKernelOracle [DecidableEq E]
     {m : Type → Type v} [Monad m] (kernel : E → M → m (Option S)) :
     QueryImpl (signingSpec E M S) (StateT (History E M S) m) where
-  toFun ⟨ep, msg⟩ history :=
+  toFun := fun ⟨ep, msg⟩ history =>
     match history ep with
     | some _ => pure (none, history)
     | none => do

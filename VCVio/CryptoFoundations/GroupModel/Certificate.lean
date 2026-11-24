@@ -47,7 +47,7 @@ theorem costCertificate_iff_withinCharge
     (c : (spec F σ + Γ).Domain → ℕ) :
     CostCertificate h c ↔
       PFunctor.Handler.Stateful.WithinCharge (E := (spec F σ + Γ).toPFunctor)
-        (M := (spec F σ + Γ').toPFunctor) h (fun i => if isGroupOp i = true then 1 else 0) c := by
+        (M := (spec F σ + Γ').toPFunctor) h.toHandler (fun i => if isGroupOp i = true then 1 else 0) c := by
   unfold CostCertificate PFunctor.Handler.Stateful.WithinCharge
   simp only [isQueryBoundP_iff_isChargeBound]
 

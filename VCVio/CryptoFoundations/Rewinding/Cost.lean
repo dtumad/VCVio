@@ -218,7 +218,7 @@ private theorem fst_map_simulateQ_counted_costAdapterImpl {Q α β : Type} (g : 
       simp only [coins, QueryImpl.ofLift_eq_id'] at ih ⊢
       simp [costAdapterImpl, ih]
     · rw [runCharged_query_inr_bind]
-      simpa [costAdapterImpl, coins, counted] using ih _ _ _
+      simpa [costAdapterImpl, coins, counted_apply] using ih _ _ _
 
 /-- Against a fixed table of answers and costs, the output and accumulated reported cost of
 `costAdapter alg` form the charged run of `alg`. -/
@@ -242,7 +242,7 @@ theorem map_simulateQ_counted_costAdapter {Q α β : Type} (g : Q → α × ℕ)
     rcases t with n | q
     · simp only [coins, QueryImpl.ofLift_eq_id'] at ih ⊢
       simp [costAdapterImpl, ih]
-    · simpa [costAdapterImpl, coins, counted] using ih _ _ _
+    · simpa [costAdapterImpl, coins, counted_apply] using ih _ _ _
 
 /-! ## Frozen reruns that report their own cost -/
 
@@ -279,7 +279,7 @@ private theorem map_run_simulateQ_rerun_costAdapterImpl {Q α β : Type}
     rcases t with n | q
     · simp only [coins, QueryImpl.ofLift_eq_id'] at ih ⊢
       simp [costAdapterImpl, ih]
-    · simp [costAdapterImpl, ResetPolicy.rerun, simulateQ_map, StateT.run_map, ih]
+    · simp [costAdapterImpl, ResetPolicy.rerun_apply, simulateQ_map, StateT.run_map, ih]
 
 /-- Forgetting the accumulated reported cost of an attempt of `costAdapter alg` against frozen
 reruns gives the attempt of `alg` against the reruns' outputs. -/

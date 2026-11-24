@@ -228,7 +228,7 @@ theorem simulateQ_handlerRouterImpl_run_simulateQ_passthrough_add_withLogging
     all_goals
       simp only [QueryImpl.passthrough_add, add_apply_inl, add_apply_inr, simulateQ_bind,
         simulateQ_query, OracleQuery.input_query, OracleQuery.cont_query, QueryImpl.add_apply_inl,
-        PFunctor.Handler.liftTarget_apply, ofPFunctor_toPFunctor, QueryImpl.id'_apply, id_map,
+        QueryImpl.liftTarget_apply, ofPFunctor_toPFunctor, QueryImpl.id'_apply, id_map,
         WriterT.run_bind, WriterT.run_liftM, List.empty_eq, bind_map_left, List.nil_append,
         Prod.mk.eta, id_map', handlerRouterImpl, StateT.run_bind, StateT.run_mk, programRouterImpl,
         HasQuery.instOfMonadLift_query, StateT.run_monadLift, monadLift_self, bind_pure_comp,

@@ -243,8 +243,8 @@ inductive Op (W : Type) where
   handled by `opImpl`. -/
 @[expose] def oracleImpl [Monad m] (lift : ProbCompLift m) (proto : Scheme m K UK TK W) (tk : TK) :
     QueryImpl (unifSpec + oracleSpec K W) (StateT (Env proto) m) :=
-  let unifImpl : QueryImpl unifSpec (StateT (Env proto) m) := fun q =>
-    liftM (lift.liftProbComp ((HasQuery.toQueryImpl (spec := unifSpec) (m := ProbComp)) q))
+  let unifImpl : QueryImpl unifSpec (StateT (Env proto) m) := ⟨fun q =>
+    liftM (lift.liftProbComp ((HasQuery.toQueryImpl (spec := unifSpec) (m := ProbComp)) q))⟩
   unifImpl + opImpl proto tk
 
 /-- An adversary in the UAKE security game -/

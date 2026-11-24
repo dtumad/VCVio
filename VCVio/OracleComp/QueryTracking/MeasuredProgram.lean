@@ -137,7 +137,7 @@ theorem costAtMost_of_forall_eq_answer [AddCommMonoid ω] [Preorder ω] (budget 
   Op := PEmpty
   spec _ := []ₒ
   program v := pure (f v)
-  answer _ := fun t ↦ t.elim
+  answer _ := ⟨fun t ↦ t.elim⟩
   cost := fun t ↦ t.elim
 
 /-- The program with no instructions realizes the function it computes. -/

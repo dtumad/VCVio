@@ -75,7 +75,7 @@ example :
   simp [first, second, after, prEvent_norm]
 
 /-- A concrete query counter increments for every occurrence. -/
-@[expose] def counted : QueryImpl spec (StateT Nat ProbComp) where
+@[expose, simps -isSimp] def counted : QueryImpl spec (StateT Nat ProbComp) where
   toFun _ := StateT.mk fun n => pure (true, n + 1)
 
 /-- A normal error is data after two completed queries. -/

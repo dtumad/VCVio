@@ -84,7 +84,7 @@ theorem counted_fst {Q α β : Type} (f : Q → α)
     (alg : OracleComp (unifSpec + rerunSpec Q α) β) (count : ℕ) :
     Prod.fst <$> (simulateQ (coins (S := ℕ) + counted f) alg).run count =
       simulateQ (QueryImpl.ofLift unifSpec ProbComp +
-        (fun q => (pure (f q) : ProbComp α))) alg := by
+        (⟨fun q => pure (f q)⟩ : QueryImpl (rerunSpec Q α) ProbComp)) alg := by
   induction alg using OracleComp.inductionOn generalizing count with
   | pure a => simp
   | query_bind q next ih =>

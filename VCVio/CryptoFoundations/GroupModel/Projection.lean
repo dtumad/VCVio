@@ -89,7 +89,7 @@ theorem impl_congr {U' : S → Type} [∀ s, DecidableEq (U s)] [∀ s, Decidabl
     (M : Model F σ V) (obs : (s : S) → V s → U s) (obs' : (s : S) → V s → U' s)
     (h : ∀ s x y, obs s x = obs s y ↔ obs' s x = obs' s y) (m : Type → Type) [Monad m] :
     impl M obs m = impl M obs' m := by
-  funext t
+  ext t : 1
   cases t with
   | eq s a b => simp [impl, h]
   | _ => rfl

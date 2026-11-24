@@ -143,7 +143,7 @@ theorem flattenStateT_liftTarget_base {ι : Type _} {spec : OracleSpec ι}
     (impl : QueryImpl spec m) :
     (impl.liftTarget (StateT σ (StateT τ m))).flattenStateT =
       impl.liftTarget (StateT (σ × τ) m) := by
-  funext t
+  ext t : 1
   refine StateT.ext fun p => ?_
   obtain ⟨s, q⟩ := p
   simp [flattenStateT, StateT.run_monadLift, Functor.map_map]

@@ -517,7 +517,7 @@ theorem simulateQ_dupRandomOracle_eq {α : Type} (oa : OracleComp (spec + spec) 
     simulateQ (dupRandomOracle spec) oa
       = simulateQ spec.randomOracle (simulateQ (dupCollapse spec) oa) := by
   have hc : spec.randomOracle ∘ₛ dupCollapse spec = dupRandomOracle spec := by
-    funext t
+    ext t : 1
     cases t <;> simp [dupCollapse, dupRandomOracle_apply_inl, dupRandomOracle_apply_inr]
   rw [← hc, QueryImpl.simulateQ_compose]
 

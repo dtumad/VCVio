@@ -461,7 +461,7 @@ theorem isTotalQueryBound_run_simulateQ {ι₀ : Type} [DecidableEq ι₀]
     {oa : OracleComp spec₀ α} {n : ℕ}
     (h : OracleComp.IsTotalQueryBound oa n) (cache : spec₀.QueryCache) :
     OracleComp.IsTotalQueryBound ((simulateQ spec₀.cachingOracle oa).run cache) n :=
-  OracleComp.IsTotalQueryBound.simulateQ_run_withCaching _ h
+  OracleComp.IsTotalQueryBound.simulateQ_run_withCaching (QueryImpl.ofLift spec₀ _) h
     (fun t => (OracleComp.isQueryBound_query_iff t 1 _ _).mpr Nat.one_pos) cache
 
 theorem isQueryBoundP_run_simulateQ {ι₀ : Type} [DecidableEq ι₀]

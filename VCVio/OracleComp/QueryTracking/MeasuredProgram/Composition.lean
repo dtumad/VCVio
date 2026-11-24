@@ -72,8 +72,8 @@ agrees with function composition. -/
       (fun query => liftM ((OracleSpec.sigma inner.spec + OracleSpec.sigma outer.spec).query
         (.inl ⟨v, query⟩))) (inner.program v)
     simulateQ
-      (fun query => liftM ((OracleSpec.sigma inner.spec + OracleSpec.sigma outer.spec).query
-        (.inr ⟨outer.view result, query⟩))) (outer.program (outer.view result))
+      ⟨fun query => liftM ((OracleSpec.sigma inner.spec + OracleSpec.sigma outer.spec).query
+        (.inr ⟨outer.view result, query⟩))⟩ (outer.program (outer.view result))
   answer _
     | .inl ⟨v, query⟩ => inner.answer v query
     | .inr ⟨v, query⟩ => outer.answer v query

@@ -428,7 +428,7 @@ theorem hidingExperiment_capChallenges (tlp : TimeLockPuzzle spec Puzzle Key)
   · simp only [add_apply_inl, QueryImpl.passthrough_add, QueryImpl.batch'_add, capChallengesImpl,
       StateT.run_monadLift, bind_pure_comp, simulateQ_map, simulateQ_query,
       OracleQuery.input_query, OracleQuery.cont_query, QueryImpl.add_apply_inl,
-      PFunctor.Handler.liftTarget_apply, ofPFunctor_toPFunctor, QueryImpl.id'_apply, id_map,
+      QueryImpl.liftTarget_apply, ofPFunctor_toPFunctor, QueryImpl.id'_apply, id_map,
       QueryImpl.batch'_apply_inl]
     rw [map_eq_bind_pure_comp]
     rfl
@@ -437,7 +437,7 @@ theorem hidingExperiment_capChallenges (tlp : TimeLockPuzzle spec Puzzle Key)
   · simp only [add_apply_inr, QueryImpl.passthrough_add, QueryImpl.batch'_add, capChallengesImpl,
       StateT.run_monadLift, bind_pure_comp, simulateQ_map, simulateQ_query,
       OracleQuery.input_query, OracleQuery.cont_query, QueryImpl.add_apply_inr, id_map,
-      QueryImpl.batch'_apply_inr, PFunctor.Handler.liftTarget_apply, ofPFunctor_toPFunctor,
+      QueryImpl.batch'_apply_inr, QueryImpl.liftTarget_apply, ofPFunctor_toPFunctor,
       QueryImpl.id'_apply]
     exact (QueryImpl.run_batch_liftTarget _ ts s).symm
 

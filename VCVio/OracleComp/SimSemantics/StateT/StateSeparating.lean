@@ -49,13 +49,14 @@ state.
     Type _ :=
   QueryImpl E (StateT σ (OracleComp I))
 
-/-- `QueryImpl.Stateful` is definitionally PolyFun's generic effectful
-stateful-handler interface specialized to oracle computations. -/
-theorem Stateful.eq_handler
+/-- A `QueryImpl.Stateful` as PolyFun's generic effectful stateful handler, specialized to oracle
+computations. -/
+abbrev Stateful.toHandler
     {ιᵢ : Type uᵢ} {ιₑ : Type uₑ}
-    (I : OracleSpec.{uᵢ, vᵢ} ιᵢ) (E : OracleSpec.{uₑ, v} ιₑ) (σ : Type v) :
-    QueryImpl.Stateful I E σ =
-      PFunctor.Handler.Stateful (OracleComp I) σ E.toPFunctor := rfl
+    {I : OracleSpec.{uᵢ, vᵢ} ιᵢ} {E : OracleSpec.{uₑ, v} ιₑ} {σ : Type v}
+    (h : QueryImpl.Stateful I E σ) :
+    PFunctor.Handler.Stateful (OracleComp I) σ E.toPFunctor :=
+  QueryImpl.toHandler h
 
 namespace Stateful
 
@@ -157,7 +158,7 @@ def runState {α : Type v} (h : QueryImpl.Stateful I E σ) (s₀ : σ) (A : Orac
 generic PolyFun effectful-stateful handler runner. -/
 theorem runState_eq_handler_run {α : Type v} (h : QueryImpl.Stateful I E σ)
     (s₀ : σ) (A : OracleComp E α) :
-    h.runState s₀ A = PFunctor.Handler.Stateful.run h A s₀ := rfl
+    h.runState s₀ A = h.toHandler.run A s₀ := rfl
 
 /-- Run a stateful handler from the default initial state, keeping the final
 state. -/

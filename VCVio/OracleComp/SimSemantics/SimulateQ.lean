@@ -266,6 +266,12 @@ variable {ι} {spec : OracleSpec ι} {n : Type u → Type v}
 lemma simulateQ_def (impl : QueryImpl spec n) (mx : OracleComp spec α) :
     simulateQ impl mx = PFunctor.FreeM.liftMHom impl mx := rfl
 
+/-- Simulating through a handler of the specification's interface is PolyFun's interpretation
+through that handler. -/
+lemma simulateQ_ofHandler {m : Type u → Type v} [Monad m]
+    (h : PFunctor.Handler m spec.toPFunctor) (mx : OracleComp spec α) :
+    simulateQ (QueryImpl.ofHandler h) mx = PFunctor.FreeM.liftM h mx := rfl
+
 /-- `QueryImpl.id'` is an identity for `simulateQ` with implementation in `OracleComp spec`. -/
 @[simp, grind =]
 lemma simulateQ_id' (mx : OracleComp spec α) :

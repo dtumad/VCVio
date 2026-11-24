@@ -57,7 +57,7 @@ lemma simulateQ_simulateQ_eq_of_apply [LawfulMonad m] {so' : QueryImpl spec' m}
     (h : ∀ t, simulateQ so' (so t) = impl t) (oa : OracleComp spec α) :
     simulateQ so' (simulateQ so oa) = simulateQ impl oa := by
   rw [← simulateQ_compose]
-  exact congrArg (simulateQ · oa) (funext h)
+  exact congrArg (simulateQ · oa) (QueryImpl.ext h)
 
 @[simp]
 lemma compose_id' [LawfulMonad m] (so : QueryImpl spec m) :

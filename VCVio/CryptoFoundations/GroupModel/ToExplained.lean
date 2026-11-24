@@ -354,10 +354,12 @@ private theorem run_value {N : Type → Type} [Monad N] [LawfulMonad N]
     (game : QueryImpl (plainSpec G Query Reply) N)
     (p : OracleComp (explainedSpec F G Query Reply) (Explained F Result G))
     (b : Groups G) :
-    (fun z => z.1.value) <$> (simulateQ (fun q => StateT.mk fun basis => do
-      let reply ← game q.value
-      pure (reply, extend basis reply.groups)) p).run b =
-      Explained.value <$> simulateQ (fun q => game q.value) p := by
+    (fun z => z.1.value) <$> (simulateQ (spec := explainedSpec F G Query Reply)
+      ⟨fun q => StateT.mk fun basis => do
+        let reply ← game q.value
+        pure (reply, extend basis reply.groups)⟩ p).run b =
+      Explained.value <$>
+        simulateQ (spec := explainedSpec F G Query Reply) ⟨fun q => game q.value⟩ p := by
   induction p using OracleComp.inductionOn generalizing b with
   | pure out => simp
   | query_bind q next ih =>
@@ -457,7 +459,7 @@ private theorem explainProgram_run (M : Model F (discreteSig S) G)
             (next ⟨reply.data, fun s => List.range' (st.2 s).length (reply.groups s).length⟩)
             (receive st reply.groups)) = _
         simp only [simulateQ_bind, simulateQ_spec_query, explain, lookupMessage,
-          valueHandler_game, QueryImpl.add_apply_inr, liftGame, StateT.run,
+          valueHandler_game, QueryImpl.add_apply_inr, liftGame_apply, StateT.run,
           bind_assoc, pure_bind]
         change (Explained.value <$> (game
           ⟨q.data, fun s => (q.groups s).map (fun h => (lookup st.2 s h).2)⟩ >>=

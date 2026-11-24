@@ -91,7 +91,7 @@ theorem ResetPolicy.faithful {init : ProbComp σ} {impl : QueryImpl spec (StateT
 abbrev rerunSpec (Q α : Type) : OracleSpec Q := Q →ₒ α
 
 /-- Answer from a fixed function and charge one complete run. -/
-@[expose] def counted {Q α : Type} (f : Q → α) :
+@[expose, simps -isSimp] def counted {Q α : Type} (f : Q → α) :
     QueryImpl (rerunSpec Q α) (StateT ℕ ProbComp) where
   toFun q := do
     modify (· + 1)
@@ -101,7 +101,7 @@ variable {init : ProbComp σ} {impl : QueryImpl spec (StateT σ ProbComp)}
 
 /-- Execute one selected computation from the beginning, preserving the world and charging
 one complete run. The caller has no access to the computation's internal state or cursor. -/
-@[expose] def ResetPolicy.rerun (P : ResetPolicy init impl) {Q α : Type}
+@[expose, simps -isSimp] def ResetPolicy.rerun (P : ResetPolicy init impl) {Q α : Type}
     (run : Q → OracleComp spec α) :
     QueryImpl (rerunSpec Q α) (StateT (P.World × ℕ) ProbComp) where
   toFun q := StateT.mk fun s =>

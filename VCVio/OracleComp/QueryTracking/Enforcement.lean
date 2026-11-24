@@ -71,9 +71,9 @@ enforcement checks only the queried one. -/
 theorem run_simulateQ_sub_eq [DecidableLE (ι → ℕ)] (oa : OracleComp spec α)
     {qb spent : ι → ℕ} (hspent : spent ≤ qb) :
     (simulateQ spec.enforceOracle oa).run (qb - spent) =
-      Prod.map id (qb - ·) <$> (simulateQ (PFunctor.Handler.withBudgetOr (P := spec.toPFunctor)
-        (QueryImpl.ofLift spec (OracleComp spec)) (fun t => Pi.single t 1) qb
-        (fun _ => default)) oa).run spent := by
+      Prod.map id (qb - ·) <$> (simulateQ (.ofHandler (PFunctor.Handler.withBudgetOr
+        (QueryImpl.ofLift spec (OracleComp spec)).toHandler (fun t => Pi.single t 1) qb
+        (fun _ => default))) oa).run spent := by
   induction oa using OracleComp.inductionOn generalizing spent with
   | pure x => simp
   | query_bind t mx ih =>
@@ -110,7 +110,7 @@ theorem fst_map_run_simulateQ {oa : OracleComp spec α} {qb : ι → ℕ}
   have hrun := run_simulateQ_sub_eq oa (qb := qb) (spent := 0) zero_le
   rw [tsub_zero] at hrun
   rw [hrun, Functor.map_map,
-    show (fun z : α × (ι → ℕ) => (Prod.map id (qb - ·) z).1) = Prod.fst from rfl, simulateQ,
+    show (fun z : α × (ι → ℕ) => (Prod.map id (qb - ·) z).1) = Prod.fst from rfl, simulateQ_ofHandler,
     PFunctor.Handler.run_liftM_withBudgetOr_of_isChargeBound _ _ _
       ((isPerIndexQueryBound_iff_isChargeBound oa qb).1 h),
     PFunctor.Handler.fst_map_run_liftM_withCharge]

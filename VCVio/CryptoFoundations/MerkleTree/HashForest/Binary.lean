@@ -231,7 +231,7 @@ private theorem compose_binaryQueryImpl
     (answer : QueryImpl
       (spec BinaryOperationKind Unit (BinaryAddress LeafAddress NodeAddress)
         EncodedLeaf Digest) Id) ∘ₛ binaryQueryImpl =
-      (fun query => (binaryAnswer answer query : Id Digest)) := by
+      ⟨fun query => (binaryAnswer answer query : Id Digest)⟩ := by
   funext query
   cases query <;> simp [QueryImpl.compose, binaryQueryImpl, binaryAnswer, binaryQuery]
 

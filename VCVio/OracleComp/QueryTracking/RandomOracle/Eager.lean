@@ -42,7 +42,7 @@ unlike `randomOracle` which gives CONSISTENT samples (same input → same output
 The two models agree when no oracle index is queried more than once.
 
 This is definitionally equal to `uniformSampleImpl.withPregen` (from `SeededOracle.lean`). -/
-@[inline, reducible] def eagerRandomOracle {ι} [DecidableEq ι] {spec : OracleSpec ι}
+@[inline] def eagerRandomOracle {ι} [DecidableEq ι] {spec : OracleSpec ι}
     [∀ t : spec.Domain, SampleableType (spec.Range t)] :
     QueryImpl spec (StateT (QuerySeed spec) ProbComp) where
   toFun t := StateT.mk fun seed =>

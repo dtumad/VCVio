@@ -52,8 +52,8 @@ def withAddCost {ω : Type} [AddMonoid ω]
 writes its charge before the implementation runs. -/
 theorem withAddCost_eq_withChargeW [LawfulMonad m] {ω : Type} [AddMonoid ω]
     (impl : QueryImpl spec m) (costFn : spec.Domain → ω) :
-    impl.withAddCost costFn = PFunctor.Handler.withChargeW (P := spec.toPFunctor) impl costFn :=
-  (PFunctor.Handler.withChargeW_eq_withTraceBefore (P := spec.toPFunctor) impl costFn).symm
+    impl.withAddCost costFn = ofHandler (impl.toHandler.withChargeW costFn) :=
+  congrArg ofHandler (PFunctor.Handler.withChargeW_eq_withTraceBefore impl.toHandler costFn).symm
 
 /-- Forgetting the additive cost recovers the uninstrumented simulation. -/
 theorem fst_map_run_simulateQ_withAddCost [LawfulMonad m] {ω α : Type} [AddMonoid ω]
@@ -70,7 +70,7 @@ theorem run_simulateQ_withAddCost_id {ω α : Type} [AddMonoid ω] (answer : Que
         Multiplicative.ofAdd (PFunctor.FreeM.Path.charge costFn oa
           (PFunctor.FreeM.Path.ofHandler (fun t => (answer t).run) oa))) := by
   rw [withAddCost_eq_withChargeW]
-  exact PFunctor.Handler.run_liftM_withChargeW_id answer costFn oa
+  exact PFunctor.Handler.run_liftM_withChargeW_id answer.toHandler costFn oa
 
 @[simp]
 lemma withAddCost_apply {ω : Type} [AddMonoid ω]

@@ -240,7 +240,7 @@ theorem encodedQuery_eq_true_iff (s : S) (t : (pub.withDerivations X R).Domain) 
 `E.deriveImpl s` is the identity handler: a lifted program makes no derivation query. -/
 theorem deriveImpl_comp_withDerivationsLift (s : S) :
     E.deriveImpl s ∘ₛ pub.withDerivationsLift X R = QueryImpl.id' (unifSpec + pub) := by
-  funext t
+  ext t : 1
   rcases t with n | t <;> rfl
 
 /-- Answering a lifted probabilistic computation through `E.deriveImpl s` gives the same
