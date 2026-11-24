@@ -428,17 +428,14 @@ theorem hidingExperiment_capChallenges (tlp : TimeLockPuzzle spec Puzzle Key)
   · simp only [add_apply_inl, QueryImpl.passthrough_add, QueryImpl.batch'_add, capChallengesImpl,
       StateT.run_monadLift, bind_pure_comp, simulateQ_map, simulateQ_query,
       OracleQuery.input_query, OracleQuery.cont_query, QueryImpl.add_apply_inl,
-      QueryImpl.liftTarget_apply, ofPFunctor_toPFunctor, QueryImpl.id'_apply, id_map,
-      QueryImpl.batch'_apply_inl]
+      QueryImpl.liftTarget_apply, QueryImpl.id'_apply, id_map]
     rw [map_eq_bind_pure_comp]
     rfl
   · rw [capChallengesImpl, LeftOrRight.run_cap_apply]
     simp [LeftOrRight.cappedOracle, LeftOrRight.run_cap_apply]
   · simp only [add_apply_inr, QueryImpl.passthrough_add, QueryImpl.batch'_add, capChallengesImpl,
       StateT.run_monadLift, bind_pure_comp, simulateQ_map, simulateQ_query,
-      OracleQuery.input_query, OracleQuery.cont_query, QueryImpl.add_apply_inr, id_map,
-      QueryImpl.batch'_apply_inr, QueryImpl.liftTarget_apply, ofPFunctor_toPFunctor,
-      QueryImpl.id'_apply]
+      OracleQuery.input_query, OracleQuery.cont_query, QueryImpl.add_apply_inr, id_map]
     exact (QueryImpl.run_batch_liftTarget _ ts s).symm
 
 /-- **Branchwise bridge in the random oracle model.** At each hidden bit, the hiding experiment of

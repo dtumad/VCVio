@@ -380,9 +380,9 @@ theorem cmaSignLogImpl_cmaSignHashQueryBound
         (Resp := Resp) (Stmt := Stmt)) A).run signed) qS qH := by
   constructor
   · exact OracleComp.IsQueryBoundP.simulateQ_run_StateT_of_step hA.1
-      (fun t s => by cases t <;> simp [cmaSignLogImpl, IsCostlyQuery]) signed
+      (fun t s => by cases t <;> simp [IsCostlyQuery]) signed
   · exact OracleComp.IsQueryBoundP.simulateQ_run_StateT_of_step hA.2
-      (fun t s => by cases t <;> simp [cmaSignLogImpl, IsHashQuery]) signed
+      (fun t s => by cases t <;> simp [IsHashQuery]) signed
 
 /-- Candidate production, with signing queries logged before final verification,
 preserves the source adversary signing/hash query budget. -/

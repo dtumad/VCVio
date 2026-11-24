@@ -251,7 +251,7 @@ lemma counterJointImpl_run_unif (puzzle : Puzzle n S L Salt) (b : Bool) (k : ℕ
     (counterJointImpl prf codec encodePuzzle qEnc puzzle b (.inl (.inl k))).run s =
       (fun z => (z.1, (z.2, s.2))) <$> (unifFwdImpl (sealSpec n S L Salt Ctx N K) k).run s.1 := by
   simp only [add_apply_inl, counterJointImpl, counterLogImpl, QueryImpl.add_apply_inl,
-    QueryImpl.liftTarget_apply, ofPFunctor_toPFunctor, QueryImpl.ofLift_apply,
+    QueryImpl.liftTarget_apply, QueryImpl.ofLift_apply,
     StateT.run_monadLift, monadLift_self, bind_pure_comp, simulateQ_map,
     simulateQ_romImpl_simulateQ_unbatch, StateT.run_map, Functor.map_map, StateT.run_mk]
   rw [OracleComp.liftM_eq_liftM_liftM, OracleQuery.liftM_add_left_query, simulateQ_spec_query]

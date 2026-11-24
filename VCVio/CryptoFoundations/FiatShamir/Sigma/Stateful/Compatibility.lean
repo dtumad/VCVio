@@ -665,7 +665,7 @@ theorem statefulPostKeygenFreshAdvantage_eq_cmaRealRunProb_signedFreshAdv
     OracleQuery.input_query, OracleQuery.cont_query, StateT.run_bind,
     bind_assoc]
   simp only [postKeygenAppendImpl, StateT.run_pure, monad_norm,
-    cmaSignLogImpl_apply, bind_pure, CompTriple.comp_eq, StateT.run_monadLift, monadLift_self,
+    bind_pure, CompTriple.comp_eq, StateT.run_monadLift, monadLift_self,
     simulateQ_bind, simulateQ_query, OracleQuery.input_query, OracleQuery.cont_query,
     cmaReal_apply, Prod.mk.eta, simulateQ_pure, cmaInit, StateT.run_bind, StateT.run_mk]
   refine bind_congr fun ps => ?_
@@ -878,16 +878,16 @@ private lemma fsBaseImpl_writerTMapBase_signingOracle_eq
   rcases t with (n | mc) | m <;> ext cache
   · simp only [add_apply_inl, QueryImpl.writerTMapBase, fsBaseImpl, OracleSpec.romImpl,
       unifFwdImpl, QueryImpl.add_apply_inl, QueryImpl.liftTarget_apply,
-      ofPFunctor_toPFunctor, HasQuery.toQueryImpl_apply, HasQuery.instOfMonadLift_query,
+      HasQuery.toQueryImpl_apply, HasQuery.instOfMonadLift_query,
       WriterT.run_liftM,
       List.empty_eq, simulateQ_map, WriterT.run_mk, StateT.run_map,
-      PFunctor.selfMonomial_B, StateT.run_monadLift, monadLift_self, bind_pure_comp,
+      StateT.run_monadLift, monadLift_self, bind_pure_comp,
       Functor.map_map]
     erw [QueryImpl.simulateQ_add_query_left]
     simp
   · simp only [add_apply_inl, add_apply_inr, QueryImpl.writerTMapBase, fsBaseImpl,
       OracleSpec.romImpl, randomOracle, QueryImpl.add_apply_inl, QueryImpl.liftTarget_apply,
-      ofPFunctor_toPFunctor, HasQuery.toQueryImpl_apply, HasQuery.instOfMonadLift_query,
+      HasQuery.toQueryImpl_apply, HasQuery.instOfMonadLift_query,
       WriterT.run_liftM, List.empty_eq, simulateQ_map, WriterT.run_mk, StateT.run_map,
       QueryImpl.add_apply_inr, QueryImpl.withCaching_apply, uniformSampleImpl_apply, map_bind,
       StateT.run_bind, StateT.run_get, pure_bind, Prod.mk.injEq, and_true, and_imp,

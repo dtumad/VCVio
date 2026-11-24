@@ -105,7 +105,7 @@ lemma gpvOuter_writerTMapBase_implW (pk : PK) (sk : SK) :
   · -- public/random-oracle base query: `writerTMapBase` runs the lifted query through `gpvOuter`.
     ext s
     simp only [QueryImpl.writerTMapBase, QueryImpl.add_apply_inl, QueryImpl.liftTarget_apply,
-      QueryImpl.toHasQuery_query, WriterT.mk, HasQuery.toQueryImpl_apply]
+      WriterT.mk, HasQuery.toQueryImpl_apply]
     rfl
   · -- signing query: `signingOracle = withLogging sign`; `(withLogging sign sq).run = sign sq >>=
     -- fun u => (u, [⟨sq, u⟩])` re-emits the log, so the fused LHS commutes the monad-morphism
