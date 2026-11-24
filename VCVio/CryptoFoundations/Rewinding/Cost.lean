@@ -186,7 +186,7 @@ theorem IsFinder.expectedCalls_bind_runCharged_le {R : Type} [Fintype R] [Decida
 
 /-- Answer coin queries by coin queries, and a rerun on `q` by a rerun that also reports its cost,
 adding the reported cost to the state. -/
-@[expose] def costAdapterImpl {Q α : Type} :
+@[expose, simps -isSimp] def costAdapterImpl {Q α : Type} :
     QueryImpl (unifSpec + rerunSpec Q α)
       (StateT ℕ (OracleComp (unifSpec + rerunSpec Q (α × ℕ)))) where
   toFun
@@ -216,9 +216,9 @@ private theorem fst_map_simulateQ_counted_costAdapterImpl {Q α β : Type} (g : 
     rcases t with n | q
     · rw [runCharged_query_inl_bind]
       simp only [coins, QueryImpl.ofLift_eq_id'] at ih ⊢
-      simp [costAdapterImpl, ih]
+      simp [costAdapterImpl_apply, ih]
     · rw [runCharged_query_inr_bind]
-      simpa [costAdapterImpl, coins, counted_apply] using ih _ _ _
+      simpa [costAdapterImpl_apply, coins, counted_apply] using ih _ _ _
 
 /-- Against a fixed table of answers and costs, the output and accumulated reported cost of
 `costAdapter alg` form the charged run of `alg`. -/
@@ -241,8 +241,8 @@ theorem map_simulateQ_counted_costAdapter {Q α β : Type} (g : Q → α × ℕ)
   | query_bind t k ih =>
     rcases t with n | q
     · simp only [coins, QueryImpl.ofLift_eq_id'] at ih ⊢
-      simp [costAdapterImpl, ih]
-    · simpa [costAdapterImpl, coins, counted_apply] using ih _ _ _
+      simp [costAdapterImpl_apply, ih]
+    · simpa [costAdapterImpl_apply, coins, counted_apply] using ih _ _ _
 
 /-! ## Frozen reruns that report their own cost -/
 
@@ -278,8 +278,8 @@ private theorem map_run_simulateQ_rerun_costAdapterImpl {Q α β : Type}
   | query_bind t k ih =>
     rcases t with n | q
     · simp only [coins, QueryImpl.ofLift_eq_id'] at ih ⊢
-      simp [costAdapterImpl, ih]
-    · simp [costAdapterImpl, ResetPolicy.rerun_apply, simulateQ_map, StateT.run_map, ih]
+      simp [costAdapterImpl_apply, ih]
+    · simp [costAdapterImpl_apply, ResetPolicy.rerun_apply, simulateQ_map, StateT.run_map, ih]
 
 /-- Forgetting the accumulated reported cost of an attempt of `costAdapter alg` against frozen
 reruns gives the attempt of `alg` against the reruns' outputs. -/
