@@ -115,7 +115,7 @@ def counterImpl (puzzle : Puzzle n S L Salt) (b : Bool) :
       (StateT ℕ (OracleComp (unifSpec + (sealSpec n S L Salt Ctx N K).batch)))) +
     LeftOrRight.oracle (counterEncrypt (n := n) (S := S) (L := L) (Salt := Salt) (Ctx := Ctx)
       prf codec qEnc (encodePuzzle puzzle)) plaintextLength b) +
-    (fun ts => liftM ((unifSpec + (sealSpec n S L Salt Ctx N K).batch).query (.inr ts)) :
+    (⟨fun ts => liftM ((unifSpec + (sealSpec n S L Salt Ctx N K).batch).query (.inr ts))⟩ :
       QueryImpl (sealSpec n S L Salt Ctx N K).batch (StateT ℕ
         (OracleComp (unifSpec + (sealSpec n S L Salt Ctx N K).batch))))
 
@@ -189,7 +189,7 @@ def counterLogImpl (puzzle : Puzzle n S L Salt) (b : Bool) :
         (OracleComp (unifSpec + (sealSpec n S L Salt Ctx N K).batch)))) +
     LeftOrRight.oracle (counterLogEncrypt (n := n) (S := S) (L := L) (Salt := Salt) (Ctx := Ctx)
       prf codec qEnc (encodePuzzle puzzle)) plaintextLength b) +
-    (fun ts => liftM ((unifSpec + (sealSpec n S L Salt Ctx N K).batch).query (.inr ts)) :
+    (⟨fun ts => liftM ((unifSpec + (sealSpec n S L Salt Ctx N K).batch).query (.inr ts))⟩ :
       QueryImpl (sealSpec n S L Salt Ctx N K).batch (StateT (ℕ × CounterLog N K)
         (OracleComp (unifSpec + (sealSpec n S L Salt Ctx N K).batch))))
 
@@ -290,8 +290,8 @@ lemma counterJointImpl_run_batch (puzzle : Puzzle n S L Salt) (b : Bool)
     OracleQuery.cont_query, unbatch_apply_inr, id_map, StateT.run_map, Functor.map_map,
     StateT.run_mk]
   rw [← QueryImpl.apply_compose, QueryImpl.compose_batch]
-  congr 3
-  funext t
+  congr 4
+  ext t : 1
   simp only [QueryImpl.apply_compose, simulateQ_query, OracleQuery.input_query, add_apply_inr,
     OracleQuery.cont_query, QueryImpl.add_apply_inr, QueryImpl.withCaching_apply,
     uniformSampleImpl_apply, map_bind, id_map]
@@ -766,7 +766,7 @@ noncomputable def indexedRunImpl :
   ((sealSpec n S L Salt Ctx N K).randomOracle.liftTarget
       (StateT (sealSpec n S L Salt Ctx N K).QueryCache
         (OracleComp (PRFOracleSpec (Fin (2 * qEnc) × ByteArray) (Bytes 32)))) +
-    (fun x => liftM (functionQuery (R := Bytes 32) x) : QueryImpl (instanceSpec qEnc)
+    (⟨fun x => liftM (functionQuery (R := Bytes 32) x)⟩ : QueryImpl (instanceSpec qEnc)
       (StateT (sealSpec n S L Salt Ctx N K).QueryCache
         (OracleComp (PRFOracleSpec (Fin (2 * qEnc) × ByteArray) (Bytes 32))))))
 
@@ -779,7 +779,7 @@ noncomputable def keyedRomImpl (T : Fin (2 * qEnc) → K) :
       (StateT (sealSpec n S L Salt Ctx N K).QueryCache ProbComp) :=
   unifFwdImpl (sealSpec n S L Salt Ctx N K) +
     ((sealSpec n S L Salt Ctx N K).randomOracle +
-      (fun x => pure (prf.eval (T x.1) x.2) : QueryImpl (instanceSpec qEnc)
+      (⟨fun x => pure (prf.eval (T x.1) x.2)⟩ : QueryImpl (instanceSpec qEnc)
         (StateT (sealSpec n S L Salt Ctx N K).QueryCache ProbComp)))
 
 /-- In the real world of `prf.multiKey` with the key table `T`, the handler of `indexedRun` is
@@ -789,7 +789,7 @@ lemma mapStateTBase_indexedRunImpl (T : Fin (2 * qEnc) → K) :
         (indexedRunImpl (n := n) (S := S) (L := L) (Salt := Salt) (Ctx := Ctx) (N := N) (K := K)
           qEnc) =
       keyedRomImpl (n := n) (S := S) (L := L) (Salt := Salt) (Ctx := Ctx) prf qEnc T := by
-  funext t
+  ext t : 1
   refine StateT.ext fun s => ?_
   rcases t with k | t | x
   · simp only [QueryImpl.mapStateTBase, indexedRunImpl, keyedRomImpl, unifFwdImpl,
@@ -814,7 +814,7 @@ lemma simulateQ_keyedRomImpl_liftComp (T : Fin (2 * qEnc) → K) {α : Type}
   rcases t with k | x
   · exact simulateQ_spec_query (keyedRomImpl (n := n) (S := S) (L := L) (Salt := Salt)
       (Ctx := Ctx) prf qEnc T) (Sum.inl k)
-  · rw [OracleComp.liftM_eq_liftM_liftM, simulateQ_query]
+  · rw [QueryImpl.mk_apply, OracleComp.liftM_eq_liftM_liftM, simulateQ_query]
     rcases x with p | p | p <;> exact id_map _
 
 variable [SampleableType N]
@@ -831,7 +831,7 @@ def indexedOnlineImpl (puzzle : Puzzle n S L Salt) (b : Bool) :
       (StateT ℕ (OracleComp (indexedSpec n S L Salt Ctx N K qEnc))) +
     LeftOrRight.oracle (indexedEncrypt (n := n) (S := S) (L := L) (Salt := Salt) (Ctx := Ctx)
       (K := K) codec qEnc (encodePuzzle puzzle)) plaintextLength b) +
-    (fun t => liftM ((indexedSpec n S L Salt Ctx N K qEnc).query (.inr (.inl t))) :
+    (⟨fun t => liftM ((indexedSpec n S L Salt Ctx N K qEnc).query (.inr (.inl t)))⟩ :
       QueryImpl (sealSpec n S L Salt Ctx N K)
         (StateT ℕ (OracleComp (indexedSpec n S L Salt Ctx N K qEnc))))
 
@@ -864,13 +864,13 @@ lemma keyedJointImpl_run_batch (T : Fin (2 * qEnc) → K) (puzzle : Puzzle n S L
   simp only [keyedJointImpl, StateT.run_mk, QueryImpl.batch'_apply_inr, indexedOnlineImpl,
     QueryImpl.add_apply_inr]
   erw [QueryImpl.run_batch_liftTarget (m := OracleComp (indexedSpec n S L Salt Ctx N K qEnc))
-    (fun t => liftM ((indexedSpec n S L Salt Ctx N K qEnc).query (.inr (.inl t))))]
+    ⟨fun t => liftM ((indexedSpec n S L Salt Ctx N K qEnc).query (.inr (.inl t)))⟩]
   rw [simulateQ_map, StateT.run_map, Functor.map_map, ← QueryImpl.apply_compose,
     QueryImpl.compose_batch]
   have h : (keyedRomImpl (n := n) (S := S) (L := L) (Salt := Salt) (Ctx := Ctx) prf qEnc T ∘ₛ
-      fun t => liftM ((indexedSpec n S L Salt Ctx N K qEnc).query (.inr (.inl t)))) =
+      ⟨fun t => liftM ((indexedSpec n S L Salt Ctx N K qEnc).query (.inr (.inl t)))⟩) =
       (sealSpec n S L Salt Ctx N K).randomOracle := by
-    funext t
+    ext t : 1
     rw [QueryImpl.apply_compose, simulateQ_spec_query]
     rfl
   rw [h]
@@ -922,7 +922,7 @@ lemma simulateQ_keyedTabImpl_run {α : Type} (puzzle : Puzzle n S L Salt) (b : B
     obtain ⟨z, -, rfl⟩ := hx
     rfl)]
   congr 3
-  funext t
+  ext t : 1
   refine StateT.ext fun s => ?_
   simp [QueryImpl.fixSndStateT, keyedTabImpl, Functor.map_map]
 

@@ -121,8 +121,6 @@ lemma gpvOuter_writerTMapBase_implW (pk : PK) (sk : SK) :
       QueryImpl.add_apply_inr, StateT.run_bind, StateT.run_pure,
       WriterT.run_bind, WriterT.run_liftM,
       WriterT.run_tell, WriterT.run_pure, map_eq_bind_pure_comp]
-    simp only [HAdd.hAdd, QueryImpl.add, simulateQ_bind, simulateQ_pure,
-      StateT.run_bind, StateT.run_pure, bind_assoc, pure_bind, Function.comp_def]
 
 omit [Fintype Salt] in
 /-- **Per-query state-projection of the flattened append-log handler onto `gpvRealImplFresh`.**
@@ -240,7 +238,7 @@ lemma map_simulateQ_gpvOuter_writerLog_eq_gpvRealImplFresh (pk : PK) (sk : SK) {
     (((gpvOuter M Salt).liftTarget
         (StateT (List M) (StateT ((Salt × M →ₒ Range).QueryCache) ProbComp)) +
       QueryImpl.appendInputLog
-        (fun msg => gpvRealImpl psf hr M Salt pk sk (Sum.inr msg) :
+        (⟨fun msg => gpvRealImpl psf hr M Salt pk sk (Sum.inr msg)⟩ :
           QueryImpl (M →ₒ (Salt × Domain))
             (StateT ((Salt × M →ₒ Range).QueryCache) ProbComp))).flattenStateT)
     (gpvRealImplFresh psf hr M Salt pk sk)

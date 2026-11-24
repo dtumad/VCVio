@@ -527,24 +527,24 @@ every other step is literally independent of `y` (`embedTrapImpl_run_step_indep_
       (StateT ((Salt × M →ₒ Range).QueryCache × ℕ) ProbComp) :=
   let State := (Salt × M →ₒ Range).QueryCache × ℕ
   let roImpl : QueryImpl (Salt × M →ₒ Range) (StateT State ProbComp) :=
-    fun t => do
+    ⟨fun t => do
       let st ← get
       match st.1 t with
       | some v => pure v
       | none => do
           let v ← ($ᵗ Range : ProbComp Range)
           set ((st.1.cacheQuery t v, st.2 + 1) : State)
-          pure v
+          pure v⟩
   let unifImpl : QueryImpl unifSpec (StateT State ProbComp) :=
-    fun t => (unifSpec.query t : ProbComp _)
+    ⟨fun t => (unifSpec.query t : ProbComp _)⟩
   let signImpl : QueryImpl (M →ₒ (Salt × Domain)) (StateT State ProbComp) :=
-    fun msg => do
+    ⟨fun msg => do
       let r ← ($ᵗ Salt : ProbComp Salt)
       let c ← ($ᵗ Range : ProbComp Range)
       let x ← (psf.trapdoorSample pk sk c : ProbComp Domain)
       let st ← get
       set ((st.1.cacheQuery (r, msg) c, st.2 + 1) : State)
-      pure (r, x)
+      pure (r, x)⟩
   (unifImpl + roImpl) + signImpl
 
 omit [DecidableEq Range] [Fintype Salt] in
@@ -791,7 +791,7 @@ embedded winner slot (`cache(forged) = some y`) coincides with `idx(forged) = so
       (StateT (((Salt × M →ₒ Range).QueryCache × ℕ) × ((Salt × M) → Option ℕ)) ProbComp) :=
   let State := ((Salt × M →ₒ Range).QueryCache × ℕ) × ((Salt × M) → Option ℕ)
   let roImpl : QueryImpl (Salt × M →ₒ Range) (StateT State ProbComp) :=
-    fun t => do
+    ⟨fun t => do
       let st ← get
       match st.1.1 t with
       | some v => pure v
@@ -804,18 +804,18 @@ embedded winner slot (`cache(forged) = some y`) coincides with `idx(forged) = so
           else
             set (((st.1.1.cacheQuery t v, st.1.2 + 1),
               fun t' => if t' = t then some st.1.2 else st.2 t') : State)
-            pure v
+            pure v⟩
   let unifImpl : QueryImpl unifSpec (StateT State ProbComp) :=
-    fun t => (unifSpec.query t : ProbComp _)
+    ⟨fun t => (unifSpec.query t : ProbComp _)⟩
   let signImpl : QueryImpl (M →ₒ (Salt × Domain)) (StateT State ProbComp) :=
-    fun msg => do
+    ⟨fun msg => do
       let r ← ($ᵗ Salt : ProbComp Salt)
       let c ← ($ᵗ Range : ProbComp Range)
       let x ← (psf.trapdoorSample pk sk c : ProbComp Domain)
       let st ← get
       set (((st.1.1.cacheQuery (r, msg) c, st.1.2 + 1),
         fun t' => if t' = (r, msg) then some st.1.2 else st.2 t') : State)
-      pure (r, x)
+      pure (r, x)⟩
   (unifImpl + roImpl) + signImpl
 
 omit [DecidableEq Range] [Fintype Salt] in
@@ -934,7 +934,7 @@ point.  It is the run-only bookkeeping that replaces the `y`-reading win literal
       (StateT (((Salt × M →ₒ Range).QueryCache × ℕ) × ((Salt × M) → Option ℕ)) ProbComp) :=
   let State := ((Salt × M →ₒ Range).QueryCache × ℕ) × ((Salt × M) → Option ℕ)
   let roImpl : QueryImpl (Salt × M →ₒ Range) (StateT State ProbComp) :=
-    fun t => do
+    ⟨fun t => do
       let st ← get
       match st.1.1 t with
       | some v => pure v
@@ -942,18 +942,18 @@ point.  It is the run-only bookkeeping that replaces the `y`-reading win literal
           let v ← ($ᵗ Range : ProbComp Range)
           set (((st.1.1.cacheQuery t v, st.1.2 + 1),
             fun t' => if t' = t then some st.1.2 else st.2 t') : State)
-          pure v
+          pure v⟩
   let unifImpl : QueryImpl unifSpec (StateT State ProbComp) :=
-    fun t => (unifSpec.query t : ProbComp _)
+    ⟨fun t => (unifSpec.query t : ProbComp _)⟩
   let signImpl : QueryImpl (M →ₒ (Salt × Domain)) (StateT State ProbComp) :=
-    fun msg => do
+    ⟨fun msg => do
       let r ← ($ᵗ Salt : ProbComp Salt)
       let c ← ($ᵗ Range : ProbComp Range)
       let x ← (psf.trapdoorSample pk sk c : ProbComp Domain)
       let st ← get
       set (((st.1.1.cacheQuery (r, msg) c, st.1.2 + 1),
         fun t' => if t' = (r, msg) then some st.1.2 else st.2 t') : State)
-      pure (r, x)
+      pure (r, x)⟩
   (unifImpl + roImpl) + signImpl
 
 omit [DecidableEq Range] [Fintype Salt] in
