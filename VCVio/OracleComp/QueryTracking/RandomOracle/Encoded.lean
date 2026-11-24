@@ -242,7 +242,8 @@ the answer is the typed answer at `q` completed from `p`, and otherwise it is `p
 router. -/
 @[expose] noncomputable def typedHashImpl :
     QueryImpl (spec + (D →ₒ M)) (StateT (spec.QueryCache × (D →ₒ M).QueryCache) ProbComp) :=
-  (fun t ↦ pairImpl (spec := spec) (D := D) (M := M) (.inl t)) + E.routerImpl
+  (⟨fun t ↦ pairImpl (spec := spec) (D := D) (M := M) (.inl t)⟩ :
+    QueryImpl spec (StateT (spec.QueryCache × (D →ₒ M).QueryCache) ProbComp)) + E.routerImpl
 
 /-- The typed world: uniform sampling passes through, typed points are answered by independent
 lazy random oracles and raw inputs by the router. -/
@@ -953,7 +954,7 @@ theorem singleImpl_run_evalDistEq_typedImpl_fill_of_injective
       (E.clash_mark (Or.inr collision) answer)
   -- With no possible clash, the existing patched handler is the typed handler.
   have patched : E.patchedImpl = E.typedImpl := by
-    funext operation state
+    ext operation state : 2
     rcases operation with draw | operation
     · rfl
     · simp [patchedImpl, typedImpl, patchedHashImpl, noClash, noCollides]

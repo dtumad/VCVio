@@ -182,8 +182,8 @@ direct named CMA game. -/
   letI : HasQuery (roSpec M Commit Chal)
       (StateT (RoCache M Commit Chal) ProbComp) :=
     (randomOracle : QueryImpl (roSpec M Commit Chal) _).toHasQuery
-  (_root_.FiatShamir (m := StateT (RoCache M Commit Chal) ProbComp) sigma hr M).sign
-    pk sk
+  ⟨(_root_.FiatShamir (m := StateT (RoCache M Commit Chal) ProbComp) sigma hr M).sign
+    pk sk⟩
 
 /-- Source-query part of the real CMA game over the full direct CMA state. -/
 @[fs_simp] def cmaRealSourceFull

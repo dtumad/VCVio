@@ -96,7 +96,7 @@ instance instDFunLike : DFunLike (OracleHandler spec) spec.Domain (fun t => spec
     ofFn f t = f t := rfl
 
 /-- A handler is a deterministic `QueryImpl spec Id` — its answer function. -/
-def toQueryImpl (h : OracleHandler spec) : QueryImpl spec Id := ⇑h
+def toQueryImpl (h : OracleHandler spec) : QueryImpl spec Id := ⟨⇑h⟩
 
 @[simp] theorem toQueryImpl_apply (h : OracleHandler spec) (t : spec.Domain) :
     h.toQueryImpl t = h t := rfl

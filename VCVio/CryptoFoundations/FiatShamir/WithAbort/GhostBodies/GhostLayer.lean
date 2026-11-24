@@ -390,7 +390,7 @@ component of the hybrid state. -/
     unifFwdImpl (M × Commit →ₒ Chal) +
       (randomOracle : QueryImpl (M × Commit →ₒ Chal)
         (StateT ((M × Commit →ₒ Chal).QueryCache) ProbComp))
-  fun t => onCache M (base t)
+  ⟨fun t => onCache M (base t)⟩
 
 /-- Handler for the adversary's signing oracle in the hybrid games: record the signed
 message (for the freshness check) and run the given signing body on the cache. -/

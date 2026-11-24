@@ -69,14 +69,14 @@ agrees with function composition. -/
   spec _ := OracleSpec.sigma inner.spec + OracleSpec.sigma outer.spec
   program v := do
     let result ← simulateQ
-      (fun query => liftM ((OracleSpec.sigma inner.spec + OracleSpec.sigma outer.spec).query
-        (.inl ⟨v, query⟩))) (inner.program v)
+      ⟨fun query => liftM ((OracleSpec.sigma inner.spec + OracleSpec.sigma outer.spec).query
+        (.inl ⟨v, query⟩))⟩ (inner.program v)
     simulateQ
       ⟨fun query => liftM ((OracleSpec.sigma inner.spec + OracleSpec.sigma outer.spec).query
         (.inr ⟨outer.view result, query⟩))⟩ (outer.program (outer.view result))
-  answer _
+  answer _ := ⟨fun
     | .inl ⟨v, query⟩ => inner.answer v query
-    | .inr ⟨v, query⟩ => outer.answer v query
+    | .inr ⟨v, query⟩ => outer.answer v query⟩
   cost
     | .inl ⟨_, query⟩ => inner.cost query
     | .inr ⟨_, query⟩ => outer.cost query
@@ -87,13 +87,13 @@ theorem run_comp (outer : MeasuredProgram B C ω) (inner : MeasuredProgram A B �
   unfold run comp evalWithAnswerFn
   simp only [simulateQ_bind]
   have first : ∀ v : inner.View, simulateQ
-      ((fun t => match t with
+      (⟨fun t => match t with
         | .inl ⟨v, query⟩ => inner.answer v query
-        | .inr ⟨v, query⟩ => outer.answer v query) :
+        | .inr ⟨v, query⟩ => outer.answer v query⟩ :
         QueryImpl (OracleSpec.sigma inner.spec + OracleSpec.sigma outer.spec) Id)
       (simulateQ
-        (fun query => liftM ((OracleSpec.sigma inner.spec + OracleSpec.sigma outer.spec).query
-          (.inl ⟨v, query⟩))) (inner.program v)) =
+        ⟨fun query => liftM ((OracleSpec.sigma inner.spec + OracleSpec.sigma outer.spec).query
+          (.inl ⟨v, query⟩))⟩ (inner.program v)) =
       simulateQ (inner.answer v) (inner.program v) := by
     intro v
     exact QueryImpl.simulateQ_simulateQ_eq_of_apply (fun _ => rfl) _
@@ -112,10 +112,10 @@ theorem simulateQ_withAddCost_comp [AddCommMonoid ω]
   let handler := ((outer.comp inner).answer v).withAddCost (outer.comp inner).cost
   let left (view : inner.View) :
       QueryImpl (inner.spec view) (OracleComp ((outer.comp inner).spec v)) :=
-    fun query => liftM ((outer.comp inner).spec v |>.query (.inl ⟨view, query⟩))
+    ⟨fun query => liftM ((outer.comp inner).spec v |>.query (.inl ⟨view, query⟩))⟩
   let right (result : B) :
       QueryImpl (outer.spec (outer.view result)) (OracleComp ((outer.comp inner).spec v)) :=
-    fun query => liftM ((outer.comp inner).spec v |>.query (.inr ⟨outer.view result, query⟩))
+    ⟨fun query => liftM ((outer.comp inner).spec v |>.query (.inr ⟨outer.view result, query⟩))⟩
   have first : simulateQ handler (simulateQ (left v) (inner.program v)) =
       simulateQ ((inner.answer v).withAddCost inner.cost) (inner.program v) :=
     QueryImpl.simulateQ_simulateQ_eq_of_apply (fun query =>

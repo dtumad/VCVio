@@ -127,23 +127,23 @@ theorem simulateQ_run_eq [LawfulMonad m] {M : OracleMachine spec α β}
     {program : α → OracleComp spec β} {k : ℕ}
     (h : M.ImplementsWithin program k) (impl : QueryImpl spec m) (x : α) :
     M.runWithInput impl.toHandler k x = some <$> simulateQ impl (program x) :=
-  h.runWithInput_eq impl x
+  h.runWithInput_eq impl.toHandler x
 
 /-- Deterministic reading: through a deterministic handler, an implementing machine returns
 exactly the handler-computed value of the program. -/
 theorem runWithInput_ofFn_eq {M : OracleMachine spec α β}
     {program : α → OracleComp spec β} {k : ℕ}
     (h : M.ImplementsWithin program k) (hf : OracleHandler spec) (x : α) :
-    M.runWithInput (QueryImpl.ofFn hf) k x =
+    M.runWithInput (QueryImpl.ofFn hf).toHandler k x =
       some (evalWithAnswerFn (QueryImpl.ofFn hf) (program x)) :=
-  h.runWithInput_eq (QueryImpl.ofFn hf) x
+  h.runWithInput_eq (QueryImpl.ofFn hf).toHandler x
 
 /-- Probabilistic reading: an implementing machine puts no probability mass on fuel
 exhaustion — the `none` branch of the fuelled run through a probabilistic handler is null. -/
 theorem prEvent_none_runWithInput {ι : Type} {spec : OracleSpec.{0, 0} ι} {α β : Type}
     {M : OracleMachine spec α β} {program : α → OracleComp spec β} {k : ℕ}
     (h : M.ImplementsWithin program k) (impl : ProbHandler spec) (x : α) :
-    Pr{let y ← M.runWithInput impl k x}[y = none] = 0 := by
+    Pr{let y ← M.runWithInput impl.toHandler k x}[y = none] = 0 := by
   rw [h.simulateQ_run_eq impl x]
   simp [prEvent_norm]
 

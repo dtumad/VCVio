@@ -131,15 +131,19 @@ namespace QueryImpl
 
 variable {ι : Type u} {spec : OracleSpec.{u, v} ι} {m : Type v → Type w}
 
-/-- Answer a round point by point, in the order of its list. -/
+/-- The answers of `impl` to the points of a round, in the order of its list. -/
 @[expose]
-def batch [Monad m] (impl : QueryImpl spec m) : QueryImpl spec.batch m where
-  toFun
+def batchAnswers [Monad m] (impl : QueryImpl spec m) : (ts : List ι) → m (spec.batch.Range ts)
   | [] => pure batchNil
   | t :: ts => do
       let u ← impl t
-      let us ← impl.batch ts
+      let us ← impl.batchAnswers ts
       pure (batchCons u us)
+
+/-- Answer a round point by point, in the order of its list. -/
+@[expose]
+def batch [Monad m] (impl : QueryImpl spec m) : QueryImpl spec.batch m where
+  toFun := impl.batchAnswers
 
 @[simp] lemma batch_nil [Monad m] (impl : QueryImpl spec m) :
     impl.batch [] = pure batchNil := rfl
@@ -248,8 +252,8 @@ theorem simulateQ_simulateQ_unbatch (impl : QueryImpl (free + spec) m) {α : Typ
   · exact simulateQ_spec_query impl (.inl n)
   · change (impl ∘ₛ QueryImpl.batch _) ts = _
     rw [compose_batch]
-    congr 1
-    funext t
+    refine congrArg (fun so => QueryImpl.batch so ts) ?_
+    ext t : 1
     exact simulateQ_spec_query impl (.inr t)
 
 end QueryImpl

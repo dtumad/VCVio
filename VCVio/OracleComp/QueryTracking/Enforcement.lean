@@ -77,7 +77,12 @@ theorem run_simulateQ_sub_eq [DecidableLE (ι → ℕ)] (oa : OracleComp spec α
   induction oa using OracleComp.inductionOn generalizing spent with
   | pure x => simp
   | query_bind t mx ih =>
-    rw [run_simulateQ_query_bind, run_simulateQ_query_bind, run_apply]
+    have hrun : (QueryImpl.ofHandler (PFunctor.Handler.withBudgetOr
+        (QueryImpl.ofLift spec (OracleComp spec)).toHandler (fun t => Pi.single t 1) qb
+        (fun _ => default)) t).run spent =
+      if spent + Pi.single t 1 ≤ qb then (·, spent + Pi.single t 1) <$> liftM (query t)
+      else pure (default, spent) := rfl
+    rw [run_simulateQ_query_bind, run_simulateQ_query_bind, run_apply, hrun]
     by_cases h : spent + Pi.single t 1 ≤ qb
     · have hpos : 0 < (qb - spent) t := by
         have := h t
@@ -89,16 +94,14 @@ theorem run_simulateQ_sub_eq [DecidableLE (ι → ℕ)] (oa : OracleComp spec α
         by_cases hj : j = t
         · subst hj; simp; omega
         · simp [hj]
-      simp only [ite_eq_left hpos, ite_eq_left h, PFunctor.Handler.withBudgetOr, StateT.run, hupd,
-        bind_map_left, map_bind]
+      simp only [ite_eq_left hpos, ite_eq_left h, hupd, bind_map_left, map_bind]
       exact bind_congr fun u => ih u h
     · have hpos : ¬ 0 < (qb - spent) t := by
         refine fun hlt => h fun j => ?_
         by_cases hj : j = t
         · subst hj; simp at hlt ⊢; omega
         · simpa [Pi.single_apply, hj] using hspent j
-      simp only [ite_eq_right hpos, ite_eq_right h, PFunctor.Handler.withBudgetOr, StateT.run,
-        pure_bind]
+      simp only [ite_eq_right hpos, ite_eq_right h, pure_bind]
       exact ih default hspent
 
 /-- When the computation is within its query bound, enforcement is transparent:

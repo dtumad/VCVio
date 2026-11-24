@@ -157,7 +157,7 @@ theorem endFill_eq_simulateQ_cellImpl (s : RelabelState pub X K R × List (X ⊕
   | nil => simp only [OracleSpec.queryAll_nil, simulateQ_pure, StateT.run_pure, map_pure]
   | cons c cs ih =>
     simp only [OracleSpec.queryAll_cons, simulateQ_bind, simulateQ_spec_query, StateT.run_bind,
-      map_bind, cellImpl, drawCell_run, bind_map_left, ← ih]
+      map_bind, cellImpl_apply, drawCell_run, bind_map_left, ← ih]
 
 /-- The masked end fill runs the random oracle on the cell cache at the pending cells, and hides
 the pending cells undrawn before it. -/

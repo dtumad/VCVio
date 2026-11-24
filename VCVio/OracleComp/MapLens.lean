@@ -177,7 +177,7 @@ theorem liftComp_eq_mapLens [h : spec ⊂ₒ superSpec] (mx : OracleComp spec α
   have e : (liftM (spec.query t) : OracleQuery superSpec _) =
       ⟨h.onQuery t, h.onResponse t⟩ :=
     SubSpec.liftM_eq_lift (self := h) _
-  rw [liftM_eq_liftM_liftM (superSpec := superSpec), e]
+  rw [QueryImpl.mk_apply, liftM_eq_liftM_liftM (superSpec := superSpec), e]
   rfl
 
 variable {ι₁ : Type u} {ι₂ : Type u'} {spec₁ : OracleSpec.{u, w} ι₁}

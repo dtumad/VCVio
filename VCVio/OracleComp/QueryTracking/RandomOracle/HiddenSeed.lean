@@ -248,7 +248,7 @@ computation, lifted into sampling and public queries. -/
 theorem simulateQ_deriveImpl_liftM (s : S) {α : Type} (oa : ProbComp α) :
     simulateQ (E.deriveImpl s) (liftM oa : OracleComp (pub.withDerivations X R) α) =
       (liftM oa : OracleComp (unifSpec + pub) α) := by
-  rw [QueryImpl.simulateQ_liftM_eq_of_query _ (fun t => liftM (unifSpec.query t)) fun _ => rfl]
+  rw [QueryImpl.simulateQ_liftM_eq_of_query _ ⟨fun t => liftM (unifSpec.query t)⟩ fun _ => rfl]
   rfl
 
 variable [DecidableEq ι]

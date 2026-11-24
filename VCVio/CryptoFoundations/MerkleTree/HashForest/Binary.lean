@@ -228,11 +228,11 @@ theorem evaluateTree_binaryTree {s : Skeleton}
 private theorem compose_binaryQueryImpl
     (answer : Query BinaryOperationKind Unit (BinaryAddress LeafAddress NodeAddress)
       EncodedLeaf Digest → Digest) :
-    (answer : QueryImpl
+    (⟨answer⟩ : QueryImpl
       (spec BinaryOperationKind Unit (BinaryAddress LeafAddress NodeAddress)
         EncodedLeaf Digest) Id) ∘ₛ binaryQueryImpl =
       ⟨fun query => (binaryAnswer answer query : Id Digest)⟩ := by
-  funext query
+  ext query : 1
   cases query <;> simp [QueryImpl.compose, binaryQueryImpl, binaryAnswer, binaryQuery]
 
 /-- The general hash-forest evaluator preserves the public root of every addressed binary Merkle
@@ -247,7 +247,7 @@ theorem evaluateTreeWithHash_binaryTree {s : Skeleton}
       (buildWithHash addressing leafHashing payloads (binaryAnswer answer)).getRootValue := by
   let answerImpl : QueryImpl
       (spec BinaryOperationKind Unit (BinaryAddress LeafAddress NodeAddress)
-        EncodedLeaf Digest) Id := answer
+        EncodedLeaf Digest) Id := ⟨answer⟩
   have h := congrArg (simulateQ answerImpl)
     (evaluateTree_binaryTree addressing leafHashing payloads)
   rw [simulateQ_evaluateTree, simulateQ_map,
