@@ -114,10 +114,10 @@ lemma unforgeableAdvantage_eq_hybridExpAtKey_real :
           (WriterT (QueryLog (M →ₒ Option (Commit × Resp)))
             (StateT ((M × Commit →ₒ Chal).QueryCache) ProbComp)) +
         QueryImpl.withLogging
-          (fun msg => realSignBody ids M maxAttempts pk sk msg :
+          (⟨fun msg => realSignBody ids M maxAttempts pk sk msg⟩ :
             QueryImpl (M →ₒ Option (Commit × Resp))
               (StateT ((M × Commit →ₒ Chal).QueryCache) ProbComp)) := by
-    funext t
+    ext t : 1
     rcases t with bq | sq
     · ext s
       simp [QueryImpl.writerTMapBase, QueryImpl.add_apply_inl, base, unifFwdImpl]
@@ -136,7 +136,7 @@ lemma unforgeableAdvantage_eq_hybridExpAtKey_real :
   -- the state swap `(List M × cache) → (cache × List M)`.
   set so : QueryImpl (M →ₒ Option (Commit × Resp))
       (StateT ((M × Commit →ₒ Chal).QueryCache) ProbComp) :=
-    (fun msg => realSignBody ids M maxAttempts pk sk msg) with hso
+    ⟨fun msg => realSignBody ids M maxAttempts pk sk msg⟩ with hso
   -- (a) the WriterT-log run, mapped to `(out, log.map fst)`, equals the `appendInputLog` run.
   have hreplay := QueryImpl.map_run_withLogging_inputs_eq_run_appendInputLog
     (spec₀ := unifSpec + (M × Commit →ₒ Chal)) (loggedSpec := M →ₒ Option (Commit × Resp))

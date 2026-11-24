@@ -312,7 +312,7 @@ def ofImpl (f : QueryImpl (oracleSpec n S L Salt Ctx) Id) : Oracles n S L Salt C
   commit ctx k := (f (.commit ctx k)).run
 
 lemma toImpl_ofImpl (f : QueryImpl (oracleSpec n S L Salt Ctx) Id) : (ofImpl f).toImpl = f := by
-  funext t
+  ext t : 1
   cases t <;> rfl
 
 end Oracles

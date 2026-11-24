@@ -223,9 +223,9 @@ lemma simulateQ_encodeImpl_rawLift {α : Type} (oa : OracleComp (unifSpec + (D �
   rcases t with n | x <;> simp [rawLift, encodeImpl]
 
 lemma batch_encodeImpl_typedLift (ts : List ι) :
-    QueryImpl.batch (fun t => simulateQ E.encodeImpl (typedLift (.inr t))) ts =
+    QueryImpl.batch ⟨fun t => simulateQ E.encodeImpl (typedLift (.inr t))⟩ ts =
       E.truncRound ts <$> QueryImpl.batch (spec := D →ₒ M)
-        (fun x => liftM ((unifSpec + (D →ₒ M)).query (.inr x))) (ts.map E.encode) := by
+        ⟨fun x => liftM ((unifSpec + (D →ₒ M)).query (.inr x))⟩ (ts.map E.encode) := by
   induction ts with
   | nil =>
     change _ = E.truncRound [] <$> QueryImpl.batch _ []
@@ -239,7 +239,7 @@ lemma batch_encodeImpl_typedLift (ts : List ι) :
 
 lemma encodeImpl_compose_typedLift_batch' :
     (E.encodeImpl ∘ₛ typedLift).batch' = (D →ₒ M).unbatch ∘ₛ E.roundImpl := by
-  funext t
+  ext t : 1
   rcases t with n | ts
   · simp [typedLift, encodeImpl, roundImpl]
   · simp only [QueryImpl.batch'_apply_inr, QueryImpl.apply_compose, roundImpl, simulateQ_map,
@@ -271,7 +271,7 @@ lemma preprocessImpl_run_step (t : (unifSpec + (D →ₒ M)).Domain) (pv : (D �
 /-- A raw round answered input by input in the typed world is equal in distribution to drawing
 all private values first, then the typed round of the encoded points, and reassembling. -/
 lemma batch_typedHashImpl_run (xs : List D) (c : spec.QueryCache) (pv : (D →ₒ M).QueryCache) :
-    (QueryImpl.batch (spec := D →ₒ M) (fun x => E.typedHashImpl (.inr x)) xs).run (c, pv) =ᵈ
+    (QueryImpl.batch (spec := D →ₒ M) ⟨fun x => E.typedHashImpl (.inr x)⟩ xs).run (c, pv) =ᵈ
       ((D →ₒ M).randomOracle.batch xs).run pv >>= fun z =>
         (spec.randomOracle.batch (xs.filterMap E.route)).run c >>= fun y =>
           pure (E.assemble xs z.1 y.1, (y.2, z.2)) := by

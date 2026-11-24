@@ -337,7 +337,7 @@ def capChallengesImpl (leak : M → Λ) (qEnc : ℕ) :
   | .inl (.inl n) =>
       monadLift (((unifSpec + LeftOrRight.spec M C) + spec.batch).query (.inl (.inl n)))
   | .inl (.inr mm) => LeftOrRight.cap leak qEnc
-      (fun mm => liftM (((unifSpec + LeftOrRight.spec M C) + spec.batch).query (.inl (.inr mm))))
+      ⟨fun mm => liftM (((unifSpec + LeftOrRight.spec M C) + spec.batch).query (.inl (.inr mm)))⟩
       mm
   | .inr ts => monadLift (((unifSpec + LeftOrRight.spec M C) + spec.batch).query (.inr ts))
 

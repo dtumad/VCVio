@@ -61,13 +61,13 @@ variable {ι ιe ιs : Type} {hs : OracleSpec ι} {ext : OracleSpec ιe} {sig : 
 /-! ## The common interface and the router -/
 
 /-- The queries of a program over `unifSpec + hs` as queries of `unifSpec + (hs + ext)`. -/
-@[expose] def liftTypedImpl : QueryImpl (unifSpec + hs) (OracleComp (unifSpec + (hs + ext))) where
+@[expose, simps -isSimp] def liftTypedImpl : QueryImpl (unifSpec + hs) (OracleComp (unifSpec + (hs + ext))) where
   toFun
   | .inl n => (query (spec := unifSpec + (hs + ext)) (.inl n) : OracleComp _ (Fin (n + 1)))
   | .inr t => (query (spec := unifSpec + (hs + ext)) (.inr (.inl t)) : OracleComp _ (hs.Range t))
 
 /-- The queries of a program over `unifSpec + ext` as queries of `unifSpec + (hs + ext)`. -/
-@[expose] def liftRawImpl : QueryImpl (unifSpec + ext) (OracleComp (unifSpec + (hs + ext))) where
+@[expose, simps -isSimp] def liftRawImpl : QueryImpl (unifSpec + ext) (OracleComp (unifSpec + (hs + ext))) where
   toFun
   | .inl n => (query (spec := unifSpec + (hs + ext)) (.inl n) : OracleComp _ (Fin (n + 1)))
   | .inr x =>
@@ -75,7 +75,7 @@ variable {ι ιe ιs : Type} {hs : OracleSpec ι} {ext : OracleSpec ιe} {sig : 
 
 /-- The queries of a program over `unifSpec + hs` as queries of `(unifSpec + hs) + sig`, along the
 left summand. -/
-@[expose] def liftAmbientImpl :
+@[expose, simps -isSimp] def liftAmbientImpl :
     QueryImpl (unifSpec + hs) (OracleComp ((unifSpec + hs) + sig)) where
   toFun t :=
     (query (spec := (unifSpec + hs) + sig) (.inl t) :
@@ -88,7 +88,7 @@ theorem simulateQ_liftTypedImpl {α : Type} (oa : OracleComp (unifSpec + hs) α)
   induction oa using OracleComp.inductionOn with
   | pure a => simp
   | query_bind t k ih =>
-    rcases t with n | t <;> simp [liftTypedImpl, ih] <;> rfl
+    rcases t with n | t <;> simp [liftTypedImpl_apply, ih] <;> rfl
 
 /-- Lifting the queries of a program over `unifSpec + ext` to the common interface is its lift
 along the inclusion of `unifSpec + ext` in `unifSpec + (hs + ext)`. -/
@@ -97,7 +97,7 @@ theorem simulateQ_liftRawImpl {α : Type} (oa : OracleComp (unifSpec + ext) α) 
   induction oa using OracleComp.inductionOn with
   | pure a => simp
   | query_bind t k ih =>
-    rcases t with n | t <;> simp [liftRawImpl, ih] <;> rfl
+    rcases t with n | t <;> simp [liftRawImpl_apply, ih] <;> rfl
 
 /-- Lifting the queries of a program over `unifSpec + hs` along the left summand is its lift along
 the inclusion of `unifSpec + hs` in `(unifSpec + hs) + sig`. -/
@@ -105,7 +105,7 @@ theorem simulateQ_liftAmbientImpl {α : Type} (oa : OracleComp (unifSpec + hs) �
     simulateQ (liftAmbientImpl (sig := sig)) oa = liftComp oa ((unifSpec + hs) + sig) := by
   rw [liftComp_def]
   congr 1
-  funext t
+  ext t : 1
   rcases t with n | t <;> rfl
 
 /-- The router held by the program: a raw query `x` is answered by `R x` on the router's state,
@@ -131,7 +131,7 @@ along the left summand. -/
 /-- The router held by the handler: a query of `unifSpec + hs` is answered by `ro` on the first
 component of the state, and a raw query `x` runs `R x` on the second component, its own queries
 answered by `ro` on the first. -/
-@[expose] def handlerRouterImpl (ro : QueryImpl (unifSpec + hs) (StateT τ ProbComp))
+@[expose, simps -isSimp] def handlerRouterImpl (ro : QueryImpl (unifSpec + hs) (StateT τ ProbComp))
     (R : QueryImpl ext (StateT σ (OracleComp (unifSpec + hs)))) :
     QueryImpl (unifSpec + (hs + ext)) (StateT (τ × σ) ProbComp) where
   toFun
@@ -177,7 +177,7 @@ theorem simulateQ_handlerRouterImpl_simulateQ_liftTypedImpl_run {α : Type}
   induction oa using OracleComp.inductionOn generalizing c with
   | pure a => simp
   | query_bind t k ih =>
-    rcases t with n | t <;> simp [liftTypedImpl, handlerRouterImpl, ih]
+    rcases t with n | t <;> simp [liftTypedImpl_apply, handlerRouterImpl_apply, ih]
 
 /-- A logged handler of `sig`, with the queries of `unifSpec + hs` passed on, runs a program over
 `unifSpec + hs` lifted along the left summand as the program itself, with an empty log. -/
@@ -190,7 +190,7 @@ theorem run_simulateQ_passthrough_add_withLogging_simulateQ_liftAmbientImpl
   | pure a => simp
   | query_bind q k ih =>
     simp only [OracleSpec.passthrough, QueryImpl.passthrough_add] at ih ⊢
-    simp [liftAmbientImpl, ih]
+    simp [liftAmbientImpl_apply, ih]
 
 /-- **Internalising a router through a logged signing layer.** Let `oa` be a program on the
 common interface with a signing oracle `sig`, answered by the logged handler `f` of the scheme
@@ -203,7 +203,7 @@ theorem simulateQ_handlerRouterImpl_run_simulateQ_passthrough_add_withLogging
     (oa : OracleComp ((unifSpec + (hs + ext)) + sig) α) (c : τ) (s : σ) :
     (simulateQ (handlerRouterImpl ro R)
         (simulateQ ((unifSpec + (hs + ext)).passthrough +
-            QueryImpl.withLogging (fun m => simulateQ (liftTypedImpl (ext := ext)) (f m) :
+            QueryImpl.withLogging (⟨fun m => simulateQ (liftTypedImpl (ext := ext)) (f m)⟩ :
               QueryImpl sig (OracleComp (unifSpec + (hs + ext))))) oa).run).run (c, s) =
       (fun z => ((z.1.1.1, z.1.2), (z.2, z.1.1.2))) <$>
         (simulateQ ro (simulateQ ((unifSpec + hs).passthrough + f.withLogging)
@@ -276,8 +276,8 @@ theorem map_run_simulateQ_handlerRouterImpl_unforgeableTranscriptExperiment
     simulateQ_handlerRouterImpl_simulateQ_liftTypedImpl_run, map_bind, bind_map_left]
   refine bind_congr fun a => ?_
   have hsign : (sigAlg.map (simulateQ' (liftTypedImpl (ext := ext)))).signingOracle a.1.1 a.1.2 =
-      QueryImpl.withLogging (fun m => simulateQ (liftTypedImpl (ext := ext))
-        (sigAlg.sign a.1.1 a.1.2 m) : QueryImpl (M →ₒ S) (OracleComp (unifSpec + (hs + ext)))) :=
+      QueryImpl.withLogging (⟨fun m => simulateQ (liftTypedImpl (ext := ext))
+        (sigAlg.sign a.1.1 a.1.2 m)⟩ : QueryImpl (M →ₒ S) (OracleComp (unifSpec + (hs + ext)))) :=
     rfl
   rw [hsign, simulateQ_handlerRouterImpl_run_simulateQ_passthrough_add_withLogging]
   simp [UnforgeableAdversary.route, signingOracle, StateT.run'_eq,
@@ -453,7 +453,7 @@ variable {ι D M : Type} {spec : OracleSpec ι} [SampleableType M]
 /-- The encoding passes the queries of a program over `unifSpec + (D →ₒ M)` on unchanged. -/
 theorem encodeImpl_compose_liftRawImpl :
     E.encodeImpl ∘ₛ liftRawImpl (hs := spec) = QueryImpl.id' (unifSpec + (D →ₒ M)) := by
-  funext u
+  ext u : 1
   rcases u with n | x <;> simp [encodeImpl, liftRawImpl]
 
 /-! ## The router of an encoding -/
@@ -526,7 +526,7 @@ variable [DecidableEq ι]
 holding its table. -/
 theorem typedImpl_eq_handlerRouterImpl :
     E.typedImpl = handlerRouterImpl spec.romImpl E.tableRouter := by
-  funext u
+  ext u : 1
   refine StateT.ext fun ⟨c, pv⟩ => ?_
   rcases u with n | t | x
   · exact typedImpl_inl_run n c pv

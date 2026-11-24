@@ -40,7 +40,7 @@ variable {Resp PrvState : Type}
 /-- Public part of the no-message-attack game.
 
 State: random-oracle cache, lazily sampled keypair, and bad flag. -/
-@[fs_simp] def nmaPublic
+@[fs_simp, simps -isSimp] def nmaPublic
     (hr : GenerableRelation Stmt Wit rel) :
     QueryImpl.Stateful unifSpec (cmaPublicSpec M Commit Chal Stmt)
       (NmaState M Commit Chal Stmt Wit) where
@@ -63,7 +63,7 @@ State: random-oracle cache, lazily sampled keypair, and bad flag. -/
           pure (pk, (s.1, some (pk, sk), s.2.2))
 
 /-- Programmable random-oracle part of the no-message-attack game. -/
-@[fs_simp] def nmaProgram :
+@[fs_simp, simps -isSimp] def nmaProgram :
     QueryImpl.Stateful unifSpec (progSpec M Commit Chal)
       (NmaState M Commit Chal Stmt Wit) where
   toFun
@@ -76,7 +76,7 @@ State: random-oracle cache, lazily sampled keypair, and bad flag. -/
       | none => pure ((), (cache.cacheQuery mc ch, s.2.1, s.2.2))
 
 /-- The no-message-attack game as a direct stateful handler. -/
-@[fs_simp] def nma
+@[fs_simp, simps -isSimp] def nma
     (hr : GenerableRelation Stmt Wit rel) :
     QueryImpl.Stateful unifSpec (nmaSpec M Commit Chal Stmt)
       (NmaState M Commit Chal Stmt Wit) where
@@ -113,7 +113,7 @@ programming queries interact through one inner random-oracle cache. -/
 
 State: signed-message log. Signing queries sample the HVZK simulator and
 program the random oracle through the shared NMA interface. -/
-@[fs_simp] def cmaSignSim
+@[fs_simp, simps -isSimp] def cmaSignSim
     (simT : Stmt → ProbComp (Commit × Chal × Resp)) :
     QueryImpl.Stateful (nmaSpec M Commit Chal Stmt) (signSpec M Commit Resp)
       (OuterState M) where
@@ -131,7 +131,7 @@ program the random oracle through the shared NMA interface. -/
 Public queries are forwarded to the NMA interface; signing queries are handled
 by the simulator component that owns the signed-message log. Both paths share
 the same `nmaSpec` imports on purpose. -/
-@[fs_simp] def cmaToNma
+@[fs_simp, simps -isSimp] def cmaToNma
     (simT : Stmt → ProbComp (Commit × Chal × Resp)) :
     QueryImpl.Stateful (nmaSpec M Commit Chal Stmt) (cmaSpec M Commit Chal Resp Stmt)
       (OuterState M) where
@@ -250,7 +250,7 @@ by `SignatureAlg.UnforgeableAdversary`. -/
 
 On signing queries, this runs the real Sigma protocol and appends the message
 to the signed log. The bad flag is preserved and never set by real signing. -/
-@[fs_simp] def cmaReal
+@[fs_simp, simps -isSimp] def cmaReal
     (sigma : SigmaProtocol ProbComp Stmt Wit Commit PrvState Chal Resp rel)
     (hr : GenerableRelation Stmt Wit rel) :
     QueryImpl.Stateful unifSpec (cmaSpec M Commit Chal Resp Stmt)

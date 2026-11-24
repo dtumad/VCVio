@@ -113,7 +113,7 @@ noncomputable def progGameRun
     ProbComp (M × (Salt × Domain)) :=
   let State := (Salt × M →ₒ Range).QueryCache × ((Salt × M) → Option Domain)
   let roImpl : QueryImpl (Salt × M →ₒ Range) (StateT State ProbComp) :=
-    fun t => do
+    ⟨fun t => do
       let st ← get
       match st.1 t with
       | some v => pure v
@@ -121,18 +121,18 @@ noncomputable def progGameRun
           let s ← (domainSample pk : ProbComp Domain)
           let v := psf.eval pk s
           set ((st.1.cacheQuery t v, fun t' => if t' = t then some s else st.2 t') : State)
-          pure v
+          pure v⟩
   let unifImpl : QueryImpl unifSpec (StateT State ProbComp) :=
-    fun t => (unifSpec.query t : ProbComp _)
+    ⟨fun t => (unifSpec.query t : ProbComp _)⟩
   let signImpl : QueryImpl (M →ₒ (Salt × Domain)) (StateT State ProbComp) :=
-    fun msg => do
+    ⟨fun msg => do
       let r ← ($ᵗ Salt : ProbComp Salt)
       let s ← (domainSample pk : ProbComp Domain)
       let v := psf.eval pk s
       let st ← get
       set ((st.1.cacheQuery (r, msg) v,
         fun t' => if t' = (r, msg) then some s else st.2 t') : State)
-      pure (r, s)
+      pure (r, s)⟩
   let impl : QueryImpl ((unifSpec + (Salt × M →ₒ Range)) + (M →ₒ (Salt × Domain)))
       (StateT State ProbComp) := (unifImpl + roImpl) + signImpl
   Prod.fst <$> (simulateQ impl (adv.main pk)).run (∅, fun _ => none)
@@ -408,16 +408,16 @@ runtime `withStateOracle` bundle), the shared shape required before the fold cou
           set (st.cacheQuery t v)
           pure v
   let unifImpl : QueryImpl unifSpec (StateT ((Salt × M →ₒ Range).QueryCache) ProbComp) :=
-    fun t => (unifSpec.query t : ProbComp _)
+    ⟨fun t => (unifSpec.query t : ProbComp _)⟩
   let signImpl : QueryImpl (M →ₒ (Salt × Domain))
       (StateT ((Salt × M →ₒ Range).QueryCache) ProbComp) :=
-    fun msg => do
+    ⟨fun msg => do
       let r ← ($ᵗ Salt : ProbComp Salt)
       let s ← (domainSample pk : ProbComp Domain)
       let v := psf.eval pk s
       let st ← get
       set (st.cacheQuery (r, msg) v)
-      pure (r, s)
+      pure (r, s)⟩
   (unifImpl + roImpl) + signImpl
 
 open Classical in

@@ -616,7 +616,7 @@ theorem simulateQ_dem_correctnessExperiment (key : Puzzle × Key) (msg : Plainte
 theorem dem_perfectlyCorrect_answerTable :
     (dem prf codec derive encodePuzzle).PerfectlyCorrect
       (ProbCompRuntime.withStateOracle
-        (fun t => (pure (f t) : StateT Unit ProbComp (spec.Range t))) ()) := by
+        ⟨fun t => (pure (f t) : StateT Unit ProbComp (spec.Range t))⟩ ()) := by
   intro key msg
   have hrun (x : ProbComp Bool) : (liftM x : StateT Unit ProbComp Bool).run' () = x := by simp
   rw [ProbCompRuntime.withStateOracle_evalDist, simulateQ_stateOracle, hrun,

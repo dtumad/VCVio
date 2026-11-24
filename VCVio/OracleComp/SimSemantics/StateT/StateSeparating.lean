@@ -241,7 +241,7 @@ and updated inside the combined state `σ`. The linked handler reads both
 component states from the source state, runs the usual nested simulation, then
 writes back the updated outer and inner states through the frame lenses.
 -/
-def linkWith (F : Frame σ σ₁ σ₂)
+@[simps -isSimp] def linkWith (F : Frame σ σ₁ σ₂)
     (outer : QueryImpl.Stateful M E σ₁) (inner : QueryImpl.Stateful I M σ₂) :
     QueryImpl.Stateful I E σ where
   toFun t :=

@@ -29,7 +29,7 @@ namespace QueryImpl
 
 /-- Push an outer oracle interpretation through the base monad of a
 `StateT`-valued query implementation. -/
-@[expose]
+@[expose, simps -isSimp]
 def mapStateTBase {ι₀ ι₁ : Type _}
     {spec₀ : OracleSpec ι₀} {spec₁ : OracleSpec ι₁}
     {m : Type u → Type v} [Monad m] {σ : Type u}
@@ -101,7 +101,7 @@ def parallelStateT {ι₁ : Type u} {ι₂ : Type v}
 The outer state is the first component of the product; the inner/base state is
 the second component. This is the state-transformer analogue of reassociating
 handler stacks into an explicit joint state before applying projection lemmas. -/
-@[expose]
+@[expose, simps -isSimp]
 def flattenStateT {ι : Type _} {spec : OracleSpec ι}
     {m : Type u → Type v} [Monad m] {σ τ : Type u}
     (impl : QueryImpl spec (StateT σ (StateT τ m))) :

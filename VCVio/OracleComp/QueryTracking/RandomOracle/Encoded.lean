@@ -958,7 +958,6 @@ theorem singleImpl_run_evalDistEq_typedImpl_fill_of_injective
     rcases operation with draw | operation
     · rfl
     · simp [patchedImpl, typedImpl, patchedHashImpl, noClash, noCollides]
-      rfl
   have initial : E.StateInv (∅, ∅) :=
     ⟨by simp, fun _ input present => by simp at present⟩
   let : MeasurableSpace (α × (D →ₒ M).QueryCache) := ⊤

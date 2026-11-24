@@ -74,7 +74,7 @@ lemma simulateQ_unifSim_run {α : Type}
     let fwd : QueryImpl spec (StateT spec.QueryCache (OracleComp spec)) :=
       (HasQuery.toQueryImpl (spec := spec) (m := OracleComp spec)).liftTarget _
     let unifSim : QueryImpl unifSpec (StateT spec.QueryCache (OracleComp spec)) :=
-      fun n => fwd (.inl n)
+      ⟨fun n => fwd (.inl n)⟩
     (simulateQ unifSim oa).run cache =
       (fun r => (r, cache)) <$> (liftComp oa (unifSpec + (M × Commit →ₒ Chal))) := by
   intro spec fwd unifSim
@@ -111,9 +111,9 @@ noncomputable def nmaOuterImpl (pk : Stmt) :
   letI fwd : QueryImpl spec (StateT spec.QueryCache (OracleComp spec)) :=
     (HasQuery.toQueryImpl (spec := spec) (m := OracleComp spec)).liftTarget _
   letI unifSim : QueryImpl unifSpec (StateT spec.QueryCache (OracleComp spec)) :=
-    fun n => fwd (.inl n)
+    ⟨fun n => fwd (.inl n)⟩
   letI roSim : QueryImpl (M × Commit →ₒ Chal)
-      (StateT spec.QueryCache (OracleComp spec)) := fun mc => do
+      (StateT spec.QueryCache (OracleComp spec)) := ⟨fun mc => do⟩
     let cache ← get
     match cache (.inr mc) with
     | some v => pure v
@@ -121,7 +121,7 @@ noncomputable def nmaOuterImpl (pk : Stmt) :
         let v ← fwd (.inr mc)
         modifyGet fun cache => (v, cache.cacheQuery (.inr mc) v)
   letI sigSim : QueryImpl (M →ₒ Option (Commit × Resp))
-      (StateT spec.QueryCache (OracleComp spec)) := fun msg => do
+      (StateT spec.QueryCache (OracleComp spec)) := ⟨fun msg => do⟩
     let r ← simulateQ unifSim (firstSome (sim pk) maxAttempts)
     match r with
     | some (w, c, z) =>
@@ -508,9 +508,9 @@ with the managed cache, in the interface of `SignatureAlg.ManagedRoNmaAdversary`
     let fwd : QueryImpl spec (StateT spec.QueryCache (OracleComp spec)) :=
       (HasQuery.toQueryImpl (spec := spec) (m := OracleComp spec)).liftTarget _
     let unifSim : QueryImpl unifSpec (StateT spec.QueryCache (OracleComp spec)) :=
-      fun n => fwd (.inl n)
+      ⟨fun n => fwd (.inl n)⟩
     let roSim : QueryImpl (M × Commit →ₒ Chal)
-        (StateT spec.QueryCache (OracleComp spec)) := fun mc => do
+        (StateT spec.QueryCache (OracleComp spec)) := ⟨fun mc => do⟩
       let cache ← get
       match cache (.inr mc) with
       | some v => pure v
@@ -518,7 +518,7 @@ with the managed cache, in the interface of `SignatureAlg.ManagedRoNmaAdversary`
           let v ← fwd (.inr mc)
           modifyGet fun cache => (v, cache.cacheQuery (.inr mc) v)
     let sigSim : QueryImpl (M →ₒ Option (Commit × Resp))
-        (StateT spec.QueryCache (OracleComp spec)) := fun msg => do
+        (StateT spec.QueryCache (OracleComp spec)) := ⟨fun msg => do⟩
       let r ← simulateQ unifSim (firstSome (sim pk) maxAttempts)
       match r with
       | some (w, c, z) =>

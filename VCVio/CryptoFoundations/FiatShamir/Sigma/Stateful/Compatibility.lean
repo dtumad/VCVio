@@ -295,7 +295,7 @@ private lemma postKeygenAppendProdImpl_eq_flattenStateT
         (Commit := Commit) (Chal := Chal) (Resp := Resp) pk sk =
       (postKeygenAppendImpl (σ := σ) (hr := hr) (M := M)
         (Commit := Commit) (Chal := Chal) (Resp := Resp) pk sk).flattenStateT := by
-  funext t
+  ext t : 1
   rcases t with nmc | m
   · ext st
     rcases st with ⟨signed, cache⟩
@@ -665,9 +665,9 @@ theorem statefulPostKeygenFreshAdvantage_eq_cmaRealRunProb_signedFreshAdv
     OracleQuery.input_query, OracleQuery.cont_query, StateT.run_bind,
     bind_assoc]
   simp only [postKeygenAppendImpl, StateT.run_pure, monad_norm,
-    cmaSignLogImpl, bind_pure, CompTriple.comp_eq, StateT.run_monadLift, monadLift_self,
+    cmaSignLogImpl_apply, bind_pure, CompTriple.comp_eq, StateT.run_monadLift, monadLift_self,
     simulateQ_bind, simulateQ_query, OracleQuery.input_query, OracleQuery.cont_query,
-    cmaReal, Prod.mk.eta, simulateQ_pure, cmaInit, StateT.run_bind, StateT.run_mk]
+    cmaReal_apply, Prod.mk.eta, simulateQ_pure, cmaInit, StateT.run_bind, StateT.run_mk]
   refine bind_congr fun ps => ?_
   rw [postKeygenAppendImpl_run_eq_cmaRealSourceFullSum_run (σ := σ) (hr := hr)
     (M := M) (Commit := Commit) (Chal := Chal) (Resp := Resp)
@@ -874,7 +874,7 @@ private lemma fsBaseImpl_writerTMapBase_signingOracle_eq
             (Resp := Resp) σ hr pk sk)
     (fsBaseImpl (M := M) (Commit := Commit) (Chal := Chal)).writerTMapBase implW =
       implS := by
-  funext t
+  ext t : 1
   rcases t with (n | mc) | m <;> ext cache
   · simp only [add_apply_inl, QueryImpl.writerTMapBase, fsBaseImpl, OracleSpec.romImpl,
       unifFwdImpl, QueryImpl.add_apply_inl, QueryImpl.liftTarget_apply,

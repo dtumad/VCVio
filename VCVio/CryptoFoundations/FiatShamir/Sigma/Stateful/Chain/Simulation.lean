@@ -255,7 +255,7 @@ private abbrev SimLoggedState (M Commit Chal : Type)
     (cmaSignLogImpl (M := M) (Commit := Commit) (Chal := Chal)
       (Resp := Resp) (Stmt := Stmt))).flattenStateT
 
-@[fs_simp] private noncomputable def cmaSimLoggedLeftImpl
+@[fs_simp, simps -isSimp] private noncomputable def cmaSimLoggedLeftImpl
     (hr : GenerableRelation Stmt Wit rel)
     (simT : Stmt → ProbComp (Commit × Chal × Resp)) :
     QueryImpl (cmaOracleSpec M Commit Chal Resp)
@@ -346,7 +346,7 @@ private lemma nma_lift_unif_run
       (fun a => (a, s)) <$> oa := by
   let impl₁ : QueryImpl unifSpec
       (StateT (NmaState M Commit Chal Stmt Wit) ProbComp) :=
-    fun n => StateT.mk fun s => (fun a => (a, s)) <$> (unifSpec.query n)
+    ⟨fun n => StateT.mk fun s => (fun a => (a, s)) <$> (unifSpec.query n)⟩
   have himpl₁ : (simulateQ impl₁ oa).run s = (fun a => (a, s)) <$> oa := by
     induction oa using OracleComp.inductionOn generalizing s with
     | pure x =>
@@ -404,35 +404,35 @@ private lemma cmaSimLoggedLeft_preserves_inv
     rcases t with ((n | mc) | m)
     · intro z hz
       obtain ⟨u, _hu, rfl⟩ := by
-        simpa [fs_simp, cmaOracleSpec, QueryImpl.flattenStateT,
-          QueryImpl.mapStateTBase, QueryImpl.Stateful.Frame.linkReshape,
-          QueryImpl.Stateful.linkWith] using hz
+        simpa [fs_simp, cmaOracleSpec, QueryImpl.flattenStateT_apply,
+          QueryImpl.mapStateTBase_apply, QueryImpl.Stateful.Frame.linkReshape,
+          QueryImpl.Stateful.linkWith_apply] using hz
       exact hs
     · intro z hz
       cases hcache : cache mc with
       | some ch =>
           obtain ⟨rfl, rfl⟩ := by
-            simpa [fs_simp, cmaOracleSpec, QueryImpl.flattenStateT,
-              QueryImpl.mapStateTBase, QueryImpl.Stateful.Frame.linkReshape,
-              QueryImpl.Stateful.linkWith, hcache] using hz
+            simpa [fs_simp, cmaOracleSpec, QueryImpl.flattenStateT_apply,
+              QueryImpl.mapStateTBase_apply, QueryImpl.Stateful.Frame.linkReshape,
+              QueryImpl.Stateful.linkWith_apply, hcache] using hz
           exact hs
       | none =>
           obtain ⟨ch, _hch, rfl⟩ := by
-            simpa [fs_simp, cmaOracleSpec, QueryImpl.flattenStateT,
-              QueryImpl.mapStateTBase, QueryImpl.Stateful.Frame.linkReshape,
-              QueryImpl.Stateful.linkWith, hcache, uniformSampleImpl] using hz
+            simpa [fs_simp, cmaOracleSpec, QueryImpl.flattenStateT_apply,
+              QueryImpl.mapStateTBase_apply, QueryImpl.Stateful.Frame.linkReshape,
+              QueryImpl.Stateful.linkWith_apply, hcache, uniformSampleImpl_apply] using hz
           simpa [QueryCache.cacheQuery] using hs
     · subst keypair
       intro z hz
       have hz' := by
-        simpa only [cmaOracleSpec, add_apply_inr, cmaSimLoggedLeftImpl, cmaSimLoggedImpl,
-          QueryImpl.flattenStateT, QueryImpl.mapStateTBase, cmaSim, cmaFrame, cmaOuterLens,
-          Prod.mk.eta, cmaNmaLens, cmaSignLogImpl, bind_pure_comp, StateT.run_bind,
+        simpa only [cmaOracleSpec, add_apply_inr, cmaSimLoggedLeftImpl_apply, cmaSimLoggedImpl,
+          QueryImpl.flattenStateT_apply, QueryImpl.mapStateTBase_apply, cmaSim, cmaFrame, cmaOuterLens,
+          Prod.mk.eta, cmaNmaLens, cmaSignLogImpl_apply, bind_pure_comp, StateT.run_bind,
           StateT.run_get, StateT.run_monadLift, monadLift_self, StateT.run_map, StateT.run_set,
           map_pure, Functor.map_map, pure_bind, simulateQ_map, simulateQ_query,
-          OracleQuery.input_query, OracleQuery.cont_query, QueryImpl.Stateful.linkWith,
-          cmaToNma, cmaSignSim, liftComp_eq_liftM, PFunctor.Lens.State.mk_get, StateT.run_mk,
-          simulateQ_bind, nma, nmaPublic, id_map, nmaProgram, map_bind,
+          OracleQuery.input_query, OracleQuery.cont_query, QueryImpl.Stateful.linkWith_apply,
+          cmaToNma_apply, cmaSignSim_apply, liftComp_eq_liftM, PFunctor.Lens.State.mk_get, StateT.run_mk,
+          simulateQ_bind, nma_apply, nmaPublic_apply, id_map, nmaProgram_apply, map_bind,
           QueryImpl.Stateful.Frame.linkReshape, PFunctor.Lens.State.mk_put, support_bind,
           support_map, Set.mem_iUnion, Set.mem_image, Prod.exists, Bool.exists_bool, exists_prop]
           using hz
@@ -491,44 +491,44 @@ private lemma cmaSimLoggedLeft_project_step
     rcases s with ⟨signed, ⟨⟨log, cache, keypair⟩, bad⟩⟩
     simp only [cmaSimFixedKeyInv] at hs
     rcases t with ((n | mc) | m)
-    · simp [fs_simp, QueryImpl.extendState, QueryImpl.flattenStateT,
-        QueryImpl.mapStateTBase, QueryImpl.Stateful.Frame.linkReshape,
-        QueryImpl.Stateful.linkWith]
+    · simp [fs_simp, QueryImpl.extendState_apply, QueryImpl.flattenStateT_apply,
+        QueryImpl.mapStateTBase_apply, QueryImpl.Stateful.Frame.linkReshape,
+        QueryImpl.Stateful.linkWith_apply]
     · cases hcache : cache mc with
       | some ch =>
-          simp [fs_simp, QueryImpl.extendState, QueryImpl.flattenStateT,
-            QueryImpl.mapStateTBase, QueryImpl.Stateful.Frame.linkReshape,
-            QueryImpl.Stateful.linkWith, hcache]
+          simp [fs_simp, QueryImpl.extendState_apply, QueryImpl.flattenStateT_apply,
+            QueryImpl.mapStateTBase_apply, QueryImpl.Stateful.Frame.linkReshape,
+            QueryImpl.Stateful.linkWith_apply, hcache]
       | none =>
           conv_lhs =>
-            simp [fs_simp, QueryImpl.extendState, QueryImpl.flattenStateT,
-              QueryImpl.mapStateTBase, QueryImpl.Stateful.Frame.linkReshape,
-              QueryImpl.Stateful.linkWith, QueryImpl.liftTarget_apply,
+            simp [fs_simp, QueryImpl.extendState_apply, QueryImpl.flattenStateT_apply,
+              QueryImpl.mapStateTBase_apply, QueryImpl.Stateful.Frame.linkReshape,
+              QueryImpl.Stateful.linkWith_apply, QueryImpl.liftTarget_apply,
               QueryImpl.simulateQ_add_query_left, QueryImpl.simulateQ_add_query_right,
-              QueryImpl.id'_apply, uniformSampleImpl, hcache]
+              QueryImpl.id'_apply, uniformSampleImpl_apply, hcache]
           conv_rhs =>
-            simp [fs_simp, QueryImpl.extendState, QueryImpl.flattenStateT,
-              QueryImpl.mapStateTBase, QueryImpl.Stateful.Frame.linkReshape,
-              QueryImpl.Stateful.linkWith, QueryImpl.liftTarget_apply,
+            simp [fs_simp, QueryImpl.extendState_apply, QueryImpl.flattenStateT_apply,
+              QueryImpl.mapStateTBase_apply, QueryImpl.Stateful.Frame.linkReshape,
+              QueryImpl.Stateful.linkWith_apply, QueryImpl.liftTarget_apply,
               QueryImpl.simulateQ_add_query_left, QueryImpl.simulateQ_add_query_right,
-              QueryImpl.id'_apply, uniformSampleImpl, hcache]
+              QueryImpl.id'_apply, uniformSampleImpl_apply, hcache]
     · subst keypair
       conv_lhs =>
-        simp only [add_apply_inr, cmaSimLoggedLeftImpl, cmaSimLoggedImpl,
-          QueryImpl.flattenStateT, QueryImpl.mapStateTBase, cmaSim, cmaFrame,
-          cmaOuterLens, Prod.mk.eta, cmaNmaLens, cmaSignLogImpl, bind_pure_comp,
+        simp only [add_apply_inr, cmaSimLoggedLeftImpl_apply, cmaSimLoggedImpl,
+          QueryImpl.flattenStateT_apply, QueryImpl.mapStateTBase_apply, cmaSim, cmaFrame,
+          cmaOuterLens, Prod.mk.eta, cmaNmaLens, cmaSignLogImpl_apply, bind_pure_comp,
           StateT.run_bind, StateT.run_get, StateT.run_monadLift, monadLift_self,
           StateT.run_map, StateT.run_set, map_pure, Functor.map_map, pure_bind,
           simulateQ_map, simulateQ_query, OracleQuery.input_query,
-          OracleQuery.cont_query, QueryImpl.Stateful.linkWith, cmaToNma,
-          cmaSignSim, liftComp_eq_liftM, PFunctor.Lens.State.mk_get,
-          StateT.run_mk, simulateQ_bind, nma, nmaPublic, id_map, nmaProgram,
+          OracleQuery.cont_query, QueryImpl.Stateful.linkWith_apply, cmaToNma_apply,
+          cmaSignSim_apply, liftComp_eq_liftM, PFunctor.Lens.State.mk_get,
+          StateT.run_mk, simulateQ_bind, nma_apply, nmaPublic_apply, id_map, nmaProgram_apply,
           map_bind, QueryImpl.Stateful.Frame.linkReshape,
           PFunctor.Lens.State.mk_put, Prod.map_apply, id_eq, cmaSimLoggedProj]
       conv_rhs =>
-        simp [fs_simp, QueryImpl.extendState, QueryImpl.flattenStateT,
-          QueryImpl.mapStateTBase, QueryImpl.Stateful.Frame.linkReshape,
-          QueryImpl.Stateful.linkWith,
+        simp [fs_simp, QueryImpl.extendState_apply, QueryImpl.flattenStateT_apply,
+          QueryImpl.mapStateTBase_apply, QueryImpl.Stateful.Frame.linkReshape,
+          QueryImpl.Stateful.linkWith_apply,
           StateT.run_bind, StateT.run_mk, StateT.run_map, StateT.run_monadLift,
           monadLift_self, simulateQ_bind, simulateQ_map, simulateQ_query,
           OracleQuery.input_query, OracleQuery.cont_query, id_map,

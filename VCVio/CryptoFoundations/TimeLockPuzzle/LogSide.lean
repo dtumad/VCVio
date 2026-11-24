@@ -285,7 +285,7 @@ private lemma isSome_inr_iff_of_mem_support_liftComp {α : Type}
   rw [liftComp_def, ← QueryImpl.simulateQ_compose] at hz
   refine simulateQ_run_preservesInv _ (fun c' => ∀ x, (c' (.inr x)).isSome ↔ (c (.inr x)).isSome)
     (fun t c' hc' y hy x => ?_) oa c (fun _ => Iff.rfl) z hz x
-  rw [QueryImpl.apply_compose] at hy
+  rw [QueryImpl.apply_compose, QueryImpl.mk_apply] at hy
   rw [OracleComp.liftM_eq_liftM_liftM, simulateQ_query, StateT.run_map, support_map] at hy
   obtain ⟨w, hw, rfl⟩ := hy
   rcases t with n | ts
