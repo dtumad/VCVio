@@ -542,27 +542,27 @@ handler is total. Its per-query unfoldings are recorded by `gpvRealImplTape_run_
     QueryImpl ((unifSpec + (Salt × M →ₒ Range)) + (M →ₒ (Salt × Domain)))
       (StateT ((Salt × M →ₒ Range).QueryCache × List Salt) ProbComp) where
   toFun t := match t with
-  | .inl (.inl n) => StateT.mk fun s =>
-      (fun u => (u, s)) <$> (unifSpec.query n : ProbComp _)
-  | .inl (.inr mc) => StateT.mk fun s =>
-      (fun p : Range × (Salt × M →ₒ Range).QueryCache => (p.1, (p.2, s.2))) <$>
-        (randomOracle (spec := (Salt × M →ₒ Range)) mc).run s.1
-  | .inr msg => StateT.mk fun s =>
-      match s.2 with
-      | [] =>
-          (fun rsc : (Salt × Domain) × (Salt × M →ₒ Range).QueryCache =>
-              (rsc.1, (rsc.2, ([] : List Salt)))) <$>
-            (do
-              let r ← ($ᵗ Salt : ProbComp Salt)
-              let p ← (randomOracle (spec := (Salt × M →ₒ Range)) (r, msg)).run s.1
-              let sgn ← psf.trapdoorSample pk sk p.1
-              pure ((r, sgn), p.2))
-      | r :: tl =>
-          (fun rsc : (Salt × Domain) × (Salt × M →ₒ Range).QueryCache => (rsc.1, (rsc.2, tl))) <$>
-            (do
-              let p ← (randomOracle (spec := (Salt × M →ₒ Range)) (r, msg)).run s.1
-              let sgn ← psf.trapdoorSample pk sk p.1
-              pure ((r, sgn), p.2))
+    | .inl (.inl n) => StateT.mk fun s =>
+        (fun u => (u, s)) <$> (unifSpec.query n : ProbComp _)
+    | .inl (.inr mc) => StateT.mk fun s =>
+        (fun p : Range × (Salt × M →ₒ Range).QueryCache => (p.1, (p.2, s.2))) <$>
+          (randomOracle (spec := (Salt × M →ₒ Range)) mc).run s.1
+    | .inr msg => StateT.mk fun s =>
+        match s.2 with
+        | [] =>
+            (fun rsc : (Salt × Domain) × (Salt × M →ₒ Range).QueryCache =>
+                (rsc.1, (rsc.2, ([] : List Salt)))) <$>
+              (do
+                let r ← ($ᵗ Salt : ProbComp Salt)
+                let p ← (randomOracle (spec := (Salt × M →ₒ Range)) (r, msg)).run s.1
+                let sgn ← psf.trapdoorSample pk sk p.1
+                pure ((r, sgn), p.2))
+        | r :: tl =>
+            (fun rsc : (Salt × Domain) × (Salt × M →ₒ Range).QueryCache => (rsc.1, (rsc.2, tl))) <$>
+              (do
+                let p ← (randomOracle (spec := (Salt × M →ₒ Range)) (r, msg)).run s.1
+                let sgn ← psf.trapdoorSample pk sk p.1
+                pure ((r, sgn), p.2))
 
 omit [Fintype Salt] [DecidableEq Range] in
 /-- **One-step unfolding of `gpvRealImplTape` on a uniform query.** The tape is untouched. -/
@@ -608,24 +608,24 @@ is the bare sample, both leaving the tape untouched. This is the programmed dual
     QueryImpl ((unifSpec + (Salt × M →ₒ Range)) + (M →ₒ (Salt × Domain)))
       (StateT ((Salt × M →ₒ Range).QueryCache × List Salt) ProbComp) where
   toFun t := match t with
-  | .inl (.inl n) => StateT.mk fun s =>
-      (fun u => (u, s)) <$> (unifSpec.query n : ProbComp _)
-  | .inl (.inr mc) => StateT.mk fun s =>
-      match s.1 mc with
-      | some v => pure (v, s)
-      | none =>
-          (fun sd : Domain => (psf.eval pk sd, (s.1.cacheQuery mc (psf.eval pk sd), s.2))) <$>
-            (domainSample pk : ProbComp Domain)
-  | .inr msg => StateT.mk fun s =>
-      match s.2 with
-      | [] =>
-          (do
-            let r ← ($ᵗ Salt : ProbComp Salt)
-            let sd ← (domainSample pk : ProbComp Domain)
-            pure ((r, sd), (s.1.cacheQuery (r, msg) (psf.eval pk sd), ([] : List Salt))))
-      | r :: tl =>
-          (fun sd : Domain => ((r, sd), (s.1.cacheQuery (r, msg) (psf.eval pk sd), tl))) <$>
-            (domainSample pk : ProbComp Domain)
+    | .inl (.inl n) => StateT.mk fun s =>
+        (fun u => (u, s)) <$> (unifSpec.query n : ProbComp _)
+    | .inl (.inr mc) => StateT.mk fun s =>
+        match s.1 mc with
+        | some v => pure (v, s)
+        | none =>
+            (fun sd : Domain => (psf.eval pk sd, (s.1.cacheQuery mc (psf.eval pk sd), s.2))) <$>
+              (domainSample pk : ProbComp Domain)
+    | .inr msg => StateT.mk fun s =>
+        match s.2 with
+        | [] =>
+            (do
+              let r ← ($ᵗ Salt : ProbComp Salt)
+              let sd ← (domainSample pk : ProbComp Domain)
+              pure ((r, sd), (s.1.cacheQuery (r, msg) (psf.eval pk sd), ([] : List Salt))))
+        | r :: tl =>
+            (fun sd : Domain => ((r, sd), (s.1.cacheQuery (r, msg) (psf.eval pk sd), tl))) <$>
+              (domainSample pk : ProbComp Domain)
 
 omit [Fintype Salt] [DecidableEq Range] [SampleableType Range] in
 /-- **One-step unfolding of `progGameRunImplTape` on a uniform query.** The tape is untouched. -/

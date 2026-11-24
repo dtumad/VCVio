@@ -80,12 +80,12 @@ def simulatedNmaRoSim
       (StateT (fsRoSpec M Commit Chal).QueryCache
         (OracleComp (fsRoSpec M Commit Chal))) where
   toFun mc := do
-  let cache ← get
-  match cache (.inr mc) with
-  | some v => pure v
-  | none => do
-      let v ← simulatedNmaFwd (M := M) (Commit := Commit) (Chal := Chal) (.inr mc)
-      modifyGet fun cache => (v, cache.cacheQuery (.inr mc) v)
+    let cache ← get
+    match cache (.inr mc) with
+    | some v => pure v
+    | none => do
+        let v ← simulatedNmaFwd (M := M) (Commit := Commit) (Chal := Chal) (.inr mc)
+        modifyGet fun cache => (v, cache.cacheQuery (.inr mc) v)
 
 /-- The handler for `fsRoSpec`: uniform sampling by `simulatedNmaUnifSim` and random-oracle
 queries by the caching `simulatedNmaRoSim`. -/
@@ -107,13 +107,13 @@ def simulatedNmaSigSim
       (StateT (fsRoSpec M Commit Chal).QueryCache
         (OracleComp (fsRoSpec M Commit Chal))) where
   toFun msg := do
-  let (c, ω, s) ← simulateQ
-    (simulatedNmaUnifSim (M := M) (Commit := Commit) (Chal := Chal))
-    (simTranscript pk)
-  modifyGet fun cache =>
-    match cache (.inr (msg, c)) with
-    | some _ => ((c, s), cache)
-    | none => ((c, s), cache.cacheQuery (.inr (msg, c)) ω)
+    let (c, ω, s) ← simulateQ
+      (simulatedNmaUnifSim (M := M) (Commit := Commit) (Chal := Chal))
+      (simTranscript pk)
+    modifyGet fun cache =>
+      match cache (.inr (msg, c)) with
+      | some _ => ((c, s), cache)
+      | none => ((c, s), cache.cacheQuery (.inr (msg, c)) ω)
 
 /-- The handler for all of a chosen-message adversary's oracles, using only the public key:
 `simulatedNmaBaseSim` for `fsRoSpec` and `simulatedNmaSigSim` for signing queries. -/

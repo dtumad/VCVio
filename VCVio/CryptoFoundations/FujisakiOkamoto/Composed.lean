@@ -54,15 +54,15 @@ def singleROOracleImpl {PKHash M R K : Type}
     QueryImpl (singleROHashOracleSpec PKHash M R K)
       (StateT (SingleROQueryCache PKHash M R K) ProbComp) where
   toFun inp := do
-  let cache ← get
-  match cache inp with
-  | some out => return out
-  | none =>
-      let r ← ($ᵗ R : ProbComp R)
-      let k ← ($ᵗ K : ProbComp K)
-      let out : R × K := (r, k)
-      set (cache.cacheQuery inp out)
-      return out
+    let cache ← get
+    match cache inp with
+    | some out => return out
+    | none =>
+        let r ← ($ᵗ R : ProbComp R)
+        let k ← ($ᵗ K : ProbComp K)
+        let out : R × K := (r, k)
+        set (cache.cacheQuery inp out)
+        return out
 
 /-- Single-RO FO hash world: both the encryption coins and the shared key are derived from the
 same public random-oracle query on `(pkh pk, msg)`. -/

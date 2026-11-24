@@ -113,13 +113,13 @@ def IND_CPA_cachedChallengeOracle
     (pk : PK) (select : M × M → M) :
     QueryImpl (M × M →ₒ C) (StateT encAlg.IND_CPA_Cache ProbComp) where
   toFun mm := do
-  let cache ← get
-  match cache mm with
-  | some c => return c
-  | none =>
-      let c ← encAlg.encrypt pk (select mm)
-      set (cache.cacheQuery mm c)
-      return c
+    let cache ← get
+    match cache mm with
+    | some c => return c
+    | none =>
+        let c ← encAlg.encrypt pk (select mm)
+        set (cache.cacheQuery mm c)
+        return c
 
 /-- Cached LR-oracle implementation for IND-CPA: repeated challenge queries are answered from the
 cache, and fresh ones encrypt the selected branch. -/
@@ -192,14 +192,14 @@ def IND_CPA_countedChallengeOracle
     QueryImpl (M × M →ₒ C)
       (StateT encAlg'.IND_CPA_CountedState ProbComp) where
   toFun mm := do
-  let st ← get
-  match st.1 mm with
-  | some c => return c
-  | none =>
-      let c ← encAlg'.encrypt pk (select st.2 mm)
-      let cache' := st.1.cacheQuery mm c
-      set (cache', st.2 + 1)
-      return c
+    let st ← get
+    match st.1 mm with
+    | some c => return c
+    | none =>
+        let c ← encAlg'.encrypt pk (select st.2 mm)
+        let cache' := st.1.cacheQuery mm c
+        set (cache', st.2 + 1)
+        return c
 
 private lemma IND_CPA_countedChallengeOracle_run_eq_of_select_eq
     (pk : PK) (select₁ select₂ : ℕ → M × M → M) (mm : M × M)

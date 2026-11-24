@@ -130,11 +130,11 @@ and leaves the counter unchanged. -/
 def cap (leak : M → Λ) (qEnc : ℕ) (so : QueryImpl (spec M C) m) :
     QueryImpl (spec M C) (StateT ℕ m) where
   toFun mm := do
-  let j ← get
-  if leak mm.1 = leak mm.2 ∧ j < qEnc then
-    set (j + 1)
-    monadLift (so mm)
-  else pure none
+    let j ← get
+    if leak mm.1 = leak mm.2 ∧ j < qEnc then
+      set (j + 1)
+      monadLift (so mm)
+    else pure none
 
 /-- The capped left-or-right challenge oracle at hidden bit `b`: the oracle
 `LeftOrRight.oracle enc leak b` behind a cap of `qEnc` accepted pairs (`LeftOrRight.cap`). Run

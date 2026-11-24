@@ -247,18 +247,18 @@ otherwise preserved; signing queries run `ghostSignBody` on the cache layers. -/
     QueryImpl ((unifSpec + (M × Commit →ₒ Chal)) + (M →ₒ Option (Commit × Resp)))
       (StateT (GhostState M Commit Chal) ProbComp) where
   toFun t := match t with
-  | .inl (.inl n) => StateT.mk fun s =>
-      (fun u => (u, s)) <$> (HasQuery.toQueryImpl (spec := unifSpec) (m := ProbComp)) n
-  | .inl (.inr mc) => StateT.mk fun s =>
-      match s.1.1.2 mc with
-      | some v =>
-          if progSide then pure (v, (s.1, true))
-          else (fun cu => (cu.1, (((cu.2, s.1.1.2), s.1.2), true))) <$> roStep M s.1.1.1 mc
-      | none =>
-          (fun cu => (cu.1, (((cu.2, s.1.1.2), s.1.2), s.2))) <$> roStep M s.1.1.1 mc
-  | .inr msg => StateT.mk fun s =>
-      (fun alc => (alc.1, ((alc.2, msg :: s.1.2), s.2))) <$>
-        (ghostSignBody ids M pk sk msg maxAttempts).run s.1.1
+    | .inl (.inl n) => StateT.mk fun s =>
+        (fun u => (u, s)) <$> (HasQuery.toQueryImpl (spec := unifSpec) (m := ProbComp)) n
+    | .inl (.inr mc) => StateT.mk fun s =>
+        match s.1.1.2 mc with
+        | some v =>
+            if progSide then pure (v, (s.1, true))
+            else (fun cu => (cu.1, (((cu.2, s.1.1.2), s.1.2), true))) <$> roStep M s.1.1.1 mc
+        | none =>
+            (fun cu => (cu.1, (((cu.2, s.1.1.2), s.1.2), s.2))) <$> roStep M s.1.1.1 mc
+    | .inr msg => StateT.mk fun s =>
+        (fun alc => (alc.1, ((alc.2, msg :: s.1.2), s.2))) <$>
+          (ghostSignBody ids M pk sk msg maxAttempts).run s.1.1
 
 /-- The two ghost-instrumented handlers agree on all transitions that leave the bad flag
 unset: they differ only in the answer at a ghost hit, which fires the flag on both

@@ -198,19 +198,19 @@ programming to the *ghost* layer. -/
     QueryImpl ((unifSpec + (M × Commit →ₒ Chal)) + (M →ₒ Option (Commit × Resp)))
       (StateT (NmaGhostState M Commit Chal) ProbComp) where
   toFun t := match t with
-  | .inl (.inl n) => StateT.mk fun s =>
-      (fun u => (u, s)) <$> (HasQuery.toQueryImpl (spec := unifSpec) (m := ProbComp)) n
-  | .inl (.inr mc) => StateT.mk fun s =>
-      match s.1.2 mc with
-      | some v => pure (v, s)
-      | none =>
-          (fun cu : Chal × (M × Commit →ₒ Chal).QueryCache =>
-            (cu.1, ((cu.2, s.1.2), s.2))) <$> roStep M s.1.1 mc
-  | .inr msg => StateT.mk fun s =>
-      (fun alc : Option (Commit × Resp) ×
-          ((M × Commit →ₒ Chal).QueryCache × (M × Commit →ₒ Chal).QueryCache) =>
-        (alc.1, (alc.2, msg :: s.2))) <$>
-        (simGhostSignBody M maxAttempts sim pk msg).run s.1
+    | .inl (.inl n) => StateT.mk fun s =>
+        (fun u => (u, s)) <$> (HasQuery.toQueryImpl (spec := unifSpec) (m := ProbComp)) n
+    | .inl (.inr mc) => StateT.mk fun s =>
+        match s.1.2 mc with
+        | some v => pure (v, s)
+        | none =>
+            (fun cu : Chal × (M × Commit →ₒ Chal).QueryCache =>
+              (cu.1, ((cu.2, s.1.2), s.2))) <$> roStep M s.1.1 mc
+    | .inr msg => StateT.mk fun s =>
+        (fun alc : Option (Commit × Resp) ×
+            ((M × Commit →ₒ Chal).QueryCache × (M × Commit →ₒ Chal).QueryCache) =>
+          (alc.1, (alc.2, msg :: s.2))) <$>
+          (simGhostSignBody M maxAttempts sim pk msg).run s.1
 
 lemma ghostNmaImpl_run_unif (pk : Stmt) (sk : Wit) (n : unifSpec.Domain)
     (s : NmaGhostState M Commit Chal) :

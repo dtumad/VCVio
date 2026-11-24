@@ -145,12 +145,12 @@ log the challenge ciphertext. -/
     (ke : Ke) (km : Km) (leak : M → Λ) (b : Bool) :
     QueryImpl (LeftOrRight.spec M (C × T)) (StateT (GameState C T) ProbComp) where
   toFun mm := do
-  let c? ← (LeftOrRight.oracle ((scheme enc mac).encrypt (ke, km)) leak b mm :
-    ProbComp (Option (C × T)))
-  modify fun s => match c? with
-    | some c => (c :: s.1, s.2)
-    | none => s
-  return c?
+    let c? ← (LeftOrRight.oracle ((scheme enc mac).encrypt (ke, km)) leak b mm :
+      ProbComp (Option (C × T)))
+    modify fun s => match c? with
+      | some c => (c :: s.1, s.2)
+      | none => s
+    return c?
 
 /-- The challenge oracle changes only the challenge log. -/
 private lemma snd_of_mem_support_challengeImpl (enc : SymmEncAlg ProbComp M Ke C)
@@ -171,18 +171,18 @@ is logged with its freshness, rejected if it is a challenge ciphertext, and decr
     (ke : Ke) (km : Km) :
     QueryImpl (C × T →ₒ Option M) (StateT (GameState C T) ProbComp) where
   toFun ct := do
-  let s ← get
-  set (s.1, s.2 ++ [(ct, decide (ct ∉ s.1))])
-  if ct ∈ s.1 then return none else ((scheme enc mac).decrypt (ke, km) ct : ProbComp (Option M))
+    let s ← get
+    set (s.1, s.2 ++ [(ct, decide (ct ∉ s.1))])
+    if ct ∈ s.1 then return none else ((scheme enc mac).decrypt (ke, km) ct : ProbComp (Option M))
 
 /-- The decryption oracle that logs every decryption query with its freshness and answers it with
 `none`. -/
 @[expose] def rejectDecryptImpl :
     QueryImpl (C × T →ₒ Option M) (StateT (GameState C T) ProbComp) where
   toFun ct := do
-  let s ← get
-  set (s.1, s.2 ++ [(ct, decide (ct ∉ s.1))])
-  return none
+    let s ← get
+    set (s.1, s.2 ++ [(ct, decide (ct ∉ s.1))])
+    return none
 
 /-- The CCA game at bit `b` with the decryption queries logged. -/
 @[expose] def ccaLogImpl (enc : SymmEncAlg ProbComp M Ke C) (mac : MacAlg ProbComp C Km T)
@@ -406,8 +406,8 @@ decryption queries have been logged before it, it answers `none` and changes not
     (ke : Ke) (km : Km) (leak : M → Λ) (b : Bool) (j : ℕ) :
     QueryImpl (LeftOrRight.spec M (C × T)) (StateT (GameState C T) ProbComp) where
   toFun mm := do
-  let s ← get
-  if j < s.2.length then return none else challengeImpl enc mac ke km leak b mm
+    let s ← get
+    if j < s.2.length then return none else challengeImpl enc mac ke km leak b mm
 
 /-- The rejecting game stopped after the `j`-th decryption query: from then on challenge queries
 are answered with `none`. -/
@@ -565,22 +565,22 @@ selected message under its own key and ask the tagging oracle for the tag. -/
     (b : Bool) (j : ℕ) : QueryImpl (LeftOrRight.spec M (C × T))
       (StateT (List (C × T)) (OracleComp (unifSpec + (C →ₒ T)))) where
   toFun mm := do
-  let d ← get
-  if j < d.length then return none else do
-    let c? ← (liftM (LeftOrRight.oracle (enc.encrypt ke) leak b mm : ProbComp (Option C)) :
-      OracleComp (unifSpec + (C →ₒ T)) (Option C))
-    match c? with
-    | some c => do
-      let t ← ((unifSpec + (C →ₒ T)).query (Sum.inr c) : OracleComp (unifSpec + (C →ₒ T)) T)
-      return some (c, t)
-    | none => return none
+    let d ← get
+    if j < d.length then return none else do
+      let c? ← (liftM (LeftOrRight.oracle (enc.encrypt ke) leak b mm : ProbComp (Option C)) :
+        OracleComp (unifSpec + (C →ₒ T)) (Option C))
+      match c? with
+      | some c => do
+        let t ← ((unifSpec + (C →ₒ T)).query (Sum.inr c) : OracleComp (unifSpec + (C →ₒ T)) T)
+        return some (c, t)
+      | none => return none
 
 /-- The decryption oracle of the forger: log the query and answer `none`. -/
 @[expose] def forgerDecryptImpl : QueryImpl (C × T →ₒ Option M)
     (StateT (List (C × T)) (OracleComp (unifSpec + (C →ₒ T)))) where
   toFun ct := do
-  modify (· ++ [ct])
-  return none
+    modify (· ++ [ct])
+    return none
 
 /-- The handler of the forger. -/
 @[expose] def forgerImpl (enc : SymmEncAlg ProbComp M Ke C) (ke : Ke) (leak : M → Λ) (b : Bool)

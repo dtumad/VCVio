@@ -89,15 +89,15 @@ read-commit list untouched. -/
     QueryImpl ((unifSpec + (M × Commit →ₒ Chal)) + (M →ₒ Option (Commit × Resp)))
       (StateT (DeferredReadState M Commit Chal) ProbComp) where
   toFun t := match t with
-  | .inl (.inl n) => StateT.mk fun s =>
-      (fun u => (u, s)) <$> (HasQuery.toQueryImpl (spec := unifSpec) (m := ProbComp)) n
-  | .inl (.inr mc) => StateT.mk fun s =>
-      (fun cu => (cu.1, ((((cu.2, s.1.1.1.2), s.1.1.2), s.1.2 || decide (mc.2 ∈ s.1.1.2)),
-          mc.2 :: s.2))) <$>
-        roStep M s.1.1.1.1 mc
-  | .inr msg => StateT.mk fun s =>
-      (fun alc => (alc.1.1, ((((alc.2, msg :: s.1.1.1.2), s.1.1.2 ++ alc.1.2), s.1.2), s.2))) <$>
-        (ghostSignDrawBody ids M pk sk msg maxAttempts).run s.1.1.1.1
+    | .inl (.inl n) => StateT.mk fun s =>
+        (fun u => (u, s)) <$> (HasQuery.toQueryImpl (spec := unifSpec) (m := ProbComp)) n
+    | .inl (.inr mc) => StateT.mk fun s =>
+        (fun cu => (cu.1, ((((cu.2, s.1.1.1.2), s.1.1.2), s.1.2 || decide (mc.2 ∈ s.1.1.2)),
+            mc.2 :: s.2))) <$>
+          roStep M s.1.1.1.1 mc
+    | .inr msg => StateT.mk fun s =>
+        (fun alc => (alc.1.1, ((((alc.2, msg :: s.1.1.1.2), s.1.1.2 ++ alc.1.2), s.1.2), s.2))) <$>
+          (ghostSignDrawBody ids M pk sk msg maxAttempts).run s.1.1.1.1
 
 /-- **Coupling invariant for the read-recording reduction.** The underlying deferred state matches,
 and whenever the deferred bad flag is set there is a recorded read-commit already in the deferred
