@@ -166,8 +166,9 @@ private abbrev postKeygenState (M Commit Chal : Type) := List M × RoCache M Com
 full `CmaState` handler by projection. -/
 @[fs_simp] private def postKeygenAppendProdImpl (pk : Stmt) (sk : Wit) :
     QueryImpl (SourceCmaSpec (M := M) (Commit := Commit) (Chal := Chal) (Resp := Resp))
-      (StateT (postKeygenState M Commit Chal) ProbComp) := fun t =>
-  StateT.mk fun (signed, cache) =>
+      (StateT (postKeygenState M Commit Chal) ProbComp) where
+  toFun t :=
+    StateT.mk fun (signed, cache) =>
     match t with
     | Sum.inl (Sum.inl n) => do
         let r ← (unifSpec.query n : ProbComp (Fin (n + 1)))

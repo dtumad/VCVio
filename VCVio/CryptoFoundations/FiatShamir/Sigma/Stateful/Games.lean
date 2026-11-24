@@ -43,7 +43,8 @@ State: random-oracle cache, lazily sampled keypair, and bad flag. -/
 @[fs_simp] def nmaPublic
     (hr : GenerableRelation Stmt Wit rel) :
     QueryImpl.Stateful unifSpec (cmaPublicSpec M Commit Chal Stmt)
-      (NmaState M Commit Chal Stmt Wit)
+      (NmaState M Commit Chal Stmt Wit) where
+  toFun
   | .unif n => StateT.mk fun s => do
       let r ← (unifSpec.query n : OracleComp unifSpec (Fin (n + 1)))
       pure (r, s)
@@ -64,7 +65,8 @@ State: random-oracle cache, lazily sampled keypair, and bad flag. -/
 /-- Programmable random-oracle part of the no-message-attack game. -/
 @[fs_simp] def nmaProgram :
     QueryImpl.Stateful unifSpec (progSpec M Commit Chal)
-      (NmaState M Commit Chal Stmt Wit)
+      (NmaState M Commit Chal Stmt Wit) where
+  toFun
   | mch => StateT.mk fun s =>
       let mc : M × Commit := (mch.1, mch.2.1)
       let ch : Chal := mch.2.2
@@ -77,7 +79,8 @@ State: random-oracle cache, lazily sampled keypair, and bad flag. -/
 @[fs_simp] def nma
     (hr : GenerableRelation Stmt Wit rel) :
     QueryImpl.Stateful unifSpec (nmaSpec M Commit Chal Stmt)
-      (NmaState M Commit Chal Stmt Wit)
+      (NmaState M Commit Chal Stmt Wit) where
+  toFun
   | .unif n => nmaPublic M Commit Chal hr (.unif n)
   | .ro mc => nmaPublic M Commit Chal hr (.ro mc)
   | .pk => nmaPublic M Commit Chal hr .pk
@@ -91,7 +94,8 @@ This component has no private state. Its imports are intentionally the same
 ambient `nmaSpec` used by the signing simulator, so adversarial RO queries and
 programming queries interact through one inner random-oracle cache. -/
 @[fs_simp] def cmaPublicForward :
-    QueryImpl.Stateful (nmaSpec M Commit Chal Stmt) (cmaPublicSpec M Commit Chal Stmt) PUnit
+    QueryImpl.Stateful (nmaSpec M Commit Chal Stmt) (cmaPublicSpec M Commit Chal Stmt) PUnit where
+  toFun
   | .unif n => StateT.mk fun u => do
       let r ← (((nmaSpec M Commit Chal Stmt).query (.unif n)) :
         OracleComp (nmaSpec M Commit Chal Stmt) (Fin (n + 1)))
@@ -112,7 +116,8 @@ program the random oracle through the shared NMA interface. -/
 @[fs_simp] def cmaSignSim
     (simT : Stmt → ProbComp (Commit × Chal × Resp)) :
     QueryImpl.Stateful (nmaSpec M Commit Chal Stmt) (signSpec M Commit Resp)
-      (OuterState M)
+      (OuterState M) where
+  toFun
   | m => StateT.mk fun log => do
       let pk ← (((nmaSpec M Commit Chal Stmt).query .pk) :
         OracleComp (nmaSpec M Commit Chal Stmt) Stmt)
@@ -129,7 +134,8 @@ the same `nmaSpec` imports on purpose. -/
 @[fs_simp] def cmaToNma
     (simT : Stmt → ProbComp (Commit × Chal × Resp)) :
     QueryImpl.Stateful (nmaSpec M Commit Chal Stmt) (cmaSpec M Commit Chal Resp Stmt)
-      (OuterState M)
+      (OuterState M) where
+  toFun
   | .unif n => StateT.mk fun log => do
       let r ← (((nmaSpec M Commit Chal Stmt).query (.unif n)) :
         OracleComp (nmaSpec M Commit Chal Stmt) (Fin (n + 1)))
@@ -184,7 +190,8 @@ direct named CMA game. -/
     (sigma : SigmaProtocol ProbComp Stmt Wit Commit PrvState Chal Resp rel)
     (hr : GenerableRelation Stmt Wit rel) :
     QueryImpl.Stateful unifSpec (cmaSourceSpec M Commit Chal Resp)
-      (CmaState M Commit Chal Stmt Wit)
+      (CmaState M Commit Chal Stmt Wit) where
+  toFun
   | .unif n => StateT.mk fun s => do
       let r ← (unifSpec.query n : OracleComp unifSpec (Fin (n + 1)))
       pure (r, s)
@@ -233,7 +240,8 @@ by `SignatureAlg.UnforgeableAdversary`. -/
     (hr : GenerableRelation Stmt Wit rel) :
     QueryImpl.Stateful unifSpec
       ((unifSpec + roSpec M Commit Chal) + signSpec M Commit Resp)
-      (CmaState M Commit Chal Stmt Wit)
+      (CmaState M Commit Chal Stmt Wit) where
+  toFun
   | .inl (.inl n) => cmaRealSourceFull M Commit Chal sigma hr (.unif n)
   | .inl (.inr mc) => cmaRealSourceFull M Commit Chal sigma hr (.ro mc)
   | .inr m => cmaRealSourceFull M Commit Chal sigma hr (.sign m)
@@ -246,7 +254,8 @@ to the signed log. The bad flag is preserved and never set by real signing. -/
     (sigma : SigmaProtocol ProbComp Stmt Wit Commit PrvState Chal Resp rel)
     (hr : GenerableRelation Stmt Wit rel) :
     QueryImpl.Stateful unifSpec (cmaSpec M Commit Chal Resp Stmt)
-      (CmaState M Commit Chal Stmt Wit)
+      (CmaState M Commit Chal Stmt Wit) where
+  toFun
   | .unif n => cmaRealSourceFull M Commit Chal sigma hr (.unif n)
   | .ro mc => cmaRealSourceFull M Commit Chal sigma hr (.ro mc)
   | .sign m => cmaRealSourceFull M Commit Chal sigma hr (.sign m)

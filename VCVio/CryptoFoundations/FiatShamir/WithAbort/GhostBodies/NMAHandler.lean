@@ -196,8 +196,8 @@ records the signed message and runs `simGhostSignBody`, writing the accepted-tra
 programming to the *ghost* layer. -/
 @[expose] noncomputable def ghostNmaImpl (pk : Stmt) (_sk : Wit) :
     QueryImpl ((unifSpec + (M × Commit →ₒ Chal)) + (M →ₒ Option (Commit × Resp)))
-      (StateT (NmaGhostState M Commit Chal) ProbComp) :=
-  fun t => match t with
+      (StateT (NmaGhostState M Commit Chal) ProbComp) where
+  toFun t := match t with
   | .inl (.inl n) => StateT.mk fun s =>
       (fun u => (u, s)) <$> (HasQuery.toQueryImpl (spec := unifSpec) (m := ProbComp)) n
   | .inl (.inr mc) => StateT.mk fun s =>

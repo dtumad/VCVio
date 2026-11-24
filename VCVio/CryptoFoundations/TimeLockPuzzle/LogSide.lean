@@ -58,7 +58,8 @@ variable {ι ι' : Type} {spec : OracleSpec.{0, 0} ι} {side : OracleSpec.{0, 0}
 query to `side` appends its point to the log. -/
 @[expose]
 def sideLogPreImpl : QueryImpl (unifSpec + (spec + side))
-    (StateT (List ι') (OracleComp (unifSpec + (spec + side))))
+    (StateT (List ι') (OracleComp (unifSpec + (spec + side)))) where
+  toFun
   | .inl n => StateT.lift (liftM ((unifSpec + (spec + side)).query (.inl n)))
   | .inr (.inl t) => StateT.lift (liftM ((unifSpec + (spec + side)).query (.inr (.inl t))))
   | .inr (.inr t) => do
@@ -70,7 +71,8 @@ appends its `side` points to the log, in the order of the round and with repetit
 @[expose]
 def sideLogOnImpl {τ : Type} {free : OracleSpec.{0, 0} τ} :
     QueryImpl (free + (spec + side).batch)
-      (StateT (List ι') (OracleComp (free + (spec + side).batch)))
+      (StateT (List ι') (OracleComp (free + (spec + side).batch))) where
+  toFun
   | .inl n => StateT.lift (liftM ((free + (spec + side).batch).query (.inl n)))
   | .inr ts => do
       modify (· ++ ts.filterMap Sum.getRight?)

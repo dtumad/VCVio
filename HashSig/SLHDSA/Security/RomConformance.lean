@@ -46,7 +46,8 @@ variable {vp : ValidatedParams}
 /-- The answer function of the random-oracle interface given by a deterministic primitive
 bundle: the tweakable hash and `H_msg` by `PublicHash.impl prims`, and `PRF_msg` by
 `prims.PRFmsg`. -/
-@[expose] def romAnswer (prims : Primitives vp.params) : QueryImpl (hashSpec prims.core) Id
+@[expose] def romAnswer (prims : Primitives vp.params) : QueryImpl (hashSpec prims.core) Id where
+  toFun
   | .inl q => PublicHash.impl prims q
   | .inr q => prims.PRFmsg q.skPrf q.optRand q.msg
 

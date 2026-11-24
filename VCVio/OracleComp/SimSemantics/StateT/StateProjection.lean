@@ -282,8 +282,8 @@ namespace QueryImpl
 at `q₀` and project to `StateT σ ProbComp`. -/
 def fixSndStateT {ι : Type} {spec : OracleSpec ι} {σ Q : Type}
     (impl : QueryImpl spec (StateT (σ × Q) ProbComp)) (q₀ : Q) :
-    QueryImpl spec (StateT σ ProbComp) :=
-  fun t => StateT.mk fun s => Prod.map id Prod.fst <$> (impl t).run (s, q₀)
+    QueryImpl spec (StateT σ ProbComp) where
+  toFun t := StateT.mk fun s => Prod.map id Prod.fst <$> (impl t).run (s, q₀)
 
 end QueryImpl
 
@@ -350,8 +350,8 @@ def extendState
     {ι : Type u} {spec : OracleSpec ι} {σ Q : Type u} {m : Type u → Type v} [Monad m]
     (so : QueryImpl spec (StateT σ m))
     (aux : (t : spec.Domain) → σ → spec.Range t → σ → Q → Q) :
-    QueryImpl spec (StateT (σ × Q) m) :=
-  fun t => StateT.mk fun s => do
+    QueryImpl spec (StateT (σ × Q) m) where
+  toFun t := StateT.mk fun s => do
     let (u, s') ← (so t).run s.1
     pure (u, (s', aux t s.1 u s' s.2))
 
@@ -390,8 +390,8 @@ def extendStateLeft
     {ι : Type u} {spec : OracleSpec ι} {σ Q : Type u} {m : Type u → Type v} [Monad m]
     (so : QueryImpl spec (StateT σ m))
     (aux : (t : spec.Domain) → σ → spec.Range t → σ → Q → Q) :
-    QueryImpl spec (StateT (Q × σ) m) :=
-  fun t => StateT.mk fun s => do
+    QueryImpl spec (StateT (Q × σ) m) where
+  toFun t := StateT.mk fun s => do
     let (u, s') ← (so t).run s.2
     pure (u, (aux t s.2 u s' s.1, s'))
 

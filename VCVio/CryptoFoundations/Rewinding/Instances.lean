@@ -26,8 +26,8 @@ variable {ι W : Type} {spec : OracleSpec ι}
 
 /-- Add a unit cursor to a persistent oracle implementation. -/
 @[expose] def persistentAnswer (impl : QueryImpl spec (StateT W ProbComp)) :
-    QueryImpl spec (StateT (W × Unit) ProbComp) :=
-  fun q => StateT.mk fun s => (fun z => (z.1, (z.2, ()))) <$> (impl q).run s.1
+    QueryImpl spec (StateT (W × Unit) ProbComp) where
+  toFun q := StateT.mk fun s => (fun z => (z.1, (z.2, ()))) <$> (impl q).run s.1
 
 /-- A persistent oracle whose answers are stable under extension defines a reset policy with
 no execution-local state. -/
@@ -91,7 +91,8 @@ entry, and extensions only install previously missing entries. -/
 
 /-- A deterministic query handler carries no oracle state. -/
 @[expose] def statelessImpl (answer : (q : spec.Domain) → spec.Range q) :
-    QueryImpl spec (StateT Unit ProbComp) := fun q => pure (answer q)
+    QueryImpl spec (StateT Unit ProbComp) where
+  toFun q := pure (answer q)
 
 /-- A deterministic stateless oracle has a trivial frozen world and cursor. -/
 @[expose] def stateless (answer : (q : spec.Domain) → spec.Range q) :
@@ -109,8 +110,8 @@ entry, and extensions only install previously missing entries. -/
     ResetPolicy (pure ()) (statelessImpl (spec := emptySpec) (fun q => PEmpty.elim q)) :=
   stateless (spec := emptySpec) (fun q => PEmpty.elim q)
 
-private def uniformInl : QueryImpl unifSpec (OracleComp (unifSpec + spec)) :=
-  fun q => query (spec := unifSpec + spec) (.inl q)
+private def uniformInl : QueryImpl unifSpec (OracleComp (unifSpec + spec)) where
+  toFun q := query (spec := unifSpec + spec) (.inl q)
 
 private theorem simulateQ_uniformInl {σ α : Type}
     (handler : QueryImpl spec (StateT σ ProbComp)) (mx : ProbComp α) :
@@ -124,7 +125,8 @@ private theorem simulateQ_uniformInl {σ α : Type}
 
 private def stageRight {κ T : Type} {ctxSpec : OracleSpec κ}
     (ctx : QueryImpl ctxSpec (StateT T ProbComp)) :
-    QueryImpl (ctxSpec + spec) (StateT T (OracleComp (unifSpec + spec)))
+    QueryImpl (ctxSpec + spec) (StateT T (OracleComp (unifSpec + spec))) where
+  toFun
   | .inl q => StateT.mk fun t => simulateQ uniformInl ((ctx q).run t)
   | .inr q => StateT.mk fun t => (fun a => (a, t)) <$> query (spec := unifSpec + spec) (.inr q)
 
@@ -169,7 +171,8 @@ private theorem replaceRight {κ T σ α : Type} {ctxSpec : OracleSpec κ}
     P.faithful_coins (Prod.fst <$> (simulateQ (stageRight ctx) oa).run t)
 
 private def reassocQueries {κ : Type} {ctxSpec : OracleSpec κ} :
-    QueryImpl (unifSpec + (ctxSpec + spec)) (OracleComp ((unifSpec + ctxSpec) + spec))
+    QueryImpl (unifSpec + (ctxSpec + spec)) (OracleComp ((unifSpec + ctxSpec) + spec)) where
+  toFun
   | .inl q => query (spec := (unifSpec + ctxSpec) + spec) (.inl (.inl q))
   | .inr (.inl q) => query (spec := (unifSpec + ctxSpec) + spec) (.inl (.inr q))
   | .inr (.inr q) => query (spec := (unifSpec + ctxSpec) + spec) (.inr q)
@@ -205,7 +208,8 @@ private theorem replaceRightCoins {κ T σ α : Type} {ctxSpec : OracleSpec κ}
     replaceRight P (coins (S := T) + ctx) (simulateQ reassocQueries oa) t
 
 private def swapInnerQueries {κ : Type} {ctxSpec : OracleSpec κ} :
-    QueryImpl (unifSpec + (spec + ctxSpec)) (OracleComp (unifSpec + (ctxSpec + spec)))
+    QueryImpl (unifSpec + (spec + ctxSpec)) (OracleComp (unifSpec + (ctxSpec + spec))) where
+  toFun
   | .inl q => query (spec := unifSpec + (ctxSpec + spec)) (.inl q)
   | .inr (.inl q) => query (spec := unifSpec + (ctxSpec + spec)) (.inr (.inr q))
   | .inr (.inr q) => query (spec := unifSpec + (ctxSpec + spec)) (.inr (.inl q))
@@ -251,7 +255,8 @@ variable {ι₁ ι₂ σ₁ σ₂ : Type} {spec₁ : OracleSpec ι₁} {spec₂ 
 
 /-- Run two frozen handlers on separate persistent worlds and separate local cursors. -/
 @[expose] def productAnswer : QueryImpl (spec₁ + spec₂)
-    (StateT ((P₁.World × P₂.World) × (P₁.Cursor × P₂.Cursor)) ProbComp)
+    (StateT ((P₁.World × P₂.World) × (P₁.Cursor × P₂.Cursor)) ProbComp) where
+  toFun
   | .inl q => StateT.mk fun s =>
       (fun z => (z.1, ((z.2.1, s.1.2), (z.2.2, s.2.2)))) <$>
         (P₁.answer q).run (s.1.1, s.2.1)

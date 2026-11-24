@@ -821,7 +821,8 @@ def demoSpec : OracleSpec.{0, 0} DemoQuery := fun _ => PUnit
 
 /-- A toy probabilistic handler with heap effects. Two branches write cells,
 and one branch reads the flag without modifying it. -/
-def demoImpl : QueryImpl demoSpec (StateT (Heap DemoCell) ProbComp)
+def demoImpl : QueryImpl demoSpec (StateT (Heap DemoCell) ProbComp) where
+  toFun
   | .touchLog => logRef.writeM 1
   | .touchCache => cacheRef.writeM 1
   | .readFlag => do

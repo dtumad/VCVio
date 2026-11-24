@@ -70,7 +70,8 @@ open Security RecordedQueries
 /-- The signer with nothing charged and nothing recorded: it answers and records to the log. -/
 @[expose]
 noncomputable def unchargedSigner (signer : Message → OracleComp OracleWorld (Option Bytes)) :
-    QueryImpl SigningSpec (StateT SigningLog (OracleComp OracleWorld)) := fun request => do
+    QueryImpl SigningSpec (StateT SigningLog (OracleComp OracleWorld)) where
+  toFun request := do
   let answer ← liftM (signer request)
   modify (fun signed => signed ++ [⟨request, answer⟩])
   return answer

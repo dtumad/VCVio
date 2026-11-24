@@ -57,8 +57,8 @@ theorem pushGroups_map (φ : (s : S) → G s → W s) (groups : Groups G) (tbl :
 /-- Run an element-valued game request and install its reply in the handle table. -/
 @[expose] def liftGame [∀ s, Zero (G s)] {Query : Type} {Reply : Query → Type}
     {m : Type → Type} [Monad m] (impl : QueryImpl (plainSpec G Query Reply) m) :
-    QueryImpl (handleSpec (S := S) Query Reply) (StateT (Tbl G) m) :=
-  fun q tbl => do
+    QueryImpl (handleSpec (S := S) Query Reply) (StateT (Tbl G) m) where
+  toFun q tbl := do
     let reply ← impl (lookupMessage tbl q)
     let (handles, tbl') := pushGroups reply.groups tbl
     pure (⟨reply.data, handles⟩, tbl')

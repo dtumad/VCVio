@@ -44,8 +44,8 @@ The two models agree when no oracle index is queried more than once.
 This is definitionally equal to `uniformSampleImpl.withPregen` (from `SeededOracle.lean`). -/
 @[inline, reducible] def eagerRandomOracle {ι} [DecidableEq ι] {spec : OracleSpec ι}
     [∀ t : spec.Domain, SampleableType (spec.Range t)] :
-    QueryImpl spec (StateT (QuerySeed spec) ProbComp) :=
-  fun t => StateT.mk fun seed =>
+    QueryImpl spec (StateT (QuerySeed spec) ProbComp) where
+  toFun t := StateT.mk fun seed =>
     match seed t with
     | u :: us => pure (u, seed.update t us)
     | [] => (·, seed) <$> ($ᵗ spec.Range t)

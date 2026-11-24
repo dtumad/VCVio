@@ -29,12 +29,14 @@ open scoped OracleSpec.PrimitiveQuery
 
 /-- A monadic handler for the polynomial interface induced by `spec`.
 
-Concretely, this maps every oracle input `x` to a computation returning an
-answer of type `spec.Range x`. It extends first to `OracleQuery spec` by
+It maps every oracle input `x` to a computation returning an answer of type
+`spec.Range x`, and applies like that function: `impl x`. It is PolyFun's
+`PFunctor.Handler`, a structure, so `+` on implementations is the sum over the
+sum specification and ordinary functions keep their own operations. It extends first to `OracleQuery spec` by
 applying the continuation, then to `OracleComp spec` by preserving `pure` and
 `bind`; see `QueryImpl.mapQuery` and `simulateQ`. -/
-@[reducible] def QueryImpl {ι} (spec : OracleSpec ι) (m : Type u → Type v) :=
-  (x : spec.Domain) → m (spec.Range x)
+abbrev QueryImpl {ι} (spec : OracleSpec ι) (m : Type u → Type v) :=
+  PFunctor.Handler m spec.toPFunctor
 
 namespace QueryImpl
 
@@ -45,18 +47,18 @@ polynomial interface induced by an oracle specification. -/
 theorem eq_handler : QueryImpl spec m = PFunctor.Handler m spec.toPFunctor := rfl
 
 /-- Two query implementations are the same if they are the same on all query inputs. -/
-@[ext] lemma ext {so so' : QueryImpl spec m}
-    (h : ∀ x : spec.Domain, so x = so' x) : so = so' := funext h
+lemma ext {so so' : QueryImpl spec m}
+    (h : ∀ x : spec.Domain, so x = so' x) : so = so' := PFunctor.Handler.ext h
 
 /-- Restrict an implementation of a sum specification to its left component. -/
 def restrictLeft {ι₁ ι₂ : Type} {spec₁ : OracleSpec ι₁} {spec₂ : OracleSpec ι₂}
-    (impl : QueryImpl (spec₁ + spec₂) m) : QueryImpl spec₁ m :=
-  fun t ↦ impl (Sum.inl t)
+    (impl : QueryImpl (spec₁ + spec₂) m) : QueryImpl spec₁ m where
+  toFun t := impl (Sum.inl t)
 
 /-- Restrict an implementation of a sum specification to its right component. -/
 def restrictRight {ι₁ ι₂ : Type} {spec₁ : OracleSpec ι₁} {spec₂ : OracleSpec ι₂}
-    (impl : QueryImpl (spec₁ + spec₂) m) : QueryImpl spec₂ m :=
-  fun t ↦ impl (Sum.inr t)
+    (impl : QueryImpl (spec₁ + spec₂) m) : QueryImpl spec₂ m where
+  toFun t := impl (Sum.inr t)
 
 /-- Applying a left restriction is the original implementation on a left input. -/
 lemma restrictLeft_apply {ι₁ ι₂ : Type} {spec₁ : OracleSpec ι₁} {spec₂ : OracleSpec ι₂}
@@ -72,7 +74,7 @@ lemma restrictRight_apply {ι₁ ι₂ : Type} {spec₁ : OracleSpec ι₁} {spe
 when instantiating a generic `HasQuery` construction directly inside an analysis monad such as
 `StateT σ ProbComp` or `WriterT ω (OracleComp spec)`. -/
 abbrev toHasQuery (impl : QueryImpl spec m) : HasQuery spec m :=
-  ⟨impl⟩
+  ⟨fun t => impl t⟩
 
 @[simp]
 lemma toHasQuery_query (impl : QueryImpl spec m) (t : spec.Domain) :
@@ -122,7 +124,7 @@ section id
 
 /-- Identity implementation for queries, sending `q : OracleQuery spec α` to itself. -/
 protected def id (spec : OracleSpec ι) :
-    QueryImpl spec (OracleQuery spec) := query
+    QueryImpl spec (OracleQuery spec) := ⟨query⟩
 
 @[simp] lemma id_apply {spec : OracleSpec ι} (t : spec.Domain) :
     QueryImpl.id spec t = query t := rfl
@@ -151,8 +153,8 @@ section ofLift
 
 /-- Given that queries in `spec` lift to the monad `m` we get an implementation via lifting. -/
 def ofLift (spec : OracleSpec ι) (m : Type u → Type v)
-    [MonadLiftT (OracleQuery spec) m] : QueryImpl spec m :=
-  fun t : spec.Domain => liftM (query t)
+    [MonadLiftT (OracleQuery spec) m] : QueryImpl spec m where
+  toFun (t : spec.Domain) := liftM (query t)
 
 @[simp] lemma ofLift_apply (spec : OracleSpec ι) (m : Type u → Type v)
     [MonadLiftT (OracleQuery spec) m] (t : spec.Domain) : ofLift spec m t = liftM (query t) := rfl
@@ -165,7 +167,7 @@ def ofLift (spec : OracleSpec ι) (m : Type u → Type v)
 @[simp] lemma ofLift_eq_id : ofLift spec (OracleQuery spec) = QueryImpl.id spec := rfl
 
 @[simp] lemma ofLift_eq_id' : ofLift spec (OracleComp spec) = QueryImpl.id' spec := by
-  funext t
+  ext t : 1
   simp
 
 end ofLift
@@ -175,7 +177,7 @@ section ofFn
 /-- View a function from oracle inputs to outputs as an implementation in the `Id` monad.
 Can be used to run a computation to get a specific value. -/
 def ofFn (f : (t : spec.Domain) → spec.Range t) :
-    QueryImpl spec Id := f
+    QueryImpl spec Id := ⟨f⟩
 
 @[simp] lemma ofFn_apply (f : (t : spec.Domain) → spec.Range t)
     (t : spec.Domain) : ofFn f t = f t := rfl
@@ -189,7 +191,7 @@ section ofFn?
 
 /-- Version of `ofFn` that allows queries to fail to return a value. -/
 def ofFn? (f : (t : spec.Domain) → Option (spec.Range t)) :
-    QueryImpl spec Option := f
+    QueryImpl spec Option := ⟨f⟩
 
 @[simp] lemma ofFn?_apply (f : (t : spec.Domain) → Option (spec.Range t))
     (t : spec.Domain) : ofFn? f t = f t := rfl
@@ -227,8 +229,8 @@ variable {ι} {spec : OracleSpec ι} {m : Type u → Type v}
 
 /-- Repackage `HasQuery` as a `QueryImpl`, for APIs that still consume explicit oracle
 implementations. -/
-def toQueryImpl [HasQuery spec m] : QueryImpl spec m :=
-  fun t => HasQuery.query t
+def toQueryImpl [HasQuery spec m] : QueryImpl spec m where
+  toFun t := HasQuery.query t
 
 @[simp]
 lemma toQueryImpl_apply [HasQuery spec m] (t : spec.Domain) :
@@ -241,7 +243,7 @@ unfold, the rewrite `toQueryImpl → id' = liftTarget _ (id _)`
 nests `liftTarget`s and triggers unbounded depth. Use via explicit `rw` instead. -/
 lemma toQueryImpl_eq_id' :
     (toQueryImpl : QueryImpl spec (OracleComp spec)) = QueryImpl.id' spec := by
-  funext t
+  ext t : 1
   simp
 
 end HasQuery

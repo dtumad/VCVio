@@ -252,8 +252,8 @@ applies. The flag is preserved on every step, hence stays `false` along any run 
 from `false`. -/
 @[expose] noncomputable def flagLift {ι : Type} {spec : OracleSpec ι} {σ : Type}
     (impl : QueryImpl spec (StateT σ ProbComp)) :
-    QueryImpl spec (StateT (σ × Bool) ProbComp) :=
-  fun t => StateT.mk fun p =>
+    QueryImpl spec (StateT (σ × Bool) ProbComp) where
+  toFun t := StateT.mk fun p =>
     (fun us : spec.Range t × σ => (us.1, (us.2, p.2))) <$> (impl t).run p.1
 
 lemma flagLift_run {ι : Type} {spec : OracleSpec ι} {σ : Type}

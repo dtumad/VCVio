@@ -160,7 +160,8 @@ theorem run_liftM_state {α : Type} (x : StateT SigningLog (OracleComp OracleWor
 signer, and append the answer to the log. -/
 @[expose] noncomputable def signingOracleWith
     (signer : Message → OracleComp OracleWorld (Option Bytes)) :
-    QueryImpl SigningSpec CountedRun := fun request => do
+    QueryImpl SigningSpec CountedRun where
+  toFun request := do
   AddWriterT.addTell (Counts.single .signing 1)
   let answer ← liftM (signer request)
   liftM (modify (fun signed => signed ++ [⟨request, answer⟩]) :

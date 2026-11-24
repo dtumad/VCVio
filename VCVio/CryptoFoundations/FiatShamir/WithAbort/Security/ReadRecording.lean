@@ -87,8 +87,8 @@ read-commit list on every adversarial random-oracle read. Uniform and signing st
 read-commit list untouched. -/
 @[expose] noncomputable def deferredDrawReadImpl (pk : Stmt) (sk : Wit) :
     QueryImpl ((unifSpec + (M × Commit →ₒ Chal)) + (M →ₒ Option (Commit × Resp)))
-      (StateT (DeferredReadState M Commit Chal) ProbComp) :=
-  fun t => match t with
+      (StateT (DeferredReadState M Commit Chal) ProbComp) where
+  toFun t := match t with
   | .inl (.inl n) => StateT.mk fun s =>
       (fun u => (u, s)) <$> (HasQuery.toQueryImpl (spec := unifSpec) (m := ProbComp)) n
   | .inl (.inr mc) => StateT.mk fun s =>

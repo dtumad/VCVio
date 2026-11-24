@@ -221,8 +221,9 @@ theorem simulateQ_liftComp_run_of_query
 
 /-- Transport a stateful handler along a state equivalence. -/
 def transportState (h : QueryImpl.Stateful I E σ) (φ : σ ≃ σ') :
-    QueryImpl.Stateful I E σ' := fun t =>
-  StateT.mk fun s' => Prod.map id φ <$> (h t).run (φ.symm s')
+    QueryImpl.Stateful I E σ' where
+  toFun t :=
+    StateT.mk fun s' => Prod.map id φ <$> (h t).run (φ.symm s')
 
 @[simp]
 lemma transportState_apply_run (h : QueryImpl.Stateful I E σ) (φ : σ ≃ σ')
@@ -241,8 +242,9 @@ writes back the updated outer and inner states through the frame lenses.
 -/
 def linkWith (F : Frame σ σ₁ σ₂)
     (outer : QueryImpl.Stateful M E σ₁) (inner : QueryImpl.Stateful I M σ₂) :
-    QueryImpl.Stateful I E σ := fun t =>
-  StateT.mk fun s =>
+    QueryImpl.Stateful I E σ where
+  toFun t :=
+    StateT.mk fun s =>
     F.linkReshape s <$>
       (simulateQ inner ((outer t).run (F.left.get s))).run (F.right.get s)
 
@@ -446,8 +448,9 @@ def parRouteWith
     [MonadLiftT (OracleQuery I₁) (OracleQuery I)]
     [MonadLiftT (OracleQuery I₂) (OracleQuery I)]
     (h₁ : QueryImpl.Stateful I₁ E₁ σ₁) (h₂ : QueryImpl.Stateful I₂ E₂ σ₂) :
-    QueryImpl.Stateful I E σ := fun t =>
-  match R.route t with
+    QueryImpl.Stateful I E σ where
+  toFun t :=
+    match R.route t with
   | .inl q => StateT.mk fun s =>
       (Prod.map q.2.symm fun s₁' => F.left.put s₁' s) <$>
         liftComp ((h₁ q.1).run (F.left.get s)) I
@@ -493,7 +496,8 @@ def parRouteSeparatedWith
 frame and disjoint sum import and export interfaces. -/
 def parSumWith (F : Frame σ σ₁ σ₂)
     (h₁ : QueryImpl.Stateful I₁ E₁ σ₁) (h₂ : QueryImpl.Stateful I₂ E₂ σ₂) :
-    QueryImpl.Stateful (I₁ + I₂) (E₁ + E₂) σ
+    QueryImpl.Stateful (I₁ + I₂) (E₁ + E₂) σ where
+  toFun
   | .inl t => StateT.mk fun s =>
       (Prod.map id fun s₁' => F.left.put s₁' s) <$>
         liftComp ((h₁ t).run (F.left.get s)) (I₁ + I₂)

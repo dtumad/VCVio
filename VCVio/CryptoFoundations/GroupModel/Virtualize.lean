@@ -33,7 +33,8 @@ variable {F S : Type} {σ : Sig S} {V : S → Type}
 /-- Translate group handles, recording each fresh handle privately, and forward private coins. -/
 @[expose] def virtualizeImpl [DecidableEq S] (z : S → Handle) :
     QueryImpl (genSpec F σ) (StateT (Tbl (fun _ : S => Handle))
-      (OracleComp (genSpec F σ)))
+      (OracleComp (genSpec F σ))) where
+  toFun
   | .inl (.add s a b) => fun τ => do
       let h ← (genSpec F σ).query (.inl (.add s ((τ s).getD a (z s)) ((τ s).getD b (z s))))
       pure ((τ s).length, append τ s h)

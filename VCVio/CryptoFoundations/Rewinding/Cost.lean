@@ -75,8 +75,8 @@ namespace Rewinding
 
 /-- Answer from a fixed function and charge `cost q` for the complete run on input `q`. -/
 @[expose] def charged {Q α : Type} (f : Q → α) (cost : Q → ℕ) :
-    QueryImpl (rerunSpec Q α) (StateT ℕ ProbComp) :=
-  fun q => do
+    QueryImpl (rerunSpec Q α) (StateT ℕ ProbComp) where
+  toFun q := do
     modify (· + cost q)
     pure (f q)
 
@@ -188,7 +188,8 @@ theorem IsFinder.expectedCalls_bind_runCharged_le {R : Type} [Fintype R] [Decida
 adding the reported cost to the state. -/
 @[expose] def costAdapterImpl {Q α : Type} :
     QueryImpl (unifSpec + rerunSpec Q α)
-      (StateT ℕ (OracleComp (unifSpec + rerunSpec Q (α × ℕ))))
+      (StateT ℕ (OracleComp (unifSpec + rerunSpec Q (α × ℕ)))) where
+  toFun
   | Sum.inl n =>
     (liftM ((unifSpec + rerunSpec Q (α × ℕ)).query (Sum.inl n)) :
       StateT ℕ (OracleComp (unifSpec + rerunSpec Q (α × ℕ))) (Fin (n + 1)))

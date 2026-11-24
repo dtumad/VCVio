@@ -179,8 +179,8 @@ skeleton against `ghostBlindImpl`. Carries the accumulated drawn-commitment list
 read-hit flag in place of the eager ghost cache (see `DeferredState`). -/
 @[expose] noncomputable def deferredDrawImpl (pk : Stmt) (sk : Wit) :
     QueryImpl ((unifSpec + (M × Commit →ₒ Chal)) + (M →ₒ Option (Commit × Resp)))
-      (StateT (DeferredState M Commit Chal) ProbComp) :=
-  fun t => match t with
+      (StateT (DeferredState M Commit Chal) ProbComp) where
+  toFun t := match t with
   | .inl (.inl n) => StateT.mk fun s =>
       (fun u => (u, s)) <$> (HasQuery.toQueryImpl (spec := unifSpec) (m := ProbComp)) n
   | .inl (.inr mc) => StateT.mk fun s =>

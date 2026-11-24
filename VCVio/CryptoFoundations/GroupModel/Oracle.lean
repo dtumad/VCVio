@@ -113,7 +113,8 @@ theorem lookup_append_fresh [DecidableEq S] [∀ s, Zero (V s)] (tbl : Tbl V) (s
 @[expose] def impl [DecidableEq S] [CommSemiring F]
     [∀ s, AddCommMonoid (V s)] [∀ s, Module F (V s)]
     [∀ s, DecidableEq (U s)] (M : Model F σ V) (obs : (s : S) → V s → U s)
-    (m : Type → Type) [Monad m] : QueryImpl (spec F σ) (StateT (Tbl V) m)
+    (m : Type → Type) [Monad m] : QueryImpl (spec F σ) (StateT (Tbl V) m) where
+  toFun
   | .add s a b => fun tbl =>
       (push s (lookup tbl s a + lookup tbl s b)).run tbl
   | .smul s c a => fun tbl =>

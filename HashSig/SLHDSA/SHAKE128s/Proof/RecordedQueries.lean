@@ -180,7 +180,8 @@ theorem run_liftM_inner {ω : Type} [Monoid ω] {α : Type}
 and must not be recorded. -/
 @[expose] noncomputable def recordedSigningOracle
     (signer : Message → OracleComp OracleWorld (Option Bytes)) :
-    QueryImpl SigningSpec RecordedRun := fun request => do
+    QueryImpl SigningSpec RecordedRun where
+  toFun request := do
   AddWriterT.addTell ((Counts.single .signing 1, (0 : Multiset Bytes)))
   let answer ← liftM (signer request)
   liftM (modify (fun signed => signed ++ [⟨request, answer⟩]) :

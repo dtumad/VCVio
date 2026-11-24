@@ -185,8 +185,9 @@ variable (vp : ValidatedParams)
 
 /-- **SHAKE256 as the byte-string oracle**: the answer at `x` is the `m`-byte output
 `SHAKE256(x, 8m)`. -/
-@[expose] def shakeAnswer : QueryImpl (shakeSpec vp) Id := fun x =>
-  byteArrayPrefixOrZero (Keccak.shake256 x.toByteArray vp.params.m) vp.params.m
+@[expose] def shakeAnswer : QueryImpl (shakeSpec vp) Id where
+  toFun x :=
+    byteArrayPrefixOrZero (Keccak.shake256 x.toByteArray vp.params.m) vp.params.m
 
 variable {vp}
 

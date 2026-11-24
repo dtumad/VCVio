@@ -121,7 +121,8 @@ encoding of a typed point, the answer is the typed answer there completed from t
 and otherwise it is the private value. Uniform queries pass through. -/
 @[expose]
 def preprocessImpl :
-    QueryImpl (unifSpec + (D →ₒ M)) (StateT (D →ₒ M).QueryCache (OracleComp (unifSpec + spec)))
+    QueryImpl (unifSpec + (D →ₒ M)) (StateT (D →ₒ M).QueryCache (OracleComp (unifSpec + spec))) where
+  toFun
   | .inl k => StateT.lift (liftM ((unifSpec + spec).query (.inl k)))
   | .inr x => do
       let p ← privateDraw x
@@ -134,7 +135,8 @@ submit the encoded typed points as one typed round, and reassemble the answers. 
 pass through. -/
 @[expose]
 def onlineImpl : QueryImpl (unifSpec + (D →ₒ M).batch)
-    (StateT (D →ₒ M).QueryCache (OracleComp (unifSpec + spec.batch)))
+    (StateT (D →ₒ M).QueryCache (OracleComp (unifSpec + spec.batch))) where
+  toFun
   | .inl k => StateT.lift (liftM ((unifSpec + spec.batch).query (.inl k)))
   | .inr xs => do
       let ps ← privateDraws xs
@@ -180,13 +182,15 @@ end adapter
 
 /-- The raw interface as part of the combined interface of typed points and raw inputs. -/
 @[expose]
-def rawLift : QueryImpl (unifSpec + (D →ₒ M)) (OracleComp (unifSpec + (spec + (D →ₒ M))))
+def rawLift : QueryImpl (unifSpec + (D →ₒ M)) (OracleComp (unifSpec + (spec + (D →ₒ M)))) where
+  toFun
   | .inl n => liftM ((unifSpec + (spec + (D →ₒ M))).query (.inl n))
   | .inr x => liftM ((unifSpec + (spec + (D →ₒ M))).query (.inr (.inr x)))
 
 /-- The typed interface as part of the combined interface of typed points and raw inputs. -/
 @[expose]
-def typedLift : QueryImpl (unifSpec + spec) (OracleComp (unifSpec + (spec + (D →ₒ M))))
+def typedLift : QueryImpl (unifSpec + spec) (OracleComp (unifSpec + (spec + (D →ₒ M)))) where
+  toFun
   | .inl n => liftM ((unifSpec + (spec + (D →ₒ M))).query (.inl n))
   | .inr t => liftM ((unifSpec + (spec + (D →ₒ M))).query (.inr (.inl t)))
 
@@ -206,7 +210,8 @@ lemma truncRound_cons (t : ι) (ts : List ι) (u : M)
 /-- The encoding as a translation of rounds: a typed round is the raw round of the encodings of
 its points, with every answer truncated. Uniform queries pass through. -/
 @[expose]
-def roundImpl : QueryImpl (unifSpec + spec.batch) (OracleComp (unifSpec + (D →ₒ M).batch))
+def roundImpl : QueryImpl (unifSpec + spec.batch) (OracleComp (unifSpec + (D →ₒ M).batch)) where
+  toFun
   | .inl n => liftM ((unifSpec + (D →ₒ M).batch).query (.inl n))
   | .inr ts => E.truncRound ts <$>
       liftM ((unifSpec + (D →ₒ M).batch).query (.inr (ts.map E.encode)))

@@ -97,8 +97,8 @@ Accepted queries are appended, so the history is in issue order and its `j`-th e
 target. -/
 def SM_DT_TCR_challengeOracle [DecidableEq Tweak]
     (prob : SM_DT_TCR_Problem ι PkSeed Tweak M Y) (pk : PkSeed) :
-    QueryImpl (SM_DT_TCR_challengeSpec Tweak M Y) (StateT (SM_DT_TCR_State Tweak M) ProbComp) :=
-  fun tm => do
+    QueryImpl (SM_DT_TCR_challengeSpec Tweak M Y) (StateT (SM_DT_TCR_State Tweak M) ProbComp) where
+  toFun tm := do
     let (qsChal, twsColl) ← get
     if prob.numTargets ≤ qsChal.length ∨ ¬ TweakFresh Prod.fst qsChal twsColl tm.1 then
       return none

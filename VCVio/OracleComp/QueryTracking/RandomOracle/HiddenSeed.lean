@@ -120,8 +120,8 @@ abbrev withDerivations : OracleSpec ((ℕ ⊕ ι) ⊕ X) := unifSpec + pub + (X 
 /-- The handler forwarding each sampling and public query unchanged into
 `pub.withDerivations X R`. -/
 @[expose] def withDerivationsLift :
-    QueryImpl (unifSpec + pub) (OracleComp (pub.withDerivations X R)) :=
-  fun t => (pub.withDerivations X R).query (.inl t)
+    QueryImpl (unifSpec + pub) (OracleComp (pub.withDerivations X R)) where
+  toFun t := (pub.withDerivations X R).query (.inl t)
 
 end OracleSpec
 
@@ -231,7 +231,8 @@ theorem encodedQuery_eq_true_iff (s : S) (t : (pub.withDerivations X R).Domain) 
 
 /-- Answer a derivation query `x` by the public query at `E.enc s x`. -/
 @[expose] def deriveImpl (s : S) :
-    QueryImpl (pub.withDerivations X R) (OracleComp (unifSpec + pub)) := fun
+    QueryImpl (pub.withDerivations X R) (OracleComp (unifSpec + pub)) where
+  toFun
   | .inl t => (unifSpec + pub).query t
   | .inr x => cast (E.range_eq s x) <$> (unifSpec + pub).query (.inr (E.enc s x))
 
@@ -334,7 +335,8 @@ open Classical in
 other public answers in the public cache; a public query at an encoded point raises the flag.
 Its samplers are those of the real game. -/
 noncomputable def coupledImpl (s : S) :
-    QueryImpl (pub.withDerivations X R) (StateT (SplitCache pub X R × Bool) ProbComp) := fun
+    QueryImpl (pub.withDerivations X R) (StateT (SplitCache pub X R × Bool) ProbComp) where
+  toFun
   | .inl (.inl n) => StateT.mk fun st => (fun u => (u, st)) <$> (unifSpec.query n : ProbComp _)
   | .inl (.inr t) => StateT.mk fun st =>
       if h : ∃ x, E.enc s x = t then E.encodedStep s h.choose h.choose_spec st
@@ -421,7 +423,8 @@ variable (pub X R) in
 /-- The ideal game: public queries read the public cache and derivations an independent table,
 both lazily sampled; no secret enters it. -/
 @[expose] noncomputable def idealImpl :
-    QueryImpl (pub.withDerivations X R) (StateT (SplitCache pub X R) ProbComp) := fun
+    QueryImpl (pub.withDerivations X R) (StateT (SplitCache pub X R) ProbComp) where
+  toFun
   | .inl (.inl n) => StateT.mk fun st => (fun u => (u, st)) <$> (unifSpec.query n : ProbComp _)
   | .inl (.inr t) => StateT.mk fun st =>
       (fun z => (z.1, (z.2, st.2))) <$> (pub.randomOracle t).run st.1

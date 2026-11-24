@@ -85,8 +85,8 @@ hash-forest oracle. -/
 def binaryQueryImpl :
     QueryImpl (MerkleTreeHashing.spec LeafAddress NodeAddress EncodedLeaf Digest)
       (OracleComp (spec BinaryOperationKind Unit (BinaryAddress LeafAddress NodeAddress)
-        EncodedLeaf Digest)) :=
-  fun query => HasQuery.query
+        EncodedLeaf Digest)) where
+  toFun query := HasQuery.query
     (spec := spec BinaryOperationKind Unit (BinaryAddress LeafAddress NodeAddress)
       EncodedLeaf Digest) (binaryQuery query)
 

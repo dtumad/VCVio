@@ -42,8 +42,8 @@ variable {m : Type u → Type v} [Monad m]
 If a seed value is available for the query, it is used and the seed is consumed (the tail
 replaces the head). When no seed remains, falls back to the underlying implementation. -/
 def withPregen (so : QueryImpl spec m) :
-    QueryImpl spec (StateT (QuerySeed spec) m) :=
-  fun t => StateT.mk fun seed =>
+    QueryImpl spec (StateT (QuerySeed spec) m) where
+  toFun t := StateT.mk fun seed =>
     match seed t with
     | u :: us => pure (u, seed.update t us)
     | [] => (·, seed) <$> so t

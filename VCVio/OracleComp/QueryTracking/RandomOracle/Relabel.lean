@@ -194,7 +194,8 @@ theorem cell_eq_of_mem_support_drawCell {c c' : X ⊕ K} {st : RelabelState pub 
 /-- The label operations with every operation drawing its cell: `touch c` draws `c` and discards
 it, `read k` draws the label of `k`. -/
 @[expose] noncomputable def labelImpl :
-    QueryImpl (OracleSpec.labelOps X K R) (StateT (RelabelState pub X K R) ProbComp) := fun
+    QueryImpl (OracleSpec.labelOps X K R) (StateT (RelabelState pub X K R) ProbComp) where
+  toFun
   | .inl c => (fun _ ↦ ()) <$> drawCell c
   | .inr k => drawCell (.inr k)
 
@@ -494,7 +495,8 @@ open Classical in
 at their values, draws (or reads) the node's label; every other public query is answered by the
 public cache; a derivation draws (or reads) its cell. -/
 noncomputable def relabelImpl :
-    QueryImpl (pub.withDerivations X R) (StateT (RelabelState pub X K R) ProbComp) := fun
+    QueryImpl (pub.withDerivations X R) (StateT (RelabelState pub X K R) ProbComp) where
+  toFun
   | .inl (.inl n) => StateT.mk fun st ↦ (fun u ↦ (u, st)) <$> (unifSpec.query n : ProbComp _)
   | .inl (.inr t) => StateT.mk fun st ↦
       if h : ∃ k vs, G.childVals st k = some vs ∧ G.pt k vs = t then

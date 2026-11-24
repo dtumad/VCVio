@@ -180,8 +180,8 @@ target. -/
 @[expose] noncomputable def SM_DT_RTCR_challengeOracle [DecidableEq Tweak] [SampleableType R]
     (prob : SM_DT_RTCR_Problem PkSeed Tweak M R Y) (pk : PkSeed) :
     QueryImpl (SM_DT_RTCR_challengeSpec Tweak M R Y)
-      (StateT (SM_DT_RTCR_State Tweak M R) ProbComp) :=
-  fun tm => do
+      (StateT (SM_DT_RTCR_State Tweak M R) ProbComp) where
+  toFun tm := do
     let qsChal ← get
     if prob.numTargets ≤ qsChal.length ∨ TweakReserved Prod.fst qsChal tm.1 then
       return none

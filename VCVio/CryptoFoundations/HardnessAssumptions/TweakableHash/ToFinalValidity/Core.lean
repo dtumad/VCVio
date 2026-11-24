@@ -107,8 +107,8 @@ instance [DecidableEq Tweak] (s : List Qh × List Tweak) (q : Qq) :
 /-- The rejection-on-arrival challenge oracle. A refused query draws nothing and leaves the state
 untouched, so refusal consumes no randomness. -/
 @[expose] def roaChallengeOracle [DecidableEq Tweak] :
-    QueryImpl (roaChallengeSpec Qq Y) (StateT (List Qh × List Tweak) ProbComp) :=
-  fun q => do
+    QueryImpl (roaChallengeSpec Qq Y) (StateT (List Qh × List Tweak) ProbComp) where
+  toFun q := do
     let s ← get
     if Refuses tweakOfQuery tweakOfHist numTargets s q then
       return none
@@ -121,8 +121,8 @@ untouched, so refusal consumes no randomness. -/
 violation poisons the monitor without suppressing either the draw or the response. -/
 @[expose] def monitorChallengeOracle [DecidableEq Tweak] :
     QueryImpl (monitorChallengeSpec Qq Y)
-      (StateT (SourceFinalValidity.State Qh Tweak) ProbComp) :=
-  fun q => do
+      (StateT (SourceFinalValidity.State Qh Tweak) ProbComp) where
+  toFun q := do
     let v ← (draw q : StateT (SourceFinalValidity.State Qh Tweak) ProbComp V)
     let st ← get
     set (st.recordTarget numTargets tweakOfHist (entry q v))
@@ -171,8 +171,8 @@ already records on either oracle, is answered `none` and not forwarded. The test
 `roaChallengeOracle`'s, read through the replica. -/
 def toMonitorChallengeOracle [DecidableEq Tweak] :
     QueryImpl (roaChallengeSpec Qq Y)
-      (StateT (List Tweak × List Tweak) (Wrapped Qq Y thColl)) :=
-  fun q => StateT.mk fun s =>
+      (StateT (List Tweak × List Tweak) (Wrapped Qq Y thColl)) where
+  toFun q := StateT.mk fun s =>
     if Refuses tweakOfQuery id numTargets s q then
       pure (none, s)
     else
@@ -186,8 +186,8 @@ answered `none` and not forwarded; otherwise it is forwarded and its tweak recor
 arguments. -/
 def toMonitorCollectionOracle [DecidableEq Tweak] (Qq : Type) :
     QueryImpl (TweakableHash.collectionSpec thColl)
-      (StateT (List Tweak × List Tweak) (Wrapped Qq Y thColl)) :=
-  fun q => StateT.mk fun s =>
+      (StateT (List Tweak × List Tweak) (Wrapped Qq Y thColl)) where
+  toFun q := StateT.mk fun s =>
     if TweakReserved id s.1 q.2.1 then
       pure (none, s)
     else

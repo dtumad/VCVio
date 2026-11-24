@@ -52,7 +52,8 @@ abbrev SingleROQueryCache (PKHash M R K : Type) :=
 def singleROOracleImpl {PKHash M R K : Type}
     [DecidableEq PKHash] [DecidableEq M] [SampleableType R] [SampleableType K] :
     QueryImpl (singleROHashOracleSpec PKHash M R K)
-      (StateT (SingleROQueryCache PKHash M R K) ProbComp) := fun inp => do
+      (StateT (SingleROQueryCache PKHash M R K) ProbComp) where
+  toFun inp := do
   let cache ← get
   match cache inp with
   | some out => return out

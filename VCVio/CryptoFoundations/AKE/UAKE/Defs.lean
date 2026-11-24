@@ -178,8 +178,9 @@ inductive Op (W : Type) where
 /-- Logic for the UAKE experiment's `Op` queries: the T-session and
   challenge-session oracles. -/
 @[expose] def opImpl [Monad m] (proto : Scheme m K UK TK W) (tk : TK) :
-    QueryImpl (oracleSpec K W) (StateT (Env proto) m) := fun op =>
-  match op with
+    QueryImpl (oracleSpec K W) (StateT (Env proto) m) where
+  toFun op :=
+    match op with
   | .openT => do
       let r ← (proto.T.init tk : m _)
       let env ← get

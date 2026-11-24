@@ -191,13 +191,13 @@ theorem realView_eq_visible (setup : Setup) (p : St × Bool) (hinv : Inv setup p
 
 /-- The flattened verifier at a hash input. -/
 @[expose] noncomputable def realHashImpl :
-    QueryImpl HashSpec (StateT SharePresent.VerifyState ProbComp) :=
-  fun input => SharePresent.realWorldImpl (Sum.inr input)
+    QueryImpl HashSpec (StateT SharePresent.VerifyState ProbComp) where
+  toFun input := SharePresent.realWorldImpl (Sum.inr input)
 
 /-- The flattened verifier at a coin. -/
 @[expose] noncomputable def realCoinImpl :
-    QueryImpl unifSpec (StateT SharePresent.VerifyState ProbComp) :=
-  fun coin => SharePresent.realWorldImpl (Sum.inl coin)
+    QueryImpl unifSpec (StateT SharePresent.VerifyState ProbComp) where
+  toFun coin := SharePresent.realWorldImpl (Sum.inl coin)
 
 /-- The real verifier handler is the sum of its coin and hash parts. -/
 theorem realWorldImpl_eq_add :

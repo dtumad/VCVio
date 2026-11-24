@@ -369,8 +369,8 @@ private theorem run_value {N : Type → Type} [Monad N] [LawfulMonad N]
 
 private def valueHandler {N : Type → Type} [Monad N] (random : QueryImpl unifSpec N)
     (game : QueryImpl (plainSpec G Query Reply) N) :
-    QueryImpl (explainedSpec F G (CoinQuery Query) (CoinReply Reply)) N :=
-  fun q => withCoins random game q.value
+    QueryImpl (explainedSpec F G (CoinQuery Query) (CoinReply Reply)) N where
+  toFun q := withCoins random game q.value
 
 private theorem valueHandler_coin {N : Type → Type} [Monad N] (random : QueryImpl unifSpec N)
     (game : QueryImpl (plainSpec G Query Reply) N) (n : ℕ)

@@ -34,8 +34,8 @@ open OracleComp OracleSpec
 namespace SLHDSA.SHAKE128s.CacheReplay
 
 /-- A finished cache, read as a total hash function. -/
-@[expose] def replay (cache : QueryCache HashSpec) : QueryImpl HashSpec Id :=
-  fun input => ((cache input).getD default : Id HashOutput)
+@[expose] def replay (cache : QueryCache HashSpec) : QueryImpl HashSpec Id where
+  toFun input := ((cache input).getD default : Id HashOutput)
 
 /-- The oracle step either returns a cached value and leaves the cache alone, or samples and
 installs one. -/

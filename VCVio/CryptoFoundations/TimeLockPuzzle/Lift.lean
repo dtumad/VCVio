@@ -127,7 +127,8 @@ through, and a query to `side` is answered by the private lazy random oracle, wh
 are local coins of the preprocessing phase. -/
 @[expose]
 def sidePreprocessImpl :
-    QueryImpl (unifSpec + (spec + side)) (StateT side.QueryCache (OracleComp (unifSpec + spec)))
+    QueryImpl (unifSpec + (spec + side)) (StateT side.QueryCache (OracleComp (unifSpec + spec))) where
+  toFun
   | .inl n => StateT.lift (liftM ((unifSpec + spec).query (.inl n)))
   | .inr (.inl t) => StateT.lift (liftM ((unifSpec + spec).query (.inr t)))
   | .inr (.inr t) => StateT.mk fun c => liftComp ((side.randomOracle t).run c) (unifSpec + spec)
@@ -139,7 +140,8 @@ points as one round, and reassembles the answer tuple (`batchMerge`). -/
 def sideOnlineImpl {τ : Type} {free : OracleSpec.{0, 0} τ}
     [MonadLiftT (OracleQuery unifSpec) (OracleQuery free)] :
     QueryImpl (free + (spec + side).batch)
-      (StateT side.QueryCache (OracleComp (free + spec.batch)))
+      (StateT side.QueryCache (OracleComp (free + spec.batch))) where
+  toFun
   | .inl n => StateT.lift (liftM ((free + spec.batch).query (.inl n)))
   | .inr ts => do
       let vs ← sideDraws (ts.filterMap Sum.getRight?)

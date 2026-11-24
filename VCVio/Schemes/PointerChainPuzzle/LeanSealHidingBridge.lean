@@ -91,7 +91,8 @@ private value, and elsewhere the private value (`RandomOracleEncoding.assemble`)
 @[expose]
 def freeOnlineImpl :
     QueryImpl (free + (D →ₒ M).batch)
-      (StateT (D →ₒ M).QueryCache (OracleComp (free + spec.batch)))
+      (StateT (D →ₒ M).QueryCache (OracleComp (free + spec.batch))) where
+  toFun
   | .inl t => StateT.lift (liftM ((free + spec.batch).query (.inl t)))
   | .inr xs => do
       let ps ← sideDraws (spec := spec) (side := (D →ₒ M)) (free := free) xs

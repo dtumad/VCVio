@@ -45,7 +45,8 @@ query the PRF oracle on `(tag, nonce)` for the authenticator. Models `unlinkTagQ
 def unlinkToMultiplePRFTagImpl :
     QueryImpl (TagId →ₒ Option (TagTranscript Nonce Digest))
       (StateT (UnlinkState TagId)
-        (OracleComp (unifSpec + ((TagId × Nonce) →ₒ Digest)))) := fun tag => do
+        (OracleComp (unifSpec + ((TagId × Nonce) →ₒ Digest)))) where
+  toFun tag := do
   let st ← get
   if _h : st.sessionsUsed tag < sessionsPerTag then
     let nonce ← (OracleComp.liftComp (spec := unifSpec)
@@ -64,7 +65,8 @@ authenticator. Models `unlinkReaderQueryImpl` under the `multiplePattern`. -/
 noncomputable def unlinkToMultiplePRFReaderImpl :
     QueryImpl ((TagTranscript Nonce Digest) →ₒ ReaderReply)
       (StateT (UnlinkState TagId)
-        (OracleComp (unifSpec + ((TagId × Nonce) →ₒ Digest)))) := fun transcript => do
+        (OracleComp (unifSpec + ((TagId × Nonce) →ₒ Digest)))) where
+  toFun transcript := do
   let digests ← (Finset.univ : Finset TagId).toList.mapM
     (m := OracleComp (unifSpec + ((TagId × Nonce) →ₒ Digest)))
     (fun tag => PRFScheme.functionQuery (D := TagId × Nonce) (R := Digest)
@@ -101,7 +103,8 @@ def unlinkToSinglePRFTagImpl :
     QueryImpl (TagId →ₒ Option (TagTranscript Nonce Digest))
       (StateT (UnlinkState TagId)
         (OracleComp (unifSpec +
-          (((TagId × Fin sessionsPerTag) × Nonce) →ₒ Digest)))) := fun tag => do
+          (((TagId × Fin sessionsPerTag) × Nonce) →ₒ Digest)))) where
+  toFun tag := do
   let st ← get
   if h : st.sessionsUsed tag < sessionsPerTag then
     let sid : Fin sessionsPerTag := ⟨st.sessionsUsed tag, h⟩
@@ -123,7 +126,8 @@ noncomputable def unlinkToSinglePRFReaderImpl :
     QueryImpl ((TagTranscript Nonce Digest) →ₒ ReaderReply)
       (StateT (UnlinkState TagId)
         (OracleComp (unifSpec +
-          (((TagId × Fin sessionsPerTag) × Nonce) →ₒ Digest)))) := fun transcript => do
+          (((TagId × Fin sessionsPerTag) × Nonce) →ₒ Digest)))) where
+  toFun transcript := do
   let digests ← (Finset.univ : Finset (TagId × Fin sessionsPerTag)).toList.mapM
     (m := OracleComp (unifSpec + (((TagId × Fin sessionsPerTag) × Nonce) →ₒ Digest)))
     (fun slot => PRFScheme.functionQuery

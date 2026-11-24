@@ -292,7 +292,8 @@ namespace Oracles
 
 /-- The six functions as a deterministic implementation of the oracles. -/
 @[expose]
-def toImpl (O : Oracles n S L Salt Ctx) : QueryImpl (oracleSpec n S L Salt Ctx) Id
+def toImpl (O : Oracles n S L Salt Ctx) : QueryImpl (oracleSpec n S L Salt Ctx) Id where
+  toFun
   | .start ctx i x => O.start ctx i x
   | .step salt i s => O.step salt i s
   | .mask ctx y => O.mask ctx y

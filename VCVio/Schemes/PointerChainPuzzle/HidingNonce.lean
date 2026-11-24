@@ -240,8 +240,8 @@ by the random oracle on the shared cache. -/
 noncomputable def counterJointImpl (puzzle : Puzzle n S L Salt) (b : Bool) :
     QueryImpl ((unifSpec + LeftOrRight.spec Plaintext ByteArray) +
         (sealSpec n S L Salt Ctx N K).batch)
-      (StateT ((sealSpec n S L Salt Ctx N K).QueryCache × (ℕ × CounterLog N K)) ProbComp) :=
-  fun t => StateT.mk fun s => (fun z => (z.1.1, (z.2, z.1.2))) <$>
+      (StateT ((sealSpec n S L Salt Ctx N K).QueryCache × (ℕ × CounterLog N K)) ProbComp) where
+  toFun t := StateT.mk fun s => (fun z => (z.1.1, (z.2, z.1.2))) <$>
     (simulateQ (sealSpec n S L Salt Ctx N K).romImpl
       (simulateQ (sealSpec n S L Salt Ctx N K).unbatch
         ((counterLogImpl prf codec encodePuzzle qEnc puzzle b t).run s.2))).run s.1
@@ -843,8 +843,8 @@ on the cache. -/
 noncomputable def keyedJointImpl (T : Fin (2 * qEnc) → K) (puzzle : Puzzle n S L Salt) (b : Bool) :
     QueryImpl ((unifSpec + LeftOrRight.spec Plaintext ByteArray) +
         (sealSpec n S L Salt Ctx N K).batch)
-      (StateT ((sealSpec n S L Salt Ctx N K).QueryCache × ℕ) ProbComp) :=
-  fun t => StateT.mk fun s => (fun z => (z.1.1, (z.2, z.1.2))) <$>
+      (StateT ((sealSpec n S L Salt Ctx N K).QueryCache × ℕ) ProbComp) where
+  toFun t := StateT.mk fun s => (fun z => (z.1.1, (z.2, z.1.2))) <$>
     (simulateQ (keyedRomImpl prf qEnc T)
       (((indexedOnlineImpl (Ctx := Ctx) codec encodePuzzle qEnc puzzle b).batch' t).run
         s.2)).run s.1
@@ -904,8 +904,8 @@ changes. -/
 noncomputable def keyedTabImpl (puzzle : Puzzle n S L Salt) (b : Bool) :
     QueryImpl ((unifSpec + LeftOrRight.spec Plaintext ByteArray) +
         (sealSpec n S L Salt Ctx N K).batch)
-      (StateT (((sealSpec n S L Salt Ctx N K).QueryCache × ℕ) × (Fin (2 * qEnc) → K)) ProbComp) :=
-  fun t => StateT.mk fun s => (fun z => (z.1, (z.2, s.2))) <$>
+      (StateT (((sealSpec n S L Salt Ctx N K).QueryCache × ℕ) × (Fin (2 * qEnc) → K)) ProbComp) where
+  toFun t := StateT.mk fun s => (fun z => (z.1, (z.2, s.2))) <$>
     (keyedJointImpl prf codec encodePuzzle qEnc s.2 puzzle b t).run s.1
 
 /-- A run of `keyedTabImpl` from the key table `T` is a run of `keyedJointImpl T`. -/

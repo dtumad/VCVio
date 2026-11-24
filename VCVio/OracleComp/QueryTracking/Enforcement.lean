@@ -44,8 +44,8 @@ variable {ι : Type u} {spec : OracleSpec ι} {α : Type u}
 When the remaining budget for the queried oracle is positive, the query is forwarded and
 the budget decremented. When the budget is exhausted, `default` is returned silently. -/
 def OracleSpec.enforceOracle [DecidableEq ι] [∀ t, Inhabited (spec.Range t)] :
-    QueryImpl spec (StateT (ι → ℕ) (OracleComp spec)) :=
-  fun t => StateT.mk fun budget =>
+    QueryImpl spec (StateT (ι → ℕ) (OracleComp spec)) where
+  toFun t := StateT.mk fun budget =>
     if 0 < budget t then
       (·, Function.update budget t (budget t - 1)) <$> liftM (query t)
     else

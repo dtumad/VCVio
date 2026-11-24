@@ -35,8 +35,8 @@ variable {m : Type → Type v} [Monad m] {M PK SK C : Type}
 
 /-- The decryption oracle under `sk`: a ciphertext is answered with its decryption, and an invalid
 one with `none`, which the adversary receives as `⊥` before it continues. -/
-def decryptionOracle (sk : SK) : QueryImpl (C →ₒ Option M) m :=
-  fun c => encAlg.decrypt sk c
+def decryptionOracle (sk : SK) : QueryImpl (C →ₒ Option M) m where
+  toFun c := encAlg.decrypt sk c
 
 @[simp] lemma decryptionOracle_apply (sk : SK) (c : C) :
     encAlg.decryptionOracle sk c = encAlg.decrypt sk c := rfl

@@ -245,8 +245,8 @@ caching read of the real layer (Trans side). The bad flag fires on ghost hits an
 otherwise preserved; signing queries run `ghostSignBody` on the cache layers. -/
 @[expose] noncomputable def ghostHybridImpl (progSide : Bool) (pk : Stmt) (sk : Wit) :
     QueryImpl ((unifSpec + (M × Commit →ₒ Chal)) + (M →ₒ Option (Commit × Resp)))
-      (StateT (GhostState M Commit Chal) ProbComp) :=
-  fun t => match t with
+      (StateT (GhostState M Commit Chal) ProbComp) where
+  toFun t := match t with
   | .inl (.inl n) => StateT.mk fun s =>
       (fun u => (u, s)) <$> (HasQuery.toQueryImpl (spec := unifSpec) (m := ProbComp)) n
   | .inl (.inr mc) => StateT.mk fun s =>
@@ -398,8 +398,8 @@ message (for the freshness check) and run the given signing body on the cache. -
     (signBody : M → StateT ((M × Commit →ₒ Chal).QueryCache) ProbComp
       (Option (Commit × Resp))) :
     QueryImpl (M →ₒ Option (Commit × Resp))
-      (StateT ((M × Commit →ₒ Chal).QueryCache × List M) ProbComp) :=
-  fun msg => do
+      (StateT ((M × Commit →ₒ Chal).QueryCache × List M) ProbComp) where
+  toFun msg := do
     modify fun s => (s.1, msg :: s.2)
     onCache M (signBody msg)
 

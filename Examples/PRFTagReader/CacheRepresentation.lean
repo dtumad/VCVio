@@ -58,14 +58,16 @@ variable {I S : Type} {spec : OracleSpec I} [SampleableType R]
 /-- Close a stateful reduction with the association-list ideal PRF handler. -/
 @[expose]
 def close (reduction : QueryImpl spec (StateT S (OracleComp (PRFOracleSpec D R)))) :
-    QueryImpl spec (StateT (S × List (D × R)) ProbComp) := fun q state => do
+    QueryImpl spec (StateT (S × List (D × R)) ProbComp) where
+  toFun q state := do
   let out ← (simulateQ prfHandler ((reduction q).run state.1)).run state.2
   pure (out.1.1, out.1.2, out.2)
 
 /-- Close a stateful reduction with the function-valued ideal PRF cache. -/
 @[expose]
 def closeReference (reduction : QueryImpl spec (StateT S (OracleComp (PRFOracleSpec D R)))) :
-    QueryImpl spec (StateT (S × (D →ₒ R).QueryCache) ProbComp) := fun q state => do
+    QueryImpl spec (StateT (S × (D →ₒ R).QueryCache) ProbComp) where
+  toFun q state := do
   let out ← (simulateQ PRFScheme.prfIdealQueryImpl ((reduction q).run state.1)).run state.2
   pure (out.1.1, out.1.2, out.2)
 

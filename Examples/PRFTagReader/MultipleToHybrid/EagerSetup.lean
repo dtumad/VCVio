@@ -266,8 +266,8 @@ multiple-ideal component (now just `UnlinkState`) and, on a tag query, advances 
 component via `multipleBadAdvance`. The eager-table analogue of `multipleBadQueryImpl`. -/
 noncomputable def multipleBadTableHandler (g : TagId × Nonce → Digest) :
     QueryImpl (UnlinkOracleSpec TagId Nonce Digest)
-      (StateT (UnlinkState TagId × UnlinkBadState TagId Nonce Digest) ProbComp) :=
-  fun q => fun p => match q with
+      (StateT (UnlinkState TagId × UnlinkBadState TagId Nonce Digest) ProbComp) where
+  toFun q := fun p => match q with
     | Sum.inl tag =>
         (multipleTableHandler (TagId := TagId) (Nonce := Nonce) (Digest := Digest)
             (sessionsPerTag := sessionsPerTag) g (Sum.inl tag)) p.1 >>= fun r =>
@@ -471,8 +471,8 @@ noncomputable def multipleBadTableHandlerFine
     (g : TagId × Nonce → Digest)
     (gFine : ((TagId × Fin sessionsPerTag) × Nonce) → Digest) :
     QueryImpl (UnlinkOracleSpec TagId Nonce Digest)
-      (StateT (UnlinkState TagId × UnlinkBadState TagId Nonce Digest) ProbComp) :=
-  fun q => fun p => match q with
+      (StateT (UnlinkState TagId × UnlinkBadState TagId Nonce Digest) ProbComp) where
+  toFun q := fun p => match q with
     | Sum.inl tag =>
         (multipleTableHandler (TagId := TagId) (Nonce := Nonce) (Digest := Digest)
             (sessionsPerTag := sessionsPerTag) g (Sum.inl tag)) p.1 >>= fun r =>

@@ -51,8 +51,9 @@ variable {ω : Type u}
 @[expose] def writerTMapBase
     (outer : QueryImpl spec₁ m₁)
     (inner : QueryImpl spec₀ (WriterT ω (OracleComp spec₁))) :
-    QueryImpl spec₀ (WriterT ω m₁) := fun t =>
-  WriterT.mk (simulateQ outer ((inner t).run))
+    QueryImpl spec₀ (WriterT ω m₁) where
+  toFun t :=
+    WriterT.mk (simulateQ outer ((inner t).run))
 
 @[simp]
 theorem writerTMapBase_apply

@@ -36,8 +36,8 @@ namespace QueryImpl
 variable {m : Type u → Type v} [Monad m]
 
 /-- Modify a query implementation to cache previous call and return that output in the future. -/
-def withCaching (so : QueryImpl spec m) : QueryImpl spec (StateT spec.QueryCache m) :=
-  fun t => do match (← get) t with
+def withCaching (so : QueryImpl spec m) : QueryImpl spec (StateT spec.QueryCache m) where
+  toFun t := do match (← get) t with
     | Option.some u => return u
     | Option.none =>
         let u ← so t
@@ -75,8 +75,8 @@ response is then installed in the cache. -/
 def withCachingAux
     (hit : (t : spec.Domain) → spec.Range t → spec.QueryCache → Q → Q)
     (miss : (t : spec.Domain) → spec.QueryCache → Q → m' (spec.Range t × Q)) :
-    QueryImpl spec (StateT (spec.QueryCache × Q) m') :=
-  fun t => StateT.mk fun s =>
+    QueryImpl spec (StateT (spec.QueryCache × Q) m') where
+  toFun t := StateT.mk fun s =>
     match s with
     | (cache, q) =>
         match cache t with

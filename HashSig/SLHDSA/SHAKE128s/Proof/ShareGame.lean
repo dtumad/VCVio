@@ -206,8 +206,8 @@ abbrev ShareSpec := OracleWorld + DrawSpec + AssembleSpec + ClaimSpec
 
 /-- **A signing request, split.** -/
 @[expose]
-noncomputable def splitter : QueryImpl (OracleWorld + SigningSpec) (OracleComp ShareSpec) :=
-  fun queried => match queried with
+noncomputable def splitter : QueryImpl (OracleWorld + SigningSpec) (OracleComp ShareSpec) where
+  toFun queried := match queried with
     | Sum.inl world => (query (spec := ShareSpec) (worldQuery world) :
         OracleComp ShareSpec (OracleWorld.Range world))
     | Sum.inr request => do
@@ -269,8 +269,8 @@ theorem mem_unfiled {record : List (Bytes × List HashOutput)} {served : List Ha
 open scoped Classical in
 /-- **The handler**, lenient or blind, with the sticky flag beside its state. -/
 @[expose] noncomputable def handler (lenient : Bool) (setup : Setup) :
-    QueryImpl ShareSpec (StateT (St × Bool) ProbComp) :=
-  fun queried state => match queried with
+    QueryImpl ShareSpec (StateT (St × Bool) ProbComp) where
+  toFun queried state := match queried with
     | Sum.inl (Sum.inl (Sum.inl (Sum.inl coin))) => do
         let value ← ($ᵗ (OracleWorld.Range (Sum.inl coin)) : ProbComp _)
         pure (value, state)

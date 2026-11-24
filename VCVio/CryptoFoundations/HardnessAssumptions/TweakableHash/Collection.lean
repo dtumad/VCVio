@@ -114,8 +114,8 @@ winning condition needs — `Tweak × M` for SM-TCR, `Tweak × M'` for SM-PRE, `
 that needs no payload — and this oracle is unchanged by the choice. -/
 def collectionOracle [DecidableEq Tweak] (tweakOf : Q → Tweak)
     (thColl : TweakableHashCollection ι PkSeed Tweak Y) (pk : PkSeed) :
-    QueryImpl (collectionSpec thColl) (StateT (List Q × List Tweak) ProbComp) :=
-  fun q => do
+    QueryImpl (collectionSpec thColl) (StateT (List Q × List Tweak) ProbComp) where
+  toFun q := do
     let (qsChal, twsColl) ← get
     if TweakReserved tweakOf qsChal q.2.1 then
       return none

@@ -31,8 +31,8 @@ variable {ι : Type u} {spec : OracleSpec ι}
 
 /-- Computable query implementation using the executable `FinRatPMF.Raw` monad. -/
 def finRatImpl [∀ t, Inhabited (spec.Range t)] [∀ t : spec.Domain, FinEnum (spec.Range t)] :
-    QueryImpl spec Raw :=
-  fun t => Raw.uniform (α := spec.Range t)
+    QueryImpl spec Raw where
+  toFun t := Raw.uniform (α := spec.Range t)
 
 namespace finRatImpl
 

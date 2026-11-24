@@ -164,8 +164,8 @@ duplicate-target, or collection clash poisons final validity without changing th
 def challengeOracle [DecidableEq Tweak] (world : World)
     (prob : Problem ι PkSeed Tweak M M' Y) (pk : PkSeed) :
     QueryImpl (challengeSpec Tweak Y)
-      (StateT (State Tweak) ProbComp) :=
-  fun t => do
+      (StateT (State Tweak) ProbComp) where
+  toFun t := do
     let y ← (response world prob pk t :
       StateT (State Tweak) ProbComp Y)
     let st ← get

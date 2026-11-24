@@ -427,8 +427,8 @@ recovers `reductionImpl`. -/
 noncomputable def progGameRunImplCombined (domainSample : PK → ProbComp Domain) (pk : PK) :
     QueryImpl ((unifSpec + (Salt × M →ₒ Range)) + (M →ₒ (Salt × Domain)))
       (StateT (((((Salt × M →ₒ Range).QueryCache × Finset M) × Bool) ×
-        ((Salt × M) → Option Domain))) ProbComp) :=
-  fun t => StateT.mk fun s =>
+        ((Salt × M) → Option Domain))) ProbComp) where
+  toFun t := StateT.mk fun s =>
     match t with
     | .inl (.inl q) => do
         let v ← (unifSpec.query q : ProbComp _)
@@ -647,8 +647,8 @@ the `(cached image, recorded preimage)` pair, which `hreg` equates. -/
 @[expose] noncomputable def progGameRunImplCombinedTrap (pk : PK) (sk : SK) :
     QueryImpl ((unifSpec + (Salt × M →ₒ Range)) + (M →ₒ (Salt × Domain)))
       (StateT (((((Salt × M →ₒ Range).QueryCache × Finset M) × Bool) ×
-        ((Salt × M) → Option Domain))) ProbComp) :=
-  fun t => StateT.mk fun s =>
+        ((Salt × M) → Option Domain))) ProbComp) where
+  toFun t := StateT.mk fun s =>
     match t with
     | .inl (.inl q) => do
         let v ← (unifSpec.query q : ProbComp _)

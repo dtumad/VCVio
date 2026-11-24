@@ -120,8 +120,8 @@ Accepted queries are appended, so the history is in issue order and its `j`-th e
 target. -/
 noncomputable def SM_DT_PRE_challengeOracle [DecidableEq Tweak] [SampleableType M']
     (prob : SM_DT_PRE_Problem ι PkSeed Tweak M M' Y) (pk : PkSeed) :
-    QueryImpl (SM_DT_PRE_challengeSpec Tweak Y) (StateT (SM_DT_PRE_State Tweak M') ProbComp) :=
-  fun t => do
+    QueryImpl (SM_DT_PRE_challengeSpec Tweak Y) (StateT (SM_DT_PRE_State Tweak M') ProbComp) where
+  toFun t := do
     let (qsChal, twsColl) ← get
     if prob.numTargets ≤ qsChal.length ∨ ¬ TweakFresh Prod.fst qsChal twsColl t then
       return none

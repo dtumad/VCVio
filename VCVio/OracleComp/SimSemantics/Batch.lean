@@ -133,7 +133,8 @@ variable {ι : Type u} {spec : OracleSpec.{u, v} ι} {m : Type v → Type w}
 
 /-- Answer a round point by point, in the order of its list. -/
 @[expose]
-def batch [Monad m] (impl : QueryImpl spec m) : QueryImpl spec.batch m
+def batch [Monad m] (impl : QueryImpl spec m) : QueryImpl spec.batch m where
+  toFun
   | [] => pure batchNil
   | t :: ts => do
       let u ← impl t

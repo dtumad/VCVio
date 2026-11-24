@@ -158,8 +158,8 @@ variable [DecidableEq D]
 /-- The typed oracles answered through the single random oracle: a typed point is the query at
 its encoding, truncated. -/
 @[expose] noncomputable def truncatedImpl :
-    QueryImpl spec (StateT (D →ₒ M).QueryCache ProbComp) :=
-  fun t ↦ E.trunc t <$> (D →ₒ M).randomOracle (E.encode t)
+    QueryImpl spec (StateT (D →ₒ M).QueryCache ProbComp) where
+  toFun t := E.trunc t <$> (D →ₒ M).randomOracle (E.encode t)
 
 /-- The typed oracles and the raw inputs answered by the single random oracle. -/
 @[expose] noncomputable def singleHashImpl :
@@ -176,7 +176,8 @@ answered by the single random oracle. -/
 `unifSpec + (D →ₒ M)`, and a typed point is the query of the single oracle at its encoding,
 truncated. -/
 @[expose] def encodeImpl :
-    QueryImpl (unifSpec + (spec + (D →ₒ M))) (OracleComp (unifSpec + (D →ₒ M)))
+    QueryImpl (unifSpec + (spec + (D →ₒ M))) (OracleComp (unifSpec + (D →ₒ M))) where
+  toFun
   | .inl n => (query (spec := unifSpec + (D →ₒ M)) (.inl n) : OracleComp _ (Fin (n + 1)))
   | .inr (.inl t) => E.trunc t <$> (query (spec := unifSpec + (D →ₒ M)) (.inr (E.encode t)) :
       OracleComp _ M)
@@ -228,8 +229,8 @@ inputs, on the pair of their caches. -/
 /-- The router: a raw input `x` draws its private value `p`; if `x` is read as a typed point `q`,
 the answer is the typed answer at `q` completed from `p`, and otherwise it is `p`. -/
 @[expose] noncomputable def routerImpl :
-    QueryImpl (D →ₒ M) (StateT (spec.QueryCache × (D →ₒ M).QueryCache) ProbComp) :=
-  fun x ↦ do
+    QueryImpl (D →ₒ M) (StateT (spec.QueryCache × (D →ₒ M).QueryCache) ProbComp) where
+  toFun x := do
     let p ← (pairImpl (spec := spec) (D := D) (M := M) (.inr x) :
       StateT (spec.QueryCache × (D →ₒ M).QueryCache) ProbComp M)
     match E.route x with
@@ -585,8 +586,8 @@ create a clash and from states with a clash: such a step fills the single-oracle
 step of the single-oracle world there, keeps the filled cache as its table and records the queried
 typed point. -/
 noncomputable def patchedHashImpl :
-    QueryImpl (spec + (D →ₒ M)) (StateT (spec.QueryCache × (D →ₒ M).QueryCache) ProbComp) :=
-  fun u ↦ StateT.mk fun s ↦
+    QueryImpl (spec + (D →ₒ M)) (StateT (spec.QueryCache × (D →ₒ M).QueryCache) ProbComp) where
+  toFun u := StateT.mk fun s ↦
     if E.Clash s.1 ∨ E.Collides s.1 u then do
       let b ← E.fill s
       let z ← (E.singleHashImpl u).run b

@@ -61,12 +61,14 @@ variable {ι ιe ιs : Type} {hs : OracleSpec ι} {ext : OracleSpec ιe} {sig : 
 /-! ## The common interface and the router -/
 
 /-- The queries of a program over `unifSpec + hs` as queries of `unifSpec + (hs + ext)`. -/
-@[expose] def liftTypedImpl : QueryImpl (unifSpec + hs) (OracleComp (unifSpec + (hs + ext)))
+@[expose] def liftTypedImpl : QueryImpl (unifSpec + hs) (OracleComp (unifSpec + (hs + ext))) where
+  toFun
   | .inl n => (query (spec := unifSpec + (hs + ext)) (.inl n) : OracleComp _ (Fin (n + 1)))
   | .inr t => (query (spec := unifSpec + (hs + ext)) (.inr (.inl t)) : OracleComp _ (hs.Range t))
 
 /-- The queries of a program over `unifSpec + ext` as queries of `unifSpec + (hs + ext)`. -/
-@[expose] def liftRawImpl : QueryImpl (unifSpec + ext) (OracleComp (unifSpec + (hs + ext)))
+@[expose] def liftRawImpl : QueryImpl (unifSpec + ext) (OracleComp (unifSpec + (hs + ext))) where
+  toFun
   | .inl n => (query (spec := unifSpec + (hs + ext)) (.inl n) : OracleComp _ (Fin (n + 1)))
   | .inr x =>
       (query (spec := unifSpec + (hs + ext)) (.inr (.inr x)) : OracleComp _ (ext.Range x))
@@ -74,8 +76,9 @@ variable {ι ιe ιs : Type} {hs : OracleSpec ι} {ext : OracleSpec ιe} {sig : 
 /-- The queries of a program over `unifSpec + hs` as queries of `(unifSpec + hs) + sig`, along the
 left summand. -/
 @[expose] def liftAmbientImpl :
-    QueryImpl (unifSpec + hs) (OracleComp ((unifSpec + hs) + sig)) := fun t =>
-  (query (spec := (unifSpec + hs) + sig) (.inl t) :
+    QueryImpl (unifSpec + hs) (OracleComp ((unifSpec + hs) + sig)) where
+  toFun t :=
+    (query (spec := (unifSpec + hs) + sig) (.inl t) :
     OracleComp ((unifSpec + hs) + sig) ((unifSpec + hs).Range t))
 
 /-- Lifting the queries of a program over `unifSpec + hs` to the common interface is its lift
@@ -109,7 +112,8 @@ theorem simulateQ_liftAmbientImpl {α : Type} (oa : OracleComp (unifSpec + hs) �
 and every other query is passed on. The router's queries are lifted to `(unifSpec + hs) + sig`
 along the left summand. -/
 @[expose] def programRouterImpl (R : QueryImpl ext (StateT σ (OracleComp (unifSpec + hs)))) :
-    QueryImpl ((unifSpec + (hs + ext)) + sig) (StateT σ (OracleComp ((unifSpec + hs) + sig)))
+    QueryImpl ((unifSpec + (hs + ext)) + sig) (StateT σ (OracleComp ((unifSpec + hs) + sig))) where
+  toFun
   | .inl (.inl n) =>
       (liftM (query (spec := (unifSpec + hs) + sig) (.inl (.inl n)) :
         OracleComp ((unifSpec + hs) + sig) (Fin (n + 1))) :
@@ -129,7 +133,8 @@ component of the state, and a raw query `x` runs `R x` on the second component, 
 answered by `ro` on the first. -/
 @[expose] def handlerRouterImpl (ro : QueryImpl (unifSpec + hs) (StateT τ ProbComp))
     (R : QueryImpl ext (StateT σ (OracleComp (unifSpec + hs)))) :
-    QueryImpl (unifSpec + (hs + ext)) (StateT (τ × σ) ProbComp)
+    QueryImpl (unifSpec + (hs + ext)) (StateT (τ × σ) ProbComp) where
+  toFun
   | .inl n => StateT.mk fun p => (fun z => (z.1, (z.2, p.2))) <$> (ro (.inl n)).run p.1
   | .inr (.inl t) => StateT.mk fun p => (fun z => (z.1, (z.2, p.2))) <$> (ro (.inr t)).run p.1
   | .inr (.inr x) => StateT.mk fun p =>
@@ -461,8 +466,8 @@ variable [DecidableEq D]
 input `x` draws its private value from the table, as a lazy random oracle, and if `x` is read as a
 typed point `q`, it queries `q` and completes the typed answer from the private value. -/
 @[expose] noncomputable def tableRouter :
-    QueryImpl (D →ₒ M) (StateT (D →ₒ M).QueryCache (OracleComp (unifSpec + spec))) :=
-  fun x ↦ StateT.mk fun pv ↦ do
+    QueryImpl (D →ₒ M) (StateT (D →ₒ M).QueryCache (OracleComp (unifSpec + spec))) where
+  toFun x := StateT.mk fun pv ↦ do
     let z ← (liftM (((D →ₒ M).randomOracle x).run pv) :
       OracleComp (unifSpec + spec) (M × (D →ₒ M).QueryCache))
     match E.route x with

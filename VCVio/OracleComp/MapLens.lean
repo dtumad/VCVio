@@ -122,8 +122,8 @@ variable {ι : Type u} {ι' : Type u'} {spec : OracleSpec.{u, v} ι}
 `impl (l.toFunA t)`, mapped by `l.toFunB t`. -/
 @[expose]
 def comapLens [Functor m] (impl : QueryImpl spec' m) (l : Lens spec.toPFunctor spec'.toPFunctor) :
-    QueryImpl spec m :=
-  fun t => l.toFunB t <$> impl (l.toFunA t)
+    QueryImpl spec m where
+  toFun t := l.toFunB t <$> impl (l.toFunA t)
 
 /-- The pulled-back handler at a query `t`. -/
 @[simp]

@@ -350,8 +350,9 @@ on a miss. -/
 @[expose]
 def idealPoint (P : Puzzle n S L Salt) (ℓ : Labels n m S L) (R : Finset (PathValue n m)) :
     QueryImpl (oracleSpec n S L Salt Ctx)
-      (StateT (oracleSpec n S L Salt Ctx).QueryCache ProbComp) := fun t =>
-  match legitLabel m mkCtx initAcc P ℓ R t with
+      (StateT (oracleSpec n S L Salt Ctx).QueryCache ProbComp) where
+  toFun t :=
+    match legitLabel m mkCtx initAcc P ℓ R t with
   | some a => pure a
   | none => (oracleSpec n S L Salt Ctx).randomOracle t
 

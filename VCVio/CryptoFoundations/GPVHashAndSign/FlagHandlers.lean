@@ -58,8 +58,8 @@ empty-tape fallback branch: the off-bad per-query agreement is genuinely univers
 state). -/
 @[expose] noncomputable def gpvRealImplFlag (pk : PK) (sk : SK) :
     QueryImpl ((unifSpec + (Salt × M →ₒ Range)) + (M →ₒ (Salt × Domain)))
-      (StateT ((Salt × M →ₒ Range).QueryCache × Bool) ProbComp) :=
-  fun t => StateT.mk fun s =>
+      (StateT ((Salt × M →ₒ Range).QueryCache × Bool) ProbComp) where
+  toFun t := StateT.mk fun s =>
     match t with
     | .inl q =>
         (fun p => (p.1, (p.2, s.2))) <$> (gpvRealImpl psf hr M Salt pk sk (.inl q)).run s.1
@@ -77,8 +77,8 @@ inline-drawn salt `r` is already a key of the cache). Its `run'`-projection is t
 @[expose]
 noncomputable def progGameRunImplNoRecFlag (domainSample : PK → ProbComp Domain) (pk : PK) :
     QueryImpl ((unifSpec + (Salt × M →ₒ Range)) + (M →ₒ (Salt × Domain)))
-      (StateT ((Salt × M →ₒ Range).QueryCache × Bool) ProbComp) :=
-  fun t => StateT.mk fun s =>
+      (StateT ((Salt × M →ₒ Range).QueryCache × Bool) ProbComp) where
+  toFun t := StateT.mk fun s =>
     match t with
     | .inl q =>
         (fun p => (p.1, (p.2, s.2))) <$>
@@ -922,8 +922,8 @@ fresh inline salt `r ← $ᵗ Salt`, runs the underlying real signing body on th
 the signed-set away recovers `gpvRealImplFlag`. -/
 @[expose] noncomputable def gpvRealImplFlagFresh (pk : PK) (sk : SK) :
     QueryImpl ((unifSpec + (Salt × M →ₒ Range)) + (M →ₒ (Salt × Domain)))
-      (StateT (((Salt × M →ₒ Range).QueryCache × Finset M) × Bool) ProbComp) :=
-  fun t => StateT.mk fun s =>
+      (StateT (((Salt × M →ₒ Range).QueryCache × Finset M) × Bool) ProbComp) where
+  toFun t := StateT.mk fun s =>
     match t with
     | .inl q =>
         (fun p => (p.1, ((p.2, s.1.2), s.2))) <$>
@@ -942,8 +942,8 @@ inserting the message on each signing step. Projecting the signed-set away recov
 @[expose]
 noncomputable def progGameRunImplNoRecFlagFresh (domainSample : PK → ProbComp Domain) (pk : PK) :
     QueryImpl ((unifSpec + (Salt × M →ₒ Range)) + (M →ₒ (Salt × Domain)))
-      (StateT (((Salt × M →ₒ Range).QueryCache × Finset M) × Bool) ProbComp) :=
-  fun t => StateT.mk fun s =>
+      (StateT (((Salt × M →ₒ Range).QueryCache × Finset M) × Bool) ProbComp) where
+  toFun t := StateT.mk fun s =>
     match t with
     | .inl q =>
         (fun p => (p.1, ((p.2, s.1.2), s.2))) <$>
@@ -1334,8 +1334,8 @@ games (`decide (msg ∉ signedSet) && verified`) never reads the flag, the flag-
 exactly the information the game observes. -/
 @[expose] noncomputable def gpvRealImplFresh (pk : PK) (sk : SK) :
     QueryImpl ((unifSpec + (Salt × M →ₒ Range)) + (M →ₒ (Salt × Domain)))
-      (StateT ((Salt × M →ₒ Range).QueryCache × Finset M) ProbComp) :=
-  fun t => StateT.mk fun s =>
+      (StateT ((Salt × M →ₒ Range).QueryCache × Finset M) ProbComp) where
+  toFun t := StateT.mk fun s =>
     match t with
     | .inl q =>
         (fun p => (p.1, (p.2, s.2))) <$>

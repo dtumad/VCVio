@@ -155,7 +155,8 @@ variable (vp pk)
 /-- **The linked redirect.** A linked tweakable-hash query is answered by the first `n` bytes of
 the `H_msg` query with the same byte string; every other public-hash query is passed on. -/
 @[expose] def linkedRedirect :
-    QueryImpl (publicHashSpec (shakeCore vp)) (OracleComp (publicHashSpec (shakeCore vp)))
+    QueryImpl (publicHashSpec (shakeCore vp)) (OracleComp (publicHashSpec (shakeCore vp))) where
+  toFun
   | .thash s k (r :: rest) =>
       if IsLinked vp pk (.thash s k (r :: rest)) then
         (prefixBytes vp.params.n <$> (query (spec := publicHashSpec (shakeCore vp))
@@ -346,7 +347,8 @@ out a linked point is issued as the `H_msg` query `H_msg(PK.seed, PK.seed, PK.ro
 out, `M` the string after its first `3n` bytes; every other string stays a raw query, and uniform
 draws pass through. -/
 @[expose] noncomputable def linkedRawImpl : QueryImpl (unifSpec + shakeSpec vp)
-    (OracleComp (unifSpec + (hashSpec (shakeCore vp) + shakeSpec vp)))
+    (OracleComp (unifSpec + (hashSpec (shakeCore vp) + shakeSpec vp))) where
+  toFun
   | .inl n => (query (spec := unifSpec + (hashSpec (shakeCore vp) + shakeSpec vp)) (.inl n) :
       OracleComp _ (Fin (n + 1)))
   | .inr x =>

@@ -101,7 +101,8 @@ theorem map_scheme {ι' : Type} {spec' : OracleSpec ι'}
 
 /-- Signing-query translation; every ambient query is forwarded unchanged. -/
 @[expose] def signingImpl (message : E → M) (sig : CanonicalEncoding S WS) :
-    QueryImpl (spec + (E →ₒ WS)) (OracleComp (spec + (M →ₒ S)))
+    QueryImpl (spec + (E →ₒ WS)) (OracleComp (spec + (M →ₒ S))) where
+  toFun
   | .inl t => (query (spec := spec + (M →ₒ S)) (.inl t) : OracleComp _ (spec.Range t))
   | .inr msg => sig.encode <$>
       (query (spec := spec + (M →ₒ S)) (.inr (message msg)) : OracleComp _ S)

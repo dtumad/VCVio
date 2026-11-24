@@ -128,7 +128,8 @@ abbrev QueryCache (M R KD K : Type) := (M →ₒ R).QueryCache × (KD →ₒ K).
 
 /-- Lazy random oracle for encryption coins, threaded through the combined U-transform state. -/
 def coinOracleImpl {M R KD K : Type} [DecidableEq M] [SampleableType R] :
-    QueryImpl (M →ₒ R) (StateT (QueryCache M R KD K) ProbComp) := fun msg => do
+    QueryImpl (M →ₒ R) (StateT (QueryCache M R KD K) ProbComp) where
+  toFun msg := do
   let st ← get
   match st.1 msg with
   | some r => return r
@@ -139,7 +140,8 @@ def coinOracleImpl {M R KD K : Type} [DecidableEq M] [SampleableType R] :
 
 /-- Lazy random oracle for key derivation, threaded through the combined U-transform state. -/
 def keyOracleImpl {M R KD K : Type} [DecidableEq KD] [SampleableType K] :
-    QueryImpl (KD →ₒ K) (StateT (QueryCache M R KD K) ProbComp) := fun kd => do
+    QueryImpl (KD →ₒ K) (StateT (QueryCache M R KD K) ProbComp) where
+  toFun kd := do
   let st ← get
   match st.2 kd with
   | some k => return k

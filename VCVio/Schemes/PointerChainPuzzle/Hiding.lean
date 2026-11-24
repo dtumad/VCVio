@@ -540,8 +540,8 @@ noncomputable def privateOnlineImpl (puzzle : Puzzle n S L Salt) (b : Bool) :
     QueryImpl ((unifSpec + LeftOrRight.spec Plaintext ByteArray) +
         (sealSpec n S L Salt Ctx N K).batch)
       (StateT ((sealSpec n S L Salt Ctx N K).QueryCache × (privateSpec N K).QueryCache)
-        ProbComp) :=
-  fun t => StateT.mk fun s => (fun z => (z.1.1, (z.2, z.1.2))) <$>
+        ProbComp) where
+  toFun t := StateT.mk fun s => (fun z => (z.1.1, (z.2, z.1.2))) <$>
     (simulateQ (sealSpec n S L Salt Ctx N K).romImpl
       (simulateQ (sealSpec n S L Salt Ctx N K).unbatch
         ((privateImpl prf codec encodePuzzle puzzle b t).run s.2))).run s.1

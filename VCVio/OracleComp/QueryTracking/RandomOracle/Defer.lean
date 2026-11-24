@@ -139,8 +139,8 @@ theorem le_of_mem_support_endFill {s : RelabelState pub X K R × List (X ⊕ K)}
 /-- The cell oracle on the whole relabelled state: a query of a cell draws it if it is undrawn
 and keeps the public cache. -/
 noncomputable def cellImpl :
-    QueryImpl ((X ⊕ K) →ₒ R) (StateT (RelabelState pub X K R) ProbComp) :=
-  fun c ↦ drawCell c
+    QueryImpl ((X ⊕ K) →ₒ R) (StateT (RelabelState pub X K R) ProbComp) where
+  toFun c := drawCell c
 
 /-- A query of a cell to the cell oracle draws it. -/
 theorem cellImpl_apply (c : X ⊕ K) :
@@ -223,7 +223,8 @@ variable {ι : Type} {pub : OracleSpec ι} {X K R : Type} (G : CanonicalGraph pu
 /-- **The deferred game.** The relabelled game, with the label of a node read by drawing it; a
 touch only records its cell in a pending list. -/
 noncomputable def deferredImpl : QueryImpl (pub.withLabels X K R)
-    (StateT (RelabelState pub X K R × List (X ⊕ K)) ProbComp) := fun
+    (StateT (RelabelState pub X K R × List (X ⊕ K)) ProbComp) where
+  toFun
   | .inl t => StateT.mk fun s ↦ (fun z ↦ (z.1, (z.2, s.2))) <$> (G.relabelImpl t).run s.1
   | .inr (.inl c) => StateT.mk fun s ↦ pure ((), (s.1, s.2 ++ [c]))
   | .inr (.inr k) => StateT.mk fun s ↦
@@ -236,7 +237,8 @@ reveals it; a public query at the point of a node whose children are all drawn a
 at their values, draws (or reads) the node's label, and every other public query is answered by
 the public cache. -/
 noncomputable def maskedImpl : QueryImpl (pub.withLabels X K R)
-    (StateT (RelabelState pub X K R × Finset (X ⊕ K)) ProbComp) := fun
+    (StateT (RelabelState pub X K R × Finset (X ⊕ K)) ProbComp) where
+  toFun
   | .inl (.inl (.inl n)) => StateT.mk fun s ↦ (fun u ↦ (u, s)) <$> (unifSpec.query n : ProbComp _)
   | .inl (.inl (.inr t)) => StateT.mk fun s ↦
       if h : ∃ k vs, G.childVals (RelabelState.mask s) k = some vs ∧ G.pt k vs = t then

@@ -35,7 +35,8 @@ of the product monoid `ω₁ × ω₂`. Each side leaves the other component at 
     {m : Type w → Type x} [Functor m] {ω₁ ω₂ : Type w} [Monoid ω₁] [Monoid ω₂]
     (impl₁ : QueryImpl spec₁ (WriterT ω₁ m))
     (impl₂ : QueryImpl spec₂ (WriterT ω₂ m)) :
-    QueryImpl (spec₁ + spec₂) (WriterT (ω₁ × ω₂) m)
+    QueryImpl (spec₁ + spec₂) (WriterT (ω₁ × ω₂) m) where
+  toFun
   | .inl t => WriterT.mk <| Prod.map id (·, (1 : ω₂)) <$> (impl₁ t).run
   | .inr t => WriterT.mk <| Prod.map id ((1 : ω₁), ·) <$> (impl₂ t).run
 
@@ -46,7 +47,8 @@ identity. Note that `m` cannot vary with `t`. -/
     {spec : (t : τ) → OracleSpec.{v, w} (ι t)}
     {m : Type w → Type x} [Functor m] {ω : τ → Type w} [(t : τ) → Monoid (ω t)]
     (impl : (t : τ) → QueryImpl (spec t) (WriterT (ω t) m)) :
-    QueryImpl (OracleSpec.sigma spec) (WriterT ((t : τ) → ω t) m)
+    QueryImpl (OracleSpec.sigma spec) (WriterT ((t : τ) → ω t) m) where
+  toFun
   | ⟨t, q⟩ => WriterT.mk <| Prod.map id (Function.update (fun _ => 1) t) <$> (impl t q).run
 
 /-- Reassociate a nested writer transformer into one product log.
@@ -57,8 +59,9 @@ carries both logs as a product. -/
 @[expose] def flattenWriterT {ι : Type _} {spec : OracleSpec ι}
     {m : Type u → Type v} [Monad m] {ω₁ ω₂ : Type u}
     (impl : QueryImpl spec (WriterT ω₁ (WriterT ω₂ m))) :
-    QueryImpl spec (WriterT (ω₁ × ω₂) m) := fun t =>
-  WriterT.mk <| do
+    QueryImpl spec (WriterT (ω₁ × ω₂) m) where
+  toFun t :=
+    WriterT.mk <| do
     let ((a, w₁), w₂) ← (impl t).run.run
     pure (a, (w₁, w₂))
 
@@ -68,8 +71,9 @@ analogue of `flattenStateT`. -/
 @[expose] def flattenStateTWriterT {ι : Type _} {spec : OracleSpec ι}
     {m : Type u → Type v} [Functor m] {σ ω : Type u} [Append ω]
     (impl : QueryImpl spec (StateT σ (WriterT ω m))) :
-    QueryImpl spec (StateT (σ × ω) m) := fun t =>
-  StateT.mk fun p => (fun z => (z.1.1, (z.1.2, p.2 ++ z.2))) <$> ((impl t).run p.1).run
+    QueryImpl spec (StateT (σ × ω) m) where
+  toFun t :=
+    StateT.mk fun p => (fun z => (z.1.1, (z.1.2, p.2 ++ z.2))) <$> ((impl t).run p.1).run
 
 end QueryImpl
 

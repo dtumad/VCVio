@@ -432,7 +432,8 @@ def truncateRound (ts : List (TypedPoint b n)) (us : byteSpec.batch.Range (ts.ma
 uniform queries pass through. -/
 @[expose]
 def roundImpl :
-    QueryImpl (unifSpec + (typedSpec b n).batch) (OracleComp (unifSpec + byteSpec.batch))
+    QueryImpl (unifSpec + (typedSpec b n).batch) (OracleComp (unifSpec + byteSpec.batch)) where
+  toFun
   | .inl k => liftM ((unifSpec + byteSpec.batch).query (.inl k))
   | .inr ts => truncateRound ts <$>
       liftM ((unifSpec + byteSpec.batch).query (.inr (ts.map hashInput)))

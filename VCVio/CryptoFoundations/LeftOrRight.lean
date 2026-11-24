@@ -77,8 +77,9 @@ leakage function `leak`. A pair `(m₀, m₁)` with `leak m₀ = leak m₁` is a
 `m₁` when `b = true` and `m₀` when `b = false`; any other pair is answered with `none`. -/
 @[expose]
 def oracle [DecidableEq Λ] (enc : M → m C) (leak : M → Λ) (b : Bool) :
-    QueryImpl (spec M C) m := fun mm =>
-  if leak mm.1 = leak mm.2 then some <$> enc (if b then mm.2 else mm.1) else pure none
+    QueryImpl (spec M C) m where
+  toFun mm :=
+    if leak mm.1 = leak mm.2 then some <$> enc (if b then mm.2 else mm.1) else pure none
 
 variable [DecidableEq Λ] (enc : M → m C) (leak : M → Λ)
 
@@ -127,7 +128,8 @@ pair, one with unequal leakage or one asked after `qEnc` accepted pairs, is answ
 and leaves the counter unchanged. -/
 @[expose]
 def cap (leak : M → Λ) (qEnc : ℕ) (so : QueryImpl (spec M C) m) :
-    QueryImpl (spec M C) (StateT ℕ m) := fun mm => do
+    QueryImpl (spec M C) (StateT ℕ m) where
+  toFun mm := do
   let j ← get
   if leak mm.1 = leak mm.2 ∧ j < qEnc then
     set (j + 1)

@@ -35,8 +35,9 @@ def mapStateTBase {ι₀ ι₁ : Type _}
     {m : Type u → Type v} [Monad m] {σ : Type u}
     (outer : QueryImpl spec₁ m)
     (inner : QueryImpl spec₀ (StateT σ (OracleComp spec₁))) :
-    QueryImpl spec₀ (StateT σ m) := fun t =>
-  StateT.mk fun s => simulateQ outer ((inner t).run s)
+    QueryImpl spec₀ (StateT σ m) where
+  toFun t :=
+    StateT.mk fun s => simulateQ outer ((inner t).run s)
 
 /-- Running a `StateT` handler and then interpreting its base oracle
 computations is the same as first mapping the handler's base through the
@@ -90,7 +91,8 @@ def parallelStateT {ι₁ : Type u} {ι₂ : Type v}
     {m : Type w → Type x} [Functor m] {σ₁ σ₂ : Type w}
     (impl₁ : QueryImpl spec₁ (StateT σ₁ m))
     (impl₂ : QueryImpl spec₂ (StateT σ₂ m)) :
-    QueryImpl (spec₁ + spec₂) (StateT (σ₁ × σ₂) m)
+    QueryImpl (spec₁ + spec₂) (StateT (σ₁ × σ₂) m) where
+  toFun
   | .inl t => StateT.mk fun | (s₁, s₂) => Prod.map id (·, s₂) <$> (impl₁ t).run s₁
   | .inr t => StateT.mk fun | (s₁, s₂) => Prod.map id (s₁, ·) <$> (impl₂ t).run s₂
 
@@ -103,8 +105,9 @@ handler stacks into an explicit joint state before applying projection lemmas. -
 def flattenStateT {ι : Type _} {spec : OracleSpec ι}
     {m : Type u → Type v} [Monad m] {σ τ : Type u}
     (impl : QueryImpl spec (StateT σ (StateT τ m))) :
-    QueryImpl spec (StateT (σ × τ) m) := fun t =>
-  StateT.mk fun (s, q) =>
+    QueryImpl spec (StateT (σ × τ) m) where
+  toFun t :=
+    StateT.mk fun (s, q) =>
     (fun ((u, s'), q') => (u, (s', q'))) <$> ((impl t).run s |>.run q)
 
 @[simp, grind =] theorem flattenStateT_liftTarget_apply_run {ι : Type _} {spec : OracleSpec ι}
@@ -120,8 +123,9 @@ untouched: each query runs in the original stack and its result is lifted. -/
 def liftBase {ι : Type _} {spec : OracleSpec ι}
     {m : Type u → Type v} [Monad m] {σ τ : Type u}
     (impl : QueryImpl spec (StateT σ m)) :
-    QueryImpl spec (StateT σ (StateT τ m)) := fun t =>
-  StateT.mk fun s => liftM ((impl t).run s)
+    QueryImpl spec (StateT σ (StateT τ m)) where
+  toFun t :=
+    StateT.mk fun s => liftM ((impl t).run s)
 
 /-- Flattening a base-lifted handler leaves the new inner state untouched: the query runs in the
 original stack and the inner state is reattached unchanged. -/
@@ -180,7 +184,8 @@ def piStateT {τ : Type} [DecidableEq τ] {ι : τ → Type v}
     {spec : (t : τ) → OracleSpec.{v, w} (ι t)}
     {m : Type w → Type x} [Monad m] {σ : τ → Type w}
     (impl : (t : τ) → QueryImpl (spec t) (StateT (σ t) m)) :
-    QueryImpl (OracleSpec.sigma spec) (StateT ((t : τ) → σ t) m)
+    QueryImpl (OracleSpec.sigma spec) (StateT ((t : τ) → σ t) m) where
+  toFun
   | ⟨t, q⟩ => StateT.mk fun s => Prod.map id (Function.update s t) <$> (impl t q).run (s t)
 
 /-- Lift a stateful query implementation to a `(state × Bool)`-stateful version that threads
@@ -190,8 +195,9 @@ underlying `impl`; the second `Bool` component is preserved verbatim across each
 def withBadFlag {ι : Type u} {spec : OracleSpec.{u, v} ι}
     {m : Type v → Type w} [Functor m] {σ : Type v}
     (impl : QueryImpl spec (StateT σ m)) :
-    QueryImpl spec (StateT (σ × Bool) m) := fun t =>
-  StateT.mk fun | (s, b) => Prod.map id (·, b) <$> (impl t).run s
+    QueryImpl spec (StateT (σ × Bool) m) where
+  toFun t :=
+    StateT.mk fun | (s, b) => Prod.map id (·, b) <$> (impl t).run s
 
 /-- Lift a stateful query implementation to a `(state × Bool)`-stateful version that OR-updates
 the boolean (bad) flag with a predicate `f` evaluated on the pre-state and produced output.
@@ -201,8 +207,9 @@ def withBadUpdate {ι : Type u} {spec : OracleSpec.{u, v} ι}
     {m : Type v → Type w} [Functor m] {σ : Type v}
     (impl : QueryImpl spec (StateT σ m))
     (f : (t : spec.Domain) → σ → spec.Range t → Bool) :
-    QueryImpl spec (StateT (σ × Bool) m) := fun t =>
-  StateT.mk fun | (s, b) => (fun (v, s') => (v, s', b || f t s v)) <$> (impl t).run s
+    QueryImpl spec (StateT (σ × Bool) m) where
+  toFun t :=
+    StateT.mk fun | (s, b) => (fun (v, s') => (v, s', b || f t s v)) <$> (impl t).run s
 
 /-- Run-shape of `withBadFlag`: the lifted implementation maps the underlying run by tagging
 each `(value, state)` pair with the unchanged bad flag `b`. -/

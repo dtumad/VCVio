@@ -111,7 +111,8 @@ answered with its cached ciphertext, and a fresh pair `mm` is answered by encryp
 def IND_CPA_cachedChallengeOracle
     (encAlg : AsymmEncAlg ProbComp M PK SK C)
     (pk : PK) (select : M × M → M) :
-    QueryImpl (M × M →ₒ C) (StateT encAlg.IND_CPA_Cache ProbComp) := fun mm => do
+    QueryImpl (M × M →ₒ C) (StateT encAlg.IND_CPA_Cache ProbComp) where
+  toFun mm := do
   let cache ← get
   match cache mm with
   | some c => return c
@@ -188,7 +189,8 @@ encrypting `select n mm`; the ciphertext is cached and the counter incremented. 
 def IND_CPA_countedChallengeOracle
     (pk : PK) (select : ℕ → M × M → M) :
     QueryImpl (M × M →ₒ C)
-      (StateT encAlg'.IND_CPA_CountedState ProbComp) := fun mm => do
+      (StateT encAlg'.IND_CPA_CountedState ProbComp) where
+  toFun mm := do
   let st ← get
   match st.1 mm with
   | some c => return c

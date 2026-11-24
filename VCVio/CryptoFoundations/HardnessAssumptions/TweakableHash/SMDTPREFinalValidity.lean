@@ -88,8 +88,8 @@ cap, duplicate target tweak, or collection clash poisons final validity without 
 sample or digest. -/
 noncomputable def challengeOracle [DecidableEq Tweak] [SampleableType M']
     (prob : Problem ι PkSeed Tweak M M' Y) (pk : PkSeed) :
-    QueryImpl (challengeSpec Tweak Y) (StateT (State Tweak M') ProbComp) :=
-  fun t => do
+    QueryImpl (challengeSpec Tweak Y) (StateT (State Tweak M') ProbComp) where
+  toFun t := do
     let x ← (($ᵗ M' : ProbComp M') : StateT (State Tweak M') ProbComp M')
     let st ← get
     set (st.recordTarget prob.numTargets Prod.fst (t, x))

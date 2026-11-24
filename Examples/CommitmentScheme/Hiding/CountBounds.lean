@@ -1154,8 +1154,8 @@ abbrev hidingAvgLeftImpl :
 handler `hidingImplCountAll` on each query, lifted into `HidingAvgSpec`. -/
 abbrev hidingAvgRightImpl :
     QueryImpl (CMOracle M S C)
-      (StateT (HidingCountState M S C) (OracleComp (HidingAvgSpec M S C))) :=
-  fun t =>
+      (StateT (HidingCountState M S C) (OracleComp (HidingAvgSpec M S C))) where
+  toFun t :=
     StateT.mk fun st =>
       OracleComp.liftComp
         ((hidingImplCountAll (M := M) (S := S) (C := C) t).run st)

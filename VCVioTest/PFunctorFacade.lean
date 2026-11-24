@@ -47,8 +47,8 @@ noncomputable example : EvalDistSemantics (PFunctor.FreeM triPFunctor) := inferI
 
 /-- A deterministic handler used to exercise generic instrumentation. -/
 @[expose]
-def zeroHandler : PFunctor.Handler Option triPFunctor :=
-  fun _ => some 0
+def zeroHandler : PFunctor.Handler Option triPFunctor where
+  toFun _ := some 0
 
 example : zeroHandler.preInsert (fun _ => some ()) () = some 0 := by
   simp [zeroHandler, seqRight_eq]

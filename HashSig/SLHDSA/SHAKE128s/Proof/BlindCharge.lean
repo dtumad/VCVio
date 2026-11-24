@@ -122,8 +122,8 @@ theorem raise_iff (charged : Bytes × K → Prop) (p : σ × Bool) (next : σ) :
 /-- The handler with a sticky flag, raised when a step files an entry that is charged. -/
 @[expose]
 noncomputable def flagged (charged : Bytes × K → Prop) (impl : QueryImpl spec (StateT σ ProbComp)) :
-    QueryImpl spec (StateT (σ × Bool) ProbComp) :=
-  fun t p => (fun z => (z.1, (z.2, raise record charged p z.2))) <$> (impl t).run p.1
+    QueryImpl spec (StateT (σ × Bool) ProbComp) where
+  toFun t p := (fun z => (z.1, (z.2, raise record charged p z.2))) <$> (impl t).run p.1
 
 /-- One step of the flagged handler runs the handler and updates the flag. -/
 theorem flagged_run (charged : Bytes × K → Prop) (impl : QueryImpl spec (StateT σ ProbComp))
@@ -190,8 +190,8 @@ open scoped Classical in
 /-- The handler stalled: once frozen, every query is answered by `stall` and nothing moves. -/
 @[expose]
 noncomputable def stalledFree (impl : QueryImpl spec (StateT σ ProbComp)) (Frozen : σ → Prop)
-    (stall : (t : spec.Domain) → spec.Range t) : QueryImpl spec (StateT σ ProbComp) :=
-  fun t s => if Frozen s then pure (stall t, s) else (impl t).run s
+    (stall : (t : spec.Domain) → spec.Range t) : QueryImpl spec (StateT σ ProbComp) where
+  toFun t s := if Frozen s then pure (stall t, s) else (impl t).run s
 
 open scoped Classical in
 /-- One step of the stalled handler: the stall answer when frozen, else the handler. -/

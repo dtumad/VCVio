@@ -106,8 +106,8 @@ violation poisons the state instead of rejecting the query. -/
 def challengeOracle [DecidableEq Tweak]
     (prob : Problem ι PkSeed Tweak M Y) (pk : PkSeed) :
     QueryImpl (challengeSpec Tweak M Y)
-      (StateT (State Tweak M) ProbComp) :=
-  fun tm => do
+      (StateT (State Tweak M) ProbComp) where
+  toFun tm := do
     let st ← get
     set (st.recordTarget prob.numTargets Prod.fst tm)
     return prob.th.eval pk tm.1 tm.2

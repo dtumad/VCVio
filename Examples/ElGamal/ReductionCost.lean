@@ -295,7 +295,8 @@ noncomputable def IND_CPA_OneTime_DDHReduction_openCost
 /-- Implementation of the reified one-time IND-CPA interface using a concrete adversary. -/
 def oneTimeINDCPAImpl {gen : G}
     (adv : AsymmEncAlg.IND_CPA_OneTime_Adversary (elGamalAsymmEnc F G gen)) :
-    QueryImpl (oneTimeINDCPASpec G G adv.State (G × G)) ProbComp
+    QueryImpl (oneTimeINDCPASpec G G adv.State (G × G)) ProbComp where
+  toFun
   | .chooseMessages pk => adv.chooseMessages pk
   | .distinguish st c => adv.distinguish st c
 

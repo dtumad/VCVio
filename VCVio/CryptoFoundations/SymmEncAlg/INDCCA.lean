@@ -67,7 +67,8 @@ variable {Λ : Type} [DecidableEq Λ]
 `LeftOrRight.oracle (encAlg.encrypt k) leak b` and logs every ciphertext it returns. -/
 @[expose] def IND_CCA_challengeImpl (encAlg : SymmEncAlg (OracleComp spec) M K C) (k : K)
     (leak : M → Λ) (b : Bool) :
-    QueryImpl (LeftOrRight.spec M C) (StateT (List C) (OracleComp spec)) := fun mm => do
+    QueryImpl (LeftOrRight.spec M C) (StateT (List C) (OracleComp spec)) where
+  toFun mm := do
   let c? ← (LeftOrRight.oracle (encAlg.encrypt k) leak b mm : OracleComp spec (Option C))
   modify fun log => match c? with
     | some c => c :: log
@@ -77,7 +78,8 @@ variable {Λ : Type} [DecidableEq Λ]
 /-- The decryption oracle of the CCA game: it rejects every logged challenge ciphertext with
 `none` and decrypts any other ciphertext. -/
 @[expose] def IND_CCA_decryptImpl [DecidableEq C] (encAlg : SymmEncAlg (OracleComp spec) M K C)
-    (k : K) : QueryImpl (C →ₒ Option M) (StateT (List C) (OracleComp spec)) := fun c => do
+    (k : K) : QueryImpl (C →ₒ Option M) (StateT (List C) (OracleComp spec)) where
+  toFun c := do
   let log ← get
   if c ∈ log then return none else (encAlg.decrypt k c : OracleComp spec (Option M))
 

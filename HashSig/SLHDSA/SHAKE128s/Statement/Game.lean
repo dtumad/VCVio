@@ -126,7 +126,8 @@ abbrev CountedRun (Output : Type) :=
 
 /-- Signs with the real key, counts each request and logs each answer. -/
 @[expose] def signingOracle (scheme : ExternalScheme Output PK SK) (sk : SK) :
-    QueryImpl SigningSpec (CountedRun Output) := fun request => do
+    QueryImpl SigningSpec (CountedRun Output) where
+  toFun request := do
   AddWriterT.addTell (Counts.single .signing 1)
   let answer ← liftM (scheme.sign sk request : OracleComp (World Output) (Option Bytes))
   liftM (modify (fun signed => signed ++ [⟨request, answer⟩]) :

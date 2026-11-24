@@ -284,8 +284,8 @@ the obvious reassociation of the product state. -/
 interpret the resulting PRF-oracle queries through the lazy random oracle. -/
 noncomputable def multipleIdealQueryImpl :
     QueryImpl (UnlinkOracleSpec TagId Nonce Digest)
-      (StateT (UnlinkState TagId × ((TagId × Nonce) →ₒ Digest).QueryCache) ProbComp) :=
-  fun q => fun p => do
+      (StateT (UnlinkState TagId × ((TagId × Nonce) →ₒ Digest).QueryCache) ProbComp) where
+  toFun q := fun p => do
     let r ← (simulateQ PRFScheme.prfIdealQueryImpl
       ((unlinkToMultiplePRFQueryImpl (TagId := TagId) (Nonce := Nonce) (Digest := Digest)
         (sessionsPerTag := sessionsPerTag) q).run p.1)).run p.2
@@ -314,8 +314,8 @@ interpret the resulting PRF-oracle queries through the lazy random oracle. -/
 noncomputable def singleIdealQueryImpl :
     QueryImpl (UnlinkOracleSpec TagId Nonce Digest)
       (StateT (UnlinkState TagId ×
-        (((TagId × Fin sessionsPerTag) × Nonce) →ₒ Digest).QueryCache) ProbComp) :=
-  fun q => fun p => do
+        (((TagId × Fin sessionsPerTag) × Nonce) →ₒ Digest).QueryCache) ProbComp) where
+  toFun q := fun p => do
     let r ← (simulateQ PRFScheme.prfIdealQueryImpl
       ((unlinkToSinglePRFQueryImpl (TagId := TagId) (Nonce := Nonce) (Digest := Digest)
         (sessionsPerTag := sessionsPerTag) q).run p.1)).run p.2

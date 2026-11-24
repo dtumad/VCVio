@@ -39,7 +39,8 @@ variable {ι : Type} (pub : OracleSpec.{0, 0} ι) (X R : Type)
 derivation becomes that public query or derivation. -/
 @[expose] noncomputable def collapseFwd :
     QueryImpl (unifSpec + ((pub + (X →ₒ R)) + (pub + (X →ₒ R))))
-      (OracleComp (pub.withDerivations X R))
+      (OracleComp (pub.withDerivations X R)) where
+  toFun
   | .inl n => liftM ((pub.withDerivations X R).query (.inl (.inl n)))
   | .inr (.inl (.inl t)) | .inr (.inr (.inl t)) =>
       liftM ((pub.withDerivations X R).query (.inl (.inr t)))

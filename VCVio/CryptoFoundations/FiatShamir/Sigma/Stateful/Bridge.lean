@@ -95,7 +95,8 @@ abbrev SourceCmaComp (α : Type) :=
 /-- Log signing queries while forwarding every query to the surrounding CMA interface. -/
 @[reducible, fs_simp] def cmaSignLogImpl :
     QueryImpl (cmaSpec M Commit Chal Resp Stmt)
-      (StateT (List M) (OracleComp (cmaSpec M Commit Chal Resp Stmt)))
+      (StateT (List M) (OracleComp (cmaSpec M Commit Chal Resp Stmt))) where
+  toFun
   | .unif n => do
       let r ← (((cmaSpec M Commit Chal Resp Stmt).query (.unif n)) :
         OracleComp (cmaSpec M Commit Chal Resp Stmt) (Fin (n + 1)))

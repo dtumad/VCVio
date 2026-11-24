@@ -181,16 +181,16 @@ lemma getQueryValue?_wrappedChallengeEntry_succ
 /-- Forwards a uniform-spec query through to the wrapped spec's `Sum.inl` summand without
 touching the simulator state. -/
 def unifForward (M Commit Chal : Type) :
-    QueryImpl unifSpec (StateT (SimState M Commit Chal) (OracleComp (wrappedSpec Chal))) :=
-  fun n ↦ StateT.lift (wrappedUniformQuery Chal n)
+    QueryImpl unifSpec (StateT (SimState M Commit Chal) (OracleComp (wrappedSpec Chal))) where
+  toFun n := StateT.lift (wrappedUniformQuery Chal n)
 
 /-- Caching random-oracle implementation: on a cache hit the recorded answer is returned,
 on a cache miss a fresh `Sum.inr ()` query is issued, the answer is cached, and the
 miss input `(msg, c)` is appended to the trace's internal `queryLog`. -/
 def roImpl (M Commit Chal : Type) [DecidableEq M] [DecidableEq Commit] :
     QueryImpl (M × Commit →ₒ Chal)
-      (StateT (SimState M Commit Chal) (OracleComp (wrappedSpec Chal))) :=
-  fun mc => do
+      (StateT (SimState M Commit Chal) (OracleComp (wrappedSpec Chal))) where
+  toFun mc := do
     let (cache, log) ← get
     match cache mc with
     | some v => pure v

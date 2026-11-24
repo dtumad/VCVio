@@ -94,8 +94,8 @@ noncomputable def classicalQuery (t : X) :
 register: query `t` is answered by `Quantum.classicalQuery t`. -/
 @[expose]
 noncomputable def classicalImpl :
-    QueryImpl (X →ₒ Y) (QComp (qromSpec X Y) (QReg.of Unit) (QReg.of Unit)) :=
-  fun t ↦ classicalQuery t
+    QueryImpl (X →ₒ Y) (QComp (qromSpec X Y) (QReg.of Unit) (QReg.of Unit)) where
+  toFun t := classicalQuery t
 
 /-- A classical query is a lossless program. -/
 theorem lossless_classicalQuery (t : X) :

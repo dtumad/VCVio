@@ -69,7 +69,8 @@ private def adversary : Adversary Nat Group Unit Nat (fun _ => Unit) String wher
 
 -- Replies are plain messages: no coefficient vectors or known logarithms are supplied.
 private def impl : QueryImpl (plainSpec Group Nat (fun _ => Unit))
-    (StateM (List (Message Nat Group))) := fun q => do
+    (StateM (List (Message Nat Group))) where
+  toFun q := do
   modify (· ++ [q])
   return ⟨(), fun _ => if q.data = 0 then [7] else [11]⟩
 

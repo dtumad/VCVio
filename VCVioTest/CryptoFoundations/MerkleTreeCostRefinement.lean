@@ -36,8 +36,8 @@ private theorem cost_impl_eq {ι : Type} {spec : OracleSpec ι} {m : Type → Ty
 private abbrev rawSpec : OracleSpec Nat := Nat →ₒ BitVec 256
 
 /-- A miss returns the old sampler counter and advances it once. -/
-private def miss : QueryImpl rawSpec (StateT Nat Id) :=
-  fun _ => StateT.mk fun n => pure (BitVec.ofNat 256 n, n + 1)
+private def miss : QueryImpl rawSpec (StateT Nat Id) where
+  toFun _ := StateT.mk fun n => pure (BitVec.ofNat 256 n, n + 1)
 
 /-- Leaf query indices retain their global offsets. -/
 private def leaf (idx : Nat) : OracleComp rawSpec Nat :=
@@ -212,7 +212,8 @@ private theorem normal_error_payload :
   rfl
 
 /-- A genuine base-monad failure retains sampler state but discards the outer writer result. -/
-private def failingMiss : QueryImpl rawSpec (ExceptT Nat (StateT Nat Id)) := fun q => do
+private def failingMiss : QueryImpl rawSpec (ExceptT Nat (StateT Nat Id)) where
+  toFun q := do
   let n : Nat ← get
   modify (· + 1)
   if q = 110 then throw 99 else pure (BitVec.ofNat 256 n)

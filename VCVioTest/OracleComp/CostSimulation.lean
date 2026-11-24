@@ -38,7 +38,8 @@ def sourceCost : CostModel signature Profile :=
   ⟨fun label coordinate => if coordinate = label then 2 else 0⟩
 
 /-- Each source query retains the second of two target replies at its own label. -/
-def route : QueryImpl signature (OracleComp signature) := fun label => do
+def route : QueryImpl signature (OracleComp signature) where
+  toFun label := do
   let _ ← (signature.query label : OracleComp signature Bool)
   (signature.query label : OracleComp signature Bool)
 

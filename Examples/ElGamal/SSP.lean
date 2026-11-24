@@ -159,14 +159,16 @@ noncomputable def realDhChallenge (gen : G) :
 The first exponent `a` is lazily sampled on first access and cached in the state. `GETPK`
 returns `a • gen` and `DHCHALLENGE` returns `(b • gen, (a * b) • gen)` for fresh `b`. -/
 noncomputable def dhTripleReal (gen : G) :
-    QueryImpl.Stateful unifSpec (dhSpec G) (Option F)
+    QueryImpl.Stateful unifSpec (dhSpec G) (Option F) where
+  toFun
   | Sum.inl _ => lazyPublicKey (F := F) (G := G) gen
   | Sum.inr _ => realDhChallenge (F := F) (G := G) gen
 
 /-- The "random" DDH handler (multi-query, shared-`a`). Identical to `dhTripleReal` except
 `DHCHALLENGE` returns `(b • gen, c • gen)` for fresh `b, c`. -/
 noncomputable def dhTripleRand (gen : G) :
-    QueryImpl.Stateful unifSpec (dhSpec G) (Option F)
+    QueryImpl.Stateful unifSpec (dhSpec G) (Option F) where
+  toFun
   | Sum.inl _ => fun st => match st with
         | none => do
             let a ← ($ᵗ F)
@@ -195,7 +197,8 @@ The convention `(B, T + m_b)` (rather than `(B, m_b + T)`) matches the DDH-to-LR
 output, so the equivalence with `dhToLR_left.link dhTripleReal` is definitional up to
 alpha-renaming of the sampled exponents (`a, b` on the DDH side and `sk, r` here). -/
 noncomputable def elgamalLR_left (gen : G) :
-    QueryImpl.Stateful unifSpec (lrSpec G) (Option F)
+    QueryImpl.Stateful unifSpec (lrSpec G) (Option F) where
+  toFun
   | Sum.inl _ => lazyPublicKey (F := F) (G := G) gen
   | Sum.inr (m₀, _) =>
       (fun bt => (bt.1, bt.2 + m₀)) <$> realDhChallenge (F := F) (G := G) gen
@@ -203,7 +206,8 @@ noncomputable def elgamalLR_left (gen : G) :
 /-- The "right-message" ElGamal LR game. Same as `elgamalLR_left` except `LR (_, m₁)` returns
 `(r • gen, (sk * r) • gen + m₁)`. -/
 noncomputable def elgamalLR_right (gen : G) :
-    QueryImpl.Stateful unifSpec (lrSpec G) (Option F)
+    QueryImpl.Stateful unifSpec (lrSpec G) (Option F) where
+  toFun
   | Sum.inl _ => lazyPublicKey (F := F) (G := G) gen
   | Sum.inr (_, m₁) =>
       (fun bt => (bt.1, bt.2 + m₁)) <$> realDhChallenge (F := F) (G := G) gen
@@ -214,7 +218,8 @@ noncomputable def elgamalLR_right (gen : G) :
 to `GETPK` on `dh`, and forwards `LR (m₀, _)` to `DHCHALLENGE` on `dh`, returning the pair
 `(B, T + m₀)` from the DDH challenge `(B, T)`. -/
 def dhToLR_leftHandler {G : Type} [Add G] :
-    QueryImpl (lrSpec G) (OracleComp (dhSpec G))
+    QueryImpl (lrSpec G) (OracleComp (dhSpec G)) where
+  toFun
   | Sum.inl _ => dhGetPublicKey
   | Sum.inr (m₀, _) => do
       let bt ← dhChallenge
@@ -222,7 +227,8 @@ def dhToLR_leftHandler {G : Type} [Add G] :
 
 /-- Stateless reduction handler encrypting the *right* message. -/
 def dhToLR_rightHandler {G : Type} [Add G] :
-    QueryImpl (lrSpec G) (OracleComp (dhSpec G))
+    QueryImpl (lrSpec G) (OracleComp (dhSpec G)) where
+  toFun
   | Sum.inl _ => dhGetPublicKey
   | Sum.inr (_, m₁) => do
       let bt ← dhChallenge

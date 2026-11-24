@@ -227,7 +227,8 @@ variable {TagId Nonce Digest : Type}
 /-- Honest tag oracle for the real authentication game. -/
 def authTagQueryImpl (hash : TagId → Nonce → Digest) :
     QueryImpl (TagId →ₒ TagTranscript Nonce Digest)
-      (StateT (AuthState TagId Nonce Digest) ProbComp) := fun tag => do
+      (StateT (AuthState TagId Nonce Digest) ProbComp) where
+  toFun tag := do
         let st ← get
         let nonce ← ($ᵗ Nonce : ProbComp Nonce)
         let auth := hash tag nonce
@@ -242,7 +243,8 @@ matches some tag's hash image and logs acceptances that were never emitted by th
 oracle. -/
 def authReaderQueryImpl (hash : TagId → Nonce → Digest) :
     QueryImpl ((TagTranscript Nonce Digest) →ₒ ReaderReply)
-      (StateT (AuthState TagId Nonce Digest) ProbComp) := fun transcript => do
+      (StateT (AuthState TagId Nonce Digest) ProbComp) where
+  toFun transcript := do
         let st ← get
         let accepted := decide (∃ tag, hash tag transcript.nonce = transcript.auth)
         let newForged := Finset.univ.filter fun tag =>
@@ -281,7 +283,8 @@ variable {TagId Nonce Digest : Type}
 function table and records the emitted transcript. -/
 def authIdealTagQueryImpl :
     QueryImpl (TagId →ₒ TagTranscript Nonce Digest)
-      (StateT (AuthIdealState TagId Nonce Digest) ProbComp) := fun tag => do
+      (StateT (AuthIdealState TagId Nonce Digest) ProbComp) where
+  toFun tag := do
         let st ← get
         let nonce ← ($ᵗ Nonce : ProbComp Nonce)
         let key := (tag, nonce)
@@ -302,7 +305,8 @@ def authIdealTagQueryImpl :
 were previously generated for the queried tag and nonce in the cached random-function table. -/
 def authIdealReaderQueryImpl :
     QueryImpl ((TagTranscript Nonce Digest) →ₒ ReaderReply)
-      (StateT (AuthIdealState TagId Nonce Digest) ProbComp) := fun transcript => do
+      (StateT (AuthIdealState TagId Nonce Digest) ProbComp) where
+  toFun transcript := do
         let st ← get
         let matching := Finset.univ.filter fun tag =>
           st.responses (tag, transcript.nonce) = some transcript.auth
@@ -361,7 +365,8 @@ transcript's nonce, creating fresh cache entries for uncached pairs. It accepts 
 matches the submitted authenticator and records non-honest matches as forgeries. -/
 noncomputable def authRFReaderQueryImpl :
     QueryImpl ((TagTranscript Nonce Digest) →ₒ ReaderReply)
-      (StateT (AuthIdealState TagId Nonce Digest) ProbComp) := fun transcript => do
+      (StateT (AuthIdealState TagId Nonce Digest) ProbComp) where
+  toFun transcript := do
   let pairs ← (Finset.univ : Finset TagId).toList.mapM (fun tag => do
     let d ← authRFLookup Digest tag transcript.nonce
     return (tag, d))
@@ -418,7 +423,8 @@ for the queried tag is exhausted. -/
 def unlinkTagQueryImpl (hash : Slot → Nonce → Digest)
     (pattern : SessionPattern TagId Slot sessionsPerTag) :
     QueryImpl (TagId →ₒ Option (TagTranscript Nonce Digest))
-      (StateT (UnlinkState TagId) ProbComp) := fun tag => do
+      (StateT (UnlinkState TagId) ProbComp) where
+  toFun tag := do
         let st ← get
         if h : st.sessionsUsed tag < sessionsPerTag then
           let sid : Fin sessionsPerTag := ⟨st.sessionsUsed tag, h⟩
@@ -436,8 +442,9 @@ def unlinkTagQueryImpl (hash : Slot → Nonce → Digest)
 def unlinkReaderQueryImpl (hash : Slot → Nonce → Digest)
     (pattern : SessionPattern TagId Slot sessionsPerTag) :
     QueryImpl ((TagTranscript Nonce Digest) →ₒ ReaderReply)
-      (StateT (UnlinkState TagId) ProbComp) := fun transcript =>
-        return ReaderReply.ofBool <| unlinkReaderAccepts (TagId := TagId) (Slot := Slot)
+      (StateT (UnlinkState TagId) ProbComp) where
+  toFun transcript :=
+    return ReaderReply.ofBool <| unlinkReaderAccepts (TagId := TagId) (Slot := Slot)
           (Nonce := Nonce) (Digest := Digest) hash pattern transcript
 
 /-- Combined multiple-session unlinkability oracle implementation. -/
@@ -510,7 +517,8 @@ samples a fresh ideal hash output on every tag query, records all outputs associ
 `(tag, nonce)` pair, and sets `bad` once some pair is queried twice. -/
 def unlinkBadTagQueryImpl :
     QueryImpl (TagId →ₒ Option (TagTranscript Nonce Digest))
-      (StateT (UnlinkBadState TagId Nonce Digest) ProbComp) := fun tag => do
+      (StateT (UnlinkBadState TagId Nonce Digest) ProbComp) where
+  toFun tag := do
         let st ← get
         if _h : st.sessionsUsed tag < sessionsPerTag then
           let nonce ← ($ᵗ Nonce : ProbComp Nonce)
@@ -531,7 +539,8 @@ def unlinkBadTagQueryImpl :
 appears among the cached random-function outputs for some tag at the given nonce. -/
 def unlinkBadReaderQueryImpl :
     QueryImpl ((TagTranscript Nonce Digest) →ₒ ReaderReply)
-      (StateT (UnlinkBadState TagId Nonce Digest) ProbComp) := fun transcript => do
+      (StateT (UnlinkBadState TagId Nonce Digest) ProbComp) where
+  toFun transcript := do
         let st ← get
         let accepted := decide (∃ tag ∈ (Finset.univ : Finset TagId),
           transcript.auth ∈ ((st.responses (tag, transcript.nonce)).getD []))

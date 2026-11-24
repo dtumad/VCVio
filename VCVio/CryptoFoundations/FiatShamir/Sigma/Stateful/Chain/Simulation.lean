@@ -259,7 +259,8 @@ private abbrev SimLoggedState (M Commit Chal : Type)
     (hr : GenerableRelation Stmt Wit rel)
     (simT : Stmt → ProbComp (Commit × Chal × Resp)) :
     QueryImpl (cmaOracleSpec M Commit Chal Resp)
-      (StateT (List M × CmaState M Commit Chal Stmt Wit) ProbComp)
+      (StateT (List M × CmaState M Commit Chal Stmt Wit) ProbComp) where
+  toFun
   | .inl (.inl n) =>
       cmaSimLoggedImpl (M := M) (Commit := Commit) (Chal := Chal)
         (Resp := Resp) (Stmt := Stmt) (Wit := Wit) hr simT (.unif n)

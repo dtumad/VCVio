@@ -68,8 +68,8 @@ by `simulatedNmaFwd`. -/
 def simulatedNmaUnifSim :
     QueryImpl unifSpec
       (StateT (fsRoSpec M Commit Chal).QueryCache
-        (OracleComp (fsRoSpec M Commit Chal))) :=
-  fun n => simulatedNmaFwd (M := M) (Commit := Commit) (Chal := Chal) (.inl n)
+        (OracleComp (fsRoSpec M Commit Chal))) where
+  toFun n := simulatedNmaFwd (M := M) (Commit := Commit) (Chal := Chal) (.inl n)
 
 /-- The random-oracle handler: a query found in the cache is answered from it, and any
 other query is forwarded to the ambient random oracle and its answer cached. -/
@@ -77,7 +77,8 @@ def simulatedNmaRoSim
     [DecidableEq M] [DecidableEq Commit] :
     QueryImpl (M × Commit →ₒ Chal)
       (StateT (fsRoSpec M Commit Chal).QueryCache
-        (OracleComp (fsRoSpec M Commit Chal))) := fun mc => do
+        (OracleComp (fsRoSpec M Commit Chal))) where
+  toFun mc := do
   let cache ← get
   match cache (.inr mc) with
   | some v => pure v
@@ -103,7 +104,8 @@ def simulatedNmaSigSim
     (simTranscript : Stmt → ProbComp (Commit × Chal × Resp)) (pk : Stmt) :
     QueryImpl (M →ₒ (Commit × Resp))
       (StateT (fsRoSpec M Commit Chal).QueryCache
-        (OracleComp (fsRoSpec M Commit Chal))) := fun msg => do
+        (OracleComp (fsRoSpec M Commit Chal))) where
+  toFun msg := do
   let (c, ω, s) ← simulateQ
     (simulatedNmaUnifSim (M := M) (Commit := Commit) (Chal := Chal))
     (simTranscript pk)

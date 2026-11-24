@@ -92,7 +92,8 @@ def hmsg (core : CorePrimitives p) {m : Type → Type*} [HasQuery (publicHashSpe
   query (spec := publicHashSpec core) (PublicHashQuery.hmsg r pkSeed pkRoot msg)
 
 /-- Deterministically interpret the public-hash syntax using the functions in `Primitives`. -/
-def impl (prims : Primitives p) : QueryImpl (publicHashSpec prims.core) Id
+def impl (prims : Primitives p) : QueryImpl (publicHashSpec prims.core) Id where
+  toFun
   | .thash pkSeed encodedAdrs xs => prims.Thash pkSeed encodedAdrs xs
   | .hmsg r pkSeed pkRoot msg => prims.Hmsg r pkSeed pkRoot msg
 

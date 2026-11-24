@@ -35,7 +35,8 @@ in order. Each response receives fresh handles, including responses served by th
     [AddCommGroup G] [Module F G] [SampleableType G] (gen : G) :
     QueryImpl (unifSpec + (Handle × Handle →ₒ Handle × Handle))
       (StateT (Tbl (fun _ : Unit => G))
-        (OracleComp (elGamalAsymmEnc F G gen).IND_CPA_oracleSpec))
+        (OracleComp (elGamalAsymmEnc F G gen).IND_CPA_oracleSpec)) where
+  toFun
   | .inl n => fun tbl => do
       let u ← (elGamalAsymmEnc F G gen).IND_CPA_oracleSpec.query (.inl n)
       pure (u, tbl)
@@ -110,7 +111,8 @@ private def groupStep (z : Handle) (t : Query F groupSig) :
 
 private def suffixImpl [SampleableType F] (z : Handle) :
     QueryImpl (spec F groupSig + (unifSpec + (HandlePair →ₒ HandlePair)))
-      (StateT SimState (OracleComp (genSpec F groupSig)))
+      (StateT SimState (OracleComp (genSpec F groupSig))) where
+  toFun
   | .inl t => groupStep z t
   | .inr (.inl n) => fun st => do
       let u ← (genSpec F groupSig).query (.inr n)

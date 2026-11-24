@@ -44,7 +44,8 @@ the authenticator. Models `authTagQueryImpl` with the hash replaced by a PRF ora
 def authToPRFTagImpl :
     QueryImpl (TagId →ₒ TagTranscript Nonce Digest)
       (StateT (AuthState TagId Nonce Digest)
-        (OracleComp (unifSpec + ((TagId × Nonce) →ₒ Digest)))) := fun tag => do
+        (OracleComp (unifSpec + ((TagId × Nonce) →ₒ Digest)))) where
+  toFun tag := do
   let st ← get
   let nonce ← (OracleComp.liftComp (spec := unifSpec)
     (superSpec := unifSpec + ((TagId × Nonce) →ₒ Digest)) ($ᵗ Nonce) :
@@ -60,7 +61,8 @@ replaced by a PRF oracle call. -/
 noncomputable def authToPRFReaderImpl :
     QueryImpl ((TagTranscript Nonce Digest) →ₒ ReaderReply)
       (StateT (AuthState TagId Nonce Digest)
-        (OracleComp (unifSpec + ((TagId × Nonce) →ₒ Digest)))) := fun transcript => do
+        (OracleComp (unifSpec + ((TagId × Nonce) →ₒ Digest)))) where
+  toFun transcript := do
   let st ← get
   let pairs ←
     (Finset.univ : Finset TagId).toList.mapM

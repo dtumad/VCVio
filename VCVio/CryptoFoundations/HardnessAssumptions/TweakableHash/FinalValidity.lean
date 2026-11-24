@@ -191,8 +191,8 @@ abbrev collectionSpec (thColl : TweakableHashCollection ι PkSeed Tweak Y) :
 /-- The always-answering collection oracle for source-final-validity games. -/
 def collectionOracle [DecidableEq Tweak] (tweakOf : Q → Tweak)
     (thColl : TweakableHashCollection ι PkSeed Tweak Y) (pk : PkSeed) :
-    QueryImpl (collectionSpec thColl) (StateT (State Q Tweak) ProbComp) :=
-  fun q => do
+    QueryImpl (collectionSpec thColl) (StateT (State Q Tweak) ProbComp) where
+  toFun q := do
     let st ← get
     set (st.recordCollection tweakOf q.2.1)
     return thColl.eval q.1 pk q.2.1 q.2.2

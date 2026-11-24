@@ -25,8 +25,9 @@ namespace VCVioTest.OracleNetwork
 abbrev spec : OracleSpec Nat := fun _ => Nat
 
 /-- A deterministic service that charges one state increment per request. -/
-def service : QueryImpl spec (StateT Nat Id) := fun query state =>
-  (query + state, state + 1)
+def service : QueryImpl spec (StateT Nat Id) where
+  toFun query state :=
+    (query + state, state + 1)
 
 /-- A client whose second input depends on its first response. -/
 def adaptive : OracleComp spec Nat := do

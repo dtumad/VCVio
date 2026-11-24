@@ -50,8 +50,8 @@ def encodeQuery (enc : QueryEncoding X LeafAddress NodeAddress Payload Y) :
 /-- Each abstract hash request makes one query to the common oracle. -/
 @[expose]
 def queryImpl (enc : QueryEncoding X LeafAddress NodeAddress Payload Y) :
-    QueryImpl (spec LeafAddress NodeAddress Payload Y) (OracleComp (X →ₒ Y)) :=
-  fun q => (X →ₒ Y).query (enc.encodeQuery q)
+    QueryImpl (spec LeafAddress NodeAddress Payload Y) (OracleComp (X →ₒ Y)) where
+  toFun q := (X →ₒ Y).query (enc.encodeQuery q)
 
 /-- Equal encoded inputs access the same oracle computation, irrespective of their roles. -/
 theorem queryImpl_eq_of_encodeQuery_eq (enc : QueryEncoding X LeafAddress NodeAddress Payload Y)

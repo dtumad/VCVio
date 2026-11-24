@@ -540,8 +540,8 @@ handler is total. Its per-query unfoldings are recorded by `gpvRealImplTape_run_
 `_sign` below. -/
 @[expose] noncomputable def gpvRealImplTape (pk : PK) (sk : SK) :
     QueryImpl ((unifSpec + (Salt × M →ₒ Range)) + (M →ₒ (Salt × Domain)))
-      (StateT ((Salt × M →ₒ Range).QueryCache × List Salt) ProbComp) :=
-  fun t => match t with
+      (StateT ((Salt × M →ₒ Range).QueryCache × List Salt) ProbComp) where
+  toFun t := match t with
   | .inl (.inl n) => StateT.mk fun s =>
       (fun u => (u, s)) <$> (unifSpec.query n : ProbComp _)
   | .inl (.inr mc) => StateT.mk fun s =>
@@ -606,8 +606,8 @@ is the bare sample, both leaving the tape untouched. This is the programmed dual
 `_read` / `_sign` below. -/
 @[expose] noncomputable def progGameRunImplTape (domainSample : PK → ProbComp Domain) (pk : PK) :
     QueryImpl ((unifSpec + (Salt × M →ₒ Range)) + (M →ₒ (Salt × Domain)))
-      (StateT ((Salt × M →ₒ Range).QueryCache × List Salt) ProbComp) :=
-  fun t => match t with
+      (StateT ((Salt × M →ₒ Range).QueryCache × List Salt) ProbComp) where
+  toFun t := match t with
   | .inl (.inl n) => StateT.mk fun s =>
       (fun u => (u, s)) <$> (unifSpec.query n : ProbComp _)
   | .inl (.inr mc) => StateT.mk fun s =>
@@ -802,8 +802,8 @@ states. In the actual `qSign`-salt run this branch is unreachable (the query bou
 `qSign` signing queries and the tape holds `qSign` salts), so it contributes no probability mass. -/
 @[expose] noncomputable def gpvRealImplTapeFlag (pk : PK) (sk : SK) :
     QueryImpl ((unifSpec + (Salt × M →ₒ Range)) + (M →ₒ (Salt × Domain)))
-      (StateT (((Salt × M →ₒ Range).QueryCache × List Salt) × Bool) ProbComp) :=
-  fun t => StateT.mk fun s =>
+      (StateT (((Salt × M →ₒ Range).QueryCache × List Salt) × Bool) ProbComp) where
+  toFun t := StateT.mk fun s =>
     match t with
     | .inl q =>
         (fun p => (p.1, (p.2, s.2))) <$> (gpvRealImplTape psf M Salt pk sk (.inl q)).run s.1
@@ -820,8 +820,8 @@ head salt `r` is already a key of the cache). Its `run'`-projection is the origi
 @[expose]
 noncomputable def progGameRunImplTapeFlag (domainSample : PK → ProbComp Domain) (pk : PK) :
     QueryImpl ((unifSpec + (Salt × M →ₒ Range)) + (M →ₒ (Salt × Domain)))
-      (StateT (((Salt × M →ₒ Range).QueryCache × List Salt) × Bool) ProbComp) :=
-  fun t => StateT.mk fun s =>
+      (StateT (((Salt × M →ₒ Range).QueryCache × List Salt) × Bool) ProbComp) where
+  toFun t := StateT.mk fun s =>
     match t with
     | .inl q =>
         (fun p => (p.1, (p.2, s.2))) <$>

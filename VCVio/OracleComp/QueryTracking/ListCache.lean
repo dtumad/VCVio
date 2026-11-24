@@ -46,8 +46,8 @@ def decode (cache : List (D × R)) : (D →ₒ R).QueryCache :=
 /-- Reuse the first cached answer or draw and prepend a new binding on a miss. -/
 @[expose]
 def handler {m : Type u → Type v} [Monad m]
-    (draw : QueryImpl (D →ₒ R) m) : QueryImpl (D →ₒ R) (StateT (List (D × R)) m) :=
-  fun d cache => match cache.lookup d with
+    (draw : QueryImpl (D →ₒ R) m) : QueryImpl (D →ₒ R) (StateT (List (D × R)) m) where
+  toFun d cache := match cache.lookup d with
     | some r => pure (r, cache)
     | none => (fun r => (r, (d, r) :: cache)) <$> draw d
 

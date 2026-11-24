@@ -92,8 +92,8 @@ abbrev rerunSpec (Q α : Type) : OracleSpec Q := Q →ₒ α
 
 /-- Answer from a fixed function and charge one complete run. -/
 @[expose] def counted {Q α : Type} (f : Q → α) :
-    QueryImpl (rerunSpec Q α) (StateT ℕ ProbComp) :=
-  fun q => do
+    QueryImpl (rerunSpec Q α) (StateT ℕ ProbComp) where
+  toFun q := do
     modify (· + 1)
     pure (f q)
 
@@ -103,8 +103,8 @@ variable {init : ProbComp σ} {impl : QueryImpl spec (StateT σ ProbComp)}
 one complete run. The caller has no access to the computation's internal state or cursor. -/
 @[expose] def ResetPolicy.rerun (P : ResetPolicy init impl) {Q α : Type}
     (run : Q → OracleComp spec α) :
-    QueryImpl (rerunSpec Q α) (StateT (P.World × ℕ) ProbComp) :=
-  fun q => StateT.mk fun s =>
+    QueryImpl (rerunSpec Q α) (StateT (P.World × ℕ) ProbComp) where
+  toFun q := StateT.mk fun s =>
     (fun z => (z.1, (z.2.1, s.2 + 1))) <$>
       (simulateQ P.answer (run q)).run (s.1, P.begin)
 

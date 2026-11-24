@@ -332,7 +332,8 @@ request is answered locally with `none`. Local coins and rounds are forwarded un
 @[expose]
 def capChallengesImpl (leak : M → Λ) (qEnc : ℕ) :
     QueryImpl ((unifSpec + LeftOrRight.spec M C) + spec.batch)
-      (StateT ℕ (OracleComp ((unifSpec + LeftOrRight.spec M C) + spec.batch)))
+      (StateT ℕ (OracleComp ((unifSpec + LeftOrRight.spec M C) + spec.batch))) where
+  toFun
   | .inl (.inl n) =>
       monadLift (((unifSpec + LeftOrRight.spec M C) + spec.batch).query (.inl (.inl n)))
   | .inl (.inr mm) => LeftOrRight.cap leak qEnc

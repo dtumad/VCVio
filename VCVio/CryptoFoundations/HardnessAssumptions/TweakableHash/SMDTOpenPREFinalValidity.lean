@@ -125,8 +125,8 @@ def initializeTargets [DecidableEq Tweak]
 fixed witness, as does EasyCrypt's `nth witness`; it cannot itself win because the final selected
 index must refer to a recorded target. -/
 def openOracle [Inhabited M] (targets : List (Tweak × M)) :
-    QueryImpl (openSpec M) (StateT (List ℕ) ProbComp) :=
-  fun j => do
+    QueryImpl (openSpec M) (StateT (List ℕ) ProbComp) where
+  toFun j := do
     let opened ← get
     set (opened ++ [j])
     return (targets[j]?.map Prod.snd).getD default

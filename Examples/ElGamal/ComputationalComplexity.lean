@@ -150,7 +150,8 @@ end OpenReduction
 /-! ## Semantic closing -/
 
 /-- Fair-coin implementation for the right port of the syntactic reduction. -/
-def oneTimeDDHFairCoinImpl : QueryImpl coinSpec ProbComp
+def oneTimeDDHFairCoinImpl : QueryImpl coinSpec ProbComp where
+  toFun
   | () => ($ᵗ Bool)
 
 section Closing

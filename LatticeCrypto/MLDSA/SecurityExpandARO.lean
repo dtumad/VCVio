@@ -138,8 +138,8 @@ abbrev RomSpec (M : Type) : OracleSpec (ℕ ⊕ ((M × Commitment p prims) ⊕ B
 
 /-- Fresh uniform matrices as `ExpandA` answers, in the two-oracle world of the signature. -/
 def expandALazy :
-    QueryImpl (ExpandASpec p) (OracleComp (unifSpec + HashSpec p prims M)) :=
-  fun _ => liftM ($ᵗ (TqMatrix p.k p.l))
+    QueryImpl (ExpandASpec p) (OracleComp (unifSpec + HashSpec p prims M)) where
+  toFun _ := liftM ($ᵗ (TqMatrix p.k p.l))
 
 /-- The `ExpandA` random-oracle simulator: uniform and `H` queries are forwarded to the
 two-oracle world of the signature, and `ExpandA` queries are answered lazily — a cached seed is

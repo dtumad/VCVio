@@ -27,10 +27,12 @@ open OracleComp OracleSpec
 abbrev boolSpec : OracleSpec Bool := fun _ => Bool
 
 /-- A deterministic handler negating its point. -/
-def notImpl : QueryImpl boolSpec Id := fun b => !b
+def notImpl : QueryImpl boolSpec Id where
+  toFun b := !b
 
 /-- A deterministic handler for local coins, always answering `0`. -/
-def zeroCoins : QueryImpl unifSpec Id := fun _ => (0 : Fin _)
+def zeroCoins : QueryImpl unifSpec Id where
+  toFun _ := (0 : Fin _)
 
 /-- Three rounds, each querying the answer to the previous one. -/
 def threeRounds : OracleComp (unifSpec + boolSpec.batch) Bool := do

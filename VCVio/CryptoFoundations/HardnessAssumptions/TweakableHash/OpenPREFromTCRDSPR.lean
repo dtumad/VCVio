@@ -49,7 +49,8 @@ def liftPick
     (prob : Problem ι PkSeed Tweak M Y) :
     QueryImpl (unifSpec + SourceFinalValidity.collectionSpec prob.thColl)
       (OracleComp (unifSpec + (SM_DT_TCR_SourceFinalValidity.challengeSpec Tweak M Y +
-        SourceFinalValidity.collectionSpec prob.thColl)))
+        SourceFinalValidity.collectionSpec prob.thColl))) where
+  toFun
   | .inl q => liftM ((unifSpec + (SM_DT_TCR_SourceFinalValidity.challengeSpec Tweak M Y +
       SourceFinalValidity.collectionSpec prob.thColl)).query (.inl q))
   | .inr q => liftM ((unifSpec + (SM_DT_TCR_SourceFinalValidity.challengeSpec Tweak M Y +
