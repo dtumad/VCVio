@@ -74,7 +74,7 @@ namespace Rewinding
 /-! ## Charged reruns -/
 
 /-- Answer from a fixed function and charge `cost q` for the complete run on input `q`. -/
-@[expose] def charged {Q α : Type} (f : Q → α) (cost : Q → ℕ) :
+@[expose, simps -isSimp] def charged {Q α : Type} (f : Q → α) (cost : Q → ℕ) :
     QueryImpl (rerunSpec Q α) (StateT ℕ ProbComp) where
   toFun q := do
     modify (· + cost q)
@@ -112,7 +112,7 @@ theorem runCharged_query_inr_bind {Q α β : Type} (q : Q)
     (f : Q → α) (cost : Q → ℕ) (s : ℕ) :
     runCharged (liftM ((unifSpec + rerunSpec Q α).query (Sum.inr q)) >>= k) f cost s =
       runCharged (k (f q)) f cost (s + cost q) := by
-  simp [runCharged, charged]
+  simp [runCharged, charged_apply]
 
 /-- If every rerun costs at most `c`, the expected accumulated charge of a run is at most `c`
 times its expected number of reruns, for initial counters `s₁ ≤ c * s₂`. -/
@@ -313,14 +313,14 @@ private theorem le_of_mem_support_run_simulateQ_rerun_costAdapterImpl {Q α β :
     · intro z hz
       obtain ⟨u, hz⟩ : ∃ u, z ∈ support ((simulateQ (coins (S := P.World × ℕ) + P.rerun run)
           ((simulateQ costAdapterImpl (k u)).run s)).run st) := by
-        simpa [costAdapterImpl, coins] using hz
+        simpa [costAdapterImpl_apply, coins] using hz
       exact ih u s st z hz
     · intro z hz
       obtain ⟨a, d, w, cur, ha, hz⟩ : ∃ (a : α) (d : ℕ) (w : P.World) (cur : P.Cursor),
           ((a, d), (w, cur)) ∈ support ((simulateQ P.answer (run q)).run (st.1, P.begin)) ∧
             z ∈ support ((simulateQ (coins (S := P.World × ℕ) + P.rerun run)
               ((simulateQ costAdapterImpl (k a)).run (s + d))).run (w, st.2 + 1)) := by
-        simpa [costAdapterImpl, ResetPolicy.rerun] using hz
+        simpa [costAdapterImpl_apply, ResetPolicy.rerun_apply] using hz
       have hd : d ≤ c := hc q _ _ ha
       have hk := ih a (s + d) (w, st.2 + 1) z hz
       dsimp only at hk ⊢

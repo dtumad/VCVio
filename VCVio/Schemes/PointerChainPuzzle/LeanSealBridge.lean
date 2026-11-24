@@ -430,7 +430,7 @@ def truncateRound (ts : List (TypedPoint b n)) (us : byteSpec.batch.Range (ts.ma
 
 /-- A round of typed points submitted as the round of their hash inputs, each answer truncated;
 uniform queries pass through. -/
-@[expose]
+@[expose, simps -isSimp]
 def roundImpl :
     QueryImpl (unifSpec + (typedSpec b n).batch) (OracleComp (unifSpec + byteSpec.batch)) where
   toFun
@@ -502,7 +502,7 @@ lemma roundImpl_eq : roundImpl (b := b) (n := n) = (encoding hb hn).roundImpl :=
   ext t : 1
   rcases t with k | ts
   · rfl
-  · simp only [roundImpl, RandomOracleEncoding.roundImpl]
+  · simp only [roundImpl_apply, RandomOracleEncoding.roundImpl_apply]
     congr 1
     funext us
     funext j

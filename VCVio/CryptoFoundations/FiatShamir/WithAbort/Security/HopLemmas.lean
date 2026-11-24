@@ -250,7 +250,7 @@ lemma unforgeableAdvantage_eq_hybridExpAtKey_real :
 state, so the `expectedQuerySlack` bridge of `ProgramLogic/Relational/SimulateQ.lean`
 applies. The flag is preserved on every step, hence stays `false` along any run started
 from `false`. -/
-@[expose] noncomputable def flagLift {ι : Type} {spec : OracleSpec ι} {σ : Type}
+@[expose, simps -isSimp] noncomputable def flagLift {ι : Type} {spec : OracleSpec ι} {σ : Type}
     (impl : QueryImpl spec (StateT σ ProbComp)) :
     QueryImpl spec (StateT (σ × Bool) ProbComp) where
   toFun t := StateT.mk fun p =>

@@ -72,7 +72,7 @@ query `Sum.inl q`, the composed real handler re-emits the query through `realGam
 lemma gpvRealImpl_inl_eq_gpvOuter (pk : PK) (sk : SK)
     (q : (unifSpec + (Salt × M →ₒ Range)).Domain) :
     gpvRealImpl psf hr M Salt pk sk (Sum.inl q) = gpvOuter M Salt q := by
-  simp only [gpvRealImpl_eq_compose, QueryImpl.compose, realGameRunImplNoLog, HAdd.hAdd,
+  simp only [gpvRealImpl_eq_compose, QueryImpl.compose_apply, realGameRunImplNoLog, HAdd.hAdd,
     QueryImpl.add, HasQuery.toQueryImpl_apply, HasQuery.query]
   exact simulateQ_spec_query (gpvOuter M Salt) q
 
@@ -149,7 +149,7 @@ lemma flattenAppendLog_proj_gpvRealImplFresh (pk : PK) (sk : SK)
       -- public/random-oracle base query: the list is untouched, the cache evolves through
       -- `gpvRealImpl`; both sides drop to the same base step `gpvOuter q = gpvRealImpl … (inl q)`.
       rw [gpvRealImplFresh_run_inl, gpvRealImpl_inl_eq_gpvOuter]
-      simp only [QueryImpl.flattenStateT, QueryImpl.add_apply_inl, QueryImpl.liftTarget_apply,
+      simp only [QueryImpl.flattenStateT_apply, QueryImpl.add_apply_inl, QueryImpl.liftTarget_apply,
         StateT.run_mk, Prod.map, id_eq, map_eq_bind_pure_comp, bind_assoc, pure_bind,
         Function.comp_def]
       -- `(liftM (gpvOuter q)).run l = gpvOuter q >>= fun a => (a, l)` is definitional; rephrase the
@@ -166,7 +166,7 @@ lemma flattenAppendLog_proj_gpvRealImplFresh (pk : PK) (sk : SK)
       -- Normalize the logging/caching handler stack, splice in the explicit sign body via
       -- `gpvRealImpl_run_sign` under the outer projection, and renormalize; the appended log
       -- entry `(l ++ [msg]).toFinset = insert msg l.toFinset` reconciles the signed-set.
-      simp only [OracleSpec.add_apply_inr, QueryImpl.add_apply_inr, QueryImpl.flattenStateT,
+      simp only [OracleSpec.add_apply_inr, QueryImpl.add_apply_inr, QueryImpl.flattenStateT_apply,
         QueryImpl.appendInputLog_apply, StateT.run_bind, StateT.run_modify,
         StateT.run_monadLift, monadLift_self, bind_pure_comp, pure_bind, StateT.run_map,
         Functor.map_map, StateT.run_mk, Prod.map_apply, id_eq, List.toFinset_append,

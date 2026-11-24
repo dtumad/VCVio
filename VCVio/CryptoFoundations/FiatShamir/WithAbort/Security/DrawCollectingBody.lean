@@ -177,7 +177,7 @@ lemma tsum_prEvent_run_ghostSignDrawBody_mul_length_le_tight (pk : Stmt) (sk : W
 /-- The deferred-draw handler for the adversary's oracles, driving the distribution-level mono
 skeleton against `ghostBlindImpl`. Carries the accumulated drawn-commitment list and a monotone
 read-hit flag in place of the eager ghost cache (see `DeferredState`). -/
-@[expose] noncomputable def deferredDrawImpl (pk : Stmt) (sk : Wit) :
+@[expose, simps -isSimp] noncomputable def deferredDrawImpl (pk : Stmt) (sk : Wit) :
     QueryImpl ((unifSpec + (M × Commit →ₒ Chal)) + (M →ₒ Option (Commit × Resp)))
       (StateT (DeferredState M Commit Chal) ProbComp) where
   toFun t := match t with

@@ -107,7 +107,7 @@ private lemma cmaToNma_lift_ro_query_run
       (fun ch => (ch, log)) <$>
         (((nmaSpec M Commit Chal Stmt).query (.ro mc)) :
           OracleComp (nmaSpec M Commit Chal Stmt) Chal)
-  simp [simulateQ_query, OracleQuery.input_query, OracleQuery.cont_query, cmaToNma,
+  simp [simulateQ_query, OracleQuery.input_query, OracleQuery.cont_query, cmaToNma_apply,
     StateT.run_mk, map_eq_bind_pure_comp]
 
 variable [DecidableEq M] [DecidableEq Commit]
@@ -255,7 +255,7 @@ private abbrev SimLoggedState (M Commit Chal : Type)
     (cmaSignLogImpl (M := M) (Commit := Commit) (Chal := Chal)
       (Resp := Resp) (Stmt := Stmt))).flattenStateT
 
-@[fs_simp, simps -isSimp] private noncomputable def cmaSimLoggedLeftImpl
+@[simps -isSimp (attr := fs_simp)] private noncomputable def cmaSimLoggedLeftImpl
     (hr : GenerableRelation Stmt Wit rel)
     (simT : Stmt → ProbComp (Commit × Chal × Resp)) :
     QueryImpl (cmaOracleSpec M Commit Chal Resp)
@@ -297,7 +297,7 @@ private lemma cmaSimLoggedImpl_liftAdv_run
     (simulateQ (cmaSimLoggedLeftImpl (M := M) (Commit := Commit)
       (Chal := Chal) (Resp := Resp) (Stmt := Stmt) (Wit := Wit)
       hr simT) oa).run st := by
-  simpa [cmaSimLoggedLeftImpl] using congrArg (fun x ↦ x.run st)
+  simpa [cmaSimLoggedLeftImpl_apply] using congrArg (fun x ↦ x.run st)
     (QueryImpl.simulateQ_liftM_eq_of_query
       (impl := cmaSimLoggedImpl (M := M) (Commit := Commit)
         (Chal := Chal) (Resp := Resp) (Stmt := Stmt) (Wit := Wit)
@@ -308,7 +308,7 @@ private lemma cmaSimLoggedImpl_liftAdv_run
       (h := fun t ↦ by
         rcases t with ((n | mc) | m) <;>
           · change simulateQ _ (liftM ((cmaSpec M Commit Chal Resp Stmt).query _)) = _
-            simp [cmaSimLoggedLeftImpl])
+            simp [cmaSimLoggedLeftImpl_apply])
       (oa := oa))
 
 private lemma cmaSimLoggedImpl_liftAdv_run_expanded
@@ -364,7 +364,7 @@ private lemma nma_lift_unif_run
       funext s'
       change ((nma (Stmt := Stmt) (Wit := Wit) M Commit Chal hr
         (.unif n)).run s') = (impl₁ n).run s'
-      simp [impl₁, nma, nmaPublic])
+      simp [impl₁, nma_apply, nmaPublic_apply])
     (oa := oa) ▸ himpl₁
 
 omit [DecidableEq M] [DecidableEq Commit] in
@@ -381,7 +381,7 @@ private lemma simulatedNmaUnifSim_fsUniform_run
   | query_bind n k ih =>
       simp only [simulateQ_bind, simulateQ_query, OracleQuery.input_query,
         OracleQuery.cont_query, id_map, StateT.run_bind]
-      simp only [fsUniformImpl, QueryImpl.ofLift_eq_id', simulatedNmaUnifSim,
+      simp only [fsUniformImpl, QueryImpl.ofLift_eq_id', simulatedNmaUnifSim_apply,
         simulatedNmaFwd, QueryImpl.liftTarget_apply, add_apply_inl, StateT.run_monadLift,
         monadLift_self, bind_pure_comp, simulateQ_map, bind_map_left, map_bind]
       exact bind_congr (m := ProbComp) fun u ↦ ih u cache
@@ -614,7 +614,7 @@ private lemma cmaSim_lift_ro_query_run
     (Chal := Chal) (Resp := Resp) (Stmt := Stmt) simT mc log]
   cases hcache : cache mc with
   | none | some ch =>
-      simp [nma, nmaPublic, cmaFrame,
+      simp [nma_apply, nmaPublic_apply, cmaFrame,
         cmaOuterLens, cmaNmaLens, QueryImpl.Stateful.Frame.linkReshape,
         hcache, QueryCache.cacheQuery, monad_norm]
 
@@ -709,8 +709,8 @@ private lemma simulatedNmaUnifFork_flatten_preserves_state [Finite Chal]
       intro t st hst y hy
       subst hst
       have hy' := by
-        simpa [QueryImpl.flattenStateT, QueryImpl.mapStateTBase,
-          simulatedNmaUnifSim, simulatedNmaFwd, Fork.unifForward] using hy
+        simpa [QueryImpl.flattenStateT_apply, QueryImpl.mapStateTBase_apply,
+          simulatedNmaUnifSim_apply, simulatedNmaFwd, Fork.unifForward_apply] using hy
       rcases hy' with ⟨u, _hu, b, hb, rfl⟩
       rfl)
     A (advCache, liveSt) rfl z hz
@@ -763,8 +763,8 @@ private lemma forkLoggedImpl_sign_support
           xLiveCache, xQueryLog),
         signed ++ [m]) = z := by
   have hz' := by
-    simpa [fs_simp, QueryImpl.extendState, QueryImpl.flattenStateT,
-      QueryImpl.mapStateTBase] using hz
+    simpa [fs_simp, QueryImpl.extendState, QueryImpl.flattenStateT_apply,
+      QueryImpl.mapStateTBase_apply] using hz
   rcases hz' with ⟨xCommit, xChal, xResp, xAdvCache, xLiveCache,
     xQueryLog, hxmem, hout⟩
   refine ⟨xCommit, xChal, xResp, xAdvCache, xLiveCache, xQueryLog, hxmem, ?_⟩
@@ -800,21 +800,21 @@ private lemma forkLoggedImpl_state_step [Finite Chal]
   rcases s with ⟨⟨advCache, liveCache, queryLog⟩, signed⟩
   rcases t with ((n | mc) | m)
   · have hz' := by
-      simpa [fs_simp, QueryImpl.extendState, QueryImpl.flattenStateT,
-        QueryImpl.mapStateTBase] using hz
+      simpa [fs_simp, QueryImpl.extendState, QueryImpl.flattenStateT_apply,
+        QueryImpl.mapStateTBase_apply] using hz
     rcases hz' with ⟨w, hw, rfl⟩
     exact .unchanged
   · cases hadv : advCache (.inr mc) with
     | some ch =>
         have hz' := by
-          simpa [fs_simp, QueryImpl.extendState, QueryImpl.flattenStateT,
-            QueryImpl.mapStateTBase, hadv] using hz
+          simpa [fs_simp, QueryImpl.extendState, QueryImpl.flattenStateT_apply,
+            QueryImpl.mapStateTBase_apply, hadv] using hz
         rcases hz' with ⟨w, hw, rfl⟩
         exact .unchanged
     | none =>
         have hz' := by
-          simpa [fs_simp, QueryImpl.extendState, QueryImpl.flattenStateT,
-            QueryImpl.mapStateTBase, hadv] using hz
+          simpa [fs_simp, QueryImpl.extendState, QueryImpl.flattenStateT_apply,
+            QueryImpl.mapStateTBase_apply, hadv] using hz
         rcases hz' with ⟨ch, liveCache', queryLog', hw, rfl⟩
         cases hlive : liveCache mc with
         | none =>

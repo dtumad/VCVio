@@ -212,7 +212,7 @@ lemma map_counterLogImpl_run (puzzle : Puzzle n S L Salt) (b : Bool)
   rcases t with (k | ⟨m₀, m₁⟩) | ts
   · simp [counterLogImpl, counterImpl]
   · simp only [counterLogImpl, counterImpl, QueryImpl.add_apply_inl, QueryImpl.add_apply_inr,
-      LeftOrRight.oracle]
+      LeftOrRight.oracle_apply]
     by_cases h : plaintextLength m₀ = plaintextLength m₁
     · simp only [h, ↓reduceIte, StateT.run_map, ← map_counterLogEncrypt_run, Functor.map_map]
       rfl
@@ -236,7 +236,7 @@ variable [DecidableEq S] [DecidableEq L] [DecidableEq Salt] [DecidableEq Ctx]
 for the puzzle `puzzle`, as one handler on the pair of the cache of the random oracle and the
 counter with the log: a step of `counterLogImpl`, with rounds rewritten as single queries answered
 by the random oracle on the shared cache. -/
-@[expose]
+@[expose, simps -isSimp]
 noncomputable def counterJointImpl (puzzle : Puzzle n S L Salt) (b : Bool) :
     QueryImpl ((unifSpec + LeftOrRight.spec Plaintext ByteArray) +
         (sealSpec n S L Salt Ctx N K).batch)
@@ -250,7 +250,7 @@ lemma counterJointImpl_run_unif (puzzle : Puzzle n S L Salt) (b : Bool) (k : ℕ
     (s : (sealSpec n S L Salt Ctx N K).QueryCache × (ℕ × CounterLog N K)) :
     (counterJointImpl prf codec encodePuzzle qEnc puzzle b (.inl (.inl k))).run s =
       (fun z => (z.1, (z.2, s.2))) <$> (unifFwdImpl (sealSpec n S L Salt Ctx N K) k).run s.1 := by
-  simp only [add_apply_inl, counterJointImpl, counterLogImpl, QueryImpl.add_apply_inl,
+  simp only [add_apply_inl, counterJointImpl_apply, counterLogImpl, QueryImpl.add_apply_inl,
     QueryImpl.liftTarget_apply, QueryImpl.ofLift_apply,
     StateT.run_monadLift, monadLift_self, bind_pure_comp, simulateQ_map,
     simulateQ_romImpl_simulateQ_unbatch, StateT.run_map, Functor.map_map, StateT.run_mk]
@@ -269,14 +269,14 @@ lemma counterJointImpl_run_challenge (puzzle : Puzzle n S L Salt) (b : Bool) (m�
         else pure (some ByteArray.empty, (s.1, (s.2.1 + 1, s.2.2)))
       else pure (none, s) := by
   by_cases h : plaintextLength m₀ = plaintextLength m₁
-  · simp only [counterJointImpl, counterLogImpl, StateT.run_mk, QueryImpl.add_apply_inl,
-      QueryImpl.add_apply_inr, LeftOrRight.oracle, h, ↓reduceIte]
+  · simp only [counterJointImpl_apply, counterLogImpl, StateT.run_mk, QueryImpl.add_apply_inl,
+      QueryImpl.add_apply_inr, LeftOrRight.oracle_apply, h, ↓reduceIte]
     by_cases hj : s.2.1 < qEnc
     · simp [counterLogEncrypt, hj, simulateQ_romImpl_simulateQ_unbatch,
         QueryImpl.simulateQ_add_liftM_left, unifFwdImpl.simulateQ_run]
     · simp [counterLogEncrypt, hj]
-  · simp only [counterJointImpl, counterLogImpl, StateT.run_mk, QueryImpl.add_apply_inl,
-      QueryImpl.add_apply_inr, LeftOrRight.oracle, h, ↓reduceIte]
+  · simp only [counterJointImpl_apply, counterLogImpl, StateT.run_mk, QueryImpl.add_apply_inl,
+      QueryImpl.add_apply_inr, LeftOrRight.oracle_apply, h, ↓reduceIte]
     simp
 
 lemma counterJointImpl_run_batch (puzzle : Puzzle n S L Salt) (b : Bool)
@@ -285,7 +285,7 @@ lemma counterJointImpl_run_batch (puzzle : Puzzle n S L Salt) (b : Bool)
     (counterJointImpl prf codec encodePuzzle qEnc puzzle b (.inr ts)).run s =
       (fun z => (z.1, (z.2, s.2))) <$>
         ((sealSpec n S L Salt Ctx N K).randomOracle.batch ts).run s.1 := by
-  simp only [add_apply_inr, counterJointImpl, counterLogImpl, QueryImpl.add_apply_inr,
+  simp only [add_apply_inr, counterJointImpl_apply, counterLogImpl, QueryImpl.add_apply_inr,
     StateT.run_monadLift, bind_pure_comp, simulateQ_map, simulateQ_query, OracleQuery.input_query,
     OracleQuery.cont_query, unbatch_apply_inr, id_map, StateT.run_map, Functor.map_map,
     StateT.run_mk]
@@ -792,15 +792,15 @@ lemma mapStateTBase_indexedRunImpl (T : Fin (2 * qEnc) → K) :
   ext t : 1
   refine StateT.ext fun s => ?_
   rcases t with k | t | x
-  · simp only [QueryImpl.mapStateTBase, indexedRunImpl, keyedRomImpl, unifFwdImpl,
+  · simp only [QueryImpl.mapStateTBase_apply, indexedRunImpl, keyedRomImpl, unifFwdImpl,
       QueryImpl.add_apply_inl, StateT.run_mk, QueryImpl.liftTarget_apply_run,
       QueryImpl.ofLift_apply, simulateQ_map]
     exact congrArg _ (simulateQ_prfRealQueryImpl_liftComp _ _ (liftM (unifSpec.query k)))
-  · simp only [QueryImpl.mapStateTBase, indexedRunImpl, keyedRomImpl, QueryImpl.add_apply_inl,
+  · simp only [QueryImpl.mapStateTBase_apply, indexedRunImpl, keyedRomImpl, QueryImpl.add_apply_inl,
       QueryImpl.add_apply_inr, StateT.run_mk, QueryImpl.liftTarget_apply,
       OracleComp.liftM_StateT_eq]
     exact simulateQ_prfRealQueryImpl_liftComp _ _ _
-  · simp [QueryImpl.mapStateTBase, indexedRunImpl, keyedRomImpl, functionQuery]
+  · simp [QueryImpl.mapStateTBase_apply, indexedRunImpl, keyedRomImpl, functionQuery]
     rfl
 
 /-- Simulating a computation lifted from the oracles of the hiding game, `keyedRomImpl T` is the
@@ -839,7 +839,7 @@ def indexedOnlineImpl (puzzle : Puzzle n S L Salt) (b : Bool) :
 one handler on the pair of the cache of the random oracle and the counter: a step of the online
 handler of `indexedExperiment`, with rounds answered point by point, followed by `keyedRomImpl T`
 on the cache. -/
-@[expose]
+@[expose, simps -isSimp]
 noncomputable def keyedJointImpl (T : Fin (2 * qEnc) → K) (puzzle : Puzzle n S L Salt) (b : Bool) :
     QueryImpl ((unifSpec + LeftOrRight.spec Plaintext ByteArray) +
         (sealSpec n S L Salt Ctx N K).batch)
@@ -853,7 +853,7 @@ lemma keyedJointImpl_run_unif (T : Fin (2 * qEnc) → K) (puzzle : Puzzle n S L 
     (k : ℕ) (s : (sealSpec n S L Salt Ctx N K).QueryCache × ℕ) :
     (keyedJointImpl prf codec encodePuzzle qEnc T puzzle b (.inl (.inl k))).run s =
       (fun z => (z.1, (z.2, s.2))) <$> (unifFwdImpl (sealSpec n S L Salt Ctx N K) k).run s.1 := by
-  simp [keyedJointImpl, indexedOnlineImpl, keyedRomImpl]
+  simp [keyedJointImpl_apply, indexedOnlineImpl, keyedRomImpl]
 
 lemma keyedJointImpl_run_batch (T : Fin (2 * qEnc) → K) (puzzle : Puzzle n S L Salt) (b : Bool)
     (ts : List (sealSpec n S L Salt Ctx N K).Domain)
@@ -861,7 +861,7 @@ lemma keyedJointImpl_run_batch (T : Fin (2 * qEnc) → K) (puzzle : Puzzle n S L
     (keyedJointImpl prf codec encodePuzzle qEnc T puzzle b (.inr ts)).run s =
       (fun z => (z.1, (z.2, s.2))) <$>
         ((sealSpec n S L Salt Ctx N K).randomOracle.batch ts).run s.1 := by
-  simp only [keyedJointImpl, StateT.run_mk, QueryImpl.batch'_apply_inr, indexedOnlineImpl,
+  simp only [keyedJointImpl_apply, StateT.run_mk, QueryImpl.batch'_apply_inr, indexedOnlineImpl,
     QueryImpl.add_apply_inr]
   erw [QueryImpl.run_batch_liftTarget (m := OracleComp (indexedSpec n S L Salt Ctx N K qEnc))
     ⟨fun t => liftM ((indexedSpec n S L Salt Ctx N K qEnc).query (.inr (.inl t)))⟩]
@@ -888,19 +888,19 @@ lemma keyedJointImpl_run_challenge (T : Fin (2 * qEnc) → K) (puzzle : Puzzle n
         else pure (some ByteArray.empty, (s.1, s.2 + 1))
       else pure (none, s) := by
   by_cases hl : plaintextLength m₀ = plaintextLength m₁
-  · simp only [keyedJointImpl, StateT.run_mk, QueryImpl.batch'_apply_inl, indexedOnlineImpl,
-      QueryImpl.add_apply_inl, QueryImpl.add_apply_inr, LeftOrRight.oracle, hl, ↓reduceIte]
+  · simp only [keyedJointImpl_apply, StateT.run_mk, QueryImpl.batch'_apply_inl, indexedOnlineImpl,
+      QueryImpl.add_apply_inl, QueryImpl.add_apply_inr, LeftOrRight.oracle_apply, hl, ↓reduceIte]
     by_cases hj : s.2 < qEnc
     · simp [indexedEncrypt, hj, simulateQ_sealBy, keyedRomImpl, sealBy_pure_eval,
         QueryImpl.simulateQ_add_liftM_left, unifFwdImpl.simulateQ_run]
     · simp [indexedEncrypt, hj]
-  · simp only [keyedJointImpl, StateT.run_mk, QueryImpl.batch'_apply_inl, indexedOnlineImpl,
-      QueryImpl.add_apply_inl, QueryImpl.add_apply_inr, LeftOrRight.oracle, hl, ↓reduceIte]
+  · simp only [keyedJointImpl_apply, StateT.run_mk, QueryImpl.batch'_apply_inl, indexedOnlineImpl,
+      QueryImpl.add_apply_inl, QueryImpl.add_apply_inr, LeftOrRight.oracle_apply, hl, ↓reduceIte]
     simp
 
 /-- `keyedJointImpl` with its key table as a third component of the state, which no step
 changes. -/
-@[expose]
+@[expose, simps -isSimp]
 noncomputable def keyedTabImpl (puzzle : Puzzle n S L Salt) (b : Bool) :
     QueryImpl ((unifSpec + LeftOrRight.spec Plaintext ByteArray) +
         (sealSpec n S L Salt Ctx N K).batch)
@@ -918,13 +918,13 @@ lemma simulateQ_keyedTabImpl_run {α : Type} (puzzle : Puzzle n S L Salt) (b : B
       (fun p => (p.1, (p.2, T))) <$>
         (simulateQ (keyedJointImpl prf codec encodePuzzle qEnc T puzzle b) oa).run s := by
   rw [OracleComp.simulateQ_run_eq_of_snd_invariant _ T (fun t s x hx => by
-    simp only [keyedTabImpl, StateT.run_mk, support_map] at hx
+    simp only [keyedTabImpl_apply, StateT.run_mk, support_map] at hx
     obtain ⟨z, -, rfl⟩ := hx
     rfl)]
   congr 3
   ext t : 1
   refine StateT.ext fun s => ?_
-  simp [QueryImpl.fixSndStateT, keyedTabImpl, Functor.map_map]
+  simp [QueryImpl.fixSndStateT_apply, keyedTabImpl_apply, Functor.map_map]
 
 /-- The key table of `G₂` read off a state of the online phase of `G₁½` with the log: a uniform key
 table of `prf.multiKey` overwritten, at the instances of each logged encryption, by its subkeys
@@ -947,11 +947,12 @@ theorem intertwinesOn_keyFill (hprf : prf.UniformKey) (puzzle : Puzzle n S L Sal
       (keyedTabImpl prf codec encodePuzzle qEnc puzzle b) := by
   intro t s hs γ _ f
   rcases t with (k | ⟨m₀, m₁⟩) | ts
-  · simp only [counterJointImpl_run_unif, keyedTabImpl, StateT.run_mk, keyedJointImpl_run_unif,
+  · simp only [counterJointImpl_run_unif, keyedTabImpl_apply, StateT.run_mk,
+    keyedJointImpl_run_unif,
       keyFill, bind_map_left, Functor.map_map]
     exact (EvalDistEq.bind_bind_swap _ _ _).evalDist_eq
   · obtain ⟨c, j, l⟩ := s
-    simp only [counterJointImpl_run_challenge, keyedTabImpl, StateT.run_mk,
+    simp only [counterJointImpl_run_challenge, keyedTabImpl_apply, StateT.run_mk,
       keyedJointImpl_run_challenge, keyFill, bind_map_left]
     by_cases hl : plaintextLength m₀ = plaintextLength m₁
     · by_cases hj : j < qEnc
@@ -972,7 +973,8 @@ theorem intertwinesOn_keyFill (hprf : prf.UniformKey) (puzzle : Puzzle n S L Sal
         exact h
       · simp [hl, hj]
     · simp [hl]
-  · simp only [counterJointImpl_run_batch, keyedTabImpl, StateT.run_mk, keyedJointImpl_run_batch,
+  · simp only [counterJointImpl_run_batch, keyedTabImpl_apply, StateT.run_mk,
+    keyedJointImpl_run_batch,
       keyFill, bind_map_left, Functor.map_map]
     exact (EvalDistEq.bind_bind_swap _ _ _).evalDist_eq
 

@@ -110,7 +110,7 @@ theorem lookup_append_fresh [DecidableEq S] [∀ s, Zero (V s)] (tbl : Tbl V) (s
   modifyGet fun tbl => ((tbl s).length, append tbl s v)
 
 /-- The table handler, with equality determined by the observation. -/
-@[expose] def impl [DecidableEq S] [CommSemiring F]
+@[expose, simps -isSimp] def impl [DecidableEq S] [CommSemiring F]
     [∀ s, AddCommMonoid (V s)] [∀ s, Module F (V s)]
     [∀ s, DecidableEq (U s)] (M : Model F σ V) (obs : (s : S) → V s → U s)
     (m : Type → Type) [Monad m] : QueryImpl (spec F σ) (StateT (Tbl V) m) where
@@ -192,7 +192,7 @@ theorem impl_extends {m : Type → Type} [Monad m] [LawfulMonad m] [MonadAttach 
     [LawfulMonadAttach m] (t : Query F σ) (tbl : Tbl V) (z : spec F σ t × Tbl V)
     (hz : z ∈ support ((impl M obs m t).run tbl)) : Tbl.Extends tbl z.2 := by
   cases t <;>
-    simp only [impl, push, StateT.run_bind, StateT.run_get, pure_bind, StateT.run_modifyGet,
+    simp only [impl_apply, push, StateT.run_bind, StateT.run_get, pure_bind, StateT.run_modifyGet,
       MonadAttach.mem_support] at hz <;>
     obtain rfl := LawfulMonadAttach.eq_of_canReturn_pure hz
   all_goals first | exact Tbl.Extends.refl tbl | exact extends_append _ _ _

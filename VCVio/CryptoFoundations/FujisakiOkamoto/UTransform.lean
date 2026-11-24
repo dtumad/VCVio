@@ -127,6 +127,7 @@ abbrev oracleSpec (M R KD K : Type) := unifSpec + hashOracleSpec M R KD K
 abbrev QueryCache (M R KD K : Type) := (M →ₒ R).QueryCache × (KD →ₒ K).QueryCache
 
 /-- Lazy random oracle for encryption coins, threaded through the combined U-transform state. -/
+@[simps -isSimp]
 def coinOracleImpl {M R KD K : Type} [DecidableEq M] [SampleableType R] :
     QueryImpl (M →ₒ R) (StateT (QueryCache M R KD K) ProbComp) where
   toFun msg := do
@@ -139,6 +140,7 @@ def coinOracleImpl {M R KD K : Type} [DecidableEq M] [SampleableType R] :
         return r
 
 /-- Lazy random oracle for key derivation, threaded through the combined U-transform state. -/
+@[simps -isSimp]
 def keyOracleImpl {M R KD K : Type} [DecidableEq KD] [SampleableType K] :
     QueryImpl (KD →ₒ K) (StateT (QueryCache M R KD K) ProbComp) where
   toFun kd := do

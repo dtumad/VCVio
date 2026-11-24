@@ -176,12 +176,12 @@ theorem romQueryBound_reduce {ιh : Type} {hs : OracleSpec ιh}
   constructor
   · simp only [StrongUnforgeableAdversary.toUnforgeableAdversary, reduce, isQueryBoundP_map_iff]
     apply hh.simulateQ_of_step
-    · rintro ((_ | _) | _) ht <;> simp_all [IsHashQuery, signingImpl]
-    · rintro ((_ | _) | _) ht <;> simp_all [IsHashQuery, signingImpl]
+    · rintro ((_ | _) | _) ht <;> simp_all [IsHashQuery, signingImpl_apply]
+    · rintro ((_ | _) | _) ht <;> simp_all [IsHashQuery, signingImpl_apply]
   · simp only [StrongUnforgeableAdversary.toUnforgeableAdversary, reduce, isQueryBoundP_map_iff]
     apply hs.simulateQ_of_step
-    · rintro ((_ | _) | _) ht <;> simp_all [IsSignQuery, signingImpl]
-    · rintro ((_ | _) | _) ht <;> simp_all [IsSignQuery, signingImpl]
+    · rintro ((_ | _) | _) ht <;> simp_all [IsSignQuery, signingImpl_apply]
+    · rintro ((_ | _) | _) ht <;> simp_all [IsSignQuery, signingImpl_apply]
 
 /-- Mapping an adversary's output leaves its signing log unchanged. -/
 theorem runWithSigningOracle_map

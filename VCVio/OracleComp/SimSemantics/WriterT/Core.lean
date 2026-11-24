@@ -30,7 +30,7 @@ namespace QueryImpl
 /-- Given implementations for oracles in `spec₁` and `spec₂` in terms of writer monads for
 two different log monoids `ω₁` and `ω₂`, implement the combined set `spec₁ + spec₂` in terms
 of the product monoid `ω₁ × ω₂`. Each side leaves the other component at the identity. -/
-@[expose] def parallelWriterT {ι₁ : Type u} {ι₂ : Type v}
+@[expose, simps -isSimp] def parallelWriterT {ι₁ : Type u} {ι₂ : Type v}
     {spec₁ : OracleSpec.{u, w} ι₁} {spec₂ : OracleSpec.{v, w} ι₂}
     {m : Type w → Type x} [Functor m] {ω₁ ω₂ : Type w} [Monoid ω₁] [Monoid ω₂]
     (impl₁ : QueryImpl spec₁ (WriterT ω₁ m))
@@ -43,7 +43,7 @@ of the product monoid `ω₁ × ω₂`. Each side leaves the other component at 
 /-- Indexed version of `QueryImpl.parallelWriterT`. Each query for index `t` writes into the
 `t`-th component of the pi-product `(t : τ) → ω t`, leaving every other component at the
 identity. Note that `m` cannot vary with `t`. -/
-@[expose] def sigmaWriterT {τ : Type} [DecidableEq τ] {ι : τ → Type v}
+@[expose, simps -isSimp] def sigmaWriterT {τ : Type} [DecidableEq τ] {ι : τ → Type v}
     {spec : (t : τ) → OracleSpec.{v, w} (ι t)}
     {m : Type w → Type x} [Functor m] {ω : τ → Type w} [(t : τ) → Monoid (ω t)]
     (impl : (t : τ) → QueryImpl (spec t) (WriterT (ω t) m)) :
@@ -56,7 +56,7 @@ identity. Note that `m` cannot vary with `t`. -/
 The outer log is the first component of the product; the inner/base log is the second. This
 is the writer-transformer analogue of `flattenStateT`. The resulting `WriterT (ω₁ × ω₂) m`
 carries both logs as a product. -/
-@[expose] def flattenWriterT {ι : Type _} {spec : OracleSpec ι}
+@[expose, simps -isSimp] def flattenWriterT {ι : Type _} {spec : OracleSpec ι}
     {m : Type u → Type v} [Monad m] {ω₁ ω₂ : Type u}
     (impl : QueryImpl spec (WriterT ω₁ (WriterT ω₂ m))) :
     QueryImpl spec (WriterT (ω₁ × ω₂) m) where

@@ -511,11 +511,11 @@ theorem dominatedUntilBad_maskedImpl :
     simp only [Prod.map_apply, id_eq, Prod.mk.eta, id_map']
   · refine key ?_
     rw [maskedImpl_run_touch, eagerImpl_apply_inr, Functor.map_map]
-    simp only [Prod.map_apply, id_eq, RelabelState.labelImpl, StateT.run_map]
+    simp only [Prod.map_apply, id_eq, RelabelState.labelImpl_apply, StateT.run_map]
   · refine key ?_
     rw [maskedImpl_apply_read, RelabelState.revealCell_run, eagerImpl_apply_inr,
       Functor.map_map]
-    simp only [Prod.map_apply, id_eq, Prod.mk.eta, id_map', RelabelState.labelImpl]
+    simp only [Prod.map_apply, id_eq, Prod.mk.eta, id_map', RelabelState.labelImpl_apply]
 
 /-! ## Deferring touches -/
 

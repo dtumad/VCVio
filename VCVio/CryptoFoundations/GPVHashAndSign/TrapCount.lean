@@ -50,7 +50,7 @@ open Classical in
 `(Salt × M) → Option ℕ`.  At each programming event (random-oracle miss or signing step) it records
 the current counter value into the index table at the freshly written key and increments the
 counter; on uniform queries and random-oracle cache hits the instrument is left untouched. -/
-@[expose] noncomputable def progGameRunImplCombinedTrapCount (pk : PK) (sk : SK) :
+@[expose, simps -isSimp] noncomputable def progGameRunImplCombinedTrapCount (pk : PK) (sk : SK) :
     QueryImpl ((unifSpec + (Salt × M →ₒ Range)) + (M →ₒ (Salt × Domain)))
       (StateT (((((Salt × M →ₒ Range).QueryCache × Finset M) × Bool) ×
         ((Salt × M) → Option Domain)) × (((Salt × M) → Option ℕ) × ℕ)) ProbComp) where

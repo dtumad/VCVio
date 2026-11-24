@@ -221,6 +221,7 @@ theorem simulateQ_liftComp_run_of_query
         bind_map_left, map_bind, ih]
 
 /-- Transport a stateful handler along a state equivalence. -/
+@[simps -isSimp]
 def transportState (h : QueryImpl.Stateful I E σ) (φ : σ ≃ σ') :
     QueryImpl.Stateful I E σ' where
   toFun t :=
@@ -442,6 +443,7 @@ state. A left query updates only the left view, and a right query updates only
 the right view. The frame's separation law records that these two updates are
 non-interfering.
 -/
+@[simps -isSimp]
 def parRouteWith
     {ιᵢ : Type uᵢ} {I : OracleSpec.{uᵢ, v} ιᵢ} {ιₑ : Type uₑ}
     {E : OracleSpec.{uₑ, v} ιₑ} (F : Frame σ σ₁ σ₂)
@@ -495,6 +497,7 @@ def parRouteSeparatedWith
 
 /-- Parallel composition of two stateful handlers using an explicit state
 frame and disjoint sum import and export interfaces. -/
+@[simps -isSimp]
 def parSumWith (F : Frame σ σ₁ σ₂)
     (h₁ : QueryImpl.Stateful I₁ E₁ σ₁) (h₂ : QueryImpl.Stateful I₂ E₂ σ₂) :
     QueryImpl.Stateful (I₁ + I₂) (E₁ + E₂) σ where

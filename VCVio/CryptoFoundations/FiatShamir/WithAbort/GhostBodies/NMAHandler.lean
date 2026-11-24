@@ -194,7 +194,7 @@ caching random oracle) write live RO reads to the *base* layer, reading through 
 so that signing-programmed (ghost) points are visible to the adversary; the signing oracle
 records the signed message and runs `simGhostSignBody`, writing the accepted-transcript
 programming to the *ghost* layer. -/
-@[expose] noncomputable def ghostNmaImpl (pk : Stmt) (_sk : Wit) :
+@[expose, simps -isSimp] noncomputable def ghostNmaImpl (pk : Stmt) (_sk : Wit) :
     QueryImpl ((unifSpec + (M × Commit →ₒ Chal)) + (M →ₒ Option (Commit × Resp)))
       (StateT (NmaGhostState M Commit Chal) ProbComp) where
   toFun t := match t with
@@ -250,10 +250,10 @@ lemma ghostNmaImpl_preserves_signed_inv (pk : Stmt) (sk : Wit)
       ∀ q : M × Commit, z.2.1.2 q ≠ none → q.1 ∈ z.2.2 := by
   intro z hz
   rcases t with (n | mc) | msg
-  · simp only [ghostNmaImpl, StateT.run_mk, support_map] at hz
+  · simp only [ghostNmaImpl_apply, StateT.run_mk, support_map] at hz
     obtain ⟨u, -, rfl⟩ := hz
     exact hs
-  · simp only [ghostNmaImpl, StateT.run_mk] at hz
+  · simp only [ghostNmaImpl_apply, StateT.run_mk] at hz
     cases hgh : s.1.2 mc with
     | some v =>
         simp only [hgh, support_pure, Set.mem_singleton_iff] at hz
@@ -263,7 +263,7 @@ lemma ghostNmaImpl_preserves_signed_inv (pk : Stmt) (sk : Wit)
         simp only [hgh, support_map] at hz
         obtain ⟨cu, -, rfl⟩ := hz
         exact hs
-  · simp only [ghostNmaImpl, StateT.run_mk, support_map] at hz
+  · simp only [ghostNmaImpl_apply, StateT.run_mk, support_map] at hz
     obtain ⟨alc, halc, rfl⟩ := hz
     intro q hq
     rcases simGhostSignBody_support_ghost M maxAttempts sim pk msg s.1.1 s.1.2 alc halc q hq
@@ -304,7 +304,7 @@ lemma ghostNmaImpl_proj_hybrid (pk : Stmt) (sk : Wit)
           hybridSignImpl M (simSignBody M maxAttempts sim pk sk)) t).run
         (overlayCache M s.1.1 s.1.2, s.2) := by
   rcases t with (n | mc) | msg
-  · simp only [ghostNmaImpl, StateT.run_mk, QueryImpl.add_apply_inl, hybridBaseImpl,
+  · simp only [ghostNmaImpl_apply, StateT.run_mk, QueryImpl.add_apply_inl, hybridBaseImpl,
       unifFwdImpl, QueryImpl.liftTarget_apply, Functor.map_map]
     rfl
   · refine Eq.trans ?_

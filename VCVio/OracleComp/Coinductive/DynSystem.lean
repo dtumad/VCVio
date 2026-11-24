@@ -291,7 +291,7 @@ noncomputable def transcriptDist (H : ProbHandler spec) (A : OracleStrategy S sp
 
 @[simp] theorem kleisliStep_ofHandler (h : OracleHandler spec) (A : OracleStrategy S spec)
     (s : S) : kleisliStep (ProbHandler.ofHandler h) A s = pure (advanceOnce h A s) := by
-  simp [kleisliStep, ProbHandler.ofHandler, advanceOnce]
+  simp [kleisliStep, ProbHandler.ofHandler_apply, advanceOnce]
 
 @[simp] theorem kleisliIterate_ofHandler (h : OracleHandler spec) (A : OracleStrategy S spec)
     (n : ℕ) (s : S) :

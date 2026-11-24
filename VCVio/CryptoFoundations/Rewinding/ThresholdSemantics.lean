@@ -97,7 +97,7 @@ theorem counted_fst {Q α β : Type} (f : Q → α)
       rfl
     | inr q =>
       simp only [simulateQ_bind, simulateQ_spec_query, QueryImpl.add_apply_inr,
-        StateT.run_bind, counted, StateT.run_modify, StateT.run_pure, pure_bind]
+        StateT.run_bind, counted_apply, StateT.run_modify, StateT.run_pure, pure_bind]
       exact ih (f q) (count + 1)
 
 /-- Recursive tree finding commutes with interpretation of its sampling and acceptance effects.

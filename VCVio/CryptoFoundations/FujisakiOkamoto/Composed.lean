@@ -49,6 +49,7 @@ abbrev SingleROQueryCache (PKHash M R K : Type) :=
   (singleROHashOracleSpec PKHash M R K).QueryCache
 
 /-- Lazy single random oracle returning both coins and the derived key. -/
+@[simps -isSimp]
 def singleROOracleImpl {PKHash M R K : Type}
     [DecidableEq PKHash] [DecidableEq M] [SampleableType R] [SampleableType K] :
     QueryImpl (singleROHashOracleSpec PKHash M R K)

@@ -167,7 +167,7 @@ theorem drawCell_run_of_cell_eq_some {c : X ⊕ K} {st : RelabelState pub X K R}
 theorem drawCell_run_of_cell_eq_none {c : X ⊕ K} {st : RelabelState pub X K R}
     (h : st.2 c = none) :
     (drawCell c).run st = (fun u ↦ (u, (st.1, st.2.cacheQuery c u))) <$> ($ᵗ R) := by
-  simp [drawCell, h, uniformSampleImpl]
+  simp [drawCell, h, uniformSampleImpl_apply]
 
 /-- Drawing a cell extends the state, and leaves the cell drawn at the returned value. -/
 theorem le_and_cell_eq_of_mem_support_drawCell {c : X ⊕ K} {st : RelabelState pub X K R}
@@ -193,7 +193,7 @@ theorem cell_eq_of_mem_support_drawCell {c c' : X ⊕ K} {st : RelabelState pub 
 
 /-- The label operations with every operation drawing its cell: `touch c` draws `c` and discards
 it, `read k` draws the label of `k`. -/
-@[expose] noncomputable def labelImpl :
+@[expose, simps -isSimp] noncomputable def labelImpl :
     QueryImpl (OracleSpec.labelOps X K R) (StateT (RelabelState pub X K R) ProbComp) where
   toFun
   | .inl c => (fun _ ↦ ()) <$> drawCell c
@@ -203,7 +203,7 @@ it, `read k` draws the label of `k`. -/
 theorem le_of_mem_support_labelImpl {t : (OracleSpec.labelOps X K R).Domain}
     {st : RelabelState pub X K R} {z} (hz : z ∈ support ((labelImpl t).run st)) : st ≤ z.2 := by
   rcases t with c | k
-  · simp only [labelImpl, StateT.run_map, support_map] at hz
+  · simp only [labelImpl_apply, StateT.run_map, support_map] at hz
     obtain ⟨w, hw, rfl⟩ := hz
     exact (le_and_cell_eq_of_mem_support_drawCell hw).1
   · exact (le_and_cell_eq_of_mem_support_drawCell hz).1

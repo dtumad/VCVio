@@ -56,7 +56,7 @@ variable {ι ι' : Type} {spec : OracleSpec.{0, 0} ι} {side : OracleSpec.{0, 0}
 
 /-- The preprocessing handler logging `side` points: every query passes through unchanged, and a
 query to `side` appends its point to the log. -/
-@[expose]
+@[expose, simps -isSimp]
 def sideLogPreImpl : QueryImpl (unifSpec + (spec + side))
     (StateT (List ι') (OracleComp (unifSpec + (spec + side)))) where
   toFun
@@ -68,7 +68,7 @@ def sideLogPreImpl : QueryImpl (unifSpec + (spec + side))
 
 /-- The online handler logging `side` points: every query passes through unchanged, and a round
 appends its `side` points to the log, in the order of the round and with repetitions. -/
-@[expose]
+@[expose, simps -isSimp]
 def sideLogOnImpl {τ : Type} {free : OracleSpec.{0, 0} τ} :
     QueryImpl (free + (spec + side).batch)
       (StateT (List ι') (OracleComp (free + (spec + side).batch))) where
@@ -95,7 +95,7 @@ query, if any, to the log. -/
 lemma sideLogPreImpl_run (t : (unifSpec + (spec + side)).Domain) (s : List ι') :
     (sideLogPreImpl t).run s = (liftM ((unifSpec + (spec + side)).query t) >>= fun u =>
       pure (u, s ++ (t.getRight?.bind Sum.getRight?).toList)) := by
-  rcases t with n | t | t <;> simp [sideLogPreImpl]
+  rcases t with n | t | t <;> simp [sideLogPreImpl_apply]
 
 /-- A step of the online handler makes its query and appends the `side` points of the query, if
 it is a round, to the log. -/
@@ -103,7 +103,7 @@ lemma sideLogOnImpl_run {τ : Type} {free : OracleSpec.{0, 0} τ}
     (t : (free + (spec + side).batch).Domain) (s : List ι') :
     (sideLogOnImpl t).run s = (liftM ((free + (spec + side).batch).query t) >>= fun u =>
       pure (u, s ++ (t.getRight?.map (·.filterMap Sum.getRight?)).getD [])) := by
-  rcases t with n | ts <;> simp [sideLogOnImpl]
+  rcases t with n | ts <;> simp [sideLogOnImpl_apply]
 
 /-! ## Budgets and the run -/
 

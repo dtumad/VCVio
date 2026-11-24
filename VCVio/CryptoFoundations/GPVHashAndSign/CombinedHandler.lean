@@ -423,7 +423,7 @@ the short preimage `s ← domainSample pk` *once* and uses it for both the game 
 
 Dropping the table recovers `progGameRunImplNoRecFlagFresh`; dropping the signed-set and flag
 recovers `reductionImpl`. -/
-@[expose]
+@[expose, simps -isSimp]
 noncomputable def progGameRunImplCombined (domainSample : PK → ProbComp Domain) (pk : PK) :
     QueryImpl ((unifSpec + (Salt × M →ₒ Range)) + (M →ₒ (Salt × Domain)))
       (StateT (((((Salt × M →ₒ Range).QueryCache × Finset M) × Bool) ×
@@ -644,7 +644,7 @@ Because the recorded preimage is never read during the run (the table is write-o
 `progGameRunImplCombined` under GPV regularity `hreg`
 (`evalDistEq_run_progGameRunImplCombinedTrap_eq`): the only per-step difference is the joint law of
 the `(cached image, recorded preimage)` pair, which `hreg` equates. -/
-@[expose] noncomputable def progGameRunImplCombinedTrap (pk : PK) (sk : SK) :
+@[expose, simps -isSimp] noncomputable def progGameRunImplCombinedTrap (pk : PK) (sk : SK) :
     QueryImpl ((unifSpec + (Salt × M →ₒ Range)) + (M →ₒ (Salt × Domain)))
       (StateT (((((Salt × M →ₒ Range).QueryCache × Finset M) × Bool) ×
         ((Salt × M) → Option Domain))) ProbComp) where

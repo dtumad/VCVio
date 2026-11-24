@@ -106,7 +106,7 @@ instance [DecidableEq Tweak] (s : List Qh × List Tweak) (q : Qq) :
 
 /-- The rejection-on-arrival challenge oracle. A refused query draws nothing and leaves the state
 untouched, so refusal consumes no randomness. -/
-@[expose] def roaChallengeOracle [DecidableEq Tweak] :
+@[expose, simps -isSimp] def roaChallengeOracle [DecidableEq Tweak] :
     QueryImpl (roaChallengeSpec Qq Y) (StateT (List Qh × List Tweak) ProbComp) where
   toFun q := do
     let s ← get
@@ -119,7 +119,7 @@ untouched, so refusal consumes no randomness. -/
 
 /-- The source-final-validity challenge oracle. Every query draws, is answered, and is recorded; a
 violation poisons the monitor without suppressing either the draw or the response. -/
-@[expose] def monitorChallengeOracle [DecidableEq Tweak] :
+@[expose, simps -isSimp] def monitorChallengeOracle [DecidableEq Tweak] :
     QueryImpl (monitorChallengeSpec Qq Y)
       (StateT (SourceFinalValidity.State Qh Tweak) ProbComp) where
   toFun q := do

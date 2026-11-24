@@ -119,7 +119,7 @@ abbrev withDerivations : OracleSpec ((ℕ ⊕ ι) ⊕ X) := unifSpec + pub + (X 
 
 /-- The handler forwarding each sampling and public query unchanged into
 `pub.withDerivations X R`. -/
-@[expose] def withDerivationsLift :
+@[expose, simps -isSimp] def withDerivationsLift :
     QueryImpl (unifSpec + pub) (OracleComp (pub.withDerivations X R)) where
   toFun t := (pub.withDerivations X R).query (.inl t)
 
@@ -230,7 +230,7 @@ theorem encodedQuery_eq_true_iff (s : S) (t : (pub.withDerivations X R).Domain) 
   · simp only [encodedQuery, Bool.false_eq_true, reduceCtorEq, exists_false]
 
 /-- Answer a derivation query `x` by the public query at `E.enc s x`. -/
-@[expose] def deriveImpl (s : S) :
+@[expose, simps -isSimp] def deriveImpl (s : S) :
     QueryImpl (pub.withDerivations X R) (OracleComp (unifSpec + pub)) where
   toFun
   | .inl t => (unifSpec + pub).query t
@@ -300,19 +300,20 @@ variable [∀ t, SampleableType (pub.Range t)]
 theorem realImpl_run_unif (s : S) (n : ℕ) (C : pub.QueryCache) :
     (E.realImpl s (.inl (.inl n))).run C =
       (fun u => (u, C)) <$> (unifSpec.query n : ProbComp _) := by
-  simp [realImpl, deriveImpl, unifFwdImpl, bind_pure_comp]
+  simp [realImpl, deriveImpl_apply, unifFwdImpl, bind_pure_comp]
 
 /-- The real game answers a public query from its random oracle. -/
 theorem realImpl_run_pub (s : S) (t : ι) (C : pub.QueryCache) :
     (E.realImpl s (.inl (.inr t))).run C = (pub.randomOracle t).run C := by
-  simp only [realImpl, deriveImpl, QueryImpl.apply_compose, simulateQ_spec_query]
+  simp only [realImpl, deriveImpl_apply, QueryImpl.apply_compose, simulateQ_spec_query]
   rfl
 
 /-- The real game answers a derivation `x` by the random oracle at `E.enc s x`. -/
 theorem realImpl_run_derive (s : S) (x : X) (C : pub.QueryCache) :
     (E.realImpl s (.inr x)).run C =
       Prod.map (cast (E.range_eq s x)) id <$> (pub.randomOracle (E.enc s x)).run C := by
-  simp only [realImpl, deriveImpl, QueryImpl.apply_compose, simulateQ_map, simulateQ_spec_query,
+  simp only [realImpl, deriveImpl_apply, QueryImpl.apply_compose, simulateQ_map,
+    simulateQ_spec_query,
     StateT.run_map]
   rfl
 
@@ -422,7 +423,7 @@ variable [SampleableType R]
 variable (pub X R) in
 /-- The ideal game: public queries read the public cache and derivations an independent table,
 both lazily sampled; no secret enters it. -/
-@[expose] noncomputable def idealImpl :
+@[expose, simps -isSimp] noncomputable def idealImpl :
     QueryImpl (pub.withDerivations X R) (StateT (SplitCache pub X R) ProbComp) where
   toFun
   | .inl (.inl n) => StateT.mk fun st => (fun u => (u, st)) <$> (unifSpec.query n : ProbComp _)
@@ -434,24 +435,24 @@ both lazily sampled; no secret enters it. -/
 /-- The ideal game reads a drawn derivation from its table. -/
 theorem idealImpl_run_derive_some {x : X} {st : SplitCache pub X R} {v : R}
     (h : st.2 x = some v) : (idealImpl pub X R (.inr x)).run st = pure (v, st) := by
-  simp [idealImpl, h]
+  simp [idealImpl_apply, h]
 
 /-- The ideal game draws an undrawn derivation uniformly and stores it in its table. -/
 theorem idealImpl_run_derive_none {x : X} {st : SplitCache pub X R} (h : st.2 x = none) :
     (idealImpl pub X R (.inr x)).run st =
       (fun u ↦ (u, (st.1, st.2.cacheQuery x u))) <$> ($ᵗ R) := by
-  simp [idealImpl, h]
+  simp [idealImpl_apply, h]
 
 /-- The ideal game reads a cached public answer from its public cache. -/
 theorem idealImpl_run_pub_some {t : ι} {st : SplitCache pub X R} {v : pub.Range t}
     (h : st.1 t = some v) : (idealImpl pub X R (.inl (.inr t))).run st = pure (v, st) := by
-  simp [idealImpl, h]
+  simp [idealImpl_apply, h]
 
 /-- The ideal game draws an uncached public answer uniformly and caches it. -/
 theorem idealImpl_run_pub_none {t : ι} {st : SplitCache pub X R} (h : st.1 t = none) :
     (idealImpl pub X R (.inl (.inr t))).run st =
       (fun u ↦ (u, (st.1.cacheQuery t u, st.2))) <$> ($ᵗ pub.Range t) := by
-  simp [idealImpl, h]
+  simp [idealImpl_apply, h]
 
 /-- The ideal game with a flag, raised by every public query at a point encoded under `s`. -/
 @[expose] noncomputable def flaggedIdealImpl (s : S) :
@@ -562,13 +563,13 @@ theorem isSome_fst_apply_iff_of_mem_support_idealImpl {t : (pub.withDerivations 
     (hw : w ∈ support ((idealImpl pub X R t).run st)) (t' : ι) :
     (w.2.1 t').isSome ↔ (st.1 t').isSome ∨ .inl (.inr t') = t := by
   rcases t with (n | t) | x
-  · simp only [idealImpl, StateT.run_mk, support_map, Set.mem_image] at hw
+  · simp only [idealImpl_apply, StateT.run_mk, support_map, Set.mem_image] at hw
     obtain ⟨u, -, rfl⟩ := hw
     simp only [Sum.inl.injEq, reduceCtorEq, or_false]
-  · simp only [idealImpl, StateT.run_mk, support_map, Set.mem_image] at hw
+  · simp only [idealImpl_apply, StateT.run_mk, support_map, Set.mem_image] at hw
     obtain ⟨y, hy, rfl⟩ := hw
     rw [QueryImpl.withCaching_run_isSome_apply_iff _ hy, Sum.inl.injEq, Sum.inr.injEq]
-  · simp only [idealImpl, StateT.run_mk, support_map, Set.mem_image] at hw
+  · simp only [idealImpl_apply, StateT.run_mk, support_map, Set.mem_image] at hw
     obtain ⟨y, -, rfl⟩ := hw
     simp only [reduceCtorEq, or_false]
 
@@ -579,13 +580,13 @@ theorem isSome_snd_apply_iff_of_mem_support_idealImpl {t : (pub.withDerivations 
     (hw : w ∈ support ((idealImpl pub X R t).run st)) (x' : X) :
     (w.2.2 x').isSome ↔ (st.2 x').isSome ∨ .inr x' = t := by
   rcases t with (n | t) | x
-  · simp only [idealImpl, StateT.run_mk, support_map, Set.mem_image] at hw
+  · simp only [idealImpl_apply, StateT.run_mk, support_map, Set.mem_image] at hw
     obtain ⟨u, -, rfl⟩ := hw
     simp only [reduceCtorEq, or_false]
-  · simp only [idealImpl, StateT.run_mk, support_map, Set.mem_image] at hw
+  · simp only [idealImpl_apply, StateT.run_mk, support_map, Set.mem_image] at hw
     obtain ⟨y, -, rfl⟩ := hw
     simp only [reduceCtorEq, or_false]
-  · simp only [idealImpl, StateT.run_mk, support_map, Set.mem_image] at hw
+  · simp only [idealImpl_apply, StateT.run_mk, support_map, Set.mem_image] at hw
     obtain ⟨y, hy, rfl⟩ := hw
     rw [QueryImpl.withCaching_run_isSome_apply_iff _ hy, Sum.inr.injEq]
 

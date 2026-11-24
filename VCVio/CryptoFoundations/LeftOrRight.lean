@@ -126,7 +126,7 @@ accepted so far. A pair `(m₀, m₁)` with `leak m₀ = leak m₁`, asked while
 have been accepted, is accepted: it advances the counter and is answered by `so`. Every other
 pair, one with unequal leakage or one asked after `qEnc` accepted pairs, is answered with `none`
 and leaves the counter unchanged. -/
-@[expose]
+@[expose, simps -isSimp]
 def cap (leak : M → Λ) (qEnc : ℕ) (so : QueryImpl (spec M C) m) :
     QueryImpl (spec M C) (StateT ℕ m) where
   toFun mm := do
@@ -151,7 +151,7 @@ variable [LawfulMonad m] (leak : M → Λ) (qEnc : ℕ)
 lemma run_cap_apply (so : QueryImpl (spec M C) m) (mm : M × M) (j : ℕ) :
     (cap leak qEnc so mm).run j =
       if leak mm.1 = leak mm.2 ∧ j < qEnc then (·, j + 1) <$> so mm else pure (none, j) := by
-  simp only [cap, StateT.run_bind, StateT.run_get, pure_bind]
+  simp only [cap_apply, StateT.run_bind, StateT.run_get, pure_bind]
   split_ifs <;> simp
 
 /-- A pair with equal leakage, asked below the cap, is answered by the handler and advances the

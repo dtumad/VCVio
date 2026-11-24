@@ -70,7 +70,7 @@ theorem liftGame_extends [∀ s, Zero (G s)] {Query : Type} {Reply : Query → T
     (impl : QueryImpl (plainSpec G Query Reply) m) (q : Message Query (fun _ : S => Handle))
     (tbl : Tbl G) (z : (handleSpec (S := S) Query Reply).Range q × Tbl G)
     (hz : z ∈ support ((liftGame impl q).run tbl)) : Tbl.Extends tbl z.2 := by
-  simp only [liftGame, StateT.run, MonadAttach.mem_support] at hz
+  simp only [liftGame_apply, StateT.run, MonadAttach.mem_support] at hz
   obtain ⟨r, -, hr⟩ := LawfulMonadAttach.canReturn_bind_imp' hz
   obtain rfl := LawfulMonadAttach.eq_of_canReturn_pure hr
   exact fun s => List.prefix_append _ _

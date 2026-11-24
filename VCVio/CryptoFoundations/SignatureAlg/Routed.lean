@@ -159,7 +159,7 @@ theorem isQueryBoundP_run_programRouterImpl_inr_inr
     {q : ((unifSpec + hs) + sig).Domain → Prop} [DecidablePred q] {n : ℕ} (x : ιe) (s : σ)
     (h : IsQueryBoundP ((R x).run s) (fun t => q (.inl t)) n) :
     IsQueryBoundP ((programRouterImpl (sig := sig) R (.inl (.inr (.inr x)))).run s) q n := by
-  simp only [programRouterImpl, StateT.run_mk]
+  simp only [programRouterImpl_apply, StateT.run_mk]
   refine h.simulateQ_of_step (fun t _ => ?_) fun t ht => ?_
   · exact (isQueryBoundP_query_iff (spec := (unifSpec + hs) + sig) q (.inl t) 1).2
       fun _ => Nat.one_pos
@@ -234,7 +234,8 @@ theorem simulateQ_handlerRouterImpl_run_simulateQ_passthrough_add_withLogging
         simulateQ_query, OracleQuery.input_query, OracleQuery.cont_query, QueryImpl.add_apply_inl,
         QueryImpl.liftTarget_apply, QueryImpl.id'_apply, id_map,
         WriterT.run_bind, WriterT.run_liftM, List.empty_eq, bind_map_left, List.nil_append,
-        Prod.mk.eta, id_map', handlerRouterImpl, StateT.run_bind, StateT.run_mk, programRouterImpl,
+        Prod.mk.eta, id_map', handlerRouterImpl_apply, StateT.run_bind, StateT.run_mk,
+        programRouterImpl_apply,
         HasQuery.instOfMonadLift_query, StateT.run_monadLift, monadLift_self, bind_pure_comp,
         hC, map_bind]
       first
@@ -383,19 +384,19 @@ theorem UnforgeableAdversary.RomQueryBound.route
   refine ⟨(isQueryBoundP_map_iff _ _ _).2 (hh.simulateQ_run_of_step ?_ ?_ s₀),
     (isQueryBoundP_map_iff _ _ _).2 (hsq.simulateQ_run_of_step ?_ ?_ s₀)⟩
   · rintro ((n | t | x) | m) ht s <;> simp only [IsHashQuery] at ht
-    · simp [programRouterImpl, IsHashQuery]
+    · simp [programRouterImpl_apply, IsHashQuery]
     · refine isQueryBoundP_run_programRouterImpl_inr_inr x s ((hR pk x s).of_imp ?_)
       rintro (n | t) h <;> simp_all [IsHashQuery]
   · rintro ((n | t | x) | m) ht s
-    · simp [programRouterImpl, IsHashQuery]
+    · simp [programRouterImpl_apply, IsHashQuery]
     · exact (ht trivial).elim
     · exact (ht trivial).elim
-    · simp [programRouterImpl, IsHashQuery]
+    · simp [programRouterImpl_apply, IsHashQuery]
   · rintro ((n | t | x) | m) ht s <;> simp only [IsSignQuery] at ht
-    simp [programRouterImpl, IsSignQuery]
+    simp [programRouterImpl_apply, IsSignQuery]
   · rintro ((n | t | x) | m) ht s
-    · simp [programRouterImpl, IsSignQuery]
-    · simp [programRouterImpl, IsSignQuery]
+    · simp [programRouterImpl_apply, IsSignQuery]
+    · simp [programRouterImpl_apply, IsSignQuery]
     · refine isQueryBoundP_run_programRouterImpl_inr_inr x s ?_
       exact (isQueryBoundP_false _ 0).of_imp fun t h => by simp [IsSignQuery] at h
     · exact (ht trivial).elim
@@ -421,14 +422,14 @@ theorem UnforgeableAdversary.allQueriesSatisfy_route_of_raw
   refine (allQueriesSatisfy_def _ _).2 ((isQueryBound_map_iff _ _ _ _ _).2
     ((allQueriesSatisfy_def _ _).1 ((hadv pk).simulateQ_run ?_ s₀)))
   rintro ((n | t | x) | m) ht s
-  · simp only [programRouterImpl, StateT.run_monadLift]
+  · simp only [programRouterImpl_apply, StateT.run_monadLift]
     exact allQueriesSatisfy_bind ((allQueriesSatisfy_query_iff _ _).2 trivial) fun _ =>
       allQueriesSatisfy_pure _ _
-  · simp only [programRouterImpl, StateT.run_monadLift]
+  · simp only [programRouterImpl_apply, StateT.run_monadLift]
     exact allQueriesSatisfy_bind ((allQueriesSatisfy_query_iff _ _).2 ht) fun _ =>
       allQueriesSatisfy_pure _ _
   · exact (hR pk x ht s).simulateQ fun t ht => (allQueriesSatisfy_query_iff _ _).2 ht
-  · simp only [programRouterImpl, StateT.run_monadLift]
+  · simp only [programRouterImpl_apply, StateT.run_monadLift]
     exact allQueriesSatisfy_bind ((allQueriesSatisfy_query_iff _ _).2 trivial) fun _ =>
       allQueriesSatisfy_pure _ _
 
@@ -459,7 +460,7 @@ variable {ι D M : Type} {spec : OracleSpec ι} [SampleableType M]
 theorem encodeImpl_compose_liftRawImpl :
     E.encodeImpl ∘ₛ liftRawImpl (hs := spec) = QueryImpl.id' (unifSpec + (D →ₒ M)) := by
   ext u : 1
-  rcases u with n | x <;> simp [encodeImpl, liftRawImpl]
+  rcases u with n | x <;> simp [encodeImpl_apply, liftRawImpl_apply]
 
 /-! ## The router of an encoding -/
 
@@ -470,7 +471,7 @@ variable [DecidableEq D]
 /-- The router of the typed world holding its table of private values as its own state: a raw
 input `x` draws its private value from the table, as a lazy random oracle, and if `x` is read as a
 typed point `q`, it queries `q` and completes the typed answer from the private value. -/
-@[expose] noncomputable def tableRouter :
+@[expose, simps -isSimp] noncomputable def tableRouter :
     QueryImpl (D →ₒ M) (StateT (D →ₒ M).QueryCache (OracleComp (unifSpec + spec))) where
   toFun x := StateT.mk fun pv ↦ do
     let z ← (liftM (((D →ₒ M).randomOracle x).run pv) :
@@ -485,7 +486,7 @@ variable {E}
 /-- The router holding its table makes at most one query to the typed oracles. -/
 theorem isQueryBoundP_run_tableRouter (x : D) (pv : (D →ₒ M).QueryCache) :
     IsQueryBoundP ((E.tableRouter x).run pv) (fun t => t.isRight) 1 := by
-  simp only [tableRouter, StateT.run_mk]
+  simp only [tableRouter_apply, StateT.run_mk]
   refine (isQueryBoundP_bind (n := 0) (m := 1) (isQueryBoundP_liftM_isRight _)
     fun z _ => ?_).mono le_rfl
   cases E.route x with
@@ -497,7 +498,7 @@ typed oracles. -/
 theorem isQueryBoundP_run_tableRouter_of_route_eq_none {x : D} (hx : E.route x = none)
     (pv : (D →ₒ M).QueryCache) :
     IsQueryBoundP ((E.tableRouter x).run pv) (fun t => t.isRight) 0 := by
-  simp only [tableRouter, StateT.run_mk, hx]
+  simp only [tableRouter_apply, StateT.run_mk, hx]
   exact isQueryBoundP_bind_zero _ _ (isQueryBoundP_liftM_isRight _) fun _ => trivial
 
 /-- The router holding its table queries the typed oracles only at the point it reads its raw
@@ -505,7 +506,7 @@ input as. -/
 theorem allQueriesSatisfy_run_tableRouter_route (x : D) (pv : (D →ₒ M).QueryCache) :
     AllQueriesSatisfy ((E.tableRouter x).run pv)
       (Sum.elim (fun _ => True) fun t => E.route x = some t) := by
-  simp only [tableRouter, StateT.run_mk]
+  simp only [tableRouter_apply, StateT.run_mk]
   refine allQueriesSatisfy_bind ?_ fun z => ?_
   · exact allQueriesSatisfy_liftM_sum_elim _ _
   · cases h : E.route x with
@@ -538,7 +539,8 @@ theorem typedImpl_eq_handlerRouterImpl :
   · exact typedImpl_inr_inl_run t c pv
   · change (E.typedHashImpl (.inr x)).run (c, pv) = _
     rw [typedHashImpl_inr_run]
-    simp only [handlerRouterImpl, tableRouter, StateT.run_mk, simulateQ_bind, StateT.run_bind,
+    simp only [handlerRouterImpl_apply, tableRouter_apply, StateT.run_mk, simulateQ_bind,
+      StateT.run_bind,
       OracleSpec.simulateQ_romImpl_liftM_run, bind_map_left, map_bind]
     refine bind_congr fun z => ?_
     cases E.route x with

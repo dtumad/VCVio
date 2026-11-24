@@ -93,7 +93,7 @@ abbrev SourceCmaComp (α : Type) :=
   pure ((msg, sig), verified)
 
 /-- Log signing queries while forwarding every query to the surrounding CMA interface. -/
-@[reducible, fs_simp, simps -isSimp] def cmaSignLogImpl :
+@[simps -isSimp (attr := fs_simp)] def cmaSignLogImpl :
     QueryImpl (cmaSpec M Commit Chal Resp Stmt)
       (StateT (List M) (OracleComp (cmaSpec M Commit Chal Resp Stmt))) where
   toFun
@@ -237,7 +237,7 @@ lemma cmaRealRun_eq_keygen_bind
   unfold cmaRealRun signedAdv postKeygenAdv postKeygenCandidateAdv postVerifyComp
   simp only [QueryImpl.Stateful.runState, simulateQ_bind, simulateQ_query,
     OracleQuery.input_query, OracleQuery.cont_query, StateT.run_bind, bind_assoc]
-  simp [cmaReal, cmaInit, StateT.run, StateT.mk]
+  simp [cmaReal_apply, cmaInit, StateT.run, StateT.mk]
 
 end FixedKeyRuns
 
@@ -380,9 +380,9 @@ theorem cmaSignLogImpl_cmaSignHashQueryBound
         (Resp := Resp) (Stmt := Stmt)) A).run signed) qS qH := by
   constructor
   · exact OracleComp.IsQueryBoundP.simulateQ_run_StateT_of_step hA.1
-      (fun t s => by cases t <;> simp [IsCostlyQuery]) signed
+      (fun t s => by cases t <;> simp [cmaSignLogImpl_apply, IsCostlyQuery]) signed
   · exact OracleComp.IsQueryBoundP.simulateQ_run_StateT_of_step hA.2
-      (fun t s => by cases t <;> simp [IsHashQuery]) signed
+      (fun t s => by cases t <;> simp [cmaSignLogImpl_apply, IsHashQuery]) signed
 
 /-- Candidate production, with signing queries logged before final verification,
 preserves the source adversary signing/hash query budget. -/

@@ -270,7 +270,7 @@ private theorem cmaReal_step_normal_form
             Set.mem_singleton_iff, exists_prop] at hrest
           obtain ⟨π, _, rfl⟩ := hrest
           exact ⟨rfl, fun h => by simpa [CmaData.Valid] using h, le_self_add⟩
-  · simp only [fs_simp, cmaReal, cmaH3Costly, IsCostlyQuery, IsHashQuery, false_or,
+  · simp only [fs_simp, cmaReal_apply, cmaH3Costly, IsCostlyQuery, IsHashQuery, false_or,
       ite_false, StateT.run_mk] at hz ⊢
     rcases keypair with keypair | ⟨pk, sk⟩
     · simp only [support_bind, Set.mem_iUnion, support_pure, Set.mem_singleton_iff,
@@ -772,7 +772,7 @@ private lemma cmaRealSignStep_evalDistEq_ghost
   rcases s with ⟨log, cache, keypair⟩
   obtain _ | key := keypair <;>
     (conv_lhs =>
-      simp only [cmaReal, cmaRealSourceFull, bind_pure_comp, Prod.mk.eta,
+      simp only [cmaReal_apply, cmaRealSourceFull_apply, bind_pure_comp, Prod.mk.eta,
         StateT.run_mk, liftM_bind]) <;>
     (conv_rhs => simp [cmaRealSignGhostDist, cmaSignKeySource])
   on_goal 1 => refine EvalDistEq.bind_right _ fun key => ?_

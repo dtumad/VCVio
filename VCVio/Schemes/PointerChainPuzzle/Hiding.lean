@@ -267,7 +267,8 @@ theorem isQueryBound_privateAdversary
   · rcases t with (k | ⟨m₀, m₁⟩) | ts
     · simp only [privateImpl, add_apply_inl, onlineStep_inl]
       exact isOnlineQueryBound_liftM_probComp (unifSpec.query k) _
-    · simp only [privateImpl, QueryImpl.add_apply_inl, QueryImpl.add_apply_inr, LeftOrRight.oracle]
+    · simp only [privateImpl, QueryImpl.add_apply_inl, QueryImpl.add_apply_inr,
+      LeftOrRight.oracle_apply]
       by_cases hm : plaintextLength m₀ = plaintextLength m₁
       · simp only [hm, ↓reduceIte, StateT.run_map]
         exact (isQueryBound_map_iff _ _ _ _ _).2 (isOnlineQueryBound_privateEncrypt_run _ _ _ _ _ _)

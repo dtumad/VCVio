@@ -127,7 +127,7 @@ theorem thresholdFinder_success_scaled {n : ℕ} (C : Fin n → Type)
         pure (if f (fun i => Fin.elim0 i) then some (VecTree.empty C k) else none, 1) := by
       rw [thresholdFinder, runFinder, simulateQ_counted_thresholdFinderWithPools,
         thresholdProgram]
-      simp [counted]
+      simp [counted_apply]
     rw [hrun]
     have he : (default : (i : Fin 0) → C i) = (fun i => Fin.elim0 i) := Subsingleton.elim _ _
     cases hf : f (fun i => Fin.elim0 i) with

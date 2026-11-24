@@ -369,6 +369,7 @@ private theorem run_value {N : Type → Type} [Monad N] [LawfulMonad N]
       intro reply
       exact ih reply _
 
+@[simps -isSimp]
 private def valueHandler {N : Type → Type} [Monad N] (random : QueryImpl unifSpec N)
     (game : QueryImpl (plainSpec G Query Reply) N) :
     QueryImpl (explainedSpec F G (CoinQuery Query) (CoinReply Reply)) N where
@@ -397,15 +398,15 @@ private theorem groupStep_projection (M : Model F (discreteSig S) G)
       pure ((groupStep q tbl).1, mapTbl (fun _ => Prod.snd) (groupStep q tbl).2) := by
   cases q with
   | add s a b =>
-      simp [groupStep, impl, push, modifyGet, MonadStateOf.modifyGet, StateT.modifyGet,
+      simp [groupStep, impl_apply, push, modifyGet, MonadStateOf.modifyGet, StateT.modifyGet,
         StateT.run, mapTbl_append, lookup_snd, mapTbl]
       rfl
   | smul s c a =>
-      simp [groupStep, impl, push, modifyGet, MonadStateOf.modifyGet, StateT.modifyGet,
+      simp [groupStep, impl_apply, push, modifyGet, MonadStateOf.modifyGet, StateT.modifyGet,
         StateT.run, mapTbl_append, lookup_snd, mapTbl]
       rfl
   | eq s a b =>
-      simp only [impl, StateT.run_bind, StateT.run_get, pure_bind, lookup_snd,
+      simp only [impl_apply, StateT.run_bind, StateT.run_get, pure_bind, lookup_snd,
         groupStep, id_eq]
       rfl
   | lin o a => exact o.elim

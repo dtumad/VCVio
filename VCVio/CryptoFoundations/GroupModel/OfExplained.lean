@@ -246,6 +246,7 @@ private theorem list_received_extends [∀ s, Zero (G s)] {tbl tbl' : Tbl G}
   h.imp fun _ _ hh =>
     ⟨(lookup_extends he s _ hh.1).1, (lookup_extends he s _ hh.1).2.trans hh.2⟩
 
+@[simps -isSimp]
 private def certifiedHandler {N : Type → Type} [Monad N]
     (random : QueryImpl unifSpec N) (game : QueryImpl (plainSpec G Query Reply) N) :
     QueryImpl (explainedSpec F G (CoinQuery Query) (CoinReply Reply)) (StateT (Groups G) N) where

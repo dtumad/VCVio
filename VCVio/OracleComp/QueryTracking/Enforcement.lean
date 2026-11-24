@@ -43,6 +43,7 @@ variable {ι : Type u} {spec : OracleSpec ι} {α : Type u}
 /-- Enforcement oracle: wraps the original oracle with a per-index budget tracked via `StateT`.
 When the remaining budget for the queried oracle is positive, the query is forwarded and
 the budget decremented. When the budget is exhausted, `default` is returned silently. -/
+@[simps -isSimp]
 def OracleSpec.enforceOracle [DecidableEq ι] [∀ t, Inhabited (spec.Range t)] :
     QueryImpl spec (StateT (ι → ℕ) (OracleComp spec)) where
   toFun t := StateT.mk fun budget =>

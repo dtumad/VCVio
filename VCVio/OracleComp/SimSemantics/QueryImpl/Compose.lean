@@ -31,7 +31,7 @@ variable {m : Type u → Type v} [Monad m]
 
 /-- Given an implementation of `spec` in terms of a new set of oracles `spec'`,
 and an implementation of `spec'` in terms of arbitrary `m`, implement `spec` in terms of `m`. -/
-@[expose]
+@[expose, simps -isSimp]
 def compose (so' : QueryImpl spec' m) (so : QueryImpl spec (OracleComp spec')) :
     QueryImpl spec m where
   toFun t := simulateQ so' (so t)

@@ -347,7 +347,7 @@ variable (m : ℕ) (mkCtx : Salt → Ctx) (initAcc : Ctx → S) [NeZero n] [AddC
 legitimate for some path value is answered with that value's label (`legitLabel`) and leaves the
 cache unchanged; every other point is answered by the lazy random oracle, which samples and caches
 on a miss. -/
-@[expose]
+@[expose, simps -isSimp]
 def idealPoint (P : Puzzle n S L Salt) (ℓ : Labels n m S L) (R : Finset (PathValue n m)) :
     QueryImpl (oracleSpec n S L Salt Ctx)
       (StateT (oracleSpec n S L Salt Ctx).QueryCache ProbComp) where
@@ -376,13 +376,13 @@ lemma idealPoint_of_legitLabel_eq_some {P : Puzzle n S L Salt} {ℓ : Labels n m
     {R : Finset (PathValue n m)} {t : Point n S L Salt Ctx}
     {a : (oracleSpec n S L Salt Ctx).Range t} (h : legitLabel m mkCtx initAcc P ℓ R t = some a) :
     idealPoint m mkCtx initAcc P ℓ R t = pure a := by
-  simp only [idealPoint, h]
+  simp only [idealPoint_apply, h]
 
 lemma idealPoint_of_legitLabel_eq_none {P : Puzzle n S L Salt} {ℓ : Labels n m S L}
     {R : Finset (PathValue n m)} {t : Point n S L Salt Ctx}
     (h : legitLabel m mkCtx initAcc P ℓ R t = none) :
     idealPoint m mkCtx initAcc P ℓ R t = (oracleSpec n S L Salt Ctx).randomOracle t := by
-  simp only [idealPoint, h]
+  simp only [idealPoint_apply, h]
 
 /-- A point already answered is answered again with the same answer, leaving the cache: a
 repeated point of a round, or of a later round against the same reached set, gets one answer. -/

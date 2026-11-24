@@ -45,6 +45,7 @@ namespace SM_DT_OpenPRE_SourceFinalValidity
 
 /-- Route commitment-phase randomness and collection queries into an assumption game's larger
 selection interface, leaving its challenge oracle unavailable to the wrapped OpenPRE adversary. -/
+@[simps -isSimp]
 def liftPick
     (prob : Problem ι PkSeed Tweak M Y) :
     QueryImpl (unifSpec + SourceFinalValidity.collectionSpec prob.thColl)

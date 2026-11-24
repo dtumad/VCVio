@@ -91,7 +91,7 @@ theorem costCertificate_virtualizeImpl [DecidableEq S] (z : S → Handle) :
     CostCertificate (virtualizeImpl (F := F) (σ := σ) z)
       (fun t => if isGroupOp t then 1 else 0) := by
   rintro (t | n) s
-  · cases t <;> simp [virtualizeImpl, StateT.run, isGroupOp, Query.isOp]
-  · simp [virtualizeImpl, StateT.run, isGroupOp]
+  · cases t <;> simp [virtualizeImpl_apply, StateT.run, isGroupOp, Query.isOp]
+  · simp [virtualizeImpl_apply, StateT.run, isGroupOp]
 
 end GroupModel

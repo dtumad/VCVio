@@ -141,7 +141,7 @@ def batchAnswers [Monad m] (impl : QueryImpl spec m) : (ts : List ι) → m (spe
       pure (batchCons u us)
 
 /-- Answer a round point by point, in the order of its list. -/
-@[expose]
+@[expose, simps -isSimp]
 def batch [Monad m] (impl : QueryImpl spec m) : QueryImpl spec.batch m where
   toFun := impl.batchAnswers
 

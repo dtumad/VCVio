@@ -157,7 +157,7 @@ variable [DecidableEq D]
 
 /-- The typed oracles answered through the single random oracle: a typed point is the query at
 its encoding, truncated. -/
-@[expose] noncomputable def truncatedImpl :
+@[expose, simps -isSimp] noncomputable def truncatedImpl :
     QueryImpl spec (StateT (D →ₒ M).QueryCache ProbComp) where
   toFun t := E.trunc t <$> (D →ₒ M).randomOracle (E.encode t)
 
@@ -175,7 +175,7 @@ answered by the single random oracle. -/
 /-- The encoding as a program translation: a uniform query and a raw input are the same query of
 `unifSpec + (D →ₒ M)`, and a typed point is the query of the single oracle at its encoding,
 truncated. -/
-@[expose] def encodeImpl :
+@[expose, simps -isSimp] def encodeImpl :
     QueryImpl (unifSpec + (spec + (D →ₒ M))) (OracleComp (unifSpec + (D →ₒ M))) where
   toFun
   | .inl n => (query (spec := unifSpec + (D →ₒ M)) (.inl n) : OracleComp _ (Fin (n + 1)))
@@ -189,7 +189,7 @@ variable {E}
 theorem singleHashImpl_inl_run (t : ι) (b : (D →ₒ M).QueryCache) :
     (E.singleHashImpl (.inl t)).run b =
       (fun z ↦ (E.trunc t z.1, z.2)) <$> ((D →ₒ M).randomOracle (E.encode t)).run b := by
-  simp only [singleHashImpl, QueryImpl.add_apply_inl, truncatedImpl, StateT.run_map]
+  simp only [singleHashImpl, QueryImpl.add_apply_inl, truncatedImpl_apply, StateT.run_map]
 
 /-- A raw input of the single-oracle world is the query of the single oracle. -/
 theorem singleHashImpl_inr_run (x : D) (b : (D →ₒ M).QueryCache) :
@@ -203,7 +203,7 @@ theorem romImpl_compose_encodeImpl : (D →ₒ M).romImpl ∘ₛ E.encodeImpl = 
   rcases u with n | t | x
   · rfl
   · rfl
-  · simp [encodeImpl, singleImpl, singleHashImpl]
+  · simp [encodeImpl_apply, singleImpl, singleHashImpl]
 
 /-- Running the encoding of a computation in the random oracle model of the single oracle is
 running the computation in the single-oracle world. -/
@@ -228,7 +228,7 @@ inputs, on the pair of their caches. -/
 
 /-- The router: a raw input `x` draws its private value `p`; if `x` is read as a typed point `q`,
 the answer is the typed answer at `q` completed from `p`, and otherwise it is `p`. -/
-@[expose] noncomputable def routerImpl :
+@[expose, simps -isSimp] noncomputable def routerImpl :
     QueryImpl (D →ₒ M) (StateT (spec.QueryCache × (D →ₒ M).QueryCache) ProbComp) where
   toFun x := do
     let p ← (pairImpl (spec := spec) (D := D) (M := M) (.inr x) :
@@ -270,7 +270,7 @@ theorem typedHashImpl_inr_run (x : D) (s : spec.QueryCache × (D →ₒ M).Query
             (spec.randomOracle q).run s.1
         | none => pure (z.1, (s.1, z.2)) := by
   obtain ⟨c, pv⟩ := s
-  simp only [typedHashImpl, QueryImpl.add_apply_inr, routerImpl, StateT.run_bind]
+  simp only [typedHashImpl, QueryImpl.add_apply_inr, routerImpl_apply, StateT.run_bind]
   change ((fun z ↦ (z.1, (c, z.2))) <$> ((D →ₒ M).randomOracle x).run pv) >>= _ = _
   simp only [map_eq_bind_pure_comp, bind_assoc, Function.comp_apply, pure_bind]
   refine bind_congr fun z ↦ ?_

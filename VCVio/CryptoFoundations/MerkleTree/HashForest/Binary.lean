@@ -81,7 +81,7 @@ def binaryAnswer
 
 /-- Interpret binary Merkle queries by issuing their injective translations in the general
 hash-forest oracle. -/
-@[expose]
+@[expose, simps -isSimp]
 def binaryQueryImpl :
     QueryImpl (MerkleTreeHashing.spec LeafAddress NodeAddress EncodedLeaf Digest)
       (OracleComp (spec BinaryOperationKind Unit (BinaryAddress LeafAddress NodeAddress)
@@ -166,7 +166,7 @@ private theorem evaluateTree_binaryTreeAt {s : Skeleton}
       cases leafHashing <;>
         simp [binaryTreeAt, binaryRoot, evaluateTree, Internal.evaluateTree,
           Internal.evaluateInputs, Internal.evaluateInput, leafDigest,
-          binaryQueryImpl, binaryQuery]
+          binaryQueryImpl_apply, binaryQuery]
   | internal left right leftIH rightIH =>
       simp only [binaryTreeAt, evaluateTree, Internal.evaluateTree,
         Internal.evaluateInputs, Internal.evaluateInput, binaryRoot, simulateQ_bind]

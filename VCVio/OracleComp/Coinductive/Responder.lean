@@ -158,6 +158,7 @@ instance ofQueryImpl.instIsExecutable {σ : Type}
 /-- A responder as a stateful query implementation in `StateT State ProbComp`: the
 bundled-to-unbundled direction of the Kleisli–Mealy identification, of which
 `PFunctor.Responder.equivStateful` is the deterministic (`Id`) sibling. -/
+@[simps -isSimp]
 noncomputable def toQueryImpl (R : ProbResponder spec) [R.IsExecutable] :
     QueryImpl spec (StateT R.State ProbComp) where
   toFun t s := IsExecutable.answerComp (R := R) s t
