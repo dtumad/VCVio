@@ -607,7 +607,7 @@ lemma hidingOnlineImpl_run_batch (puzzle : Puzzle n S L Salt) (key : S) (b : Boo
   simp only [add_apply_inr, hidingOnlineImpl, QueryImpl.passthrough_add, QueryImpl.batch'_add,
     QueryImpl.apply_compose, QueryImpl.add_apply_inr]
   rw [← QueryImpl.apply_compose, QueryImpl.compose_batch]
-  congr 2
+  congr 3
   ext t : 1
   rw [QueryImpl.apply_compose, QueryImpl.liftTarget_apply, QueryImpl.id'_apply,
     QueryImpl.simulateQ_add_liftM_right, simulateQ_spec_query]
@@ -625,7 +625,7 @@ lemma privateOnlineImpl_run_batch (puzzle : Puzzle n S L Salt) (b : Bool)
     forall_eq', Prod.mk.eta, implies_true, map_inj_right]
   rw [← QueryImpl.apply_compose, QueryImpl.compose_batch]
   congr 3
-  funext t
+  ext t : 1
   simp only [QueryImpl.apply_compose, simulateQ_query, OracleQuery.input_query, add_apply_inr,
     OracleQuery.cont_query, QueryImpl.add_apply_inr, QueryImpl.withCaching_apply,
     uniformSampleImpl_apply, map_bind, id_map]

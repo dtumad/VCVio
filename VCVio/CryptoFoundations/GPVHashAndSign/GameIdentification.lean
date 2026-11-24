@@ -97,10 +97,10 @@ lemma gpvOuter_writerTMapBase_implW (pk : PK) (sk : SK) :
           (WriterT (QueryLog (M →ₒ (Salt × Domain)))
             (StateT ((Salt × M →ₒ Range).QueryCache) ProbComp)) +
         QueryImpl.withLogging
-          (fun msg => gpvRealImpl psf hr M Salt pk sk (Sum.inr msg) :
+          (⟨fun msg => gpvRealImpl psf hr M Salt pk sk (Sum.inr msg)⟩ :
             QueryImpl (M →ₒ (Salt × Domain))
               (StateT ((Salt × M →ₒ Range).QueryCache) ProbComp)) := by
-  funext t
+  ext t : 1
   rcases t with bq | sq
   · -- public/random-oracle base query: `writerTMapBase` runs the lifted query through `gpvOuter`.
     ext s
@@ -141,7 +141,7 @@ lemma flattenAppendLog_proj_gpvRealImplFresh (pk : PK) (sk : SK)
         ((((gpvOuter M Salt).liftTarget
               (StateT (List M) (StateT ((Salt × M →ₒ Range).QueryCache) ProbComp))) +
             QueryImpl.appendInputLog
-              (fun msg => gpvRealImpl psf hr M Salt pk sk (Sum.inr msg) :
+              (⟨fun msg => gpvRealImpl psf hr M Salt pk sk (Sum.inr msg)⟩ :
                 QueryImpl (M →ₒ (Salt × Domain))
                   (StateT ((Salt × M →ₒ Range).QueryCache) ProbComp))).flattenStateT t).run s =
       (gpvRealImplFresh psf hr M Salt pk sk t).run (s.2, s.1.toFinset) := by
@@ -224,7 +224,7 @@ lemma map_simulateQ_gpvOuter_writerLog_eq_gpvRealImplFresh (pk : PK) (sk : SK) {
   have hreplay := QueryImpl.map_run_withLogging_inputs_eq_run_appendInputLog
     (spec₀ := unifSpec + (Salt × M →ₒ Range)) (loggedSpec := M →ₒ (Salt × Domain))
     (m₀ := StateT ((Salt × M →ₒ Range).QueryCache) ProbComp)
-    (fun msg => gpvRealImpl psf hr M Salt pk sk (Sum.inr msg)) oa ([] : List M)
+    ⟨fun msg => gpvRealImpl psf hr M Salt pk sk (Sum.inr msg)⟩ oa ([] : List M)
   simp only [List.nil_append] at hreplay
   -- Apply the run, flatten the nested `StateT (List M) (StateT cache)`, and project to
   -- `gpvRealImplFresh` via the per-query `hmatch`.
@@ -232,7 +232,7 @@ lemma map_simulateQ_gpvOuter_writerLog_eq_gpvRealImplFresh (pk : PK) (sk : SK) {
     ((gpvOuter M Salt).liftTarget
         (StateT (List M) (StateT ((Salt × M →ₒ Range).QueryCache) ProbComp)) +
       QueryImpl.appendInputLog
-        (fun msg => gpvRealImpl psf hr M Salt pk sk (Sum.inr msg) :
+        (⟨fun msg => gpvRealImpl psf hr M Salt pk sk (Sum.inr msg)⟩ :
           QueryImpl (M →ₒ (Salt × Domain))
             (StateT ((Salt × M →ₒ Range).QueryCache) ProbComp)))
     oa ([] : List M) (∅ : (Salt × M →ₒ Range).QueryCache)

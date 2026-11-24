@@ -221,7 +221,7 @@ random oracle (modulo `y` at the winner), matching the trapdoor-recording combin
       (StateT ((Salt × M →ₒ Range).QueryCache × ℕ) ProbComp) :=
   let State := (Salt × M →ₒ Range).QueryCache × ℕ
   let roImpl : QueryImpl (Salt × M →ₒ Range) (StateT State ProbComp) :=
-    fun t => do
+    ⟨fun t => do
       let st ← get
       match st.1 t with
       | some v => pure v
@@ -232,7 +232,7 @@ random oracle (modulo `y` at the winner), matching the trapdoor-recording combin
             pure y
           else
             set ((st.1.cacheQuery t v, st.2 + 1) : State)
-            pure v
+            pure v⟩
   let unifImpl : QueryImpl unifSpec (StateT State ProbComp) :=
     ⟨fun t => (unifSpec.query t : ProbComp _)⟩
   let signImpl : QueryImpl (M →ₒ (Salt × Domain)) (StateT State ProbComp) :=

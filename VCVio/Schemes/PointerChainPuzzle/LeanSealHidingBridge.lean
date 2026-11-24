@@ -228,11 +228,11 @@ def combinedChallengeImpl {Puzzle Key Λ : Type} [DecidableEq Λ]
     (puzzle : Puzzle) (key : Key) (b : Bool) :
     QueryImpl ((unifSpec + LeftOrRight.spec Msg C) + (D →ₒ M))
       (OracleComp (unifSpec + (spec + (D →ₒ M)))) :=
-  ((fun n => liftM ((unifSpec + (spec + (D →ₒ M))).query (.inl n)) :
+  ((⟨fun n => liftM ((unifSpec + (spec + (D →ₒ M))).query (.inl n))⟩ :
       QueryImpl unifSpec (OracleComp (unifSpec + (spec + (D →ₒ M))))) +
     LeftOrRight.oracle
       (fun msg => simulateQ (typedLift (D := D) (M := M)) (dem.encrypt (puzzle, key) msg)) leak b) +
-  (fun x => liftM ((unifSpec + (spec + (D →ₒ M))).query (.inr (.inr x))) :
+  (⟨fun x => liftM ((unifSpec + (spec + (D →ₒ M))).query (.inr (.inr x)))⟩ :
       QueryImpl (D →ₒ M) (OracleComp (unifSpec + (spec + (D →ₒ M)))))
 
 /-- The hiding experiment of a typed puzzle and a typed DEM against a raw hiding adversary, on the
@@ -271,7 +271,7 @@ lemma simulateQ_encodeImpl_combinedHidingExperiment {Puzzle Key Λ : Type} [Deci
         (unifSpec.passthrough + LeftOrRight.oracle (demRaw.encrypt (puzzle, key)) leak b) +
           (QueryImpl.id' (D →ₒ M)).liftTarget (OracleComp (unifSpec + (D →ₒ M))) := by
     intro puzzle key
-    funext t
+    ext t : 1
     rcases t with (n | ⟨m₀, m₁⟩) | x
     · simp [combinedChallengeImpl, encodeImpl]
       rfl
@@ -353,12 +353,12 @@ lemma freeOnlineImpl_run_step {Puzzle Key Λ : Type} [DecidableEq Λ]
       simulateQ_pure, StateT.run_bind, StateT.run_pure]
     rw [E.challenge_run_step dem leak puzzle key b mm pv c]
     simp [Functor.map_map]
-  · have hround : QueryImpl.batch (fun t => (spec.romImpl ∘ₛ ((unifSpec.passthrough +
+  · have hround : QueryImpl.batch ⟨fun t => (spec.romImpl ∘ₛ ((unifSpec.passthrough +
         LeftOrRight.oracle (dem.encrypt (puzzle, key)) leak b) +
-        (QueryImpl.id' spec).liftTarget (OracleComp (unifSpec + spec)))) (.inr t)) =
+        (QueryImpl.id' spec).liftTarget (OracleComp (unifSpec + spec)))) (.inr t)⟩ =
           spec.randomOracle.batch := by
       congr 1
-      funext t
+      ext t : 1
       simp [OracleSpec.romImpl, QueryImpl.simulateQ_add_liftM_right]
     rw [QueryImpl.batch'_apply_inr, show (fun x => (E.typedImpl ∘ₛ
         combinedChallengeImpl dem leak puzzle key b) (.inr x)) =
