@@ -113,20 +113,20 @@ noncomputable def nmaOuterImpl (pk : Stmt) :
   letI unifSim : QueryImpl unifSpec (StateT spec.QueryCache (OracleComp spec)) :=
     ⟨fun n => fwd (.inl n)⟩
   letI roSim : QueryImpl (M × Commit →ₒ Chal)
-      (StateT spec.QueryCache (OracleComp spec)) := ⟨fun mc => do⟩
+      (StateT spec.QueryCache (OracleComp spec)) := ⟨fun mc => do
     let cache ← get
     match cache (.inr mc) with
     | some v => pure v
     | none => do
         let v ← fwd (.inr mc)
-        modifyGet fun cache => (v, cache.cacheQuery (.inr mc) v)
+        modifyGet fun cache => (v, cache.cacheQuery (.inr mc) v)⟩
   letI sigSim : QueryImpl (M →ₒ Option (Commit × Resp))
-      (StateT spec.QueryCache (OracleComp spec)) := ⟨fun msg => do⟩
+      (StateT spec.QueryCache (OracleComp spec)) := ⟨fun msg => do
     let r ← simulateQ unifSim (firstSome (sim pk) maxAttempts)
     match r with
     | some (w, c, z) =>
         modifyGet fun cache => (some (w, z), cache.cacheQuery (.inr (msg, w)) c)
-    | none => pure none
+    | none => pure none⟩
   (unifSim + roSim) + sigSim
 
 /-- The outer *runtime* handler of the NMA reduction: forward uniform queries (`unifFwdImpl`)
@@ -510,20 +510,20 @@ with the managed cache, in the interface of `SignatureAlg.ManagedRoNmaAdversary`
     let unifSim : QueryImpl unifSpec (StateT spec.QueryCache (OracleComp spec)) :=
       ⟨fun n => fwd (.inl n)⟩
     let roSim : QueryImpl (M × Commit →ₒ Chal)
-        (StateT spec.QueryCache (OracleComp spec)) := ⟨fun mc => do⟩
+        (StateT spec.QueryCache (OracleComp spec)) := ⟨fun mc => do
       let cache ← get
       match cache (.inr mc) with
       | some v => pure v
       | none => do
           let v ← fwd (.inr mc)
-          modifyGet fun cache => (v, cache.cacheQuery (.inr mc) v)
+          modifyGet fun cache => (v, cache.cacheQuery (.inr mc) v)⟩
     let sigSim : QueryImpl (M →ₒ Option (Commit × Resp))
-        (StateT spec.QueryCache (OracleComp spec)) := ⟨fun msg => do⟩
+        (StateT spec.QueryCache (OracleComp spec)) := ⟨fun msg => do
       let r ← simulateQ unifSim (firstSome (sim pk) maxAttempts)
       match r with
       | some (w, c, z) =>
           modifyGet fun cache => (some (w, z), cache.cacheQuery (.inr (msg, w)) c)
-      | none => pure none
+      | none => pure none⟩
     -- Run the inner CMA adversary under the managed simulation, then erase the
     -- forgery's own verification point from the returned cache. The
     -- with-aborts `verify pk msg (some (w', z))` issues exactly one hash query, at

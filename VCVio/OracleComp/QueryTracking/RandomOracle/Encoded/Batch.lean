@@ -121,7 +121,8 @@ encoding of a typed point, the answer is the typed answer there completed from t
 and otherwise it is the private value. Uniform queries pass through. -/
 @[expose]
 def preprocessImpl :
-    QueryImpl (unifSpec + (D →ₒ M)) (StateT (D →ₒ M).QueryCache (OracleComp (unifSpec + spec))) where
+    QueryImpl (unifSpec + (D →ₒ M))
+      (StateT (D →ₒ M).QueryCache (OracleComp (unifSpec + spec))) where
   toFun
   | .inl k => StateT.lift (liftM ((unifSpec + spec).query (.inl k)))
   | .inr x => do

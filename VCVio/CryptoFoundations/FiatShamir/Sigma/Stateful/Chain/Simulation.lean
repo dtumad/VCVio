@@ -37,7 +37,7 @@ than at the definition sites. -/
 
 attribute [fs_simp]
   simulatedNmaFwd
-  simulatedNmaUnifSim
+  simulatedNmaUnifSim_apply
   simulatedNmaRoSim
   simulatedNmaBaseSim
   simulatedNmaSigSim
@@ -426,12 +426,14 @@ private lemma cmaSimLoggedLeft_preserves_inv
       intro z hz
       have hz' := by
         simpa only [cmaOracleSpec, add_apply_inr, cmaSimLoggedLeftImpl_apply, cmaSimLoggedImpl,
-          QueryImpl.flattenStateT_apply, QueryImpl.mapStateTBase_apply, cmaSim, cmaFrame, cmaOuterLens,
+          QueryImpl.flattenStateT_apply, QueryImpl.mapStateTBase_apply, cmaSim, cmaFrame,
+          cmaOuterLens,
           Prod.mk.eta, cmaNmaLens, cmaSignLogImpl_apply, bind_pure_comp, StateT.run_bind,
           StateT.run_get, StateT.run_monadLift, monadLift_self, StateT.run_map, StateT.run_set,
           map_pure, Functor.map_map, pure_bind, simulateQ_map, simulateQ_query,
           OracleQuery.input_query, OracleQuery.cont_query, QueryImpl.Stateful.linkWith_apply,
-          cmaToNma_apply, cmaSignSim_apply, liftComp_eq_liftM, PFunctor.Lens.State.mk_get, StateT.run_mk,
+          cmaToNma_apply, cmaSignSim_apply, liftComp_eq_liftM, PFunctor.Lens.State.mk_get,
+          StateT.run_mk,
           simulateQ_bind, nma_apply, nmaPublic_apply, id_map, nmaProgram_apply, map_bind,
           QueryImpl.Stateful.Frame.linkReshape, PFunctor.Lens.State.mk_put, support_bind,
           support_map, Set.mem_iUnion, Set.mem_image, Prod.exists, Bool.exists_bool, exists_prop]

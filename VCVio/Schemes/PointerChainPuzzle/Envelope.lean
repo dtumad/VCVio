@@ -544,11 +544,11 @@ private lemma simulateQ_unifFwdAnswerImpl_liftM {α : Type} (oa : OracleComp spe
 
 private lemma simulateQ_stateOracle {σ α : Type} (oa : OracleComp (unifSpec + spec) α) :
     simulateQ ((QueryImpl.ofLift unifSpec ProbComp).liftTarget (StateT σ ProbComp) +
-        fun t => (pure (f t) : StateT σ ProbComp (spec.Range t))) oa =
+        (⟨fun t => (pure (f t) : StateT σ ProbComp (spec.Range t))⟩ : QueryImpl spec _)) oa =
       liftM (simulateQ (unifFwdAnswerImpl f) oa) := by
   rw [← simulateQ_liftTarget]
   congr 1
-  funext t
+  ext t : 1
   rcases t with t | t
   · rfl
   · change (pure (f t) : StateT σ ProbComp (spec.Range t)) =

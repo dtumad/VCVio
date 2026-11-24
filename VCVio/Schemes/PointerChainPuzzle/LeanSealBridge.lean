@@ -455,13 +455,13 @@ abbrev typedScheme (b n m : ℕ) [NeZero n] :
 /-- The single oracle answered by the byte-answer function `h`, round by round, with uniform
 queries passed through. -/
 abbrev byteImpl (h : ByteArray → Bytes 32) : QueryImpl (unifSpec + byteSpec.batch) ProbComp :=
-  QueryImpl.batch' (unifFwdAnswerImpl (spec := byteSpec) fun x => (h x : Id (Bytes 32)))
+  QueryImpl.batch' (unifFwdAnswerImpl (spec := byteSpec) ⟨fun x => (h x : Id (Bytes 32))⟩)
 
 /-- Answering the single oracle by `h` after submitting typed rounds as rounds of hash inputs is
 answering the typed oracles through the byte encoding by `h`. -/
 theorem byteImpl_compose_roundImpl (h : ByteArray → Bytes 32) :
     byteImpl h ∘ₛ roundImpl = impl h b n := by
-  funext t
+  ext t : 1
   rcases t with k | ts
   · rw [QueryImpl.apply_compose, roundImpl, simulateQ_spec_query]
     rfl
@@ -499,7 +499,7 @@ variable {b n : ℕ} (hb : b ≤ 32) (hn : n < 2 ^ 32)
 
 /-- The rounds of the byte-level puzzle are the typed rounds translated by the byte encoding. -/
 lemma roundImpl_eq : roundImpl (b := b) (n := n) = (encoding hb hn).roundImpl := by
-  funext t
+  ext t : 1
   rcases t with k | ts
   · rfl
   · simp only [roundImpl, RandomOracleEncoding.roundImpl]

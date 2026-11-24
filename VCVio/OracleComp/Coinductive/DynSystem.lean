@@ -285,7 +285,8 @@ noncomputable def transcriptDist (H : ProbHandler spec) (A : OracleStrategy S sp
   Prod.fst <$> kleisliTranscript H A s n
 
 /-- A deterministic handler as a Dirac `ProbHandler`. -/
-@[simps -isSimp] noncomputable def _root_.ProbHandler.ofHandler (h : OracleHandler spec) : ProbHandler spec where
+@[simps -isSimp] noncomputable def _root_.ProbHandler.ofHandler (h : OracleHandler spec) :
+    ProbHandler spec where
   toFun t := (pure (h t) : ProbComp (spec.Range t))
 
 @[simp] theorem kleisliStep_ofHandler (h : OracleHandler spec) (A : OracleStrategy S spec)

@@ -824,7 +824,8 @@ private lemma cmaSimSignStep_evalDistEq_public
       simp only [cmaFrame, cmaOuterLens, Prod.mk.eta, cmaNmaLens,
         QueryImpl.Stateful.linkWith_apply_run, cmaToNma_apply, cmaSignSim_apply, liftComp_eq_liftM,
         bind_pure_comp, PFunctor.Lens.State.mk_get, StateT.run_mk, simulateQ_bind,
-        simulateQ_query, OracleQuery.input_query, OracleQuery.cont_query, nma_apply, nmaPublic_apply,
+        simulateQ_query, OracleQuery.input_query, OracleQuery.cont_query, nma_apply,
+        nmaPublic_apply,
         id_map, simulateQ_map, nmaProgram_apply, StateT.run_bind, StateT.run_map, pure_bind,
         bind_map_left, map_bind, Functor.map_map, QueryImpl.Stateful.Frame.linkReshape,
         PFunctor.Lens.State.mk_put, liftM_bind, liftM_map]) <;>

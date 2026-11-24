@@ -127,7 +127,8 @@ through, and a query to `side` is answered by the private lazy random oracle, wh
 are local coins of the preprocessing phase. -/
 @[expose]
 def sidePreprocessImpl :
-    QueryImpl (unifSpec + (spec + side)) (StateT side.QueryCache (OracleComp (unifSpec + spec))) where
+    QueryImpl (unifSpec + (spec + side))
+      (StateT side.QueryCache (OracleComp (unifSpec + spec))) where
   toFun
   | .inl n => StateT.lift (liftM ((unifSpec + spec).query (.inl n)))
   | .inr (.inl t) => StateT.lift (liftM ((unifSpec + spec).query (.inr t)))

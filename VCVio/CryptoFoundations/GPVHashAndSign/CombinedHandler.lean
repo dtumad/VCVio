@@ -66,7 +66,7 @@ off the final table (`reduction_eq_run_reductionImpl`). -/
       (StateT ((Salt × M →ₒ Range).QueryCache × ((Salt × M) → Option Domain)) ProbComp) :=
   let State := (Salt × M →ₒ Range).QueryCache × ((Salt × M) → Option Domain)
   let roImpl : QueryImpl (Salt × M →ₒ Range) (StateT State ProbComp) :=
-    fun t => do
+    ⟨fun t => do
       let st ← get
       match st.1 t with
       | some v => pure v
@@ -74,18 +74,18 @@ off the final table (`reduction_eq_run_reductionImpl`). -/
           let s ← (domainSample pk : ProbComp Domain)
           let v := psf.eval pk s
           set ((st.1.cacheQuery t v, fun t' => if t' = t then some s else st.2 t') : State)
-          pure v
+          pure v⟩
   let unifImpl : QueryImpl unifSpec (StateT State ProbComp) :=
-    fun t => (unifSpec.query t : ProbComp _)
+    ⟨fun t => (unifSpec.query t : ProbComp _)⟩
   let signImpl : QueryImpl (M →ₒ (Salt × Domain)) (StateT State ProbComp) :=
-    fun msg => do
+    ⟨fun msg => do
       let r ← ($ᵗ Salt : ProbComp Salt)
       let s ← (domainSample pk : ProbComp Domain)
       let v := psf.eval pk s
       let st ← get
       set ((st.1.cacheQuery (r, msg) v,
         fun t' => if t' = (r, msg) then some s else st.2 t') : State)
-      pure (r, s)
+      pure (r, s)⟩
   (unifImpl + roImpl) + signImpl
 
 omit [Fintype Salt] in
@@ -121,7 +121,7 @@ re-query. Signing queries return `(r, s)` with `psf.eval pk s` the value cached 
       (StateT ((Salt × M →ₒ Range).QueryCache × ℕ) ProbComp) :=
   let State := (Salt × M →ₒ Range).QueryCache × ℕ
   let roImpl : QueryImpl (Salt × M →ₒ Range) (StateT State ProbComp) :=
-    fun t => do
+    ⟨fun t => do
       let st ← get
       match st.1 t with
       | some v => pure v
@@ -132,16 +132,16 @@ re-query. Signing queries return `(r, s)` with `psf.eval pk s` the value cached 
             pure y
           else
             set ((st.1.cacheQuery t (psf.eval pk s), st.2 + 1) : State)
-            pure (psf.eval pk s)
+            pure (psf.eval pk s)⟩
   let unifImpl : QueryImpl unifSpec (StateT State ProbComp) :=
-    fun t => (unifSpec.query t : ProbComp _)
+    ⟨fun t => (unifSpec.query t : ProbComp _)⟩
   let signImpl : QueryImpl (M →ₒ (Salt × Domain)) (StateT State ProbComp) :=
-    fun msg => do
+    ⟨fun msg => do
       let r ← ($ᵗ Salt : ProbComp Salt)
       let s ← (domainSample pk : ProbComp Domain)
       let st ← get
       set ((st.1.cacheQuery (r, msg) (psf.eval pk s), st.2 + 1) : State)
-      pure (r, s)
+      pure (r, s)⟩
   (unifImpl + roImpl) + signImpl
 
 omit [DecidableEq Range] [SampleableType Range] [Fintype Salt] in
@@ -234,15 +234,15 @@ random oracle (modulo `y` at the winner), matching the trapdoor-recording combin
             set ((st.1.cacheQuery t v, st.2 + 1) : State)
             pure v
   let unifImpl : QueryImpl unifSpec (StateT State ProbComp) :=
-    fun t => (unifSpec.query t : ProbComp _)
+    ⟨fun t => (unifSpec.query t : ProbComp _)⟩
   let signImpl : QueryImpl (M →ₒ (Salt × Domain)) (StateT State ProbComp) :=
-    fun msg => do
+    ⟨fun msg => do
       let r ← ($ᵗ Salt : ProbComp Salt)
       let c ← ($ᵗ Range : ProbComp Range)
       let x ← (psf.trapdoorSample pk sk c : ProbComp Domain)
       let st ← get
       set ((st.1.cacheQuery (r, msg) c, st.2 + 1) : State)
-      pure (r, x)
+      pure (r, x)⟩
   (unifImpl + roImpl) + signImpl
 
 omit [DecidableEq Range] [Fintype Salt] in

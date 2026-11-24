@@ -221,7 +221,7 @@ def privateImpl (puzzle : Puzzle n S L Salt) (b : Bool) :
         (OracleComp (unifSpec + (sealSpec n S L Salt Ctx N K).batch)))) +
     LeftOrRight.oracle (privateEncrypt (n := n) (S := S) (L := L) (Salt := Salt) (Ctx := Ctx)
       prf codec (encodePuzzle puzzle)) plaintextLength b) +
-    (fun ts => liftM ((unifSpec + (sealSpec n S L Salt Ctx N K).batch).query (.inr ts)) :
+    (⟨fun ts => liftM ((unifSpec + (sealSpec n S L Salt Ctx N K).batch).query (.inr ts))⟩ :
       QueryImpl (sealSpec n S L Salt Ctx N K).batch (StateT (privateSpec N K).QueryCache
         (OracleComp (unifSpec + (sealSpec n S L Salt Ctx N K).batch))))
 
@@ -608,7 +608,7 @@ lemma hidingOnlineImpl_run_batch (puzzle : Puzzle n S L Salt) (key : S) (b : Boo
     QueryImpl.apply_compose, QueryImpl.add_apply_inr]
   rw [← QueryImpl.apply_compose, QueryImpl.compose_batch]
   congr 2
-  funext t
+  ext t : 1
   rw [QueryImpl.apply_compose, QueryImpl.liftTarget_apply, QueryImpl.id'_apply,
     QueryImpl.simulateQ_add_liftM_right, simulateQ_spec_query]
 

@@ -234,8 +234,8 @@ the logged stack with its log discarded (`realGameRun_writerLog_discard`). -/
       (OracleComp (unifSpec + (Salt × M →ₒ Range))) :=
   (HasQuery.toQueryImpl (spec := (unifSpec + (Salt × M →ₒ Range)))
       (m := OracleComp (unifSpec + (Salt × M →ₒ Range)))) +
-    (fun msg => (GPVHashAndSign (m := OracleComp (unifSpec + (Salt × M →ₒ Range)))
-      psf hr M Salt).sign pk sk msg)
+    (⟨fun msg => (GPVHashAndSign (m := OracleComp (unifSpec + (Salt × M →ₒ Range)))
+      psf hr M Salt).sign pk sk msg⟩ : QueryImpl (M →ₒ (Salt × Domain)) _)
 
 omit [Fintype Salt] in
 /-- **Real-side WriterT-log discard (pinned).**
@@ -398,7 +398,7 @@ runtime `withStateOracle` bundle), the shared shape required before the fold cou
       (StateT ((Salt × M →ₒ Range).QueryCache) ProbComp) :=
   let roImpl : QueryImpl (Salt × M →ₒ Range)
       (StateT ((Salt × M →ₒ Range).QueryCache) ProbComp) :=
-    fun t => do
+    ⟨fun t => do
       let st ← get
       match st t with
       | some v => pure v
@@ -406,7 +406,7 @@ runtime `withStateOracle` bundle), the shared shape required before the fold cou
           let s ← (domainSample pk : ProbComp Domain)
           let v := psf.eval pk s
           set (st.cacheQuery t v)
-          pure v
+          pure v⟩
   let unifImpl : QueryImpl unifSpec (StateT ((Salt × M →ₒ Range).QueryCache) ProbComp) :=
     ⟨fun t => (unifSpec.query t : ProbComp _)⟩
   let signImpl : QueryImpl (M →ₒ (Salt × Domain))

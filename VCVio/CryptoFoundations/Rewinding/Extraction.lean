@@ -137,8 +137,8 @@ theorem run_simulateQ_counted_lookupAll (F : Q → α) (L : Set Q) {m : ℕ} (qs
       exact Fin.cases rfl (fun _ => rfl) i
     · have hc : cacheOf F L (qs 0) = none := by simp [cacheOf, hq]
       simp only [lookupAll, hc, Option.elim, simulateQ_bind, simulateQ_pure, StateT.run_bind,
-        StateT.run_pure, QueryImpl.simulateQ_add_liftM_query_right, counted_apply, StateT.run_modify,
-        pure_bind, ih, missCount, hq, ite_false]
+        StateT.run_pure, QueryImpl.simulateQ_add_liftM_query_right, counted_apply,
+        StateT.run_modify, pure_bind, ih, missCount, hq, ite_false]
       refine congrArg pure (Prod.ext ?_ (by simp only; omega))
       funext i
       exact Fin.cases rfl (fun _ => rfl) i

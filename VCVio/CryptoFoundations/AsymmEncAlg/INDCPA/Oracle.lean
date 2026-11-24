@@ -151,7 +151,8 @@ theorem runAgainst_IND_CPA_responder_eq (encAlg : AsymmEncAlg ProbComp M PK SK C
       (fun p => (some p.1, p.2)) <$>
         (simulateQ (encAlg.IND_CPA_queryImpl' pk b) (adversary pk)).run cache :=
   calc machine.runAgainst (encAlg.IND_CPA_responder pk b) k (cache, machine.init pk)
-      = (machine.runWithInput (encAlg.IND_CPA_responder pk b).toQueryImpl k pk).run cache :=
+      = (machine.runWithInput (encAlg.IND_CPA_responder pk b).toQueryImpl.toHandler k pk).run
+          cache :=
         rfl
     _ = (some <$> simulateQ (encAlg.IND_CPA_queryImpl' pk b) (adversary pk)).run cache := by
         rw [himp.simulateQ_run_eq (encAlg.IND_CPA_responder pk b).toQueryImpl pk]

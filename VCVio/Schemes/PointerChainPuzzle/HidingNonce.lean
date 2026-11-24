@@ -904,7 +904,8 @@ changes. -/
 noncomputable def keyedTabImpl (puzzle : Puzzle n S L Salt) (b : Bool) :
     QueryImpl ((unifSpec + LeftOrRight.spec Plaintext ByteArray) +
         (sealSpec n S L Salt Ctx N K).batch)
-      (StateT (((sealSpec n S L Salt Ctx N K).QueryCache × ℕ) × (Fin (2 * qEnc) → K)) ProbComp) where
+      (StateT (((sealSpec n S L Salt Ctx N K).QueryCache × ℕ) × (Fin (2 * qEnc) → K))
+        ProbComp) where
   toFun t := StateT.mk fun s => (fun z => (z.1, (z.2, s.2))) <$>
     (keyedJointImpl prf codec encodePuzzle qEnc s.2 puzzle b t).run s.1
 

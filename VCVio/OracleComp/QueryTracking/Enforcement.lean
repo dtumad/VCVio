@@ -113,7 +113,8 @@ theorem fst_map_run_simulateQ {oa : OracleComp spec α} {qb : ι → ℕ}
   have hrun := run_simulateQ_sub_eq oa (qb := qb) (spent := 0) zero_le
   rw [tsub_zero] at hrun
   rw [hrun, Functor.map_map,
-    show (fun z : α × (ι → ℕ) => (Prod.map id (qb - ·) z).1) = Prod.fst from rfl, simulateQ_ofHandler,
+    show (fun z : α × (ι → ℕ) => (Prod.map id (qb - ·) z).1) = Prod.fst from rfl,
+    simulateQ_ofHandler,
     PFunctor.Handler.run_liftM_withBudgetOr_of_isChargeBound _ _ _
       ((isPerIndexQueryBound_iff_isChargeBound oa qb).1 h),
     PFunctor.Handler.fst_map_run_liftM_withCharge]

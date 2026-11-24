@@ -353,8 +353,8 @@ def idealPoint (P : Puzzle n S L Salt) (ℓ : Labels n m S L) (R : Finset (PathV
       (StateT (oracleSpec n S L Salt Ctx).QueryCache ProbComp) where
   toFun t :=
     match legitLabel m mkCtx initAcc P ℓ R t with
-  | some a => pure a
-  | none => (oracleSpec n S L Salt Ctx).randomOracle t
+    | some a => pure a
+    | none => (oracleSpec n S L Salt Ctx).randomOracle t
 
 /-- The atomic ideal handler of the online phase. Uniform queries pass through. A round `ts` reads
 the reached set once, answers its points one after the other with `idealPoint` against that
@@ -365,9 +365,10 @@ def idealImpl (P : Puzzle n S L Salt) (ℓ : Labels n m S L) :
     QueryImpl (unifSpec + (oracleSpec n S L Salt Ctx).batch)
       (StateT (IdealState n m S L Salt Ctx) ProbComp) :=
   (QueryImpl.ofLift unifSpec ProbComp).liftTarget (StateT (IdealState n m S L Salt Ctx) ProbComp) +
-    fun ts => StateT.mk fun s : IdealState n m S L Salt Ctx =>
+    (⟨fun ts => StateT.mk fun s : IdealState n m S L Salt Ctx =>
       (fun z => (z.1, s.afterRound m mkCtx initAcc P ℓ ts z.2)) <$>
-        (QueryImpl.batch (idealPoint m mkCtx initAcc P ℓ s.reached) ts).run s.cache
+        (QueryImpl.batch (idealPoint m mkCtx initAcc P ℓ s.reached) ts).run s.cache⟩ :
+      QueryImpl (oracleSpec n S L Salt Ctx).batch _)
 
 variable {m mkCtx initAcc}
 

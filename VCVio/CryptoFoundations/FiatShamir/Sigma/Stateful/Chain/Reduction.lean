@@ -41,7 +41,7 @@ than at the definition sites. -/
 
 attribute [fs_simp]
   simulatedNmaFwd
-  simulatedNmaUnifSim
+  simulatedNmaUnifSim_apply
   simulatedNmaRoSim
   simulatedNmaBaseSim
   simulatedNmaSigSim

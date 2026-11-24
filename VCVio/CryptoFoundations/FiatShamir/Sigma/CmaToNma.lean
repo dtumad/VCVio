@@ -65,6 +65,7 @@ def simulatedNmaFwd :
 
 /-- The uniform-sampling handler: each query is forwarded to the ambient `unifSpec` oracle
 by `simulatedNmaFwd`. -/
+@[simps -isSimp]
 def simulatedNmaUnifSim :
     QueryImpl unifSpec
       (StateT (fsRoSpec M Commit Chal).QueryCache
