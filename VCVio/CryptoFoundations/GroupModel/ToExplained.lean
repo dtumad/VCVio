@@ -369,7 +369,7 @@ private theorem run_value {N : Type → Type} [Monad N] [LawfulMonad N]
       intro reply
       exact ih reply _
 
-@[simps -isSimp]
+@[simps]
 private def valueHandler {N : Type → Type} [Monad N] (random : QueryImpl unifSpec N)
     (game : QueryImpl (plainSpec G Query Reply) N) :
     QueryImpl (explainedSpec F G (CoinQuery Query) (CoinReply Reply)) N where

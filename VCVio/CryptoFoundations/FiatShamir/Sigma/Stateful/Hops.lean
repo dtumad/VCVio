@@ -433,15 +433,12 @@ theorem cmaReal_eq_cmaSim_of_not_costly
       ((cmaSim M Commit Chal hr simT) t).run p := by
   rcases p with ⟨⟨log, cache, keypair⟩, bad⟩
   rcases t with n | mc | m | ⟨⟩
-  · simp [fs_simp, QueryImpl.Stateful.linkWith_apply_run,
-      QueryImpl.Stateful.Frame.linkReshape]
+  · simp [fs_simp, QueryImpl.Stateful.Frame.linkReshape]
   · cases hcache : cache mc <;>
-      simp [fs_simp, QueryImpl.Stateful.linkWith_apply_run,
-        QueryImpl.Stateful.Frame.linkReshape, hcache]
+      simp [fs_simp, QueryImpl.Stateful.Frame.linkReshape, hcache]
   · exact (ht True.intro).elim
   · rcases keypair with _ | ⟨pk, sk⟩ <;>
-      simp [fs_simp, QueryImpl.Stateful.linkWith_apply_run,
-        QueryImpl.Stateful.Frame.linkReshape]
+      simp [fs_simp, QueryImpl.Stateful.Frame.linkReshape]
 
 end H3Obligations
 

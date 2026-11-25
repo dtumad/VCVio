@@ -65,7 +65,7 @@ def simulatedNmaFwd :
 
 /-- The uniform-sampling handler: each query is forwarded to the ambient `unifSpec` oracle
 by `simulatedNmaFwd`. -/
-@[simps -isSimp]
+@[simps]
 def simulatedNmaUnifSim :
     QueryImpl unifSpec
       (StateT (fsRoSpec M Commit Chal).QueryCache
@@ -74,7 +74,7 @@ def simulatedNmaUnifSim :
 
 /-- The random-oracle handler: a query found in the cache is answered from it, and any
 other query is forwarded to the ambient random oracle and its answer cached. -/
-@[simps -isSimp]
+@[simps]
 def simulatedNmaRoSim
     [DecidableEq M] [DecidableEq Commit] :
     QueryImpl (M × Commit →ₒ Chal)
@@ -101,7 +101,7 @@ def simulatedNmaBaseSim
 /-- The signing handler: answers a message `msg` with `(c, s)` from a transcript
 `(c, ω, s)` drawn from `simTranscript pk`, and programs the cache at `(msg, c)` with `ω`
 unless that entry is already set. -/
-@[simps -isSimp]
+@[simps]
 def simulatedNmaSigSim
     [DecidableEq M] [DecidableEq Commit]
     (simTranscript : Stmt → ProbComp (Commit × Chal × Resp)) (pk : Stmt) :

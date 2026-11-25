@@ -30,7 +30,7 @@ namespace FinRatPMF
 variable {ι : Type u} {spec : OracleSpec ι}
 
 /-- Computable query implementation using the executable `FinRatPMF.Raw` monad. -/
-@[simps -isSimp]
+@[simps]
 def finRatImpl [∀ t, Inhabited (spec.Range t)] [∀ t : spec.Domain, FinEnum (spec.Range t)] :
     QueryImpl spec Raw where
   toFun t := Raw.uniform (α := spec.Range t)
@@ -70,9 +70,7 @@ end Measure
   induction oa using OracleComp.inductionOn with
   | pure x => simp
   | query_bind t mx ih =>
-      have hsupport : (finRatImpl (spec := spec) t).support = Finset.univ :=
-        Raw.support_uniform
-      simp [Raw.support_bind, hsupport, ih]
+      simp [Raw.support_bind, ih]
 
 lemma finSupport_simulateQ {α : Type v} [DecidableEq α]
     (oa : OracleComp spec α) :

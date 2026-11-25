@@ -255,7 +255,7 @@ private abbrev SimLoggedState (M Commit Chal : Type)
     (cmaSignLogImpl (M := M) (Commit := Commit) (Chal := Chal)
       (Resp := Resp) (Stmt := Stmt))).flattenStateT
 
-@[simps -isSimp (attr := fs_simp)] private noncomputable def cmaSimLoggedLeftImpl
+@[simps (attr := fs_simp)] private noncomputable def cmaSimLoggedLeftImpl
     (hr : GenerableRelation Stmt Wit rel)
     (simT : Stmt → ProbComp (Commit × Chal × Resp)) :
     QueryImpl (cmaOracleSpec M Commit Chal Resp)

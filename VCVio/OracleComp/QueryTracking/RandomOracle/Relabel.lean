@@ -193,7 +193,7 @@ theorem cell_eq_of_mem_support_drawCell {c c' : X ⊕ K} {st : RelabelState pub 
 
 /-- The label operations with every operation drawing its cell: `touch c` draws `c` and discards
 it, `read k` draws the label of `k`. -/
-@[expose, simps -isSimp] noncomputable def labelImpl :
+@[expose, simps] noncomputable def labelImpl :
     QueryImpl (OracleSpec.labelOps X K R) (StateT (RelabelState pub X K R) ProbComp) where
   toFun
   | .inl c => (fun _ ↦ ()) <$> drawCell c

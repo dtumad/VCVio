@@ -119,7 +119,7 @@ def privateDraws {τ : Type} {spec' : OracleSpec.{0, 0} τ} [MonadLiftT ProbComp
 /-- The preprocessing step of the adapter: a raw input draws its private value; if it is the
 encoding of a typed point, the answer is the typed answer there completed from the private value,
 and otherwise it is the private value. Uniform queries pass through. -/
-@[expose, simps -isSimp]
+@[expose, simps]
 def preprocessImpl :
     QueryImpl (unifSpec + (D →ₒ M))
       (StateT (D →ₒ M).QueryCache (OracleComp (unifSpec + spec))) where
@@ -134,7 +134,7 @@ def preprocessImpl :
 /-- The online step of the adapter on a raw round: draw the private values of all its inputs,
 submit the encoded typed points as one typed round, and reassemble the answers. Uniform queries
 pass through. -/
-@[expose, simps -isSimp]
+@[expose, simps]
 def onlineImpl : QueryImpl (unifSpec + (D →ₒ M).batch)
     (StateT (D →ₒ M).QueryCache (OracleComp (unifSpec + spec.batch))) where
   toFun
@@ -182,14 +182,14 @@ end adapter
 /-! ## The combined interface and encoded rounds -/
 
 /-- The raw interface as part of the combined interface of typed points and raw inputs. -/
-@[expose, simps -isSimp]
+@[expose, simps]
 def rawLift : QueryImpl (unifSpec + (D →ₒ M)) (OracleComp (unifSpec + (spec + (D →ₒ M)))) where
   toFun
   | .inl n => liftM ((unifSpec + (spec + (D →ₒ M))).query (.inl n))
   | .inr x => liftM ((unifSpec + (spec + (D →ₒ M))).query (.inr (.inr x)))
 
 /-- The typed interface as part of the combined interface of typed points and raw inputs. -/
-@[expose, simps -isSimp]
+@[expose, simps]
 def typedLift : QueryImpl (unifSpec + spec) (OracleComp (unifSpec + (spec + (D →ₒ M)))) where
   toFun
   | .inl n => liftM ((unifSpec + (spec + (D →ₒ M))).query (.inl n))

@@ -347,7 +347,7 @@ variable (m : ℕ) (mkCtx : Salt → Ctx) (initAcc : Ctx → S) [NeZero n] [AddC
 legitimate for some path value is answered with that value's label (`legitLabel`) and leaves the
 cache unchanged; every other point is answered by the lazy random oracle, which samples and caches
 on a miss. -/
-@[expose, simps -isSimp]
+@[expose, simps]
 def idealPoint (P : Puzzle n S L Salt) (ℓ : Labels n m S L) (R : Finset (PathValue n m)) :
     QueryImpl (oracleSpec n S L Salt Ctx)
       (StateT (oracleSpec n S L Salt Ctx).QueryCache ProbComp) where

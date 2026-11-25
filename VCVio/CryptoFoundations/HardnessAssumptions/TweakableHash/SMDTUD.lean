@@ -181,7 +181,7 @@ operational property: discarding a total sample can leave the advantage unchange
 
 Accepted queries are appended, so the history is in issue order and its `j`-th entry is the `j`-th
 target. -/
-@[expose, simps -isSimp] def SM_DT_UD_challengeOracle [DecidableEq Tweak] (world : SM_DT_UD_World)
+@[expose, simps] def SM_DT_UD_challengeOracle [DecidableEq Tweak] (world : SM_DT_UD_World)
     (prob : SM_DT_UD_Problem ι PkSeed Tweak M M' Y) (pk : PkSeed) :
     QueryImpl (SM_DT_UD_challengeSpec Tweak Y) (StateT (SM_DT_UD_State Tweak) ProbComp) where
   toFun t := do

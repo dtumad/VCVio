@@ -86,7 +86,7 @@ structure Adversary (prob : Problem ι PkSeed Tweak M M' Y) where
 /-- The always-answering target oracle. Every query samples a message and records the target; a
 cap, duplicate target tweak, or collection clash poisons final validity without suppressing the
 sample or digest. -/
-@[simps -isSimp]
+@[simps]
 noncomputable def challengeOracle [DecidableEq Tweak] [SampleableType M']
     (prob : Problem ι PkSeed Tweak M M' Y) (pk : PkSeed) :
     QueryImpl (challengeSpec Tweak Y) (StateT (State Tweak M') ProbComp) where

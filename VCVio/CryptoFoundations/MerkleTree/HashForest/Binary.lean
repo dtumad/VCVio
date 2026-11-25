@@ -81,7 +81,7 @@ def binaryAnswer
 
 /-- Interpret binary Merkle queries by issuing their injective translations in the general
 hash-forest oracle. -/
-@[expose, simps -isSimp]
+@[expose, simps]
 def binaryQueryImpl :
     QueryImpl (MerkleTreeHashing.spec LeafAddress NodeAddress EncodedLeaf Digest)
       (OracleComp (spec BinaryOperationKind Unit (BinaryAddress LeafAddress NodeAddress)

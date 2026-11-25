@@ -116,7 +116,7 @@ been spent on the collection oracle; a rejected query leaves the state untouched
 
 Accepted queries are appended, so the history is in issue order and its `j`-th entry is the `j`-th
 target. -/
-@[expose, simps -isSimp] def SM_DT_DSPR_challengeOracle [DecidableEq Tweak]
+@[expose, simps] def SM_DT_DSPR_challengeOracle [DecidableEq Tweak]
     (prob : SM_DT_DSPR_Problem ι PkSeed Tweak M Y) (pk : PkSeed) :
     QueryImpl (SM_DT_DSPR_challengeSpec Tweak M Y)
       (StateT (SM_DT_DSPR_State Tweak M) ProbComp) where

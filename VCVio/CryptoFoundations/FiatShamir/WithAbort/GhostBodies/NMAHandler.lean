@@ -194,7 +194,7 @@ caching random oracle) write live RO reads to the *base* layer, reading through 
 so that signing-programmed (ghost) points are visible to the adversary; the signing oracle
 records the signed message and runs `simGhostSignBody`, writing the accepted-transcript
 programming to the *ghost* layer. -/
-@[expose, simps -isSimp] noncomputable def ghostNmaImpl (pk : Stmt) (_sk : Wit) :
+@[expose, simps] noncomputable def ghostNmaImpl (pk : Stmt) (_sk : Wit) :
     QueryImpl ((unifSpec + (M × Commit →ₒ Chal)) + (M →ₒ Option (Commit × Resp)))
       (StateT (NmaGhostState M Commit Chal) ProbComp) where
   toFun t := match t with

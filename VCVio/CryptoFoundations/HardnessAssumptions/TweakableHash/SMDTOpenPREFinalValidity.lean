@@ -124,7 +124,7 @@ def initializeTargets [DecidableEq Tweak]
 /-- The opening oracle records every requested index. An out-of-range request returns the type's
 fixed witness, as does EasyCrypt's `nth witness`; it cannot itself win because the final selected
 index must refer to a recorded target. -/
-@[simps -isSimp]
+@[simps]
 def openOracle [Inhabited M] (targets : List (Tweak × M)) :
     QueryImpl (openSpec M) (StateT (List ℕ) ProbComp) where
   toFun j := do

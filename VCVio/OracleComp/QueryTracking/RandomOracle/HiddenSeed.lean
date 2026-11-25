@@ -119,7 +119,7 @@ abbrev withDerivations : OracleSpec ((ℕ ⊕ ι) ⊕ X) := unifSpec + pub + (X 
 
 /-- The handler forwarding each sampling and public query unchanged into
 `pub.withDerivations X R`. -/
-@[expose, simps -isSimp] def withDerivationsLift :
+@[expose, simps] def withDerivationsLift :
     QueryImpl (unifSpec + pub) (OracleComp (pub.withDerivations X R)) where
   toFun t := (pub.withDerivations X R).query (.inl t)
 
@@ -230,7 +230,7 @@ theorem encodedQuery_eq_true_iff (s : S) (t : (pub.withDerivations X R).Domain) 
   · simp only [encodedQuery, Bool.false_eq_true, reduceCtorEq, exists_false]
 
 /-- Answer a derivation query `x` by the public query at `E.enc s x`. -/
-@[expose, simps -isSimp] def deriveImpl (s : S) :
+@[expose, simps] def deriveImpl (s : S) :
     QueryImpl (pub.withDerivations X R) (OracleComp (unifSpec + pub)) where
   toFun
   | .inl t => (unifSpec + pub).query t
@@ -423,7 +423,7 @@ variable [SampleableType R]
 variable (pub X R) in
 /-- The ideal game: public queries read the public cache and derivations an independent table,
 both lazily sampled; no secret enters it. -/
-@[expose, simps -isSimp] noncomputable def idealImpl :
+@[expose, simps] noncomputable def idealImpl :
     QueryImpl (pub.withDerivations X R) (StateT (SplitCache pub X R) ProbComp) where
   toFun
   | .inl (.inl n) => StateT.mk fun st => (fun u => (u, st)) <$> (unifSpec.query n : ProbComp _)

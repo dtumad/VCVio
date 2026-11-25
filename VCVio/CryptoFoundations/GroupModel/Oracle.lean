@@ -110,7 +110,7 @@ theorem lookup_append_fresh [DecidableEq S] [∀ s, Zero (V s)] (tbl : Tbl V) (s
   modifyGet fun tbl => ((tbl s).length, append tbl s v)
 
 /-- The table handler, with equality determined by the observation. -/
-@[expose, simps -isSimp] def impl [DecidableEq S] [CommSemiring F]
+@[expose, simps] def impl [DecidableEq S] [CommSemiring F]
     [∀ s, AddCommMonoid (V s)] [∀ s, Module F (V s)]
     [∀ s, DecidableEq (U s)] (M : Model F σ V) (obs : (s : S) → V s → U s)
     (m : Type → Type) [Monad m] : QueryImpl (spec F σ) (StateT (Tbl V) m) where

@@ -25,7 +25,7 @@ namespace Rewinding.ResetPolicy
 variable {ι W : Type} {spec : OracleSpec ι}
 
 /-- Add a unit cursor to a persistent oracle implementation. -/
-@[expose, simps -isSimp] def persistentAnswer (impl : QueryImpl spec (StateT W ProbComp)) :
+@[expose, simps] def persistentAnswer (impl : QueryImpl spec (StateT W ProbComp)) :
     QueryImpl spec (StateT (W × Unit) ProbComp) where
   toFun q := StateT.mk fun s => (fun z => (z.1, (z.2, ()))) <$> (impl q).run s.1
 
@@ -90,7 +90,7 @@ entry, and extensions only install previously missing entries. -/
         (fun a b c => pure (a, b, c)))
 
 /-- A deterministic query handler carries no oracle state. -/
-@[expose, simps -isSimp] def statelessImpl (answer : (q : spec.Domain) → spec.Range q) :
+@[expose, simps] def statelessImpl (answer : (q : spec.Domain) → spec.Range q) :
     QueryImpl spec (StateT Unit ProbComp) where
   toFun q := pure (answer q)
 
@@ -110,7 +110,7 @@ entry, and extensions only install previously missing entries. -/
     ResetPolicy (pure ()) (statelessImpl (spec := emptySpec) (fun q => PEmpty.elim q)) :=
   stateless (spec := emptySpec) (fun q => PEmpty.elim q)
 
-@[simps -isSimp]
+@[simps]
 private def uniformInl : QueryImpl unifSpec (OracleComp (unifSpec + spec)) where
   toFun q := query (spec := unifSpec + spec) (.inl q)
 
@@ -124,7 +124,7 @@ private theorem simulateQ_uniformInl {σ α : Type}
       simp [uniformInl_apply, QueryImpl.add_apply_inl])]
   simp [coins]
 
-@[simps -isSimp]
+@[simps]
 private def stageRight {κ T : Type} {ctxSpec : OracleSpec κ}
     (ctx : QueryImpl ctxSpec (StateT T ProbComp)) :
     QueryImpl (ctxSpec + spec) (StateT T (OracleComp (unifSpec + spec))) where
@@ -172,7 +172,7 @@ private theorem replaceRight {κ T σ α : Type} {ctxSpec : OracleSpec κ}
   simpa only [stageRight_run', map_bind] using
     P.faithful_coins (Prod.fst <$> (simulateQ (stageRight ctx) oa).run t)
 
-@[simps -isSimp]
+@[simps]
 private def reassocQueries {κ : Type} {ctxSpec : OracleSpec κ} :
     QueryImpl (unifSpec + (ctxSpec + spec)) (OracleComp ((unifSpec + ctxSpec) + spec)) where
   toFun
@@ -210,7 +210,7 @@ private theorem replaceRightCoins {κ T σ α : Type} {ctxSpec : OracleSpec κ}
   simpa only [← reassoc_run'] using
     replaceRight P (coins (S := T) + ctx) (simulateQ reassocQueries oa) t
 
-@[simps -isSimp]
+@[simps]
 private def swapInnerQueries {κ : Type} {ctxSpec : OracleSpec κ} :
     QueryImpl (unifSpec + (spec + ctxSpec)) (OracleComp (unifSpec + (ctxSpec + spec))) where
   toFun
@@ -258,7 +258,7 @@ variable {ι₁ ι₂ σ₁ σ₂ : Type} {spec₁ : OracleSpec ι₁} {spec₂ 
   (P₁ : ResetPolicy init₁ impl₁) (P₂ : ResetPolicy init₂ impl₂)
 
 /-- Run two frozen handlers on separate persistent worlds and separate local cursors. -/
-@[expose, simps -isSimp] def productAnswer : QueryImpl (spec₁ + spec₂)
+@[expose, simps] def productAnswer : QueryImpl (spec₁ + spec₂)
     (StateT ((P₁.World × P₂.World) × (P₁.Cursor × P₂.Cursor)) ProbComp) where
   toFun
   | .inl q => StateT.mk fun s =>

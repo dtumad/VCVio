@@ -24,20 +24,20 @@ namespace QueryImpl
 variable {ι κ ν : Type} {a : OracleSpec ι} {b : OracleSpec κ} {c : OracleSpec ν}
 
 /-- Route `(a + b) + c` queries to `(a + c) + b`. -/
-@[expose, simps -isSimp] def swapRight : QueryImpl ((a + b) + c) (OracleComp ((a + c) + b)) where
+@[expose, simps] def swapRight : QueryImpl ((a + b) + c) (OracleComp ((a + c) + b)) where
   toFun
   | .inl (.inl q) => query (spec := (a + c) + b) (.inl (.inl q))
   | .inl (.inr q) => query (spec := (a + c) + b) (.inr q)
   | .inr q => query (spec := (a + c) + b) (.inl (.inr q))
 
 /-- Embed two oracle slots around an additional middle slot. -/
-@[expose, simps -isSimp] def insertMiddle : QueryImpl (a + b) (OracleComp ((a + c) + b)) where
+@[expose, simps] def insertMiddle : QueryImpl (a + b) (OracleComp ((a + c) + b)) where
   toFun
   | .inl q => query (spec := (a + c) + b) (.inl (.inl q))
   | .inr q => query (spec := (a + c) + b) (.inr q)
 
 /-- Merge two copies of the right-hand oracle interface. -/
-@[expose, simps -isSimp] def mergeRight : QueryImpl (((a + c) + b) + c)
+@[expose, simps] def mergeRight : QueryImpl (((a + c) + b) + c)
     (OracleComp ((a + b) + c)) where
   toFun
   | .inl (.inl (.inl q)) => query (spec := (a + b) + c) (.inl (.inl q))

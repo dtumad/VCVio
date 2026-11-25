@@ -143,7 +143,7 @@ abbrev signingSpec (E M S : Type) : OracleSpec (E × M) :=
 `none` and leaves the history unchanged. A request at an unused epoch runs the callback once and
 records its answer, including `none`. Reductions use this form to answer signing queries with a
 simulated signer under the same epoch discipline. -/
-@[expose, simps -isSimp] def signingKernelOracle [DecidableEq E]
+@[expose, simps] def signingKernelOracle [DecidableEq E]
     {m : Type → Type v} [Monad m] (kernel : E → M → m (Option S)) :
     QueryImpl (signingSpec E M S) (StateT (History E M S) m) where
   toFun := fun ⟨ep, msg⟩ history =>

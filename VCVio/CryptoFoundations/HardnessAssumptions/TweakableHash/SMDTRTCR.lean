@@ -177,7 +177,7 @@ a target by construction rather than by a separate branch.
 
 Accepted queries are appended, so the history is in issue order and its `j`-th entry is the `j`-th
 target. -/
-@[expose, simps -isSimp]
+@[expose, simps]
 noncomputable def SM_DT_RTCR_challengeOracle [DecidableEq Tweak] [SampleableType R]
     (prob : SM_DT_RTCR_Problem PkSeed Tweak M R Y) (pk : PkSeed) :
     QueryImpl (SM_DT_RTCR_challengeSpec Tweak M R Y)

@@ -125,7 +125,7 @@ theorem isOnlineQueryBound_sideDraws_run {τ : Type} {free : OracleSpec.{0, 0} �
 /-- The preprocessing handler answering `side` privately: local coins and queries to `spec` pass
 through, and a query to `side` is answered by the private lazy random oracle, whose local coins
 are local coins of the preprocessing phase. -/
-@[expose, simps -isSimp]
+@[expose, simps]
 def sidePreprocessImpl :
     QueryImpl (unifSpec + (spec + side))
       (StateT side.QueryCache (OracleComp (unifSpec + spec))) where
@@ -137,7 +137,7 @@ def sidePreprocessImpl :
 /-- The online handler answering `side` privately: queries to the free summand pass through, and
 a mixed round draws its `side` points from the private cache (`sideDraws`), submits its `spec`
 points as one round, and reassembles the answer tuple (`batchMerge`). -/
-@[expose, simps -isSimp]
+@[expose, simps]
 def sideOnlineImpl {τ : Type} {free : OracleSpec.{0, 0} τ}
     [MonadLiftT (OracleQuery unifSpec) (OracleQuery free)] :
     QueryImpl (free + (spec + side).batch)

@@ -26,7 +26,7 @@ namespace QueryImpl
 /-- Given implementations for oracles in `spec₁` and `spec₂` in terms of reader monads for
 two different contexts `ρ₁` and `ρ₂`, implement the combined set `spec₁ + spec₂` in terms
 of a combined `ρ₁ × ρ₂` state. The binary analogue of `QueryImpl.sigmaReaderT`. -/
-@[simps -isSimp]
+@[simps]
 def addReaderT {ι₁ : Type u} {ι₂ : Type v}
     {spec₁ : OracleSpec.{u, w} ι₁} {spec₂ : OracleSpec.{v, w} ι₂}
     {m : Type w → Type x} {ρ₁ ρ₂ : Type w}
@@ -39,7 +39,7 @@ def addReaderT {ι₁ : Type u} {ι₂ : Type v}
 
 /-- Indexed version of `QueryImpl.addReaderT`. Each query for index `t` reads from the
 `t`-th component of the pi-product `(t : τ) → ρ t`. Note that `m` cannot vary with `t`. -/
-@[simps -isSimp]
+@[simps]
 def sigmaReaderT {τ : Type} {ι : τ → Type _}
     {spec : (t : τ) → OracleSpec (ι t)}
     {m : Type _ → Type _} {ρ : τ → Type _}
@@ -52,7 +52,7 @@ def sigmaReaderT {τ : Type} {ι : τ → Type _}
 
 The outer context is the first component of the product; the inner/base context is the
 second. This is the reader-transformer analogue of `flattenStateT` and `flattenWriterT`. -/
-@[simps -isSimp]
+@[simps]
 def flattenReaderT {ι : Type u} {spec : OracleSpec.{u, v} ι}
     {m : Type v → Type w} {ρ₁ ρ₂ : Type v}
     (impl : QueryImpl spec (ReaderT ρ₁ (ReaderT ρ₂ m))) :

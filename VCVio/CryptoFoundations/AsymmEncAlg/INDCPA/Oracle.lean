@@ -108,7 +108,7 @@ def IND_CPA_queryImplFromChallenge
 /-- The cached left/right challenge oracle under public key `pk`: a repeated message pair is
 answered with its cached ciphertext, and a fresh pair `mm` is answered by encrypting the message
 `select mm` and caching the result. -/
-@[simps -isSimp]
+@[simps]
 def IND_CPA_cachedChallengeOracle
     (encAlg : AsymmEncAlg ProbComp M PK SK C)
     (pk : PK) (select : M × M → M) :
@@ -188,7 +188,7 @@ abbrev IND_CPA_CountedState (_encAlg : AsymmEncAlg ProbComp M PK SK C) :=
 /-- The cached left/right challenge oracle with a counter of fresh queries. A repeated message
 pair is answered from the cache. A fresh pair `mm`, met when the counter reads `n`, is answered by
 encrypting `select n mm`; the ciphertext is cached and the counter incremented. -/
-@[simps -isSimp]
+@[simps]
 def IND_CPA_countedChallengeOracle
     (pk : PK) (select : ℕ → M × M → M) :
     QueryImpl (M × M →ₒ C)

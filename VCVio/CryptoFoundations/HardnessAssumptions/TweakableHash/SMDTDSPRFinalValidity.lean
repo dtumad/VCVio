@@ -103,7 +103,7 @@ structure Adversary (prob : Problem ι PkSeed Tweak M Y) where
 
 /-- The DSPR challenge oracle. Every query is answered and recorded. A cap or tweak-discipline
 violation poisons the state instead of rejecting the query. -/
-@[simps -isSimp]
+@[simps]
 def challengeOracle [DecidableEq Tweak]
     (prob : Problem ι PkSeed Tweak M Y) (pk : PkSeed) :
     QueryImpl (challengeSpec Tweak M Y)

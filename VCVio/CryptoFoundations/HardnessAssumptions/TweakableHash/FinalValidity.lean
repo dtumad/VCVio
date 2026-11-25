@@ -189,7 +189,7 @@ abbrev collectionSpec (thColl : TweakableHashCollection ι PkSeed Tweak Y) :
   _ →ₒ Y
 
 /-- The always-answering collection oracle for source-final-validity games. -/
-@[simps -isSimp]
+@[simps]
 def collectionOracle [DecidableEq Tweak] (tweakOf : Q → Tweak)
     (thColl : TweakableHashCollection ι PkSeed Tweak Y) (pk : PkSeed) :
     QueryImpl (collectionSpec thColl) (StateT (State Q Tweak) ProbComp) where

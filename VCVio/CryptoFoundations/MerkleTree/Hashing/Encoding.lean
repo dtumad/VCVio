@@ -48,7 +48,7 @@ def encodeQuery (enc : QueryEncoding X LeafAddress NodeAddress Payload Y) :
   | .node a l r => enc.node a (l, r)
 
 /-- Each abstract hash request makes one query to the common oracle. -/
-@[expose, simps -isSimp]
+@[expose, simps]
 def queryImpl (enc : QueryEncoding X LeafAddress NodeAddress Payload Y) :
     QueryImpl (spec LeafAddress NodeAddress Payload Y) (OracleComp (X →ₒ Y)) where
   toFun q := (X →ₒ Y).query (enc.encodeQuery q)

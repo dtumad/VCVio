@@ -30,7 +30,7 @@ abbrev CoinQuery (Query : Type) := Query ⊕ ℕ
   Sum.elim Reply (fun n => Fin (n + 1))
 
 /-- Add private coins to an element-valued game, ignoring the coin request's group arguments. -/
-@[expose, simps -isSimp] def withCoins {S Query : Type} {G : S → Type} {Reply : Query → Type}
+@[expose, simps] def withCoins {S Query : Type} {G : S → Type} {Reply : Query → Type}
     {N : Type → Type} [Monad N] (random : QueryImpl unifSpec N)
     (impl : QueryImpl (plainSpec G Query Reply) N) :
     QueryImpl (plainSpec G (CoinQuery Query) (CoinReply Reply)) N where

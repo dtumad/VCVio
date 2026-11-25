@@ -243,7 +243,7 @@ abbrev GhostState (M Commit Chal : Type) : Type :=
 `progSide` selects the answer at a ghost hit: the ghost value (Prog side) or a fresh
 caching read of the real layer (Trans side). The bad flag fires on ghost hits and is
 otherwise preserved; signing queries run `ghostSignBody` on the cache layers. -/
-@[expose, simps -isSimp]
+@[expose, simps]
 noncomputable def ghostHybridImpl (progSide : Bool) (pk : Stmt) (sk : Wit) :
     QueryImpl ((unifSpec + (M × Commit →ₒ Chal)) + (M →ₒ Option (Commit × Resp)))
       (StateT (GhostState M Commit Chal) ProbComp) where
@@ -395,7 +395,7 @@ component of the hybrid state. -/
 
 /-- Handler for the adversary's signing oracle in the hybrid games: record the signed
 message (for the freshness check) and run the given signing body on the cache. -/
-@[expose, simps -isSimp] noncomputable def hybridSignImpl
+@[expose, simps] noncomputable def hybridSignImpl
     (signBody : M → StateT ((M × Commit →ₒ Chal).QueryCache) ProbComp
       (Option (Commit × Resp))) :
     QueryImpl (M →ₒ Option (Commit × Resp))

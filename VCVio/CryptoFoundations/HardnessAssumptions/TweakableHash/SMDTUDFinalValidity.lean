@@ -161,7 +161,7 @@ def response (world : World)
 
 /-- The always-answering challenge oracle. Every query is appended to the target history; a cap,
 duplicate-target, or collection clash poisons final validity without changing the response. -/
-@[simps -isSimp]
+@[simps]
 def challengeOracle [DecidableEq Tweak] (world : World)
     (prob : Problem ι PkSeed Tweak M M' Y) (pk : PkSeed) :
     QueryImpl (challengeSpec Tweak Y)

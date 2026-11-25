@@ -88,7 +88,7 @@ A raw round draws the private values of all its inputs, in order and with repeti
 coins of `free` (`TimeLockPuzzle.sideDraws`); submits the typed points that its inputs encode as
 one typed round; and reassembles the answers: at an encoding, the typed answer completed from the
 private value, and elsewhere the private value (`RandomOracleEncoding.assemble`). -/
-@[expose, simps -isSimp]
+@[expose, simps]
 def freeOnlineImpl :
     QueryImpl (free + (D →ₒ M).batch)
       (StateT (D →ₒ M).QueryCache (OracleComp (free + spec.batch))) where

@@ -29,7 +29,7 @@ namespace QueryImpl
 
 /-- Push an outer oracle interpretation through the base monad of a
 `StateT`-valued query implementation. -/
-@[expose, simps -isSimp]
+@[expose, simps]
 def mapStateTBase {ι₀ ι₁ : Type _}
     {spec₀ : OracleSpec ι₀} {spec₁ : OracleSpec ι₁}
     {m : Type u → Type v} [Monad m] {σ : Type u}
@@ -85,7 +85,7 @@ theorem mapStateTBase_preserves_inv {ι₀ ι₁ ι₂ : Type u}
 /-- Given implementations for oracles in `spec₁` and `spec₂` in terms of state monads for
 two different contexts `σ₁` and `σ₂`, implement the combined set `spec₁ + spec₂` in terms
 of a combined `σ₁ × σ₂` state. -/
-@[expose, simps -isSimp]
+@[expose, simps]
 def parallelStateT {ι₁ : Type u} {ι₂ : Type v}
     {spec₁ : OracleSpec.{u, w} ι₁} {spec₂ : OracleSpec.{v, w} ι₂}
     {m : Type w → Type x} [Functor m] {σ₁ σ₂ : Type w}
@@ -119,7 +119,7 @@ def flattenStateT {ι : Type _} {spec : OracleSpec ι}
 
 /-- Push a `StateT`-valued handler into a deeper `StateT` stack, leaving the new inner state
 untouched: each query runs in the original stack and its result is lifted. -/
-@[expose, simps -isSimp]
+@[expose, simps]
 def liftBase {ι : Type _} {spec : OracleSpec ι}
     {m : Type u → Type v} [Monad m] {σ τ : Type u}
     (impl : QueryImpl spec (StateT σ m)) :
@@ -179,7 +179,7 @@ theorem run_liftTarget_map_eq {ι : Type _} {spec : OracleSpec ι}
 
 /-- Indexed version of `QueryImpl.parallelStateT`. Note that `m` cannot vary with `t`.
 dtumad: The `Function.update` thing is nice but forces `DecidableEq`. -/
-@[expose, simps -isSimp]
+@[expose, simps]
 def piStateT {τ : Type} [DecidableEq τ] {ι : τ → Type v}
     {spec : (t : τ) → OracleSpec.{v, w} (ι t)}
     {m : Type w → Type x} [Monad m] {σ : τ → Type w}
@@ -191,7 +191,7 @@ def piStateT {τ : Type} [DecidableEq τ] {ι : τ → Type v}
 /-- Lift a stateful query implementation to a `(state × Bool)`-stateful version that threads
 the boolean (bad) flag unchanged. The output value and updated state come from the
 underlying `impl`; the second `Bool` component is preserved verbatim across each query. -/
-@[expose, simps -isSimp]
+@[expose, simps]
 def withBadFlag {ι : Type u} {spec : OracleSpec.{u, v} ι}
     {m : Type v → Type w} [Functor m] {σ : Type v}
     (impl : QueryImpl spec (StateT σ m)) :
@@ -202,7 +202,7 @@ def withBadFlag {ι : Type u} {spec : OracleSpec.{u, v} ι}
 /-- Lift a stateful query implementation to a `(state × Bool)`-stateful version that OR-updates
 the boolean (bad) flag with a predicate `f` evaluated on the pre-state and produced output.
 The flag is monotone: if it was already `true`, it stays `true`. -/
-@[expose, simps -isSimp]
+@[expose, simps]
 def withBadUpdate {ι : Type u} {spec : OracleSpec.{u, v} ι}
     {m : Type v → Type w} [Functor m] {σ : Type v}
     (impl : QueryImpl spec (StateT σ m))

@@ -180,7 +180,7 @@ lemma getQueryValue?_wrappedChallengeEntry_succ
 
 /-- Forwards a uniform-spec query through to the wrapped spec's `Sum.inl` summand without
 touching the simulator state. -/
-@[simps -isSimp]
+@[simps]
 def unifForward (M Commit Chal : Type) :
     QueryImpl unifSpec (StateT (SimState M Commit Chal) (OracleComp (wrappedSpec Chal))) where
   toFun n := StateT.lift (wrappedUniformQuery Chal n)

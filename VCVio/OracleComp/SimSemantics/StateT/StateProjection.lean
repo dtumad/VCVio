@@ -280,7 +280,7 @@ namespace QueryImpl
 
 /-- Given a `StateT (σ × Q) ProbComp` query implementation, fix the second state component
 at `q₀` and project to `StateT σ ProbComp`. -/
-@[simps -isSimp] def fixSndStateT {ι : Type} {spec : OracleSpec ι} {σ Q : Type}
+@[simps] def fixSndStateT {ι : Type} {spec : OracleSpec ι} {σ Q : Type}
     (impl : QueryImpl spec (StateT (σ × Q) ProbComp)) (q₀ : Q) :
     QueryImpl spec (StateT σ ProbComp) where
   toFun t := StateT.mk fun s => Prod.map id Prod.fst <$> (impl t).run (s, q₀)

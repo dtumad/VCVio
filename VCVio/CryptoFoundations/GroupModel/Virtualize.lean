@@ -31,7 +31,7 @@ namespace GroupModel
 variable {F S : Type} {σ : Sig S} {V : S → Type}
 
 /-- Translate group handles, recording each fresh handle privately, and forward private coins. -/
-@[expose, simps -isSimp] def virtualizeImpl [DecidableEq S] (z : S → Handle) :
+@[expose, simps] def virtualizeImpl [DecidableEq S] (z : S → Handle) :
     QueryImpl (genSpec F σ) (StateT (Tbl (fun _ : S => Handle))
       (OracleComp (genSpec F σ))) where
   toFun

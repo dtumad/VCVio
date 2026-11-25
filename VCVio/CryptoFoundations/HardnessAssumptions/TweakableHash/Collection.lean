@@ -112,7 +112,7 @@ and the tweak is appended to the collection tweak list. Repeated collection twea
 The challenge history is a list of `Q`, read only through `tweakOf`, so a game records whatever its
 winning condition needs — `Tweak × M` for SM-TCR, `Tweak × M'` for SM-PRE, `Tweak` alone for a game
 that needs no payload — and this oracle is unchanged by the choice. -/
-@[simps -isSimp]
+@[simps]
 def collectionOracle [DecidableEq Tweak] (tweakOf : Q → Tweak)
     (thColl : TweakableHashCollection ι PkSeed Tweak Y) (pk : PkSeed) :
     QueryImpl (collectionSpec thColl) (StateT (List Q × List Tweak) ProbComp) where

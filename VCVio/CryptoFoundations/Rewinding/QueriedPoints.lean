@@ -31,7 +31,7 @@ variable {Q : Type}
 
 /-- Answer an acceptance query from a fixed function, record the query, and charge one complete
 run. -/
-@[expose, simps -isSimp] def logCounted (g : Q → Bool) :
+@[expose, simps] def logCounted (g : Q → Bool) :
     QueryImpl (rerunSpec Q Bool) (StateT (Set Q × ℕ) ProbComp) where
   toFun q := do
     modify fun s => (insert q s.1, s.2 + 1)

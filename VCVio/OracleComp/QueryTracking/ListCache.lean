@@ -44,7 +44,7 @@ def decode (cache : List (D × R)) : (D →ₒ R).QueryCache :=
   · simp [decode, List.lookup_cons, beq_eq_false_iff_ne.mpr h, h, QueryCache.cacheQuery_of_ne]
 
 /-- Reuse the first cached answer or draw and prepend a new binding on a miss. -/
-@[expose, simps -isSimp]
+@[expose, simps]
 def handler {m : Type u → Type v} [Monad m]
     (draw : QueryImpl (D →ₒ R) m) : QueryImpl (D →ₒ R) (StateT (List (D × R)) m) where
   toFun d cache := match cache.lookup d with

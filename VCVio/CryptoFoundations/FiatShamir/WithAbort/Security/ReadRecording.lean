@@ -85,7 +85,7 @@ abbrev DeferredReadState (M Commit Chal : Type) : Type :=
 `DeferredState`, additionally appending the read's commitment component `mc.2` to the recorded
 read-commit list on every adversarial random-oracle read. Uniform and signing steps leave the
 read-commit list untouched. -/
-@[expose, simps -isSimp] noncomputable def deferredDrawReadImpl (pk : Stmt) (sk : Wit) :
+@[expose, simps] noncomputable def deferredDrawReadImpl (pk : Stmt) (sk : Wit) :
     QueryImpl ((unifSpec + (M × Commit →ₒ Chal)) + (M →ₒ Option (Commit × Resp)))
       (StateT (DeferredReadState M Commit Chal) ProbComp) where
   toFun t := match t with

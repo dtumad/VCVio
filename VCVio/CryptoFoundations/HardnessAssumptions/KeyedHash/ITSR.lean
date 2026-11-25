@@ -81,7 +81,7 @@ instance [DecidableEq K] [DecidableEq X] [DecidableEq Index]
 
 /-- Target-oracle implementation. Every query samples and records a key; targets are not
 deduplicated, since the final relation—not the oracle—determines success. -/
-@[simps -isSimp]
+@[simps]
 def ITSRTargetOracle (prob : ITSRProblem K X Y Index) :
     QueryImpl (ITSRTargetSpec X K) (StateT (ITSRTranscript K X) ProbComp) where
   toFun x := do

@@ -236,7 +236,7 @@ variable [DecidableEq S] [DecidableEq L] [DecidableEq Salt] [DecidableEq Ctx]
 for the puzzle `puzzle`, as one handler on the pair of the cache of the random oracle and the
 counter with the log: a step of `counterLogImpl`, with rounds rewritten as single queries answered
 by the random oracle on the shared cache. -/
-@[expose, simps -isSimp]
+@[expose, simps]
 noncomputable def counterJointImpl (puzzle : Puzzle n S L Salt) (b : Bool) :
     QueryImpl ((unifSpec + LeftOrRight.spec Plaintext ByteArray) +
         (sealSpec n S L Salt Ctx N K).batch)
@@ -839,7 +839,7 @@ def indexedOnlineImpl (puzzle : Puzzle n S L Salt) (b : Bool) :
 one handler on the pair of the cache of the random oracle and the counter: a step of the online
 handler of `indexedExperiment`, with rounds answered point by point, followed by `keyedRomImpl T`
 on the cache. -/
-@[expose, simps -isSimp]
+@[expose, simps]
 noncomputable def keyedJointImpl (T : Fin (2 * qEnc) → K) (puzzle : Puzzle n S L Salt) (b : Bool) :
     QueryImpl ((unifSpec + LeftOrRight.spec Plaintext ByteArray) +
         (sealSpec n S L Salt Ctx N K).batch)
@@ -900,7 +900,7 @@ lemma keyedJointImpl_run_challenge (T : Fin (2 * qEnc) → K) (puzzle : Puzzle n
 
 /-- `keyedJointImpl` with its key table as a third component of the state, which no step
 changes. -/
-@[expose, simps -isSimp]
+@[expose, simps]
 noncomputable def keyedTabImpl (puzzle : Puzzle n S L Salt) (b : Bool) :
     QueryImpl ((unifSpec + LeftOrRight.spec Plaintext ByteArray) +
         (sealSpec n S L Salt Ctx N K).batch)

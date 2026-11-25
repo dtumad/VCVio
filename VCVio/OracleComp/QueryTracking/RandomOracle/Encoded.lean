@@ -157,7 +157,7 @@ variable [DecidableEq D]
 
 /-- The typed oracles answered through the single random oracle: a typed point is the query at
 its encoding, truncated. -/
-@[expose, simps -isSimp] noncomputable def truncatedImpl :
+@[expose, simps] noncomputable def truncatedImpl :
     QueryImpl spec (StateT (D →ₒ M).QueryCache ProbComp) where
   toFun t := E.trunc t <$> (D →ₒ M).randomOracle (E.encode t)
 
@@ -175,7 +175,7 @@ answered by the single random oracle. -/
 /-- The encoding as a program translation: a uniform query and a raw input are the same query of
 `unifSpec + (D →ₒ M)`, and a typed point is the query of the single oracle at its encoding,
 truncated. -/
-@[expose, simps -isSimp] def encodeImpl :
+@[expose, simps] def encodeImpl :
     QueryImpl (unifSpec + (spec + (D →ₒ M))) (OracleComp (unifSpec + (D →ₒ M))) where
   toFun
   | .inl n => (query (spec := unifSpec + (D →ₒ M)) (.inl n) : OracleComp _ (Fin (n + 1)))
@@ -228,7 +228,7 @@ inputs, on the pair of their caches. -/
 
 /-- The router: a raw input `x` draws its private value `p`; if `x` is read as a typed point `q`,
 the answer is the typed answer at `q` completed from `p`, and otherwise it is `p`. -/
-@[expose, simps -isSimp] noncomputable def routerImpl :
+@[expose, simps] noncomputable def routerImpl :
     QueryImpl (D →ₒ M) (StateT (spec.QueryCache × (D →ₒ M).QueryCache) ProbComp) where
   toFun x := do
     let p ← (pairImpl (spec := spec) (D := D) (M := M) (.inr x) :

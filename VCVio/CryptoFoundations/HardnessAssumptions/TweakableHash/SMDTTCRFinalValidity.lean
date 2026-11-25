@@ -78,7 +78,7 @@ structure Adversary (prob : Problem ι PkSeed Tweak M Y) where
 
 /-- The always-answering target oracle. Every query is appended in issue order; a cap, duplicate
 target tweak, or collection clash poisons final validity without changing the returned digest. -/
-@[simps -isSimp]
+@[simps]
 def challengeOracle [DecidableEq Tweak] (prob : Problem ι PkSeed Tweak M Y) (pk : PkSeed) :
     QueryImpl (challengeSpec Tweak M Y) (StateT (State Tweak M) ProbComp) where
   toFun tm := do

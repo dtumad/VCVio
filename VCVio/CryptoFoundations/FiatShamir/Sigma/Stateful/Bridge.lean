@@ -93,7 +93,7 @@ abbrev SourceCmaComp (α : Type) :=
   pure ((msg, sig), verified)
 
 /-- Log signing queries while forwarding every query to the surrounding CMA interface. -/
-@[simps -isSimp (attr := fs_simp)] def cmaSignLogImpl :
+@[simps (attr := fs_simp)] def cmaSignLogImpl :
     QueryImpl (cmaSpec M Commit Chal Resp Stmt)
       (StateT (List M) (OracleComp (cmaSpec M Commit Chal Resp Stmt))) where
   toFun

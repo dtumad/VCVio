@@ -118,7 +118,7 @@ leaves the state untouched and draws nothing.
 
 Accepted queries are appended, so the history is in issue order and its `j`-th entry is the `j`-th
 target. -/
-@[simps -isSimp]
+@[simps]
 noncomputable def SM_DT_PRE_challengeOracle [DecidableEq Tweak] [SampleableType M']
     (prob : SM_DT_PRE_Problem ι PkSeed Tweak M M' Y) (pk : PkSeed) :
     QueryImpl (SM_DT_PRE_challengeSpec Tweak Y) (StateT (SM_DT_PRE_State Tweak M') ProbComp) where

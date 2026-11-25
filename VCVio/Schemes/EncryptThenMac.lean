@@ -141,7 +141,7 @@ variable {Λ : Type} [DecidableEq Λ]
 
 /-- The left-or-right oracle of the games at bit `b`: encrypt-then-MAC the selected message and
 log the challenge ciphertext. -/
-@[expose, simps -isSimp]
+@[expose, simps]
 def challengeImpl (enc : SymmEncAlg ProbComp M Ke C) (mac : MacAlg ProbComp C Km T)
     (ke : Ke) (km : Km) (leak : M → Λ) (b : Bool) :
     QueryImpl (LeftOrRight.spec M (C × T)) (StateT (GameState C T) ProbComp) where
@@ -168,7 +168,7 @@ variable [DecidableEq C] [DecidableEq T]
 
 /-- The decryption oracle of the CCA game with the decryption queries logged: a decryption query
 is logged with its freshness, rejected if it is a challenge ciphertext, and decrypted otherwise. -/
-@[expose, simps -isSimp]
+@[expose, simps]
 def ccaDecryptImpl (enc : SymmEncAlg ProbComp M Ke C) (mac : MacAlg ProbComp C Km T)
     (ke : Ke) (km : Km) :
     QueryImpl (C × T →ₒ Option M) (StateT (GameState C T) ProbComp) where
@@ -179,7 +179,7 @@ def ccaDecryptImpl (enc : SymmEncAlg ProbComp M Ke C) (mac : MacAlg ProbComp C K
 
 /-- The decryption oracle that logs every decryption query with its freshness and answers it with
 `none`. -/
-@[expose, simps -isSimp] def rejectDecryptImpl :
+@[expose, simps] def rejectDecryptImpl :
     QueryImpl (C × T →ₒ Option M) (StateT (GameState C T) ProbComp) where
   toFun ct := do
     let s ← get
@@ -335,7 +335,7 @@ theorem boolDist_IND_CCA_Experiment_rejectExperiment_le (enc : SymmEncAlg ProbCo
 
 /-- The challenge oracle of the CPA adversary: forward the pair to the CPA challenge oracle and tag
 the ciphertext it returns. -/
-@[expose, simps -isSimp] def cpaChallengeImpl (mac : MacAlg ProbComp C Km T) (km : Km) :
+@[expose, simps] def cpaChallengeImpl (mac : MacAlg ProbComp C Km T) (km : Km) :
     QueryImpl (LeftOrRight.spec M (C × T)) (OracleComp (unifSpec + LeftOrRight.spec M C)) where
   toFun mm := do
     let c? ← (unifSpec + LeftOrRight.spec M C).query (Sum.inr mm)
@@ -346,7 +346,7 @@ the ciphertext it returns. -/
     | none => return none
 
 /-- The decryption oracle of the CPA adversary, which answers every query with `none`. -/
-@[expose, simps -isSimp] def cpaDecryptImpl :
+@[expose, simps] def cpaDecryptImpl :
     QueryImpl (C × T →ₒ Option M) (OracleComp (unifSpec + LeftOrRight.spec M C)) where
   toFun _ := return none
 
@@ -409,7 +409,7 @@ theorem rejectExperiment_eq_IND_CPA_Experiment (enc : SymmEncAlg ProbComp M Ke C
 
 /-- The challenge oracle of the rejecting game stopped at the `j`-th decryption query: once `j`
 decryption queries have been logged before it, it answers `none` and changes nothing. -/
-@[expose, simps -isSimp]
+@[expose, simps]
 def stopChallengeImpl (enc : SymmEncAlg ProbComp M Ke C) (mac : MacAlg ProbComp C Km T)
     (ke : Ke) (km : Km) (leak : M → Λ) (b : Bool) (j : ℕ) :
     QueryImpl (LeftOrRight.spec M (C × T)) (StateT (GameState C T) ProbComp) where
@@ -569,7 +569,7 @@ theorem preservesInv_stopImpl (enc : SymmEncAlg ProbComp M Ke C) (mac : MacAlg P
 
 /-- The challenge oracle of the forger, stopped at the `j`-th decryption query: encrypt the
 selected message under its own key and ask the tagging oracle for the tag. -/
-@[expose, simps -isSimp]
+@[expose, simps]
 def forgerChallengeImpl (enc : SymmEncAlg ProbComp M Ke C) (ke : Ke) (leak : M → Λ)
     (b : Bool) (j : ℕ) : QueryImpl (LeftOrRight.spec M (C × T))
       (StateT (List (C × T)) (OracleComp (unifSpec + (C →ₒ T)))) where
@@ -585,7 +585,7 @@ def forgerChallengeImpl (enc : SymmEncAlg ProbComp M Ke C) (ke : Ke) (leak : M �
       | none => return none
 
 /-- The decryption oracle of the forger: log the query and answer `none`. -/
-@[expose, simps -isSimp] def forgerDecryptImpl : QueryImpl (C × T →ₒ Option M)
+@[expose, simps] def forgerDecryptImpl : QueryImpl (C × T →ₒ Option M)
     (StateT (List (C × T)) (OracleComp (unifSpec + (C →ₒ T)))) where
   toFun ct := do
     modify (· ++ [ct])

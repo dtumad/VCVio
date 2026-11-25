@@ -538,7 +538,7 @@ exactly as the real handler and leave the tape untouched. The tape is over-provi
 `qSign`, one salt per signing query); a missing head (empty tape) defaults to the inline draw so the
 handler is total. Its per-query unfoldings are recorded by `gpvRealImplTape_run_unif` / `_read` /
 `_sign` below. -/
-@[expose, simps -isSimp] noncomputable def gpvRealImplTape (pk : PK) (sk : SK) :
+@[expose, simps] noncomputable def gpvRealImplTape (pk : PK) (sk : SK) :
     QueryImpl ((unifSpec + (Salt × M →ₒ Range)) + (M →ₒ (Salt × Domain)))
       (StateT ((Salt × M →ₒ Range).QueryCache × List Salt) ProbComp) where
   toFun t := match t with
@@ -604,7 +604,7 @@ random-oracle handler programs a miss with `psf.eval pk (domainSample pk)` and t
 is the bare sample, both leaving the tape untouched. This is the programmed dual of
 `gpvRealImplTape`; its per-query unfoldings are recorded by `progGameRunImplTape_run_unif` /
 `_read` / `_sign` below. -/
-@[expose, simps -isSimp]
+@[expose, simps]
 noncomputable def progGameRunImplTape (domainSample : PK → ProbComp Domain) (pk : PK) :
     QueryImpl ((unifSpec + (Salt × M →ₒ Range)) + (M →ₒ (Salt × Domain)))
       (StateT ((Salt × M →ₒ Range).QueryCache × List Salt) ProbComp) where
@@ -801,7 +801,7 @@ runs may diverge off-flag there; firing the flag makes the empty-tape signing st
 the bad set, which is what makes the off-bad per-query agreement (`h_agree_good`) universal over all
 states. In the actual `qSign`-salt run this branch is unreachable (the query bound permits at most
 `qSign` signing queries and the tape holds `qSign` salts), so it contributes no probability mass. -/
-@[expose, simps -isSimp] noncomputable def gpvRealImplTapeFlag (pk : PK) (sk : SK) :
+@[expose, simps] noncomputable def gpvRealImplTapeFlag (pk : PK) (sk : SK) :
     QueryImpl ((unifSpec + (Salt × M →ₒ Range)) + (M →ₒ (Salt × Domain)))
       (StateT (((Salt × M →ₒ Range).QueryCache × List Salt) × Bool) ProbComp) where
   toFun t := StateT.mk fun s =>
@@ -818,7 +818,7 @@ open Classical in
 `progGameRunImplTape` threaded with the same collision flag (set on a signing step when the consumed
 head salt `r` is already a key of the cache). Its `run'`-projection is the original
 `progGameRunImplTape`. -/
-@[expose, simps -isSimp]
+@[expose, simps]
 noncomputable def progGameRunImplTapeFlag (domainSample : PK → ProbComp Domain) (pk : PK) :
     QueryImpl ((unifSpec + (Salt × M →ₒ Range)) + (M →ₒ (Salt × Domain)))
       (StateT (((Salt × M →ₒ Range).QueryCache × List Salt) × Bool) ProbComp) where
