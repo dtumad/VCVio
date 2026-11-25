@@ -586,6 +586,7 @@ open Classical in
 create a clash and from states with a clash: such a step fills the single-oracle cache, takes the
 step of the single-oracle world there, keeps the filled cache as its table and records the queried
 typed point. -/
+@[expose, simps]
 noncomputable def patchedHashImpl :
     QueryImpl (spec + (D →ₒ M)) (StateT (spec.QueryCache × (D →ₒ M).QueryCache) ProbComp) where
   toFun u := StateT.mk fun s ↦

@@ -169,6 +169,7 @@ abbrev Wrapped (Qq Y : Type) (thColl : TweakableHashCollection ι PkSeed Tweak Y
 /-- The challenge half of the wrapper: a query over the target cap, or at a tweak the replica
 already records on either oracle, is answered `none` and not forwarded. The test is
 `roaChallengeOracle`'s, read through the replica. -/
+@[expose, simps]
 def toMonitorChallengeOracle [DecidableEq Tweak] :
     QueryImpl (roaChallengeSpec Qq Y)
       (StateT (List Tweak × List Tweak) (Wrapped Qq Y thColl)) where
@@ -184,6 +185,7 @@ answered `none` and not forwarded; otherwise it is forwarded and its tweak recor
 
 `Qq` is explicit because it occurs only in the target monad, where it is not determined by the
 arguments. -/
+@[expose, simps]
 def toMonitorCollectionOracle [DecidableEq Tweak] (Qq : Type) :
     QueryImpl (TweakableHash.collectionSpec thColl)
       (StateT (List Tweak × List Tweak) (Wrapped Qq Y thColl)) where
